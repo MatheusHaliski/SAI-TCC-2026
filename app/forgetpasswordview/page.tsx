@@ -1,7 +1,7 @@
 "use client";
 
 import AuthShell from "../components/AuthShell";
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import { VSModalPaged } from "@/app/lib/authAlerts";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
