@@ -42,8 +42,8 @@ export default function AuthShell({
         >
           <div className="flex h-full w-full items-center justify-center">
             <img
-              src="/1E8AEB0C-78BC-42FD-9113-73F1A0728A3A_1_105_c.jpeg"
-              alt="DineExplorer"
+              src="/F4D37961-8CCF-4B15-8F4F-122C32FFF90F.jpeg"
+              alt="SAI"
               className="h-full w-full object-contain"
             />
           </div>
@@ -61,7 +61,7 @@ export default function AuthShell({
         >
           <div className="flex h-full w-full items-center justify-center">
             <img
-              src="/VI.jpeg"
+              src="/16B3CF5A-3C51-4ED6-81C6-866E4E5035F8_1_105_c.jpeg"
               alt="Velion"
               className="h-full w-full object-contain"
             />
