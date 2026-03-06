@@ -41,8 +41,8 @@ export default function AuthShell({
         >
           <div className="flex h-full w-full items-center justify-center">
             <img
-              src="/PUCPR.jpeg"
-              alt="Velion"
+              src="/0E37BC92-2AA9-4F7D-9C10-101628DAE8ED_4_5005_c.jpeg"
+              alt="PUCPR"
               className="h-full w-full object-contain"
             />
           </div>
