@@ -29,6 +29,6 @@ export default function SignupViewPage() {
                 </h1>
                 <SignupForm />
             </div>
-        </AuthShell2>
+        </AuthShell>
     );
 }
