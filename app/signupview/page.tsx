@@ -5,7 +5,7 @@ import SignupForm from "./SignupForm";
 
 export default function SignupViewPage() {
     return (
-        <AuthShell2
+        <AuthShell
             title="Start your Dine Explorer journey"
             subtitle="Create your account in minutes"
         >
