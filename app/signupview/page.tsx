@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import AuthShell2 from "../components/AuthShell2";
+import AuthShell2 from "../components/AuthShell";
 import SignupForm from "./SignupForm";
 
 export default function SignupViewPage() {
