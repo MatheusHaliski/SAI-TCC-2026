@@ -50,24 +50,6 @@ export default function AuthShell({
         </div>
       </div>
 
-      {/* Right badge */}
-      <div className="absolute right-4 top-6 z-20 sm:right-10 lg:right-16">
-        <div
-          className={[
-            "flex h-24 w-44 items-center justify-center rounded-2xl border-4 border-yellow-100 bg-white px-3 py-2 text-amber-500 sm:h-28 sm:w-52",
-            GLOW_LINE,
-            "shadow-[0_18px_60px_rgba(0,0,0,0.25)]",
-          ].join(" ")}
-        >
-          <div className="flex h-full w-full items-center justify-center">
-            <img
-              src="/16B3CF5A-3C51-4ED6-81C6-866E4E5035F8_1_105_c.jpeg"
-              alt="Velion"
-              className="h-full w-full object-contain"
-            />
-          </div>
-        </div>
-      </div>
 
       <main className="relative z-10 flex w-full items-center justify-center pt-24 sm:pt-28 lg:pt-32">
         <div
