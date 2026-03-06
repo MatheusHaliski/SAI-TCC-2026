@@ -15,7 +15,7 @@ const GLOW_LINE =
   "relative after:content-[''] after:absolute after:left-6 after:right-6 after:-bottom-2 after:h-[10px] after:rounded-full " +
   "after:bg-gradient-to-r after:from-cyan-400/40 after:via-teal-300/40 after:to-emerald-400/40 after:blur-xl";
 
-export default function AuthShell({
+export default function AuthShell2({
   title,
   subtitle,
   description,
@@ -117,7 +117,7 @@ export default function AuthShell({
                 <div className="w-full">
                   <div className="overflow-hidden rounded-2xl border-4 border-amber-300 shadow-[0_18px_60px_rgba(0,0,0,0.25)]">
                     <img
-                      src="/749C839E-3546-413A-9E35-4F98A0923333.png"
+                      src="/4D13F57F-2101-40AC-888C-D2DF836E3286.png"
                       alt="Dine Explorer featured visual"
                       className="h-full w-full object-cover"
                     />
