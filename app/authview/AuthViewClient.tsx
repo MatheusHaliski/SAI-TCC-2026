@@ -20,7 +20,7 @@ export default function AuthViewClient() {
     const pathname = usePathname();
     useEffect(() => {
         const t = getDevSessionToken();
-        if (!t) return;
+        if (!t) router.replace("/devauthgate");
         console.log(t);
         ensureSharedAccessToken();
     }, [router]);
@@ -91,11 +91,7 @@ export default function AuthViewClient() {
     };
     devsessiontoken = getDevSessionToken();
     if (!devsessiontoken) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-black text-white">
-                <p className="text-sm uppercase tracking-[0.2em]">Loading...</p>
-            </div>
-        );
+        router.replace("/devauthgate");
     }
 
     return (
