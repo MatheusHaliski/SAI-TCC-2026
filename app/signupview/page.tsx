@@ -4,6 +4,15 @@ import AuthShell from "../components/AuthShell";
 import SignupForm from "./SignupForm";
 
 export default function SignupViewPage() {
+     const pathname = usePathname();
+    useEffect(() => {
+        const t = getDevSessionToken();
+        if (!t) {
+        router.replace("/devauthgate");
+        }
+        console.log(t);
+        ensureSharedAccessToken();
+    }, [router]);
     return (
         <AuthShell
             title="Start your Dine Explorer journey"
