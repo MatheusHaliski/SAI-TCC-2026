@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
+import ContentAccessGate from '@/app/components/shell/ContentAccessGate';
 
 const sections = ['New Scheme', 'Outfit Title', 'Clothes Selection', 'Outfit Preview', 'Publish'];
 
@@ -20,7 +21,8 @@ export default function CreateSchemeView() {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+    <ContentAccessGate>
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       <ContextSectionMenu title="Create Flow" sections={sections} />
       <div className="space-y-6">
         <PageHeader title="Create Scheme" subtitle="Compose premium outfit concepts and prep them for publishing." />
@@ -75,6 +77,7 @@ export default function CreateSchemeView() {
           </button>
         </SectionBlock>
       </div>
-    </div>
+      </div>
+    </ContentAccessGate>
   );
 }

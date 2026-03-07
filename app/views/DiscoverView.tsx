@@ -6,6 +6,7 @@ import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import OutfitCard from '@/app/components/cards/OutfitCard';
+import ContentAccessGate from '@/app/components/shell/ContentAccessGate';
 
 const sections = ['Style Categories', 'Streetwear', 'Luxury', 'Minimal', 'Sport', 'Vintage'];
 
@@ -32,7 +33,8 @@ export default function DiscoverView() {
   const [selectedCategory, setSelectedCategory] = useState('Streetwear');
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+    <ContentAccessGate>
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       <ContextSectionMenu title="Discover Sections" sections={sections} />
       <div className="space-y-6">
         <PageHeader title="Discover Styles" subtitle="Explore curated fashion archetypes and drill down into related looks." />
@@ -57,6 +59,7 @@ export default function DiscoverView() {
           </div>
         </SectionBlock>
       </div>
-    </div>
+      </div>
+    </ContentAccessGate>
   );
 }

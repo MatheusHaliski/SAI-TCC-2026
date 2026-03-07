@@ -7,6 +7,7 @@ import {usePathname, useRouter} from "next/navigation";
 import {VSModalPaged} from  "@/app/lib/authAlerts";
 import {clearAuthSessionToken, setAuthSessionProfile, setAuthSessionToken} from "@/app/lib/authSession";
 import { getDevSessionToken, setDevSessionToken } from "@/app/lib/devSession";
+import { ensureSharedAccessToken, setSharedAccessToken } from '@/app/lib/accessTokenShare';
 
 
 
@@ -19,10 +20,8 @@ export default function AuthViewClient() {
     const pathname = usePathname();
     useEffect(() => {
         const t = getDevSessionToken();
-        if (!t) {
-            router.replace("/");
-            return;
-        }
+        if (!t) return;
+        ensureSharedAccessToken();
     }, [router]);
 
     useEffect(() => {
@@ -76,7 +75,8 @@ export default function AuthViewClient() {
             setAuthSessionToken(token);
             setAuthSessionProfile({ email: normalizedEmail });
             setDevSessionToken(token);
-            router.replace("/restaurantcardspage");
+            setSharedAccessToken(token);
+            router.replace("/");
         } catch (error) {
             console.error("[AuthView] Failed to verify credentials:", error);
             void VSModalPaged({

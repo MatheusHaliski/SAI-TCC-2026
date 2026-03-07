@@ -2,6 +2,7 @@ import ClothingItemCard from '@/app/components/cards/ClothingItemCard';
 import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
+import ContentAccessGate from '@/app/components/shell/ContentAccessGate';
 
 const sections = ['Trending Clothes', 'New Arrivals', 'Brands', 'Categories', 'Best Sellers'];
 
@@ -14,7 +15,8 @@ const items = [
 
 export default function MarketView() {
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+    <ContentAccessGate>
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       <ContextSectionMenu title="Market Index" sections={sections} />
       <div className="space-y-6">
         <PageHeader title="Fashion Market" subtitle="Scan curated products across trending labels and category clusters." />
@@ -26,6 +28,7 @@ export default function MarketView() {
           </div>
         </SectionBlock>
       </div>
-    </div>
+      </div>
+    </ContentAccessGate>
   );
 }
