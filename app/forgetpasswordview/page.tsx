@@ -10,7 +10,15 @@ export default function SignupViewPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [submitting, setSubmitting] = useState(false);
-
+    const pathname = usePathname();
+    useEffect(() => {
+        const t = getDevSessionToken();
+        if (!t) {
+        router.replace("/devauthgate");
+        }
+        console.log(t);
+        ensureSharedAccessToken();
+    }, [router]);
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (submitting) return;
