@@ -105,9 +105,8 @@ export default function AuthViewClient() {
                 onSubmit={handleSubmit}
                 className={[
                     "w-full space-y-6",
-                    "rounded-3xl",
+                    "rounded-2xl border-8 border-orange-500",
                     "mt-16",
-                    "border-amber-300 border-8",
                     "fe-form-material",
                     "fe-glass-panel",
                     "px-6 pb-8 pt-10 sm:px-8 sm:pb-8 sm:pt-12",
@@ -161,7 +160,7 @@ export default function AuthViewClient() {
                 className={[
                     "w-full space-y-6",
                     "rounded-3xl",
-                    "border-amber-300 border-8",
+                    "rounded-2xl border-8 border-orange-500",
                     "bg-white",
                     "p-6 sm:p-8",
                     "shadow-[0_20px_50px_rgba(0,0,0,0.35)]",
