@@ -85,7 +85,7 @@ export default function AuthShell({
           <div
             className={[
               "w-full space-y-6 rounded-3xl p-6 sm:p-8",
-              "border-amber-300 border-4",
+              "rounded-2xl border-8 border-orange-500",
               "bg-white bg-cover bg-center bg-no-repeat",
               "shadow-[0_20px_50px_rgba(0,0,0,0.35)]",
             ].join(" ")}
@@ -115,7 +115,7 @@ export default function AuthShell({
                 </div>
 
                 <div className="w-full">
-                  <div className="overflow-hidden rounded-2xl border-4 border-amber-300 shadow-[0_18px_60px_rgba(0,0,0,0.25)]">
+                  <div className="overflow-hidden rounded-2xl border-8 border-orange-500 shadow-[0_18px_60px_rgba(0,0,0,0.25)]">
                     <img
                       src="/4EF8DF9F-0088-4132-8F71-282EED3B7506.png"
                       alt="SAI featured visual"
