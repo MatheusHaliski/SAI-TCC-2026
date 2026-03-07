@@ -1,15 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SidebarNav from './SidebarNav';
 import TopBar from './TopBar';
 import ContentRouter from './ContentRouter';
 import { AppRoute, ROUTE_TITLES } from '@/app/lib/stylist-shell';
+import { ensureSharedAccessToken } from '@/app/lib/accessTokenShare';
+import { useRouter } from 'next/navigation';
 
 export default function HomeShell() {
   const [activeRoute, setActiveRoute] = useState<AppRoute>('home');
   const [isCompactSidebar, setIsCompactSidebar] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const router = useRouter();
+  const hasAccess = Boolean(ensureSharedAccessToken());
+
+  useEffect(() => {
+    if (!hasAccess) {
+      router.replace('/authview');
+    }
+  }, [hasAccess, router]);
+
+  if (!hasAccess) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
+        Checking access...
+      </div>
+    );
+  }
 
   return (
     <div

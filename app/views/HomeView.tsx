@@ -2,7 +2,6 @@ import OutfitCard from '@/app/components/cards/OutfitCard';
 import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
-import ContentAccessGate from '@/app/components/shell/ContentAccessGate';
 
 const sections = ['Trending Outfits', 'Recommended Looks', 'Friends Looks', 'Seasonal Trends', 'Brand Promotions'];
 
@@ -15,8 +14,7 @@ const outfits = [
 
 export default function HomeView() {
   return (
-    <ContentAccessGate>
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       <ContextSectionMenu title="Home Overview" sections={sections} />
       <div className="space-y-6">
         <PageHeader title="Fashion Pulse" subtitle="Track what is trending and what your style circle is wearing today." />
@@ -28,7 +26,6 @@ export default function HomeView() {
           </div>
         </SectionBlock>
       </div>
-      </div>
-    </ContentAccessGate>
+    </div>
   );
 }
