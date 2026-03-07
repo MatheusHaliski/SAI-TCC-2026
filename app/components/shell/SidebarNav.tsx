@@ -23,7 +23,7 @@ function NavContent({
       <div className="flex items-center justify-between">
         {!isCompact ? (
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-white/50">StylistAI</p>
+              <img src="/sai.png"/>
             <h1 className="text-lg font-semibold text-white">Fashion Dashboard</h1>
           </div>
         ) : (
@@ -66,11 +66,15 @@ export default function SidebarNav({
 }: SidebarNavProps) {
   return (
     <>
-      <aside
-        className={`sa-premium-gradient-surface hidden h-screen border-r border-white/20 backdrop-blur lg:block ${
-          isCompact ? 'w-24' : 'w-72'
-        }`}
-      >
+        <aside
+            className={`hidden h-200px lg:block
+  ${isCompact ? 'w-24' : 'w-72'}
+  sa-premium-gradient-surface
+  border-r border-white/10
+  shadow-2xl
+  backdrop-blur-3xl
+  relative`}
+        >
         <NavContent
           activeRoute={activeRoute}
           onRouteChange={onRouteChange}

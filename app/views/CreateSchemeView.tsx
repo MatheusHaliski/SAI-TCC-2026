@@ -30,7 +30,7 @@ export default function CreateSchemeView() {
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="Midnight Capsule v1"
-            className="sa-premium-gradient-surface-soft w-full rounded-xl border border-white/25 px-4 py-3 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/30"
+            className="sa-premium-gradient-surface-soft w-full rounded-xl border border-black/25 px-4 py-3 text-black placeholder:text-black focus:outline-none focus:ring-2 focus:ring-white/30"
           />
         </SectionBlock>
 

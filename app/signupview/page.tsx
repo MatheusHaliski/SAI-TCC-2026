@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { getDevSessionToken, setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessToken } from '@/app/lib/accessTokenShare';
 import {router} from "next/client";
+import {clearAuthSessionToken} from "@/app/lib/authSession";
 export default function SignupViewPage() {
      const pathname = usePathname();
     useEffect(() => {
@@ -17,6 +18,11 @@ export default function SignupViewPage() {
         console.log(t);
         ensureSharedAccessToken();
     }, [router]);
+    useEffect(() => {
+        if (pathname !== "/signupview") return;
+        clearAuthSessionToken();
+        clearSharedAccessToken();
+    }, [pathname]);
     return (
         <AuthShell
             title="Start your Dine Explorer journey"

@@ -8,6 +8,7 @@ import {usePathname, useRouter} from "next/navigation";
 import { useEffect} from "react";
 import { getDevSessionToken, setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessToken } from '@/app/lib/accessTokenShare';
+import {clearAuthSessionToken} from "@/app/lib/authSession";
 export default function SignupViewPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");
@@ -21,6 +22,12 @@ export default function SignupViewPage() {
         console.log(t);
         ensureSharedAccessToken();
     }, [router]);
+
+    useEffect(() => {
+        if (pathname !== "/forgetpasswordview") return;
+        clearAuthSessionToken();
+        clearSharedAccessToken();
+    }, [pathname]);
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (submitting) return;

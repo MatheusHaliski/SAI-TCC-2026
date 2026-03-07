@@ -7,6 +7,7 @@ import ContentRouter from './ContentRouter';
 import { AppRoute, ROUTE_TITLES } from '@/app/lib/stylist-shell';
 import { ensureSharedAccessToken } from '@/app/lib/accessTokenShare';
 import { useRouter } from 'next/navigation';
+import {getAuthSessionToken} from "@/app/lib/authSession";
 
 export default function HomeShell() {
   const [activeRoute, setActiveRoute] = useState<AppRoute>('home');
@@ -16,12 +17,16 @@ export default function HomeShell() {
   const hasAccess = Boolean(ensureSharedAccessToken());
 
   useEffect(() => {
-    if (!hasAccess) {
+    const token = getAuthSessionToken();
+    if (!token) {
       router.replace('/authview');
+    } else {
+      console.log("Token is:",token);
     }
   }, [hasAccess, router]);
 
-  if (!hasAccess) {
+  const token1 = getAuthSessionToken();
+  if (!token1) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
         Checking access...
@@ -31,11 +36,7 @@ export default function HomeShell() {
 
   return (
     <div
-      className="flex min-h-screen bg-cover bg-fixed bg-center text-white"
-      style={{
-        backgroundImage:
-          "linear-gradient(180deg, rgba(8,145,178,0.62), rgba(13,148,136,0.66), rgba(5,150,105,0.66)), url('/F7B8D2E0-9994-4BFC-8D62-0206D32198DA.png')",
-      }}
+      className="flex min-h-screen bg-cover bg-fixed bg-center text-white bg-white"
     >
       <SidebarNav
         activeRoute={activeRoute}
@@ -46,7 +47,7 @@ export default function HomeShell() {
         onCloseMobile={() => setMobileOpen(false)}
       />
 
-      <main className="flex min-w-0 flex-1 flex-col">
+      <main className="flex min-w-0 min-h-[600px] flex-1 flex-col">
         <TopBar pageTitle={ROUTE_TITLES[activeRoute]} onOpenMobileNav={() => setMobileOpen(true)} />
 
         <section className="flex-1 overflow-y-auto p-4 lg:p-6">

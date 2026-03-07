@@ -32,10 +32,11 @@ export default function DiscoverView() {
   const [selectedCategory, setSelectedCategory] = useState('Streetwear');
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+    <div className="grid gap-6 lg:grid-col">
+      <PageHeader title="Discover Styles" subtitle="Explore curated fashion archetypes and drill down into related looks." />
       <ContextSectionMenu title="Discover Sections" sections={sections} />
       <div className="space-y-6">
-        <PageHeader title="Discover Styles" subtitle="Explore curated fashion archetypes and drill down into related looks." />
+
         <SectionBlock title="Style Categories" subtitle="Select a category to filter looks in real time.">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {categories.map((category) => (

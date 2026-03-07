@@ -6,14 +6,14 @@ interface CategoryCardProps {
 
 export default function CategoryCard({ name, description, onExplore }: CategoryCardProps) {
   return (
-    <article className="sa-premium-gradient-surface-soft space-y-3 rounded-2xl border border-white/20 p-4 shadow-md">
-      <div className="h-28 rounded-xl bg-gradient-to-br from-neutral-400/45 to-neutral-900/85" />
-      <h3 className="text-base font-semibold text-white">{name}</h3>
-      <p className="text-sm text-white/65">{description}</p>
+    <article className="space-y-3 rounded-2xl border border-black p-4 bg-white">
+      <div className="space-y-3 h-36 rounded-2xl border border-black p-4 bg-white" />
+      <h3 className="text-base font-semibold text-black">{name}</h3>
+      <p className="text-sm text-black">{description}</p>
       <button
         type="button"
         onClick={onExplore}
-        className="rounded-lg border border-white/30 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-white hover:text-black"
+        className="rounded-lg h-15 border border-black px-3 py-2 text-xs font-semibold uppercase tracking-wider text-black transition hover:bg-black hover:text-black"
       >
         Explore Looks
       </button>
