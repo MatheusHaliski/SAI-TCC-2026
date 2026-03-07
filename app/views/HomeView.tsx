@@ -39,7 +39,7 @@ export default function HomeView() {
                     title="Fashion Pulse"
                     subtitle="Track what is trending and what your style circle is wearing today."
                 >
-                    <div className="grid mt-1.5 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="mt-1.5 grid gap-x-4 gap-y-5 sm:grid-cols-2 xl:grid-cols-3">
                         {outfits.map((outfit) => (
                             <OutfitCard key={outfit.title} {...outfit} />
                         ))}
