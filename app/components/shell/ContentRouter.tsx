@@ -4,7 +4,7 @@ import DiscoverView from '@/app/views/DiscoverView';
 import CreateSchemeView from '@/app/views/CreateSchemeView';
 import MarketView from '@/app/views/MarketView';
 import ProfileView from '@/app/views/ProfileView';
-
+import AuthView '@/app/AuthViewPage';
 interface ContentRouterProps {
   route: AppRoute;
 }
@@ -14,5 +14,6 @@ export default function ContentRouter({ route }: ContentRouterProps) {
   if (route === 'create') return <CreateSchemeView />;
   if (route === 'market') return <MarketView />;
   if (route === 'profile') return <ProfileView />;
-  return <HomeView />;
+  if (route === 'home') return <HomeView />;
+  return <AuthViewPage />
 }
