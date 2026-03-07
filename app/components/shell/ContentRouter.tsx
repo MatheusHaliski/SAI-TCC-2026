@@ -4,7 +4,7 @@ import DiscoverView from '@/app/views/DiscoverView';
 import CreateSchemeView from '@/app/views/CreateSchemeView';
 import MarketView from '@/app/views/MarketView';
 import ProfileView from '@/app/views/ProfileView';
-import AuthView '@/app/authview/AuthViewPage';
+import AuthView from '@/app/authview/AuthViewPage';
 interface ContentRouterProps {
   route: AppRoute;
 }
