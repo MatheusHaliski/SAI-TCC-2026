@@ -17,7 +17,7 @@ export default function ProfileView() {
         <ProfileSummaryCard username="stylist_aria" followers="12.4K" following="914" score="9.6" />
 
         <SectionBlock title="My Schemes" subtitle="Recently edited outfit schemes.">
-          <ul className="space-y-2">
+          <ul className="grid gap-x-3 gap-y-3 sm:grid-cols-2">
             {schemes.map((scheme) => (
               <li key={scheme} className="sa-premium-gradient-surface-soft rounded-xl border border-white/25 px-4 py-3 text-sm text-white/90">
                 {scheme}
