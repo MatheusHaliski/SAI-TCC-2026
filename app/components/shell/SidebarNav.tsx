@@ -32,7 +32,7 @@ function NavContent({
         <button
           type="button"
           onClick={onToggleCompact}
-          className="rounded-lg border border-white/20 bg-black/30 px-2 py-1 text-xs text-white/80 hover:bg-black/50"
+          className="sa-premium-gradient-surface-soft rounded-lg border border-white/30 px-2 py-1 text-xs text-white/90"
         >
           {isCompact ? '→' : '←'}
         </button>
@@ -67,7 +67,7 @@ export default function SidebarNav({
   return (
     <>
       <aside
-        className={`hidden h-screen border-r border-white/10 bg-black/70 backdrop-blur lg:block ${
+        className={`sa-premium-gradient-surface hidden h-screen border-r border-white/20 backdrop-blur lg:block ${
           isCompact ? 'w-24' : 'w-72'
         }`}
       >
@@ -82,7 +82,7 @@ export default function SidebarNav({
       {mobileOpen ? (
         <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={onCloseMobile}>
           <aside
-            className="h-full w-72 border-r border-white/20 bg-black/85 backdrop-blur"
+            className="sa-premium-gradient-surface h-full w-72 border-r border-white/25 backdrop-blur"
             onClick={(event) => event.stopPropagation()}
           >
             <NavContent

@@ -7,7 +7,7 @@ interface ContextSectionMenuProps {
 
 export default function ContextSectionMenu({ title, sections }: ContextSectionMenuProps) {
   return (
-    <aside className="rounded-2xl border border-white/15 bg-black/45 p-4 shadow-lg backdrop-blur-sm lg:sticky lg:top-24 lg:h-fit">
+    <aside className="sa-premium-gradient-surface-soft rounded-2xl border border-white/20 p-4 shadow-lg backdrop-blur-sm lg:sticky lg:top-24 lg:h-fit">
       <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/60">{title}</p>
       <ul className="space-y-2">
         {sections.map((section, index) => (

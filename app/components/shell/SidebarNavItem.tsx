@@ -18,10 +18,12 @@ export default function SidebarNavItem({ route, icon, label, helperText, active,
       className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
         active
           ? 'border-white/40 bg-white text-black shadow'
-          : 'border-transparent bg-black/20 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'
+          : 'sa-premium-gradient-surface-soft border-transparent text-white/85 hover:border-white/30 hover:text-white'
       }`}
     >
-      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-black/10 text-sm">{icon}</span>
+      <span className="sa-premium-gradient-surface-soft inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm">
+        {icon}
+      </span>
       {!compact ? (
         <span className="min-w-0">
           <span className="block truncate text-sm font-semibold">{label}</span>

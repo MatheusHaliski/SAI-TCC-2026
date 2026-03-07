@@ -30,7 +30,7 @@ export default function CreateSchemeView() {
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="Midnight Capsule v1"
-            className="w-full rounded-xl border border-white/20 bg-black/35 px-4 py-3 text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-white/20"
+            className="sa-premium-gradient-surface-soft w-full rounded-xl border border-white/25 px-4 py-3 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/30"
           />
         </SectionBlock>
 
@@ -45,7 +45,7 @@ export default function CreateSchemeView() {
                   className={`rounded-xl border px-4 py-3 text-left transition ${
                     active
                       ? 'border-white bg-white text-black'
-                      : 'border-white/20 bg-black/35 text-white/80 hover:border-white/50'
+                      : 'sa-premium-gradient-surface-soft border-white/25 text-white/90 hover:border-white/50'
                   }`}
                 >
                   {item}
@@ -56,7 +56,7 @@ export default function CreateSchemeView() {
         </SectionBlock>
 
         <SectionBlock title="Outfit Preview" subtitle="Live summary before publishing.">
-          <div className="rounded-xl border border-dashed border-white/30 bg-black/30 p-4">
+          <div className="sa-premium-gradient-surface-soft rounded-xl border border-dashed border-white/35 p-4">
             <p className="text-sm text-white/60">Title</p>
             <p className="text-lg font-semibold text-white">{title || 'Untitled scheme'}</p>
             <p className="mt-3 text-sm text-white/60">Selected pieces</p>
@@ -66,7 +66,7 @@ export default function CreateSchemeView() {
               ))}
             </ul>
           </div>
-          <div className="rounded-xl border border-white/20 bg-black/30 p-4 text-sm text-white/75">
+          <div className="sa-premium-gradient-surface-soft rounded-xl border border-white/25 p-4 text-sm text-white/80">
             <p className="font-medium text-white">Tagged products</p>
             <p>Connect matching products later to power affiliate-ready outfit drops.</p>
           </div>

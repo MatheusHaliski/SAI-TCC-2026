@@ -8,12 +8,12 @@ interface TopBarProps {
 
 export default function TopBar({ pageTitle, onOpenMobileNav }: TopBarProps) {
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-black/65 px-4 py-3 backdrop-blur-md lg:px-6">
+    <header className="sa-premium-gradient-surface sticky top-0 z-30 border-b border-white/20 px-4 py-3 backdrop-blur-md lg:px-6">
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={onOpenMobileNav}
-          className="rounded-lg border border-white/20 bg-black/45 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white lg:hidden"
+          className="sa-premium-gradient-surface-soft rounded-lg border border-white/30 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white lg:hidden"
         >
           Menu
         </button>

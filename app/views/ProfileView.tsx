@@ -19,7 +19,7 @@ export default function ProfileView() {
         <SectionBlock title="My Schemes" subtitle="Recently edited outfit schemes.">
           <ul className="space-y-2">
             {schemes.map((scheme) => (
-              <li key={scheme} className="rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-sm text-white/85">
+              <li key={scheme} className="sa-premium-gradient-surface-soft rounded-xl border border-white/25 px-4 py-3 text-sm text-white/90">
                 {scheme}
               </li>
             ))}
