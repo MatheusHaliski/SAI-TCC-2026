@@ -1,5 +1,5 @@
-import HomeShell from '@/app/components/shell/HomeShell';
+import DevAuthGate from "../gate/devauthgate";
 
 export default function Home() {
-  return <HomeShell />;
+    return <DevAuthGate />;
 }
