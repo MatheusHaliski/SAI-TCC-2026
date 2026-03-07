@@ -34,7 +34,7 @@ export default function HomeShell() {
       className="flex min-h-screen bg-cover bg-fixed bg-center text-white"
       style={{
         backgroundImage:
-          "linear-gradient(180deg, rgba(6,182,212,0.45), rgba(45,212,191,0.5), rgba(16,185,129,0.5)), url('/F7B8D2E0-9994-4BFC-8D62-0206D32198DA.png')",
+          "linear-gradient(180deg, rgba(8,145,178,0.62), rgba(13,148,136,0.66), rgba(5,150,105,0.66)), url('/F7B8D2E0-9994-4BFC-8D62-0206D32198DA.png')",
       }}
     >
       <SidebarNav
