@@ -40,7 +40,7 @@ return (
       className="sa-home-shell bg-gradient-to-r from-[#2563eb] via-[#22c55e] to-[#38bdf8] shadow-lg shadow-cyan-500/20 hover:brightness-110 flex min-h-screen bg-cover bg-fixed bg-center text-white"
     >
       {/* Left badge */}
-      <div className="absolute left-0 top-0 z-120 sm:left-0 lg:left-0">
+      <div className="absolute left-0 top-0 z-120 sm:left-0 lg:left-0 hidden lg:block">
         <div
             className={[
               "flex h-24 w-44 items-center justify-center rounded-2xl border-8 border-orange-500 bg-white px-3 py-2 text-amber-500 sm:h-28 sm:w-52",
