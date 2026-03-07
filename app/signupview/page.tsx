@@ -14,7 +14,7 @@ export default function SignupViewPage() {
                 className={[
                     "space-y-4",
                     "rounded-3xl",
-                    "border-amber-300 border-8", // ✅ requested
+                    "rounded-2xl border-8 border-orange-500", // ✅ requested
                     "bg-white/45",
                     "fe-glass-panel",
                     "p-6 sm:p-8",
