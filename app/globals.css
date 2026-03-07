@@ -1,6 +1,7 @@
 :root {
   --background: #f1f4ff;
   --foreground: #eae8f1;
+  --page-gradient: linear-gradient(90deg, #2563eb 0%, #22c55e 55%, #38bdf8 100%);
 }
 
 @theme inline {
@@ -17,9 +18,23 @@ body {
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image: var(--page-gradient);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sharetech), "Share Tech Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+
+.sa-auth-gradient-page {
+  background-color: var(--background);
+  background-image: var(--page-gradient);
+  background-size: cover;
+  background-repeat: no-repeat;
+  min-height: 100dvh;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
 }
 
 .fe-fragmented-texture {
