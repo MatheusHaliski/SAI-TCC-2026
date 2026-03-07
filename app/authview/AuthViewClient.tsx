@@ -20,7 +20,9 @@ export default function AuthViewClient() {
     const pathname = usePathname();
     useEffect(() => {
         const t = getDevSessionToken();
-        if (!t) router.replace("/devauthgate");
+        if (!t) {
+        router.replace("/devauthgate");
+        }
         console.log(t);
         ensureSharedAccessToken();
     }, [router]);
@@ -89,10 +91,6 @@ export default function AuthViewClient() {
             setSubmitting(false);
         }
     };
-    devsessiontoken = getDevSessionToken();
-    if (!devsessiontoken) {
-        router.replace("/devauthgate");
-    }
 
     return (
         <AuthShell
