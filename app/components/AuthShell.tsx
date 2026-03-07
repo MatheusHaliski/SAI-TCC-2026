@@ -95,7 +95,7 @@ export default function AuthShell({
               className={[
                 "w-full rounded-2xl bg-white px-4 py-4 text-amber-500 sm:px-8 sm:py-5",
                 GLOW_LINE,
-                "border-amber-300 border-4",
+                "rounded-2xl border-8 border-orange-500",
                 "shadow-[0_18px_60px_rgba(0,0,0,0.25)]",
               ].join(" ")}
             >
@@ -129,8 +129,7 @@ export default function AuthShell({
             {/* Title card */}
             <div
               className={[
-                "space-y-4 rounded-3xl bg-white p-6 shadow-[0_20px_50px_rgba(0,0,0,0.35)] sm:p-8",
-                "border-amber-300 border-8",
+                "space-y-4 rounded-2xl border-8 border-orange-500 bg-white p-6 shadow-[0_20px_50px_rgba(0,0,0,0.35)] sm:p-8",
               ].join(" ")}
             >
               <p className="text-center text-base font-semibold uppercase tracking-[0.22em] text-orange-500 sm:text-lg md:text-xl">
