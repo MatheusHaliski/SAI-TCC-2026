@@ -115,8 +115,7 @@ export default function AuthViewClient() {
             >
                 <div className={[
                     "space-y-6",
-                    "rounded-3xl",
-                    "border-amber-300 border-8",
+                    "rounded-2xl border-8 border-orange-500",
                     "bg-white/55",
                     "fe-glass-panel",
                     "p-6 sm:p-8",
