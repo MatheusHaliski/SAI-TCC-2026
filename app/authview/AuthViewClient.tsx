@@ -21,6 +21,7 @@ export default function AuthViewClient() {
     useEffect(() => {
         const t = getDevSessionToken();
         if (!t) return;
+        console.log(t);
         ensureSharedAccessToken();
     }, [router]);
 
