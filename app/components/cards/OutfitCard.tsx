@@ -7,7 +7,7 @@ interface OutfitCardProps {
 
 export default function OutfitCard({ title, category, rating, username }: OutfitCardProps) {
   return (
-    <article className="mt-6 overflow-hidden bg-white p-20 rounded-2xl border-4 border-black shadow-md">
+    <article className="mt-6 overflow-hidden bg-white rounded-2xl border-4 border-black shadow-md">
       <div className="h-36 mt-6 ml-6 mr-6 p-10 bg-white rounded-2xl border-4 border-black">
       </div>
       <div className="space-y-2 p-10">
