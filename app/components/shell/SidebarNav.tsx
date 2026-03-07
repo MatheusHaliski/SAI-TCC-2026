@@ -19,7 +19,7 @@ function NavContent({
   onToggleCompact,
 }: Pick<SidebarNavProps, 'activeRoute' | 'onRouteChange' | 'isCompact' | 'onToggleCompact'>) {
   return (
-    <div className="flex h-full flex-col gap-4 p-4 pt-28">
+    <div className="flex h-full flex-col gap-4 p-4 pt-4">
       <div className="flex items-center justify-between">
         {!isCompact ? (
           <div>
@@ -42,7 +42,6 @@ function NavContent({
           <SidebarNavItem
             key={item.route}
             route={item.route}
-            icon={item.icon}
             label={item.label}
             helperText={item.helperText}
             active={activeRoute === item.route}
@@ -66,9 +65,9 @@ export default function SidebarNav({
   return (
     <>
         <aside
-            className={`sa-surface-sidebar relative top-40 rounded-xl border-4 border-orange-500 hidden lg:block ${
+            className={`sa-surface-sidebar hidden rounded-xl rounded-t-none border-4 border-orange-500 backdrop-blur-3xl lg:block ${
                 isCompact ? 'w-24' : 'w-72'
-            } relative backdrop-blur-3xl`}
+            }`}
         >
         <NavContent
           activeRoute={activeRoute}
