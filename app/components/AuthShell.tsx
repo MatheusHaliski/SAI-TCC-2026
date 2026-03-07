@@ -74,7 +74,7 @@ export default function AuthShell({
           className={[
             "relative flex w-full max-w-5xl flex-col items-center gap-10 px-6 py-10",
             "lg:flex-row lg:items-start lg:justify-between",
-            "rounded-3xl",
+            "rounded-2xl border-8 border-orange-500",
             GLOW_BAR,
             GLOW_LINE,
             "border-amber-300 border-4",
