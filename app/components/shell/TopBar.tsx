@@ -8,7 +8,7 @@ interface TopBarProps {
 
 export default function TopBar({ pageTitle, onOpenMobileNav }: TopBarProps) {
   return (
-    <header className="sa-premium-gradient-surface sticky top-0 z-30 border-b border-white/20 px-4 py-3 backdrop-blur-md lg:px-6">
+      <header className="sa-surface-topbar rounded-2xl border-8 border-orange-500 relative left-25 top-0 z-30 px-24 py-3 backdrop-blur-md lg:px-6">
       <div className="flex items-center gap-3">
         <button
           type="button"

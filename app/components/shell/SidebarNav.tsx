@@ -65,19 +65,10 @@ export default function SidebarNav({
 }: SidebarNavProps) {
   return (
     <>
-      <img
-        src="/sai.png"
-        alt="SAI logo"
-        className={`pointer-events-none fixed left-0 top-0 z-50 m-3 h-auto rounded-xl border-4 border-orange-500 bg-white/90 p-1 shadow-2xl ${isCompact ? 'w-14' : 'w-24'} hidden lg:block`}
-      />
-      <aside
-            className={`hidden lg:block
-  ${isCompact ? 'w-24' : 'w-72'}
-  sa-premium-gradient-surface
-  border-r border-white/10
-  shadow-2xl
-  backdrop-blur-3xl
-  relative`}
+        <aside
+            className={`sa-surface-sidebar relative top-40 rounded-xl border-4 border-orange-500 hidden lg:block ${
+                isCompact ? 'w-24' : 'w-72'
+            } relative backdrop-blur-3xl`}
         >
         <NavContent
           activeRoute={activeRoute}

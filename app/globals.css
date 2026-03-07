@@ -162,3 +162,19 @@ body {
 .sa-home-shell h3 {
   font-weight: 700;
 }
+
+.sa-surface-header {
+  @apply bg-gradient-to-r from-[#1400c7] via-[#0f7f73] to-[#1ecb72] shadow-xl shadow-cyan-500/20;
+}
+
+.sa-surface-sidebar {
+  @apply  bg-gradient-to-b from-[#0b0f2a] via-[#0a3f46] to-[#0d5c45] shadow-2xl shadow-cyan-950/40;
+}
+
+.sa-surface-topbar {
+  @apply bg-gradient-to-r from-[#101530]/95 via-[#0f5c68]/95 to-[#14855f]/95 shadow-lg shadow-cyan-900/20;
+}
+
+.sa-surface-context {
+  @apply bg-gradient-to-br from-[#1320a0] via-[#168b7c] to-[#2ec27e] shadow-xl shadow-emerald-500/15;
+}
