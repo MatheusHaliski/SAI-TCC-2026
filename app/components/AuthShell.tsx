@@ -109,7 +109,7 @@ export default function AuthShell({
 
                   <div className="hidden font-sharetech leading-tight sm:block">
                     <div className="text-center font-sharetech text-2xl font-bold uppercase tracking-[0.22em] text-orange-500 sm:text-5xl md:text-6xl">
-                      StylistAI 
+                      Stylist AI 
                     </div>
                   </div>
                 </div>
