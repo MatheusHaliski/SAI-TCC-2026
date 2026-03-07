@@ -6,6 +6,7 @@ import {usePathname, useRouter} from "next/navigation";
 import { useEffect, useState } from "react";
 import { getDevSessionToken, setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessToken } from '@/app/lib/accessTokenShare';
+import {router} from "next/client";
 export default function SignupViewPage() {
      const pathname = usePathname();
     useEffect(() => {
