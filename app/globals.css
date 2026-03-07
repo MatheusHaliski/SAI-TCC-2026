@@ -137,20 +137,10 @@ body {
 
 
 .sa-home-shell {
+  background-color: #0b3d2e;
   font-family: "Inter", "Segoe UI", "Trebuchet MS", Arial, sans-serif;
   color: #f8fafc;
 }
-
-.sa-home-shell div,
-.sa-home-shell nav,
-.sa-home-shell aside,
-.sa-home-shell header,
-.sa-home-shell main,
-.sa-home-shell section {
-  border: 3px solid #f97316;
-  border-radius: 18px;
-}
-
 .sa-home-shell p,
 .sa-home-shell h1,
 .sa-home-shell h2,
