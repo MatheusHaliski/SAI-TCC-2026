@@ -76,8 +76,8 @@ export default function SignupViewPage() {
             description="Enter your account email"
         >
 
-            <div className="flex flex-col h-[600px] bg-white/45 fe-glass-panel border-8 rounded-2xl border-yellow-300 items-center">
-                <form className="space-y-12 h-[100%] text-base fe-glass-panel border-8 rounded-2xl border-yellow-300 items-center" onSubmit={handleSubmit}>
+            <div className="flex flex-col h-[600px] bg-white/45 fe-glass-panel rounded-2xl border-8 border-orange-500 items-center">
+                <form className="space-y-12 h-[100%] text-base fe-glass-panel border-8 rounded-2xl border-white-300 items-center" onSubmit={handleSubmit}>
                     <label className="block text-xl mt-10 font-semibold text-orange-600 leading-tight">
                         Email address
                         <input
