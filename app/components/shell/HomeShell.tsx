@@ -36,7 +36,7 @@ export default function HomeShell() {
 
   return (
     <div
-      className="flex min-h-screen bg-cover bg-fixed bg-center text-white bg-white"
+      className="sa-home-shell flex min-h-screen bg-cover bg-fixed bg-center text-white bg-white"
     >
       <SidebarNav
         activeRoute={activeRoute}
