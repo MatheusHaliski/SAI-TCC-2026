@@ -117,7 +117,7 @@ export default function AuthShell({
                 <div className="w-full">
                   <div className="overflow-hidden rounded-2xl border-4 border-amber-300 shadow-[0_18px_60px_rgba(0,0,0,0.25)]">
                     <img
-                      src="/74549E3D-930D-485D-B0DE-D182C407B9AD.png"
+                      src="/4EF8DF9F-0088-4132-8F71-282EED3B7506.png"
                       alt="SAI featured visual"
                       className="h-full w-full object-cover"
                     />
