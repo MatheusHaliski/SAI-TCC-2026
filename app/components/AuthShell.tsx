@@ -77,7 +77,6 @@ export default function AuthShell({
             "rounded-2xl border-8 border-orange-500",
             GLOW_BAR,
             GLOW_LINE,
-            "border-amber-300 border-4",
             "bg-white bg-cover bg-center bg-no-repeat",
           ].join(" ")}
         >
