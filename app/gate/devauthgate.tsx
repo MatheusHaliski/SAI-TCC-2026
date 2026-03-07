@@ -9,6 +9,7 @@ import {
     setDevSessionToken,
 } from "@/app/lib/devSession";
 import { clearAuthSessionProfile, clearAuthSessionToken } from "@/app/lib/authSession";
+import { clearSharedAccessToken } from "@/app/lib/accessTokenShare";
 import Script from "next/script";
 
 export default function DevAuthGate() {
@@ -29,11 +30,12 @@ export default function DevAuthGate() {
     const pathname = usePathname();
     const router = useRouter();
     useEffect(() => {
-        if (pathname !== "/") return;
+        if (pathname !== "/devauthgate") return;
         resetGate();
         clearDevSessionToken();
         clearAuthSessionToken();
         clearAuthSessionProfile();
+        clearSharedAccessToken();
     }, [pathname, resetGate]);
 
     useEffect(() => {

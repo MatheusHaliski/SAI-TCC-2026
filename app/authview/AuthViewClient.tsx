@@ -7,7 +7,7 @@ import {usePathname, useRouter} from "next/navigation";
 import {VSModalPaged} from  "@/app/lib/authAlerts";
 import {clearAuthSessionToken, setAuthSessionProfile, setAuthSessionToken} from "@/app/lib/authSession";
 import { getDevSessionToken, setDevSessionToken } from "@/app/lib/devSession";
-import { ensureSharedAccessToken, setSharedAccessToken } from '@/app/lib/accessTokenShare';
+import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessToken } from '@/app/lib/accessTokenShare';
 
 
 
@@ -27,6 +27,7 @@ export default function AuthViewClient() {
     useEffect(() => {
         if (pathname !== "/authview") return;
         clearAuthSessionToken();
+        clearSharedAccessToken();
     }, [pathname]);
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();

@@ -1,5 +1,5 @@
-import HomeShell from '@/app/components/shell/HomeShell';
+import { redirect } from 'next/navigation';
 
-export default function Home() {
-  return <HomeShell />;
+export default function RootPage() {
+  redirect('/devauthgate');
 }

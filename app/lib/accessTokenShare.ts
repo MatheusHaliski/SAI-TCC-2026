@@ -1,6 +1,5 @@
 import { getLS, removeLS, setLS } from '@/app/lib/SafeStorage';
 import { getAuthSessionToken } from '@/app/lib/authSession';
-import { getDevSessionToken } from '@/app/lib/devSession';
 
 export const STYLISTAI_ACCESS_TOKEN_KEY = 'stylistai_content_access_token';
 
@@ -18,7 +17,7 @@ export const clearSharedAccessToken = (): void => {
 };
 
 export const resolveAnyAccessToken = (): string => {
-  return getSharedAccessToken() || getAuthSessionToken() || getDevSessionToken();
+  return getSharedAccessToken() || getAuthSessionToken();
 };
 
 export const ensureSharedAccessToken = (): string => {
