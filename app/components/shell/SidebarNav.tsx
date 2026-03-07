@@ -19,11 +19,10 @@ function NavContent({
   onToggleCompact,
 }: Pick<SidebarNavProps, 'activeRoute' | 'onRouteChange' | 'isCompact' | 'onToggleCompact'>) {
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
+    <div className="flex h-full flex-col gap-4 p-4 pt-28">
       <div className="flex items-center justify-between">
         {!isCompact ? (
           <div>
-              <img src="/sai.png"/>
             <h1 className="text-lg font-semibold text-white">Fashion Dashboard</h1>
           </div>
         ) : (
@@ -66,8 +65,13 @@ export default function SidebarNav({
 }: SidebarNavProps) {
   return (
     <>
-        <aside
-            className={`hidden h-200px lg:block
+      <img
+        src="/sai.png"
+        alt="SAI logo"
+        className={`pointer-events-none fixed left-0 top-0 z-50 m-3 h-auto rounded-xl border-4 border-orange-500 bg-white/90 p-1 shadow-2xl ${isCompact ? 'w-14' : 'w-24'} hidden lg:block`}
+      />
+      <aside
+            className={`hidden lg:block
   ${isCompact ? 'w-24' : 'w-72'}
   sa-premium-gradient-surface
   border-r border-white/10
