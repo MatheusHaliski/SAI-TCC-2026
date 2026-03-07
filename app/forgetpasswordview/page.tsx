@@ -5,7 +5,7 @@ import { Button } from "../components/ui/button";
 import { VSModalPaged } from "@/app/lib/authAlerts";
 import { type FormEvent, useState } from "react";
 import {usePathname, useRouter} from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect} from "react";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessToken } from '@/app/lib/accessTokenShare';
 export default function SignupViewPage() {
     const router = useRouter();
