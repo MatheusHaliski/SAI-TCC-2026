@@ -1,6 +1,5 @@
-import AuthViewPage from "./authview/page";
-import DevAuthGate from "@/app/gate/devauthgate";
+import HomeShell from '@/app/components/shell/HomeShell';
 
 export default function Home() {
-    return <DevAuthGate />;
+  return <HomeShell />;
 }
