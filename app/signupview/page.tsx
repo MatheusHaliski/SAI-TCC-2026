@@ -3,6 +3,7 @@ import Image from "next/image";
 import AuthShell from "../components/AuthShell";
 import SignupForm from "./SignupForm";
 import {usePathname, useRouter} from "next/navigation";
+import { useEffect, useState } from "react";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessToken } from '@/app/lib/accessTokenShare';
 export default function SignupViewPage() {
      const pathname = usePathname();
