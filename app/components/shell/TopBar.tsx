@@ -3,7 +3,8 @@ import IconButton from '../shared/IconButton';
 
 interface TopBarProps {
   pageTitle: string;
-  onOpenMobileNav: () => void;
+  onToggleNav: () => void;
+  navOpen: boolean;
 }
 
 const BellIcon = () => (
@@ -27,18 +28,10 @@ const UserIcon = () => (
   </svg>
 );
 
-export default function TopBar({ pageTitle, onOpenMobileNav }: TopBarProps) {
+export default function TopBar({ pageTitle, onToggleNav, navOpen }: TopBarProps) {
   return (
       <header className="sa-surface-topbar z-30 rounded-2xl border-8 border-orange-500 px-4 py-3 backdrop-blur-md lg:px-6">
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onOpenMobileNav}
-          className="sa-premium-gradient-surface-soft rounded-lg border border-white/30 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white lg:hidden"
-        >
-          Menu
-        </button>
-
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-semibold text-white">{pageTitle}</p>
         </div>
@@ -50,6 +43,16 @@ export default function TopBar({ pageTitle, onOpenMobileNav }: TopBarProps) {
         <div className="flex items-center gap-2">
           <IconButton label="Notifications" icon={<BellIcon />} />
           <IconButton label="Messages" icon={<MailIcon />} />
+          <button
+            type="button"
+            onClick={onToggleNav}
+            aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/10 text-white transition hover:bg-white/20"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
           <button className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-sm font-semibold text-white transition hover:bg-white/20">
             <UserIcon />
           </button>
