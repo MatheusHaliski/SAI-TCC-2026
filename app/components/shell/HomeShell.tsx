@@ -35,7 +35,7 @@ export default function HomeShell() {
   }
 
   return (
-    <div className="sa-home-shell flex min-h-screen bg-gradient-to-r from-[#2563eb] via-[#22c55e] to-[#38bdf8] bg-cover bg-fixed bg-center text-white">
+    <div className="sa-home-shell flex min-h-screen text-white">
       <SidebarNav
         activeRoute={activeRoute}
         onRouteChange={setActiveRoute}

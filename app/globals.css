@@ -28,9 +28,11 @@ body {
 
 .sa-auth-gradient-page {
   background-color: var(--background);
-  background-image: var(--page-gradient);
+  background-image: url('/1DB71388-B9D0-42B9-B6C3-9A546875B819.jpeg');
+  background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
+  background-attachment: fixed;
   min-height: 100dvh;
   width: 100vw;
   margin-left: calc(50% - 50vw);
@@ -153,6 +155,11 @@ body {
 
 .sa-home-shell {
   background-color: #0b3d2e;
+  background-image: url('/1DB71388-B9D0-42B9-B6C3-9A546875B819.jpeg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   font-family: "Inter", "Segoe UI", "Trebuchet MS", Arial, sans-serif;
   color: #f8fafc;
 }
