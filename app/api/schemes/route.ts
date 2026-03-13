@@ -1,20 +1,26 @@
 import { SchemesController } from '@/app/backend/controllers/SchemesController';
 import { ServiceError } from '@/app/backend/services/errors';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { readSession } from '@/app/lib/serverSession';
 
 const schemesController = new SchemesController();
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    if (!body.user_id || !body.title || !body.style || !body.occasion || !body.visibility) {
+    const session = readSession(request);
+    const sessionUserId = session?.sub?.trim() ?? '';
+    const requestUserId = body.user_id ? String(body.user_id).trim() : '';
+    const resolvedUserId = sessionUserId || requestUserId;
+
+    if (!resolvedUserId || !body.title || !body.style || !body.occasion || !body.visibility) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const normalized = {
       ...body,
-      user_id: String(body.user_id),
+      user_id: resolvedUserId,
       items: Array.isArray(body.items)
         ? body.items.map((item: Record<string, unknown>) => ({
             ...item,

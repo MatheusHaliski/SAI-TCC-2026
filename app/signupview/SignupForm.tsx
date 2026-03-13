@@ -17,6 +17,7 @@ import {
 import { Input } from "../components/ui/input";
 import { signupSchema, type SignupValues } from "./schema";
 import { VSModalPaged} from "@/app/lib/authAlerts";
+import { setAuthSessionProfile } from "@/app/lib/authSession";
 
 export default function SignupForm() {
     const router = useRouter();
@@ -93,19 +94,26 @@ export default function SignupForm() {
                     }),
                 });
 
-                if (!response.ok) {
-                    const data = (await response.json().catch(() => null)) as
-                        | { error?: string }
-                        | null;
+                const payload = (await response.json().catch(() => null)) as
+                    | { ok?: boolean; profile?: { user_id?: string; name?: string; email?: string }; error?: string }
+                    | null;
+
+                if (!response.ok || !payload?.ok) {
                     void VSModalPaged({
                         title: "Signup failed",
                         messages:
-                            [data?.error ??
+                            [payload?.error ??
                             "Unable to create your account right now."],
                         tone: "error",
                     });
                     return;
                 }
+
+                setAuthSessionProfile({
+                    user_id: payload.profile?.user_id?.trim() || '',
+                    name: payload.profile?.name?.trim() || parsed.data.name.trim(),
+                    email: payload.profile?.email?.trim().toLowerCase() || parsed.data.email.trim().toLowerCase(),
+                });
 
                 await VSModalPaged({
                     title: "Account created",

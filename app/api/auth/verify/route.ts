@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { getAdminFirestore } from "@/app/lib/firebaseAdmin";
 import { consumeRateLimit, resolveClientIp } from "@/app/lib/security/basicRateLimit";
+import { createSessionToken, setSessionCookie } from "@/app/lib/serverSession";
 export const runtime = "nodejs";
 type AuthPayload = {
     email?: string;
@@ -9,6 +10,7 @@ type AuthPayload = {
 };
 
 type UserRecord = {
+    user_id?: string;
     name?: string;
     password?: string;
     passwordHash?: string;
@@ -167,9 +169,9 @@ export async function POST(request: NextRequest): Promise<Response> {
             .limit(1)
             .get();
 
-        const record = snapshot.empty
-            ? null
-            : (snapshot.docs[0]?.data() as UserRecord);
+        const matchedDoc = snapshot.empty ? null : snapshot.docs[0] ?? null;
+        const record = matchedDoc ? (matchedDoc.data() as UserRecord) : null;
+        const userId = matchedDoc?.id ?? "";
 
         if (!record) {
             return NextResponse.json(
@@ -190,13 +192,22 @@ export async function POST(request: NextRequest): Promise<Response> {
             );
         }
 
-        return NextResponse.json({
+        const sessionToken = createSessionToken({
+            sub: userId,
+            email,
+        });
+
+        const response = NextResponse.json({
             ok: true,
             profile: {
+                user_id: userId,
                 name: record.name ?? "",
                 email,
             },
         });
+        setSessionCookie(response, sessionToken);
+
+        return response;
     } catch (error) {
         console.error("[Auth Verify API] credential check failed:", error);
         return NextResponse.json(

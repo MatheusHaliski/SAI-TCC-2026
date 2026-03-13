@@ -21,6 +21,7 @@ const parseExpiringToken = (raw: string | null): ExpiringToken | null => {
 };
 
 export type AuthSessionProfile = {
+    user_id?: string;
     name?: string;
     email?: string;
 };
