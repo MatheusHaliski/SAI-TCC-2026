@@ -6,7 +6,16 @@ import PageHeader from '@/app/components/shell/PageHeader';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 
-type WardrobeItem = { wardrobe_item_id: number; name: string; piece_type: string };
+type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
+
+const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+  upper: ['upper', 'upper piece', 'top', 'tops'],
+  lower: ['lower', 'lower piece', 'bottom', 'bottoms'],
+  shoes: ['shoes', 'shoes piece', 'shoe', 'footwear'],
+  accessory: ['accessory', 'accessories'],
+};
+
+const normalizePieceType = (value: string) => value.trim().toLowerCase();
 
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 
@@ -16,7 +25,7 @@ export default function CreateMySchemeView() {
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
-  const [slots, setSlots] = useState<Record<string, number | null>>({ upper: null, lower: null, shoes: null, accessory: null });
+  const [slots, setSlots] = useState<Record<string, string | null>>({ upper: null, lower: null, shoes: null, accessory: null });
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,7 +38,7 @@ export default function CreateMySchemeView() {
     () =>
       Object.entries(slots)
         .filter(([, id]) => id)
-        .map(([slot, id], idx) => ({ wardrobe_item_id: Number(id), slot, sort_order: idx + 1 })),
+        .map(([slot, id], idx) => ({ wardrobe_item_id: String(id), slot, sort_order: idx + 1 })),
     [slots],
   );
 
@@ -37,7 +46,15 @@ export default function CreateMySchemeView() {
     const response = await fetch('/api/schemes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: '1', title, style, occasion, visibility, creation_mode, items: schemeItems }),
+      body: JSON.stringify({
+        user_id: '1',
+        title: title.trim() || 'My New Scheme',
+        style: style.trim() || 'Minimal',
+        occasion: occasion.trim() || 'Daily',
+        visibility,
+        creation_mode,
+        items: schemeItems,
+      }),
     });
 
     if (!response.ok) {
@@ -48,7 +65,10 @@ export default function CreateMySchemeView() {
     setAlertMessage('Scheme saved successfully.');
   };
 
-  const optionsByType = (type: string) => items.filter((item) => item.piece_type === type);
+  const optionsByType = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
+    const aliases = SLOT_TYPE_ALIASES[slot];
+    return items.filter((item) => aliases.includes(normalizePieceType(item.piece_type)));
+  };
 
   return (
     <>
@@ -101,7 +121,7 @@ export default function CreateMySchemeView() {
                   <p className="text-sm font-semibold capitalize">{slot} piece</p>
                   <select
                     value={slots[slot] ?? ''}
-                    onChange={(e) => setSlots((prev) => ({ ...prev, [slot]: e.target.value ? Number(e.target.value) : null }))}
+                    onChange={(e) => setSlots((prev) => ({ ...prev, [slot]: e.target.value || null }))}
                     className="mt-2 w-full rounded-lg border border-black bg-white px-3 py-2 text-black"
                   >
                     <option value="">Select item</option>
