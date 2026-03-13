@@ -12,28 +12,28 @@ interface SidebarNavItemProps {
 
 
 const RouteIcon = ({ route }: { route: AppRoute }) => {
-  if (route === 'home') {
+  if (route === 'my-wardrobe') {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z" />
       </svg>
     );
   }
-  if (route === 'discover') {
+  if (route === 'search-items') {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="m12 4 2.6 5.4L20 12l-5.4 2.6L12 20l-2.6-5.4L4 12l5.4-2.6z" />
       </svg>
     );
   }
-  if (route === 'create') {
+  if (route === 'create-my-scheme') {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M12 5v14M5 12h14" />
       </svg>
     );
   }
-  if (route === 'market') {
+  if (route === 'explore-scheme') {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
         <circle cx="12" cy="12" r="8" />
