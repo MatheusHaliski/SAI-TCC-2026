@@ -1,18 +1,18 @@
 import { AppRoute } from '@/app/lib/stylist-shell';
-import HomeView from '@/app/views/HomeView';
-import DiscoverView from '@/app/views/DiscoverView';
-import CreateSchemeView from '@/app/views/CreateSchemeView';
-import MarketView from '@/app/views/MarketView';
 import ProfileView from '@/app/views/ProfileView';
+import CreateMySchemeView from '@/app/views/CreateMySchemeView';
+import ExploreSchemeView from '@/app/views/ExploreSchemeView';
+import MyWardrobeView from '@/app/views/MyWardrobeView';
+import SearchItemsView from '@/app/views/SearchItemsView';
 
 interface ContentRouterProps {
   route: AppRoute;
 }
 
 export default function ContentRouter({ route }: ContentRouterProps) {
-  if (route === 'discover') return <DiscoverView />;
-  if (route === 'create') return <CreateSchemeView />;
-  if (route === 'market') return <MarketView />;
+  if (route === 'create-my-scheme') return <CreateMySchemeView />;
+  if (route === 'search-items') return <SearchItemsView />;
+  if (route === 'explore-scheme') return <ExploreSchemeView />;
   if (route === 'profile') return <ProfileView />;
-  return <HomeView />;
+  return <MyWardrobeView />;
 }
