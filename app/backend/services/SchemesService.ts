@@ -2,6 +2,7 @@ import { SchemeItemsRepository } from '@/app/backend/repositories/SchemeItemsRep
 import { SchemesRepository } from '@/app/backend/repositories/SchemesRepository';
 import { UsersRepository } from '@/app/backend/repositories/UsersRepository';
 import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
+import { CreateSchemeInput } from '@/app/backend/types/entities';
 import { ServiceError } from './errors';
 
 export class SchemesService {
