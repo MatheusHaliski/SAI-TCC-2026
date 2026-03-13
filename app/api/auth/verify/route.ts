@@ -9,6 +9,7 @@ type AuthPayload = {
 };
 
 type UserRecord = {
+    name?: string;
     password?: string;
     passwordHash?: string;
     passwordSalt?: string;
@@ -17,7 +18,8 @@ type UserRecord = {
 };
 
 const HASH_ALGORITHM = "SHA-256";
-const APP_PEPPER = "vs-usercontrol-v1";
+const APP_PEPPER = "sai-usercontrol-v1";
+const USER_COLLECTION = "sai-usercontrol";
 const AUTH_VERIFY_IP_LIMIT_MAX = Number(
     process.env.AUTH_VERIFY_RATE_LIMIT_IP_MAX ?? "10"
 );
@@ -160,7 +162,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     try {
         const db = getAdminFirestore();
         const snapshot = await db
-            .collection("VSusercontrol")
+            .collection(USER_COLLECTION)
             .where("email", "==", email)
             .limit(1)
             .get();
@@ -188,7 +190,13 @@ export async function POST(request: NextRequest): Promise<Response> {
             );
         }
 
-        return NextResponse.json({ ok: true });
+        return NextResponse.json({
+            ok: true,
+            profile: {
+                name: record.name ?? "",
+                email,
+            },
+        });
     } catch (error) {
         console.error("[Auth Verify API] credential check failed:", error);
         return NextResponse.json(

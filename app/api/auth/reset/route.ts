@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { getAdminFirestore } from "@/app/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
+const USER_COLLECTION = "sai-usercontrol";
 
 type ResetPayload = {
     email?: string;
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     try {
         const db = getAdminFirestore();
         const existingSnapshot = await db
-            .collection("VSusercontrol")
+            .collection(USER_COLLECTION)
             .where("email", "==", email)
             .limit(1)
             .get();
