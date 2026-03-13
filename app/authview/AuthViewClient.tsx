@@ -75,11 +75,12 @@ export default function AuthViewClient() {
             }
 
             const payload = (await response.json().catch(() => null)) as {
-                profile?: { name?: string; email?: string };
+                profile?: { user_id?: string; name?: string; email?: string };
             } | null;
 
             const token = crypto.randomUUID();
             const profile = {
+                user_id: payload?.profile?.user_id?.trim() || '',
                 name: payload?.profile?.name?.trim() || "",
                 email: payload?.profile?.email?.trim().toLowerCase() || normalizedEmail,
             };

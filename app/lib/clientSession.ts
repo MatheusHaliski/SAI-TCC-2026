@@ -1,4 +1,5 @@
 export type SessionProfile = {
+    user_id?: string;
     email?: string;
 };
 

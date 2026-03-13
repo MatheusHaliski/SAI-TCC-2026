@@ -19,7 +19,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     const response = NextResponse.json({
         ok: true,
-        profile: { email: session.email },
+        profile: { user_id: session.sub, email: session.email },
     });
     setSessionCookie(response, refreshed);
     return response;

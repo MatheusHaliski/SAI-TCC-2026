@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { getAuthSessionProfile } from '@/app/lib/authSession';
+import { getServerSession } from '@/app/lib/clientSession';
 import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
@@ -27,11 +29,35 @@ export default function CreateMySchemeView() {
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
   const [slots, setSlots] = useState<Record<string, string | null>>({ upper: null, lower: null, shoes: null, accessory: null });
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string>('');
 
   useEffect(() => {
-    fetch('/api/wardrobe-items/user/1')
-      .then((res) => res.json())
-      .then((data) => setItems(Array.isArray(data) ? data : []));
+    const loadSessionAndItems = async () => {
+      const localProfile = getAuthSessionProfile();
+      let resolvedUserId = localProfile.user_id?.trim() || '';
+
+      if (!resolvedUserId) {
+        const serverProfile = await getServerSession();
+        resolvedUserId = serverProfile?.user_id?.trim() || '';
+      }
+
+      if (!resolvedUserId) {
+        setAlertMessage('User session not found. Please sign in again.');
+        setItems([]);
+        return;
+      }
+
+      setUserId(resolvedUserId);
+
+      const response = await fetch(`/api/wardrobe-items/user/${resolvedUserId}`);
+      const data = await response.json();
+      setItems(Array.isArray(data) ? data : []);
+    };
+
+    loadSessionAndItems().catch(() => {
+      setAlertMessage('Unable to load user session. Please sign in again.');
+      setItems([]);
+    });
   }, []);
 
   const schemeItems = useMemo(
@@ -43,11 +69,16 @@ export default function CreateMySchemeView() {
   );
 
   const saveScheme = async (creation_mode: 'manual' | 'ai') => {
+    if (!userId) {
+      setAlertMessage('User session not found. Please sign in again.');
+      return;
+    }
+
     const response = await fetch('/api/schemes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id: '1',
+        user_id: userId,
         title: title.trim() || 'My New Scheme',
         style: style.trim() || 'Minimal',
         occasion: occasion.trim() || 'Daily',
