@@ -3,6 +3,8 @@ import { BaseRepository } from './BaseRepository';
 import { BrandsRepository } from './BrandsRepository';
 import { MarketsRepository } from './MarketsRepository';
 
+const WARDROBE_ITEMS_COLLECTION = 'sai-wardrobeItems';
+
 function aggregate(items: WardrobeViewItem[], key: keyof Pick<WardrobeViewItem, 'brand' | 'season' | 'gender' | 'piece_type'>) {
   return items.reduce<Record<string, number>>((acc, item) => {
     acc[item[key]] = (acc[item[key]] ?? 0) + 1;
@@ -22,46 +24,25 @@ export class WardrobeItemsRepository extends BaseRepository {
     const brandMap = await this.brandsRepository.getNameMap();
     const marketsMap = await this.marketsRepository.getByIdMap();
 
-    if (this.useFirestore) {
-      const snapshot = await this.db!.collection('wardrobe_items').where('user_id', '==', userId).get();
-      return snapshot.docs.map((doc) => {
-        const item = doc.data() as Record<string, string>;
-        const market = marketsMap.get(item.market_id);
-        return {
-          wardrobe_item_id: doc.id,
-          name: item.name,
-          image_url: item.image_url,
-          brand: brandMap.get(item.brand_id) ?? 'Unknown',
-          season: market?.season ?? 'Unknown',
-          gender: market?.gender ?? 'Unknown',
-          piece_type: item.piece_type,
-        };
-      });
-    }
-
-    const { wardrobeItems } = this.getMockData();
-    return wardrobeItems
-      .filter((item) => item.user_id === userId)
-      .map((item) => {
-        const market = marketsMap.get(item.market_id);
-        return {
-          wardrobe_item_id: item.wardrobe_item_id,
-          name: item.name,
-          image_url: item.image_url,
-          brand: brandMap.get(item.brand_id) ?? 'Unknown',
-          season: market?.season ?? 'Unknown',
-          gender: market?.gender ?? 'Unknown',
-          piece_type: item.piece_type,
-        };
-      });
+    const snapshot = await this.db.collection(WARDROBE_ITEMS_COLLECTION).where('user_id', '==', userId).get();
+    return snapshot.docs.map((doc) => {
+      const item = doc.data() as Record<string, string>;
+      const market = marketsMap.get(item.market_id);
+      return {
+        wardrobe_item_id: doc.id,
+        name: item.name,
+        image_url: item.image_url,
+        brand: brandMap.get(item.brand_id) ?? 'Unknown',
+        season: market?.season ?? 'Unknown',
+        gender: market?.gender ?? 'Unknown',
+        piece_type: item.piece_type,
+      };
+    });
   }
 
   async existsById(wardrobeItemId: string): Promise<boolean> {
-    if (this.useFirestore) {
-      const snap = await this.db!.collection('wardrobe_items').doc(wardrobeItemId).get();
-      return snap.exists;
-    }
-    return this.getMockData().wardrobeItems.some((item) => item.wardrobe_item_id === wardrobeItemId);
+    const snap = await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).get();
+    return snap.exists;
   }
 
   async getAnalysisByUser(userId: string): Promise<WardrobeAnalysis> {
