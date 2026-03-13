@@ -9,6 +9,13 @@ export class BrandsRepository extends BaseRepository {
     return snapshot.docs.map((doc) => ({ brand_id: doc.id, ...(doc.data() as Omit<Brand, 'brand_id'>) }));
   }
 
+
+  async getById(brandId: string): Promise<Brand | null> {
+    const snap = await this.db.collection(BRANDS_COLLECTION).doc(brandId).get();
+    if (!snap.exists) return null;
+    return { brand_id: snap.id, ...(snap.data() as Omit<Brand, 'brand_id'>) };
+  }
+
   async existsById(brandId: string): Promise<boolean> {
     const snap = await this.db.collection(BRANDS_COLLECTION).doc(brandId).get();
     return snap.exists;

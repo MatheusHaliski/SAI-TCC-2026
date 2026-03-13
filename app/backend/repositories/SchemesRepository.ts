@@ -13,16 +13,16 @@ export class SchemesRepository extends BaseRepository {
 
   async create(input: CreateSchemeInput): Promise<Scheme> {
     const now = new Date().toISOString();
-    const payload = {
+    const payload: Omit<Scheme, 'scheme_id'> = {
       user_id: input.user_id,
       title: input.title,
-      description: input.description,
+      description: input.description ?? null,
       creation_mode: input.creation_mode,
       style: input.style,
       occasion: input.occasion,
       visibility: input.visibility,
-      community_indexed: input.community_indexed,
-      cover_image_url: input.cover_image_url,
+      community_indexed: input.community_indexed ?? false,
+      cover_image_url: input.cover_image_url ?? null,
       created_at: now,
       updated_at: now,
     };

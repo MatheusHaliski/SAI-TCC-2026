@@ -9,6 +9,13 @@ export class MarketsRepository extends BaseRepository {
     return snapshot.docs.map((doc) => ({ market_id: doc.id, ...(doc.data() as Omit<Market, 'market_id'>) }));
   }
 
+
+  async getById(marketId: string): Promise<Market | null> {
+    const snap = await this.db.collection(MARKETS_COLLECTION).doc(marketId).get();
+    if (!snap.exists) return null;
+    return { market_id: snap.id, ...(snap.data() as Omit<Market, 'market_id'>) };
+  }
+
   async existsById(marketId: string): Promise<boolean> {
     const snap = await this.db.collection(MARKETS_COLLECTION).doc(marketId).get();
     return snap.exists;
