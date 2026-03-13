@@ -37,7 +37,7 @@ export default function CreateMySchemeView() {
     const response = await fetch('/api/schemes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: 1, title, style, occasion, visibility, creation_mode, items: schemeItems }),
+      body: JSON.stringify({ user_id: '1', title, style, occasion, visibility, creation_mode, items: schemeItems }),
     });
 
     if (!response.ok) {
@@ -57,27 +57,52 @@ export default function CreateMySchemeView() {
         <div className="space-y-6">
           <PageHeader title="Create My Scheme" subtitle="Manual composition and AI-assisted generation." />
 
-          <SectionBlock title="Scheme Metadata" subtitle="Title, style, occasion and visibility.">
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="sa-premium-gradient-surface-soft rounded-xl border border-white/30 px-3 py-2" />
-              <input value={style} onChange={(e) => setStyle(e.target.value)} placeholder="Style" className="sa-premium-gradient-surface-soft rounded-xl border border-white/30 px-3 py-2" />
-              <input value={occasion} onChange={(e) => setOccasion(e.target.value)} placeholder="Occasion" className="sa-premium-gradient-surface-soft rounded-xl border border-white/30 px-3 py-2" />
-              <select value={visibility} onChange={(e) => setVisibility(e.target.value as 'private' | 'public')} className="sa-premium-gradient-surface-soft rounded-xl border border-white/30 px-3 py-2">
+          <SectionBlock
+            title="Scheme Metadata + Visual Slot Editor"
+            subtitle="Define metadata and assign wardrobe pieces in one compact form."
+            className="sa-surface-header h-auto border-black/70"
+          >
+            <form
+              className="sa-premium-gradient-surface-soft mt-4 grid gap-3 rounded-2xl border border-black p-4 md:grid-cols-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveScheme('manual');
+              }}
+            >
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Title"
+                className="rounded-xl border border-black bg-white/90 px-3 py-2 text-black placeholder:text-black"
+              />
+              <input
+                value={style}
+                onChange={(e) => setStyle(e.target.value)}
+                placeholder="Style"
+                className="rounded-xl border border-black bg-white/90 px-3 py-2 text-black placeholder:text-black"
+              />
+              <input
+                value={occasion}
+                onChange={(e) => setOccasion(e.target.value)}
+                placeholder="Occasion"
+                className="rounded-xl border border-black bg-white/90 px-3 py-2 text-black placeholder:text-black"
+              />
+              <select
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value as 'private' | 'public')}
+                className="rounded-xl border border-black bg-white/90 px-3 py-2 text-black"
+              >
                 <option value="public">Public</option>
                 <option value="private">Private</option>
               </select>
-            </div>
-          </SectionBlock>
 
-          <SectionBlock title="Visual Slot Editor" subtitle="Assign wardrobe pieces to slots.">
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
               {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
-                <div key={slot} className="sa-premium-gradient-surface-soft rounded-xl border border-white/25 p-3">
-                  <p className="text-sm font-semibold text-white capitalize">{slot} piece</p>
+                <div key={slot} className="rounded-xl border border-black bg-white/80 p-3 text-black">
+                  <p className="text-sm font-semibold capitalize">{slot} piece</p>
                   <select
                     value={slots[slot] ?? ''}
                     onChange={(e) => setSlots((prev) => ({ ...prev, [slot]: e.target.value ? Number(e.target.value) : null }))}
-                    className="mt-2 w-full rounded-lg border border-white/30 bg-transparent px-3 py-2"
+                    className="mt-2 w-full rounded-lg border border-black bg-white px-3 py-2 text-black"
                   >
                     <option value="">Select item</option>
                     {optionsByType(slot).map((item) => (
@@ -88,11 +113,12 @@ export default function CreateMySchemeView() {
                   </select>
                 </div>
               ))}
-            </div>
-            <div className="mt-4 flex gap-3">
-              <button onClick={() => saveScheme('manual')} className="rounded-xl border border-white/35 bg-white px-4 py-2 text-sm font-semibold text-black">Save Scheme</button>
-              <button onClick={() => saveScheme('ai')} className="rounded-xl border border-white/35 px-4 py-2 text-sm font-semibold text-white">Generate with AI + Save</button>
-            </div>
+
+              <div className="mt-1 flex gap-3 md:col-span-2">
+                <button type="submit" className="rounded-xl border border-black bg-black px-4 py-2 text-sm font-semibold text-white">Save Scheme</button>
+                <button type="button" onClick={() => saveScheme('ai')} className="rounded-xl border border-black bg-white px-4 py-2 text-sm font-semibold text-black">Generate with AI + Save</button>
+              </div>
+            </form>
           </SectionBlock>
         </div>
       </div>
