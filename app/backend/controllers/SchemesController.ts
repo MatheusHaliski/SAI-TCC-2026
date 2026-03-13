@@ -16,11 +16,7 @@ export class SchemesController {
     return this.schemesService.listPublicSchemes();
   }
 
-<<<<<<< HEAD
   async getById(schemeId: string) {
-=======
-  async getById(schemeId: number) {
->>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
     return this.schemesService.getSchemeDetails(schemeId);
   }
 }

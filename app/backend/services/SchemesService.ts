@@ -2,7 +2,7 @@ import { SchemeItemsRepository } from '@/app/backend/repositories/SchemeItemsRep
 import { SchemesRepository } from '@/app/backend/repositories/SchemesRepository';
 import { UsersRepository } from '@/app/backend/repositories/UsersRepository';
 import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
-import { CreateSchemeInput, SchemeWithItems } from '@/app/backend/types/entities';
+import { ServiceError } from './errors';
 
 export class SchemesService {
   constructor(
@@ -12,37 +12,20 @@ export class SchemesService {
     private readonly wardrobeRepo = new WardrobeItemsRepository(),
   ) {}
 
-  private async validateCreateInput(input: CreateSchemeInput) {
+  private async validateReferences(input: CreateSchemeInput) {
     const user = await this.usersRepo.getById(input.user_id);
-    if (!user) throw new Error('Invalid user_id reference');
+    if (!user) throw new ServiceError('User not found', 404);
 
-    await Promise.all(
-      input.items.map(async (item) => {
-        const wardrobe = await this.wardrobeRepo.getById(item.wardrobe_item_id);
-        if (!wardrobe) throw new Error(`Invalid wardrobe_item_id reference: ${item.wardrobe_item_id}`);
-      }),
-    );
+    for (const item of input.items) {
+      const exists = await this.wardrobeRepo.existsById(item.wardrobe_item_id);
+      if (!exists) throw new ServiceError(`Wardrobe item ${item.wardrobe_item_id} not found`, 404);
+    }
   }
 
   async createManualScheme(input: CreateSchemeInput) {
-    await this.validateCreateInput(input);
-
-    const scheme = await this.schemesRepo.create({
-      user_id: input.user_id,
-      title: input.title,
-      description: input.description ?? null,
-      creation_mode: 'manual',
-      style: input.style,
-      occasion: input.occasion,
-      visibility: input.visibility,
-      community_indexed: input.community_indexed ?? input.visibility === 'public',
-      cover_image_url: input.cover_image_url ?? null,
-    });
-
-    const items = await this.schemeItemsRepo.createMany(
-      input.items.map((item) => ({ ...item, scheme_id: scheme.scheme_id })),
-    );
-
+    await this.validateReferences(input);
+    const scheme = await this.schemesRepo.create({ ...input, creation_mode: 'manual' });
+    const items = await this.schemeItemsRepo.createMany(input.items.map((item) => ({ ...item, scheme_id: scheme.scheme_id })));
     return { scheme, items };
   }
 
@@ -50,28 +33,16 @@ export class SchemesService {
     const aiSuggestedItems = input.items.length
       ? input.items
       : [
-          { wardrobe_item_id: 'wardrobe_demo_upper', slot: 'upper' as const, sort_order: 1 },
-          { wardrobe_item_id: 'wardrobe_demo_lower', slot: 'lower' as const, sort_order: 2 },
-          { wardrobe_item_id: 'wardrobe_demo_shoes', slot: 'shoes' as const, sort_order: 3 },
+          { wardrobe_item_id: '1', slot: 'upper' as const, sort_order: 1 },
+          { wardrobe_item_id: '3', slot: 'lower' as const, sort_order: 2 },
+          { wardrobe_item_id: '4', slot: 'shoes' as const, sort_order: 3 },
         ];
 
-    await this.validateCreateInput({ ...input, items: aiSuggestedItems });
+    const aiInput = { ...input, creation_mode: 'ai' as const, items: aiSuggestedItems };
+    await this.validateReferences(aiInput);
 
-    const scheme = await this.schemesRepo.create({
-      user_id: input.user_id,
-      title: input.title,
-      description: input.description ?? null,
-      creation_mode: 'ai',
-      style: input.style,
-      occasion: input.occasion,
-      visibility: input.visibility,
-      community_indexed: input.community_indexed ?? input.visibility === 'public',
-      cover_image_url: input.cover_image_url ?? null,
-    });
-
-    const items = await this.schemeItemsRepo.createMany(
-      aiSuggestedItems.map((item) => ({ ...item, scheme_id: scheme.scheme_id })),
-    );
+    const scheme = await this.schemesRepo.create(aiInput);
+    const items = await this.schemeItemsRepo.createMany(aiSuggestedItems.map((item) => ({ ...item, scheme_id: scheme.scheme_id })));
 
     return { scheme, items, ai_note: 'AI mock applied a balanced smart-casual composition.' };
   }
@@ -80,28 +51,7 @@ export class SchemesService {
     return this.schemesRepo.findPublic();
   }
 
-  async getSchemeDetails(schemeId: string): Promise<SchemeWithItems | null> {
-    const scheme = await this.schemesRepo.getById(schemeId);
-    if (!scheme) return null;
-
-    const author = await this.usersRepo.getById(scheme.user_id);
-    const items = await this.schemeItemsRepo.findBySchemeId(schemeId);
-
-    const enrichedItems = await Promise.all(
-      items.map(async (item) => {
-        const wardrobe = await this.wardrobeRepo.getById(item.wardrobe_item_id);
-        return {
-          ...item,
-          wardrobe_name: wardrobe?.name ?? 'Unknown',
-          image_url: wardrobe?.image_url ?? '',
-        };
-      }),
-    );
-
-    return {
-      scheme,
-      items: enrichedItems,
-      author: author?.name ?? 'Unknown',
-    };
+  async getSchemeDetails(schemeId: string) {
+    return this.schemesRepo.findByIdWithItems(schemeId);
   }
 }
