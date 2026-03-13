@@ -5,9 +5,10 @@ interface SectionBlockProps {
   subtitle?: string;
   action?: ReactNode;
   children: ReactNode;
+  className?: string;
 }
 
-export default function SectionBlock({ title, subtitle, action, children }: SectionBlockProps) {
+export default function SectionBlock({ title, subtitle, action, children, className }: SectionBlockProps) {
   return (
     <section className="sa-surface-header lg:h-[1400px] border-8 rounded-3xl border-white border-black p-5 shadow-lg backdrop-blur-sm">
       <header className="flex items-start justify-between gap-3">

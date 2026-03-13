@@ -2,7 +2,7 @@ import { CreateSchemeInput, Scheme, SchemeWithItems } from '@/app/backend/types/
 import { BaseRepository } from './BaseRepository';
 import { UsersRepository } from './UsersRepository';
 
-const SCHEMES_COLLECTION = 'sai-scheme';
+const SCHEMES_COLLECTION = 'sai-usersavedschemes';
 const SCHEME_ITEMS_COLLECTION = 'sai-schemeitem';
 const WARDROBE_ITEMS_COLLECTION = 'sai-wardrobeItems';
 
