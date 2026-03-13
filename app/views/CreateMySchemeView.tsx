@@ -22,7 +22,7 @@ export default function CreateMySchemeView() {
   useEffect(() => {
     fetch('/api/wardrobe-items/user/1')
       .then((res) => res.json())
-      .then((data) => setItems(data));
+      .then((data) => setItems(Array.isArray(data) ? data : []));
   }, []);
 
   const schemeItems = useMemo(

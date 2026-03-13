@@ -2,7 +2,9 @@ import { CreateSchemeInput, Scheme, SchemeWithItems } from '@/app/backend/types/
 import { BaseRepository } from './BaseRepository';
 import { UsersRepository } from './UsersRepository';
 
-const SAVED_SCHEMES_COLLECTION = 'sai-usersavedschemes';
+const SCHEMES_COLLECTION = 'sai-scheme';
+const SCHEME_ITEMS_COLLECTION = 'sai-schemeitem';
+const WARDROBE_ITEMS_COLLECTION = 'sai-wardrobeItems';
 
 export class SchemesRepository extends BaseRepository {
   constructor(private readonly usersRepository = new UsersRepository()) {
@@ -11,113 +13,78 @@ export class SchemesRepository extends BaseRepository {
 
   async create(input: CreateSchemeInput): Promise<Scheme> {
     const now = new Date().toISOString();
-    const payload = {
+    const payload: Omit<Scheme, 'scheme_id'> = {
       user_id: input.user_id,
       title: input.title,
-      description: input.description,
+      description: input.description ?? null,
       creation_mode: input.creation_mode,
       style: input.style,
       occasion: input.occasion,
       visibility: input.visibility,
-      community_indexed: input.community_indexed,
-      cover_image_url: input.cover_image_url,
+      community_indexed: input.community_indexed ?? false,
+      cover_image_url: input.cover_image_url ?? null,
       created_at: now,
       updated_at: now,
     };
 
-    if (this.useFirestore) {
-      const ref = await this.db!.collection(SAVED_SCHEMES_COLLECTION).add(payload);
-      return { scheme_id: ref.id, ...payload };
-    }
-
-    const { schemes } = this.getMockData();
-    const scheme: Scheme = { scheme_id: String(schemes.length + 1), ...payload };
-    schemes.push(scheme);
-    return scheme;
+    const ref = await this.db.collection(SCHEMES_COLLECTION).add(payload);
+    return { scheme_id: ref.id, ...payload };
   }
 
   async existsById(schemeId: string): Promise<boolean> {
-    if (this.useFirestore) {
-      const snap = await this.db!.collection(SAVED_SCHEMES_COLLECTION).doc(schemeId).get();
-      return snap.exists;
-    }
-    return this.getMockData().schemes.some((scheme) => scheme.scheme_id === schemeId);
+    const snap = await this.db.collection(SCHEMES_COLLECTION).doc(schemeId).get();
+    return snap.exists;
   }
 
   async findPublic(): Promise<Scheme[]> {
-    if (this.useFirestore) {
-      const snapshot = await this.db!.collection(SAVED_SCHEMES_COLLECTION).where('visibility', '==', 'public').get();
-      return snapshot.docs.map((doc) => ({ scheme_id: doc.id, ...(doc.data() as Omit<Scheme, 'scheme_id'>) }));
-    }
-
-    return this.getMockData().schemes.filter((scheme) => scheme.visibility === 'public');
+    const snapshot = await this.db.collection(SCHEMES_COLLECTION).where('visibility', '==', 'public').get();
+    return snapshot.docs.map((doc) => ({ scheme_id: doc.id, ...(doc.data() as Omit<Scheme, 'scheme_id'>) }));
   }
 
-
   async findByUser(userId: string): Promise<Scheme[]> {
-    if (this.useFirestore) {
-      const snapshot = await this.db!
-        .collection(SAVED_SCHEMES_COLLECTION)
-        .where('user_id', '==', userId)
-        .orderBy('created_at', 'desc')
-        .get();
+    const snapshot = await this.db
+      .collection(SCHEMES_COLLECTION)
+      .where('user_id', '==', userId)
+      .orderBy('created_at', 'desc')
+      .get();
 
-      return snapshot.docs.map((doc) => ({
-        scheme_id: doc.id,
-        ...(doc.data() as Omit<Scheme, 'scheme_id'>),
-      }));
-    }
-
-    return this.getMockData()
-      .schemes
-      .filter((scheme) => scheme.user_id === userId)
-      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return snapshot.docs.map((doc) => ({
+      scheme_id: doc.id,
+      ...(doc.data() as Omit<Scheme, 'scheme_id'>),
+    }));
   }
 
   async findByIdWithItems(schemeId: string): Promise<SchemeWithItems | null> {
-    if (this.useFirestore) {
-      const schemeSnap = await this.db!.collection(SAVED_SCHEMES_COLLECTION).doc(schemeId).get();
-      if (!schemeSnap.exists) return null;
+    const schemeSnap = await this.db.collection(SCHEMES_COLLECTION).doc(schemeId).get();
+    if (!schemeSnap.exists) return null;
 
-      const scheme = { scheme_id: schemeSnap.id, ...(schemeSnap.data() as Omit<Scheme, 'scheme_id'>) };
-      const itemSnapshot = await this.db!.collection(SAVED_SCHEMES_COLLECTION).doc(schemeId).collection('items').orderBy('sort_order', 'asc').get();
+    const scheme = { scheme_id: schemeSnap.id, ...(schemeSnap.data() as Omit<Scheme, 'scheme_id'>) };
+    const itemSnapshot = await this.db
+      .collection(SCHEME_ITEMS_COLLECTION)
+      .where('scheme_id', '==', schemeId)
+      .orderBy('sort_order', 'asc')
+      .get();
 
-      const itemDocs = itemSnapshot.docs;
-      const wardrobeRefs = await Promise.all(
-        itemDocs.map((itemDoc) => this.db!.collection('wardrobe_items').doc(String(itemDoc.data().wardrobe_item_id)).get()),
-      );
+    const itemDocs = itemSnapshot.docs;
+    const wardrobeRefs = await Promise.all(
+      itemDocs.map((itemDoc) => this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(String(itemDoc.data().wardrobe_item_id)).get()),
+    );
 
-      const items = itemDocs.map((itemDoc, index) => {
-        const wardrobe = wardrobeRefs[index].data() as Record<string, string> | undefined;
-        return {
-          scheme_item_id: itemDoc.id,
-          scheme_id: schemeId,
-          wardrobe_item_id: String(itemDoc.data().wardrobe_item_id),
-          slot: itemDoc.data().slot,
-          sort_order: itemDoc.data().sort_order,
-          created_at: itemDoc.data().created_at,
-          wardrobe_name: wardrobe?.name ?? 'Unknown',
-          image_url: wardrobe?.image_url ?? '',
-        };
-      });
+    const items = itemDocs.map((itemDoc, index) => {
+      const wardrobe = wardrobeRefs[index].data() as Record<string, string> | undefined;
+      return {
+        scheme_item_id: itemDoc.id,
+        scheme_id: schemeId,
+        wardrobe_item_id: String(itemDoc.data().wardrobe_item_id),
+        slot: itemDoc.data().slot,
+        sort_order: itemDoc.data().sort_order,
+        created_at: itemDoc.data().created_at,
+        wardrobe_name: wardrobe?.name ?? 'Unknown',
+        image_url: wardrobe?.image_url ?? '',
+      };
+    });
 
-      const author = (await this.usersRepository.getById(scheme.user_id))?.name ?? 'Unknown';
-      return { scheme, items, author };
-    }
-
-    const { schemes, schemeItems, wardrobeItems, users } = this.getMockData();
-    const scheme = schemes.find((item) => item.scheme_id === schemeId);
-    if (!scheme) return null;
-
-    return {
-      scheme,
-      items: schemeItems
-        .filter((item) => item.scheme_id === schemeId)
-        .map((item) => {
-          const wardrobe = wardrobeItems.find((w) => w.wardrobe_item_id === item.wardrobe_item_id);
-          return { ...item, wardrobe_name: wardrobe?.name ?? 'Unknown', image_url: wardrobe?.image_url ?? '' };
-        }),
-      author: users.find((user) => user.user_id === scheme.user_id)?.name ?? 'Unknown',
-    };
+    const author = (await this.usersRepository.getById(scheme.user_id))?.name ?? 'Unknown';
+    return { scheme, items, author };
   }
 }

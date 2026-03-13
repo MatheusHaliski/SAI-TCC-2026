@@ -52,9 +52,9 @@ export default function MyWardrobeView() {
       fetch('/api/wardrobe-items/user/1/analysis').then((res) => res.json()),
       fetch('/api/schemes/user/1').then((res) => res.json()),
     ]).then(([wardrobeItems, wardrobeAnalysis, userSavedSchemes]) => {
-      setItems(wardrobeItems);
-      setAnalysis(wardrobeAnalysis);
-      setSavedSchemes(userSavedSchemes);
+      setItems(Array.isArray(wardrobeItems) ? wardrobeItems : []);
+      setAnalysis(wardrobeAnalysis && !Array.isArray(wardrobeAnalysis) ? wardrobeAnalysis : null);
+      setSavedSchemes(Array.isArray(userSavedSchemes) ? userSavedSchemes : []);
     });
   }, []);
 

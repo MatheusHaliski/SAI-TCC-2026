@@ -28,7 +28,7 @@ export default function SearchItemsView() {
 
     fetch(`/api/piece-items?${params.toString()}`)
       .then((res) => res.json())
-      .then((data) => setItems(data));
+      .then((data) => setItems(Array.isArray(data) ? data : []));
   }, [filters]);
 
   return (
