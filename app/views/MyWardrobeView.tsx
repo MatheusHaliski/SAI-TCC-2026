@@ -6,7 +6,7 @@ import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 
 interface WardrobeItem {
-  wardrobe_item_id: number;
+  wardrobe_item_id: string;
   name: string;
   image_url: string;
   brand: string;
@@ -38,8 +38,8 @@ export default function MyWardrobeView() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/wardrobe-items/user/1').then((res) => res.json()),
-      fetch('/api/wardrobe-items/user/1/analysis').then((res) => res.json()),
+      fetch('/api/wardrobe-items/user/user_1').then((res) => res.json()),
+      fetch('/api/wardrobe-items/user/user_1/analysis').then((res) => res.json()),
     ]).then(([wardrobeItems, wardrobeAnalysis]) => {
       setItems(wardrobeItems);
       setAnalysis(wardrobeAnalysis);

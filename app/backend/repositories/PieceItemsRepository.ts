@@ -11,13 +11,6 @@ interface PieceItemFilters {
 }
 
 export class PieceItemsRepository extends BaseRepository {
-  constructor(
-    private readonly brandsRepository = new BrandsRepository(),
-    private readonly marketsRepository = new MarketsRepository(),
-  ) {
-    super();
-  }
-
   async search(filters: PieceItemFilters): Promise<PieceItemSearchResult[]> {
     const brandMap = await this.brandsRepository.getNameMap();
     const marketsMap = await this.marketsRepository.getByIdMap();

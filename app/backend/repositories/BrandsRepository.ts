@@ -1,4 +1,3 @@
-import { Brand } from '@/app/backend/types/entities';
 import { BaseRepository } from './BaseRepository';
 
 export class BrandsRepository extends BaseRepository {

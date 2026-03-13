@@ -2,6 +2,12 @@ export type EntityId = string;
 
 export interface User {
   user_id: EntityId;
+  user_id: string;
+  name: string;
+  email: string;
+  photo_url: string | null;
+  role: string;
+  preferred_styles: string[];
   name: string;
   email: string;
   password_hash?: string;
@@ -14,6 +20,7 @@ export interface User {
 
 export interface Brand {
   brand_id: EntityId;
+  brand_id: string;
   name: string;
   logo_url: string | null;
   is_active: boolean;
@@ -23,6 +30,7 @@ export interface Brand {
 
 export interface Market {
   market_id: EntityId;
+  market_id: string;
   season: string;
   gender: string;
   created_at: string;
@@ -33,6 +41,9 @@ export interface PieceItem {
   piece_item_id: EntityId;
   brand_id: EntityId;
   market_id: EntityId;
+  piece_item_id: string;
+  brand_id: string;
+  market_id: string;
   name: string;
   image_url: string;
   piece_type: string;
@@ -50,13 +61,17 @@ export interface WardrobeItem {
   user_id: EntityId;
   brand_id: EntityId;
   market_id: EntityId;
+  wardrobe_item_id: string;
+  user_id: string;
+  brand_id: string;
+  market_id: string;
   name: string;
   image_url: string;
   piece_type: string;
   color: string;
   material: string;
-  style_tags: string | null;
-  occasion_tags: string | null;
+  style_tags: string[];
+  occasion_tags: string[];
   is_favorite: boolean;
   created_at: string;
   updated_at: string;
@@ -65,6 +80,8 @@ export interface WardrobeItem {
 export interface Scheme {
   scheme_id: EntityId;
   user_id: EntityId;
+  scheme_id: string;
+  user_id: string;
   title: string;
   description: string | null;
   creation_mode: 'manual' | 'ai';
@@ -81,6 +98,9 @@ export interface SchemeItem {
   scheme_item_id: EntityId;
   scheme_id: EntityId;
   wardrobe_item_id: EntityId;
+  scheme_item_id: string;
+  scheme_id: string;
+  wardrobe_item_id: string;
   slot: 'upper' | 'lower' | 'shoes' | 'accessory';
   sort_order: number;
   created_at: string;
@@ -88,6 +108,7 @@ export interface SchemeItem {
 
 export interface WardrobeViewItem {
   wardrobe_item_id: EntityId;
+  wardrobe_item_id: string;
   name: string;
   image_url: string;
   brand: string;
@@ -98,6 +119,7 @@ export interface WardrobeViewItem {
 
 export interface PieceItemSearchResult {
   piece_item_id: EntityId;
+  piece_item_id: string;
   image_url: string;
   gender: string;
   brand: string;
@@ -116,6 +138,7 @@ export interface WardrobeAnalysis {
 
 export interface CreateSchemeInput {
   user_id: EntityId;
+  user_id: string;
   title: string;
   description?: string;
   creation_mode: 'manual' | 'ai';
@@ -126,6 +149,7 @@ export interface CreateSchemeInput {
   cover_image_url?: string;
   items: Array<{
     wardrobe_item_id: EntityId;
+    wardrobe_item_id: string;
     slot: 'upper' | 'lower' | 'shoes' | 'accessory';
     sort_order: number;
   }>;

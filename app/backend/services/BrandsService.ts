@@ -6,4 +6,8 @@ export class BrandsService {
   async listActive() {
     return this.brandsRepository.listActive();
   }
+
+  async getById(brandId: string) {
+    return this.brandsRepository.getById(brandId);
+  }
 }

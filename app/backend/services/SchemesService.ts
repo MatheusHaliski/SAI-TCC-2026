@@ -1,4 +1,3 @@
-import { CreateSchemeInput } from '@/app/backend/types/entities';
 import { SchemeItemsRepository } from '@/app/backend/repositories/SchemeItemsRepository';
 import { SchemesRepository } from '@/app/backend/repositories/SchemesRepository';
 import { UsersRepository } from '@/app/backend/repositories/UsersRepository';

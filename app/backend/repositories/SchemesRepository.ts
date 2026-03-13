@@ -1,4 +1,4 @@
-import { CreateSchemeInput, Scheme, SchemeWithItems } from '@/app/backend/types/entities';
+import { Scheme } from '@/app/backend/types/entities';
 import { BaseRepository } from './BaseRepository';
 import { UsersRepository } from './UsersRepository';
 
@@ -12,13 +12,13 @@ export class SchemesRepository extends BaseRepository {
     const payload = {
       user_id: input.user_id,
       title: input.title,
-      description: input.description ?? null,
+      description: input.description,
       creation_mode: input.creation_mode,
       style: input.style,
       occasion: input.occasion,
       visibility: input.visibility,
-      community_indexed: input.community_indexed ?? input.visibility === 'public',
-      cover_image_url: input.cover_image_url ?? null,
+      community_indexed: input.community_indexed,
+      cover_image_url: input.cover_image_url,
       created_at: now,
       updated_at: now,
     };

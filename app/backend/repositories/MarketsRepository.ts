@@ -1,4 +1,3 @@
-import { Market } from '@/app/backend/types/entities';
 import { BaseRepository } from './BaseRepository';
 
 export class MarketsRepository extends BaseRepository {

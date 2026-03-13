@@ -38,7 +38,8 @@ export class SchemeItemsRepository extends BaseRepository {
       created_at: now,
     }));
 
-    schemeItems.push(...created);
-    return created;
+  async findBySchemeId(schemeId: string): Promise<SchemeItem[]> {
+    const query = await this.db().collection('schemes').doc(schemeId).collection('items').orderBy('sort_order', 'asc').get();
+    return query.docs.map((doc) => ({ scheme_item_id: doc.id, ...(doc.data() as Omit<SchemeItem, 'scheme_item_id'>) }));
   }
 }
