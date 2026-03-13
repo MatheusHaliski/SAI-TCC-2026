@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { BrandsRepository } from '@/app/backend/repositories/BrandsRepository';
 import { MarketsRepository } from '@/app/backend/repositories/MarketsRepository';
 import { UsersRepository } from '@/app/backend/repositories/UsersRepository';
@@ -55,5 +56,18 @@ export class WardrobeService {
       by_gender: aggregate(items, 'gender'),
       by_piece_type: aggregate(items, 'piece_type'),
     };
+=======
+import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
+
+export class WardrobeService {
+  constructor(private readonly wardrobeRepo = new WardrobeItemsRepository()) {}
+
+  async listUserWardrobe(userId: number) {
+    return this.wardrobeRepo.findByUser(userId);
+  }
+
+  async getWardrobeAnalysis(userId: number) {
+    return this.wardrobeRepo.getAnalysisByUser(userId);
+>>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
   }
 }

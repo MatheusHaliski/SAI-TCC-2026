@@ -5,7 +5,11 @@ import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 
 type Item = {
+<<<<<<< HEAD
   piece_item_id: string;
+=======
+  piece_item_id: number;
+>>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
   image_url: string;
   gender: string;
   brand: string;

@@ -5,7 +5,11 @@ import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 
+<<<<<<< HEAD
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
+=======
+type WardrobeItem = { wardrobe_item_id: number; name: string; piece_type: string };
+>>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
 
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 
@@ -15,17 +19,28 @@ export default function CreateMySchemeView() {
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
+<<<<<<< HEAD
   const [slots, setSlots] = useState<Record<string, string | null>>({ upper: null, lower: null, shoes: null, accessory: null });
 
   useEffect(() => {
     fetch('/api/wardrobe-items/user/user_1').then((res) => res.json()).then((data) => setItems(data));
+=======
+  const [slots, setSlots] = useState<Record<string, number | null>>({ upper: null, lower: null, shoes: null, accessory: null });
+
+  useEffect(() => {
+    fetch('/api/wardrobe-items/user/1').then((res) => res.json()).then((data) => setItems(data));
+>>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
   }, []);
 
   const schemeItems = useMemo(
     () =>
       Object.entries(slots)
         .filter(([, id]) => id)
+<<<<<<< HEAD
         .map(([slot, id], idx) => ({ wardrobe_item_id: String(id), slot, sort_order: idx + 1 })),
+=======
+        .map(([slot, id], idx) => ({ wardrobe_item_id: Number(id), slot, sort_order: idx + 1 })),
+>>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
     [slots],
   );
 
@@ -33,7 +48,11 @@ export default function CreateMySchemeView() {
     await fetch('/api/schemes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+<<<<<<< HEAD
       body: JSON.stringify({ user_id: 'user_1', title, style, occasion, visibility, creation_mode, items: schemeItems }),
+=======
+      body: JSON.stringify({ user_id: 1, title, style, occasion, visibility, creation_mode, items: schemeItems }),
+>>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
     });
     alert('Scheme saved successfully.');
   };
@@ -65,7 +84,11 @@ export default function CreateMySchemeView() {
                 <p className="text-sm font-semibold text-white capitalize">{slot} piece</p>
                 <select
                   value={slots[slot] ?? ''}
+<<<<<<< HEAD
                   onChange={(e) => setSlots((prev) => ({ ...prev, [slot]: e.target.value || null }))}
+=======
+                  onChange={(e) => setSlots((prev) => ({ ...prev, [slot]: e.target.value ? Number(e.target.value) : null }))}
+>>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
                   className="mt-2 w-full rounded-lg border border-white/30 bg-transparent px-3 py-2"
                 >
                   <option value="">Select item</option>
