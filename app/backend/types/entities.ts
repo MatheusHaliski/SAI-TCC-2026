@@ -7,12 +7,6 @@ export interface User {
   photo_url: string | null;
   role: string;
   preferred_styles: string[];
-  name: string;
-  email: string;
-  password_hash?: string;
-  photo_url: string | null;
-  role: string;
-  preferred_styles: string | null;
   created_at: string;
   updated_at: string;
 }
