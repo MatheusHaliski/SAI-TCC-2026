@@ -62,7 +62,7 @@ export default function CreateMySchemeView() {
 
   const schemeItems = useMemo(
     () =>
-      Object.entries(slots)
+      Object.entries(slots ?? {})
         .filter(([, id]) => id)
         .map(([slot, id], idx) => ({ wardrobe_item_id: String(id), slot, sort_order: idx + 1 })),
     [slots],

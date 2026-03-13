@@ -34,8 +34,8 @@ interface Analysis {
 
 const sections = ['Wardrobe Items', 'Saved Schemes', 'Analysis', 'By Brand', 'By Season', 'By Piece Type'];
 
-const renderGroup = (group: Record<string, number>) =>
-  Object.entries(group).map(([key, value]) => (
+const renderGroup = (group?: Record<string, number> | null) =>
+  Object.entries(group ?? {}).map(([key, value]) => (
     <li key={key} className="sa-premium-gradient-surface-soft rounded-xl border border-white/25 px-3 py-2 text-sm text-white/90">
       {key}: {value}
     </li>
