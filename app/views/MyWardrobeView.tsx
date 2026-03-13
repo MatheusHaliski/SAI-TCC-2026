@@ -15,6 +15,15 @@ interface WardrobeItem {
   piece_type: string;
 }
 
+interface SavedScheme {
+  scheme_id: string;
+  title: string;
+  style: string;
+  occasion: string;
+  visibility: 'private' | 'public';
+  created_at: string;
+}
+
 interface Analysis {
   total_items: number;
   by_brand: Record<string, number>;
@@ -23,7 +32,7 @@ interface Analysis {
   by_piece_type: Record<string, number>;
 }
 
-const sections = ['Wardrobe Items', 'Analysis', 'By Brand', 'By Season', 'By Piece Type'];
+const sections = ['Wardrobe Items', 'Saved Schemes', 'Analysis', 'By Brand', 'By Season', 'By Piece Type'];
 
 const renderGroup = (group: Record<string, number>) =>
   Object.entries(group).map(([key, value]) => (
@@ -35,14 +44,17 @@ const renderGroup = (group: Record<string, number>) =>
 export default function MyWardrobeView() {
   const [items, setItems] = useState<WardrobeItem[]>([]);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [savedSchemes, setSavedSchemes] = useState<SavedScheme[]>([]);
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/wardrobe-items/user/user_1').then((res) => res.json()),
-      fetch('/api/wardrobe-items/user/user_1/analysis').then((res) => res.json()),
-    ]).then(([wardrobeItems, wardrobeAnalysis]) => {
+      fetch('/api/wardrobe-items/user/1').then((res) => res.json()),
+      fetch('/api/wardrobe-items/user/1/analysis').then((res) => res.json()),
+      fetch('/api/schemes/user/1').then((res) => res.json()),
+    ]).then(([wardrobeItems, wardrobeAnalysis, userSavedSchemes]) => {
       setItems(wardrobeItems);
       setAnalysis(wardrobeAnalysis);
+      setSavedSchemes(userSavedSchemes);
     });
   }, []);
 
@@ -64,6 +76,21 @@ export default function MyWardrobeView() {
                 <p className="text-sm text-white/70">Type: {item.piece_type}</p>
               </article>
             ))}
+          </div>
+        </SectionBlock>
+
+        <SectionBlock title="Saved Schemes" subtitle="Schemes saved from the Create My Scheme form.">
+          <div className="mt-4 space-y-2">
+            {savedSchemes.length ? (
+              savedSchemes.map((scheme) => (
+                <article key={scheme.scheme_id} className="sa-premium-gradient-surface-soft rounded-xl border border-white/25 px-4 py-3 text-white">
+                  <p className="font-semibold">{scheme.title}</p>
+                  <p className="text-sm text-white/75">Style: {scheme.style} • Occasion: {scheme.occasion} • Visibility: {scheme.visibility}</p>
+                </article>
+              ))
+            ) : (
+              <p className="text-sm text-white/75">No saved schemes yet.</p>
+            )}
           </div>
         </SectionBlock>
 

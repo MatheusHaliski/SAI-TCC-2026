@@ -1,6 +1,8 @@
-import { Scheme } from '@/app/backend/types/entities';
+import { CreateSchemeInput, Scheme, SchemeWithItems } from '@/app/backend/types/entities';
 import { BaseRepository } from './BaseRepository';
 import { UsersRepository } from './UsersRepository';
+
+const SAVED_SCHEMES_COLLECTION = 'sai-usersavedschemes';
 
 export class SchemesRepository extends BaseRepository {
   constructor(private readonly usersRepository = new UsersRepository()) {
@@ -24,7 +26,7 @@ export class SchemesRepository extends BaseRepository {
     };
 
     if (this.useFirestore) {
-      const ref = await this.db!.collection('schemes').add(payload);
+      const ref = await this.db!.collection(SAVED_SCHEMES_COLLECTION).add(payload);
       return { scheme_id: ref.id, ...payload };
     }
 
@@ -36,7 +38,7 @@ export class SchemesRepository extends BaseRepository {
 
   async existsById(schemeId: string): Promise<boolean> {
     if (this.useFirestore) {
-      const snap = await this.db!.collection('schemes').doc(schemeId).get();
+      const snap = await this.db!.collection(SAVED_SCHEMES_COLLECTION).doc(schemeId).get();
       return snap.exists;
     }
     return this.getMockData().schemes.some((scheme) => scheme.scheme_id === schemeId);
@@ -44,20 +46,41 @@ export class SchemesRepository extends BaseRepository {
 
   async findPublic(): Promise<Scheme[]> {
     if (this.useFirestore) {
-      const snapshot = await this.db!.collection('schemes').where('visibility', '==', 'public').get();
+      const snapshot = await this.db!.collection(SAVED_SCHEMES_COLLECTION).where('visibility', '==', 'public').get();
       return snapshot.docs.map((doc) => ({ scheme_id: doc.id, ...(doc.data() as Omit<Scheme, 'scheme_id'>) }));
     }
 
     return this.getMockData().schemes.filter((scheme) => scheme.visibility === 'public');
   }
 
+
+  async findByUser(userId: string): Promise<Scheme[]> {
+    if (this.useFirestore) {
+      const snapshot = await this.db!
+        .collection(SAVED_SCHEMES_COLLECTION)
+        .where('user_id', '==', userId)
+        .orderBy('created_at', 'desc')
+        .get();
+
+      return snapshot.docs.map((doc) => ({
+        scheme_id: doc.id,
+        ...(doc.data() as Omit<Scheme, 'scheme_id'>),
+      }));
+    }
+
+    return this.getMockData()
+      .schemes
+      .filter((scheme) => scheme.user_id === userId)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+
   async findByIdWithItems(schemeId: string): Promise<SchemeWithItems | null> {
     if (this.useFirestore) {
-      const schemeSnap = await this.db!.collection('schemes').doc(schemeId).get();
+      const schemeSnap = await this.db!.collection(SAVED_SCHEMES_COLLECTION).doc(schemeId).get();
       if (!schemeSnap.exists) return null;
 
       const scheme = { scheme_id: schemeSnap.id, ...(schemeSnap.data() as Omit<Scheme, 'scheme_id'>) };
-      const itemSnapshot = await this.db!.collection('schemes').doc(schemeId).collection('items').orderBy('sort_order', 'asc').get();
+      const itemSnapshot = await this.db!.collection(SAVED_SCHEMES_COLLECTION).doc(schemeId).collection('items').orderBy('sort_order', 'asc').get();
 
       const itemDocs = itemSnapshot.docs;
       const wardrobeRefs = await Promise.all(

@@ -8,7 +8,6 @@ export class WardrobeController {
   }
 
   async analysisByUser(userId: string) {
-  async listByUser(userId: string) {
-    return this.wardrobeService.listUserWardrobe(userId);
+    return this.wardrobeService.getWardrobeAnalysis(userId);
   }
 }

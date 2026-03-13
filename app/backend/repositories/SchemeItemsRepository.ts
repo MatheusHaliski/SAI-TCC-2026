@@ -1,6 +1,8 @@
 import { SchemeItem } from '@/app/backend/types/entities';
 import { BaseRepository } from './BaseRepository';
 
+const SAVED_SCHEMES_COLLECTION = 'sai-usersavedschemes';
+
 interface CreateSchemeItemInput {
   scheme_id: string;
   wardrobe_item_id: string;
@@ -16,14 +18,20 @@ export class SchemeItemsRepository extends BaseRepository {
       const created: SchemeItem[] = [];
       for (const item of items) {
         const now = new Date().toISOString();
-        const ref = await this.db!.collection('schemes').doc(item.scheme_id).collection('items').add({
-          wardrobe_item_id: item.wardrobe_item_id,
-          slot: item.slot,
-          sort_order: item.sort_order,
-          created_at: now,
-        });
+        const ref = await this.db!
+          .collection(SAVED_SCHEMES_COLLECTION)
+          .doc(item.scheme_id)
+          .collection('items')
+          .add({
+            wardrobe_item_id: item.wardrobe_item_id,
+            slot: item.slot,
+            sort_order: item.sort_order,
+            created_at: now,
+          });
+
         created.push({ scheme_item_id: ref.id, ...item, created_at: now });
       }
+
       return created;
     }
 
@@ -38,8 +46,26 @@ export class SchemeItemsRepository extends BaseRepository {
       created_at: now,
     }));
 
+    schemeItems.push(...created);
+    return created;
+  }
+
   async findBySchemeId(schemeId: string): Promise<SchemeItem[]> {
-    const query = await this.db().collection('schemes').doc(schemeId).collection('items').orderBy('sort_order', 'asc').get();
-    return query.docs.map((doc) => ({ scheme_item_id: doc.id, ...(doc.data() as Omit<SchemeItem, 'scheme_item_id'>) }));
+    if (this.useFirestore) {
+      const query = await this.db!
+        .collection(SAVED_SCHEMES_COLLECTION)
+        .doc(schemeId)
+        .collection('items')
+        .orderBy('sort_order', 'asc')
+        .get();
+
+      return query.docs.map((doc) => ({
+        scheme_item_id: doc.id,
+        scheme_id: schemeId,
+        ...(doc.data() as Omit<SchemeItem, 'scheme_item_id' | 'scheme_id'>),
+      }));
+    }
+
+    return this.getMockData().schemeItems.filter((item) => item.scheme_id === schemeId);
   }
 }
