@@ -22,7 +22,7 @@ export default function SearchItemsView() {
 
   useEffect(() => {
     const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
+    Object.entries(filters ?? {}).forEach(([key, value]) => {
       if (value) params.set(key, value);
     });
 
