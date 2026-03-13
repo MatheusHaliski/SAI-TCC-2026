@@ -7,7 +7,7 @@ import {usePathname, useRouter} from "next/navigation";
 import {VSModalPaged} from  "@/app/lib/authAlerts";
 import {clearAuthSessionToken, setAuthSessionProfile, setAuthSessionToken} from "@/app/lib/authSession";
 import { getDevSessionToken, setDevSessionToken } from "@/app/lib/devSession";
-import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessToken } from '@/app/lib/accessTokenShare';
+import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from '@/app/lib/accessTokenShare';
 
 
 
@@ -16,7 +16,6 @@ export default function AuthViewClient() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
-    let [devsessiontoken] = useState("");
     const pathname = usePathname();
     useEffect(() => {
         const t = getDevSessionToken();
@@ -75,11 +74,19 @@ export default function AuthViewClient() {
                 return;
             }
 
+            const payload = (await response.json().catch(() => null)) as {
+                profile?: { name?: string; email?: string };
+            } | null;
+
             const token = crypto.randomUUID();
+            const profile = {
+                name: payload?.profile?.name?.trim() || "",
+                email: payload?.profile?.email?.trim().toLowerCase() || normalizedEmail,
+            };
             setAuthSessionToken(token);
-            setAuthSessionProfile({ email: normalizedEmail });
+            setAuthSessionProfile(profile);
             setDevSessionToken(token);
-            setSharedAccessToken(token);
+            setSharedAccessData({ token, profile });
             router.replace("/home");
         } catch (error) {
             console.error("[AuthView] Failed to verify credentials:", error);

@@ -2,12 +2,12 @@ import StatBadge from '../shared/StatBadge';
 
 interface ProfileSummaryCardProps {
   username: string;
-  followers: string;
-  following: string;
-  score: string;
+  loginEmail: string;
+  loginStatus: string;
+  authSource: string;
 }
 
-export default function ProfileSummaryCard({ username, followers, following, score }: ProfileSummaryCardProps) {
+export default function ProfileSummaryCard({ username, loginEmail, loginStatus, authSource }: ProfileSummaryCardProps) {
   return (
     <article className="bg-orange-600 rounded-2xl border border-white/20 p-5 shadow-lg">
       <div className="mb-4 flex items-center gap-4">
@@ -20,9 +20,9 @@ export default function ProfileSummaryCard({ username, followers, following, sco
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <StatBadge label="Followers" value={followers} />
-        <StatBadge label="Following" value={following} />
-        <StatBadge label="Score" value={score} />
+        <StatBadge label="Login" value={loginEmail} />
+        <StatBadge label="Status" value={loginStatus} />
+        <StatBadge label="Source" value={authSource} />
       </div>
     </article>
   );
