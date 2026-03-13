@@ -1,9 +1,9 @@
-import { BaseRepository } from './BaseRepository';
 import { SchemeItem } from '@/app/backend/types/entities';
+import { BaseRepository } from './BaseRepository';
 
 interface CreateSchemeItemInput {
-  scheme_id: number;
-  wardrobe_item_id: number;
+  scheme_id: string;
+  wardrobe_item_id: string;
   slot: 'upper' | 'lower' | 'shoes' | 'accessory';
   sort_order: number;
 }
@@ -12,24 +12,25 @@ export class SchemeItemsRepository extends BaseRepository {
   async createMany(items: CreateSchemeItemInput[]): Promise<SchemeItem[]> {
     if (!items.length) return [];
 
-    if (this.useMysql) {
-      const { getMysqlPool } = await import('@/app/lib/db/mysql');
-      const pool = getMysqlPool();
-      const values = items.map((item) => [item.scheme_id, item.wardrobe_item_id, item.slot, item.sort_order]);
-      await pool!.query(
-        `INSERT INTO scheme_items (scheme_id, wardrobe_item_id, slot, sort_order, created_at) VALUES ?`,
-        [values.map((value) => [...value, new Date()])],
-      );
-      const [rows] = await pool!.query('SELECT * FROM scheme_items WHERE scheme_id = ? ORDER BY sort_order', [items[0].scheme_id]);
-      return rows as SchemeItem[];
+    if (this.useFirestore) {
+      const created: SchemeItem[] = [];
+      for (const item of items) {
+        const now = new Date().toISOString();
+        const ref = await this.db!.collection('schemes').doc(item.scheme_id).collection('items').add({
+          wardrobe_item_id: item.wardrobe_item_id,
+          slot: item.slot,
+          sort_order: item.sort_order,
+          created_at: now,
+        });
+        created.push({ scheme_item_id: ref.id, ...item, created_at: now });
+      }
+      return created;
     }
 
     const { schemeItems } = this.getMockData();
-    const maxId = Math.max(...schemeItems.map((item) => item.scheme_item_id), 0);
     const now = new Date().toISOString();
-
     const created = items.map((item, index) => ({
-      scheme_item_id: maxId + index + 1,
+      scheme_item_id: String(schemeItems.length + index + 1),
       scheme_id: item.scheme_id,
       wardrobe_item_id: item.wardrobe_item_id,
       slot: item.slot,

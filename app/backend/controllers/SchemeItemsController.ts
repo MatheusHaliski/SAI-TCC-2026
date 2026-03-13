@@ -1,9 +1,9 @@
-import { SchemeItemsRepository } from '@/app/backend/repositories/SchemeItemsRepository';
+import { SchemeItemsService } from '@/app/backend/services/SchemeItemsService';
 
 export class SchemeItemsController {
-  constructor(private readonly schemeItemsRepository = new SchemeItemsRepository()) {}
+  constructor(private readonly schemeItemsService = new SchemeItemsService()) {}
 
-  async createMany(items: Array<{ scheme_id: number; wardrobe_item_id: number; slot: 'upper' | 'lower' | 'shoes' | 'accessory'; sort_order: number }>) {
-    return this.schemeItemsRepository.createMany(items);
+  async createMany(items: Array<{ scheme_id: string; wardrobe_item_id: string; slot: 'upper' | 'lower' | 'shoes' | 'accessory'; sort_order: number }>) {
+    return this.schemeItemsService.createMany(items);
   }
 }

@@ -16,7 +16,7 @@ export class SchemesController {
     return this.schemesService.listPublicSchemes();
   }
 
-  async getById(schemeId: number) {
+  async getById(schemeId: string) {
     return this.schemesService.getSchemeDetails(schemeId);
   }
 }

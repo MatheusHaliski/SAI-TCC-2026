@@ -1,16 +1,18 @@
 import { WardrobeController } from '@/app/backend/controllers/WardrobeController';
+import { ServiceError } from '@/app/backend/services/errors';
 import { NextResponse } from 'next/server';
 
 const wardrobeController = new WardrobeController();
 
 export async function GET(_: Request, { params }: { params: Promise<{ userId: string }> }) {
-  const { userId } = await params;
-  const id = Number(userId);
-
-  if (Number.isNaN(id)) {
-    return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
+  try {
+    const { userId } = await params;
+    const data = await wardrobeController.listByUser(String(userId));
+    return NextResponse.json(data);
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
+    return NextResponse.json({ error: 'Unexpected error' }, { status: 500 });
   }
-
-  const data = await wardrobeController.listByUser(id);
-  return NextResponse.json(data);
 }

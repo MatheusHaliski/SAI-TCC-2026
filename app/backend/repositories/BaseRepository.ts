@@ -1,10 +1,18 @@
 import { brands, markets, pieceItems, schemeItems, schemes, users, wardrobeItems } from '@/app/backend/data/mockData';
 import { Brand, Market, PieceItem, Scheme, SchemeItem, User, WardrobeItem } from '@/app/backend/types/entities';
-import { getMysqlPool } from '@/app/lib/db/mysql';
+import { getAdminFirestore } from '@/app/lib/firebaseAdmin';
 
 export class BaseRepository {
-  protected get useMysql() {
-    return Boolean(getMysqlPool());
+  protected get db() {
+    try {
+      return getAdminFirestore();
+    } catch {
+      return null;
+    }
+  }
+
+  protected get useFirestore() {
+    return Boolean(this.db);
   }
 
   protected getMockData() {

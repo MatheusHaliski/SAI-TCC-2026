@@ -1,37 +1,15 @@
 import { CreateSchemeInput, Scheme, SchemeWithItems } from '@/app/backend/types/entities';
 import { BaseRepository } from './BaseRepository';
+import { UsersRepository } from './UsersRepository';
 
 export class SchemesRepository extends BaseRepository {
+  constructor(private readonly usersRepository = new UsersRepository()) {
+    super();
+  }
+
   async create(input: CreateSchemeInput): Promise<Scheme> {
-    if (this.useMysql) {
-      const { getMysqlPool } = await import('@/app/lib/db/mysql');
-      const pool = getMysqlPool();
-      const [result] = await pool!.query(
-        `INSERT INTO schemes (user_id, title, description, creation_mode, style, occasion, visibility, community_indexed, cover_image_url, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-        [
-          input.user_id,
-          input.title,
-          input.description ?? null,
-          input.creation_mode,
-          input.style,
-          input.occasion,
-          input.visibility,
-          input.community_indexed ?? (input.visibility === 'public'),
-          input.cover_image_url ?? null,
-        ],
-      );
-
-      const insertedId = Number((result as { insertId: number }).insertId);
-      const [rows] = await pool!.query('SELECT * FROM schemes WHERE scheme_id = ? LIMIT 1', [insertedId]);
-      return (rows as Scheme[])[0];
-    }
-
-    const { schemes } = this.getMockData();
-    const nextId = Math.max(...schemes.map((item) => item.scheme_id), 0) + 1;
     const now = new Date().toISOString();
-    const scheme: Scheme = {
-      scheme_id: nextId,
+    const payload = {
       user_id: input.user_id,
       title: input.title,
       description: input.description ?? null,
@@ -44,70 +22,78 @@ export class SchemesRepository extends BaseRepository {
       created_at: now,
       updated_at: now,
     };
+
+    if (this.useFirestore) {
+      const ref = await this.db!.collection('schemes').add(payload);
+      return { scheme_id: ref.id, ...payload };
+    }
+
+    const { schemes } = this.getMockData();
+    const scheme: Scheme = { scheme_id: String(schemes.length + 1), ...payload };
     schemes.push(scheme);
     return scheme;
   }
 
+  async existsById(schemeId: string): Promise<boolean> {
+    if (this.useFirestore) {
+      const snap = await this.db!.collection('schemes').doc(schemeId).get();
+      return snap.exists;
+    }
+    return this.getMockData().schemes.some((scheme) => scheme.scheme_id === schemeId);
+  }
+
   async findPublic(): Promise<Scheme[]> {
-    if (this.useMysql) {
-      const { getMysqlPool } = await import('@/app/lib/db/mysql');
-      const pool = getMysqlPool();
-      const [rows] = await pool!.query(`SELECT * FROM schemes WHERE visibility = 'public' ORDER BY created_at DESC`);
-      return rows as Scheme[];
+    if (this.useFirestore) {
+      const snapshot = await this.db!.collection('schemes').where('visibility', '==', 'public').get();
+      return snapshot.docs.map((doc) => ({ scheme_id: doc.id, ...(doc.data() as Omit<Scheme, 'scheme_id'>) }));
     }
 
     return this.getMockData().schemes.filter((scheme) => scheme.visibility === 'public');
   }
 
-  async findByIdWithItems(schemeId: number): Promise<SchemeWithItems | null> {
-    if (this.useMysql) {
-      const { getMysqlPool } = await import('@/app/lib/db/mysql');
-      const pool = getMysqlPool();
-      const [schemeRows] = await pool!.query(
-        `SELECT s.*, u.name AS author
-         FROM schemes s
-         INNER JOIN users u ON u.user_id = s.user_id
-         WHERE s.scheme_id = ?
-         LIMIT 1`,
-        [schemeId],
-      );
-      const schemeResult = (schemeRows as Array<Scheme & { author: string }>)[0];
-      if (!schemeResult) return null;
+  async findByIdWithItems(schemeId: string): Promise<SchemeWithItems | null> {
+    if (this.useFirestore) {
+      const schemeSnap = await this.db!.collection('schemes').doc(schemeId).get();
+      if (!schemeSnap.exists) return null;
 
-      const [itemRows] = await pool!.query(
-        `SELECT si.*, wi.name AS wardrobe_name, wi.image_url
-         FROM scheme_items si
-         INNER JOIN wardrobe_items wi ON wi.wardrobe_item_id = si.wardrobe_item_id
-         WHERE si.scheme_id = ?
-         ORDER BY si.sort_order`,
-        [schemeId],
+      const scheme = { scheme_id: schemeSnap.id, ...(schemeSnap.data() as Omit<Scheme, 'scheme_id'>) };
+      const itemSnapshot = await this.db!.collection('schemes').doc(schemeId).collection('items').orderBy('sort_order', 'asc').get();
+
+      const itemDocs = itemSnapshot.docs;
+      const wardrobeRefs = await Promise.all(
+        itemDocs.map((itemDoc) => this.db!.collection('wardrobe_items').doc(String(itemDoc.data().wardrobe_item_id)).get()),
       );
 
-      return {
-        scheme: schemeResult,
-        items: itemRows as SchemeWithItems['items'],
-        author: schemeResult.author,
-      };
+      const items = itemDocs.map((itemDoc, index) => {
+        const wardrobe = wardrobeRefs[index].data() as Record<string, string> | undefined;
+        return {
+          scheme_item_id: itemDoc.id,
+          scheme_id: schemeId,
+          wardrobe_item_id: String(itemDoc.data().wardrobe_item_id),
+          slot: itemDoc.data().slot,
+          sort_order: itemDoc.data().sort_order,
+          created_at: itemDoc.data().created_at,
+          wardrobe_name: wardrobe?.name ?? 'Unknown',
+          image_url: wardrobe?.image_url ?? '',
+        };
+      });
+
+      const author = (await this.usersRepository.getById(scheme.user_id))?.name ?? 'Unknown';
+      return { scheme, items, author };
     }
 
     const { schemes, schemeItems, wardrobeItems, users } = this.getMockData();
     const scheme = schemes.find((item) => item.scheme_id === schemeId);
     if (!scheme) return null;
 
-    const items = schemeItems
-      .filter((item) => item.scheme_id === schemeId)
-      .map((item) => {
-        const wardrobe = wardrobeItems.find((wardrobeItem) => wardrobeItem.wardrobe_item_id === item.wardrobe_item_id);
-        return {
-          ...item,
-          wardrobe_name: wardrobe?.name ?? 'Unknown',
-          image_url: wardrobe?.image_url ?? '',
-        };
-      });
-
     return {
       scheme,
-      items,
+      items: schemeItems
+        .filter((item) => item.scheme_id === schemeId)
+        .map((item) => {
+          const wardrobe = wardrobeItems.find((w) => w.wardrobe_item_id === item.wardrobe_item_id);
+          return { ...item, wardrobe_name: wardrobe?.name ?? 'Unknown', image_url: wardrobe?.image_url ?? '' };
+        }),
       author: users.find((user) => user.user_id === scheme.user_id)?.name ?? 'Unknown',
     };
   }

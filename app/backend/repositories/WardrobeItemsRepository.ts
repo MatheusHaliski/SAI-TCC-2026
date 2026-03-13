@@ -1,5 +1,7 @@
-import { BaseRepository } from './BaseRepository';
 import { WardrobeAnalysis, WardrobeViewItem } from '@/app/backend/types/entities';
+import { BaseRepository } from './BaseRepository';
+import { BrandsRepository } from './BrandsRepository';
+import { MarketsRepository } from './MarketsRepository';
 
 function aggregate(items: WardrobeViewItem[], key: keyof Pick<WardrobeViewItem, 'brand' | 'season' | 'gender' | 'piece_type'>) {
   return items.reduce<Record<string, number>>((acc, item) => {
@@ -9,37 +11,60 @@ function aggregate(items: WardrobeViewItem[], key: keyof Pick<WardrobeViewItem, 
 }
 
 export class WardrobeItemsRepository extends BaseRepository {
-  async findByUser(userId: number): Promise<WardrobeViewItem[]> {
-    if (this.useMysql) {
-      const { getMysqlPool } = await import('@/app/lib/db/mysql');
-      const pool = getMysqlPool();
-      const [rows] = await pool!.query(
-        `SELECT wi.wardrobe_item_id, wi.name, wi.image_url, b.name AS brand, m.season, m.gender, wi.piece_type
-         FROM wardrobe_items wi
-         INNER JOIN brands b ON b.brand_id = wi.brand_id
-         INNER JOIN markets m ON m.market_id = wi.market_id
-         WHERE wi.user_id = ?
-         ORDER BY wi.created_at DESC`,
-        [userId],
-      );
-      return rows as WardrobeViewItem[];
-    }
-
-    const { wardrobeItems, brands, markets } = this.getMockData();
-    return wardrobeItems
-      .filter((item) => item.user_id === userId)
-      .map((item) => ({
-        wardrobe_item_id: item.wardrobe_item_id,
-        name: item.name,
-        image_url: item.image_url,
-        brand: brands.find((brand) => brand.brand_id === item.brand_id)?.name ?? 'Unknown',
-        season: markets.find((market) => market.market_id === item.market_id)?.season ?? 'Unknown',
-        gender: markets.find((market) => market.market_id === item.market_id)?.gender ?? 'Unknown',
-        piece_type: item.piece_type,
-      }));
+  constructor(
+    private readonly brandsRepository = new BrandsRepository(),
+    private readonly marketsRepository = new MarketsRepository(),
+  ) {
+    super();
   }
 
-  async getAnalysisByUser(userId: number): Promise<WardrobeAnalysis> {
+  async findByUser(userId: string): Promise<WardrobeViewItem[]> {
+    const brandMap = await this.brandsRepository.getNameMap();
+    const marketsMap = await this.marketsRepository.getByIdMap();
+
+    if (this.useFirestore) {
+      const snapshot = await this.db!.collection('wardrobe_items').where('user_id', '==', userId).get();
+      return snapshot.docs.map((doc) => {
+        const item = doc.data() as Record<string, string>;
+        const market = marketsMap.get(item.market_id);
+        return {
+          wardrobe_item_id: doc.id,
+          name: item.name,
+          image_url: item.image_url,
+          brand: brandMap.get(item.brand_id) ?? 'Unknown',
+          season: market?.season ?? 'Unknown',
+          gender: market?.gender ?? 'Unknown',
+          piece_type: item.piece_type,
+        };
+      });
+    }
+
+    const { wardrobeItems } = this.getMockData();
+    return wardrobeItems
+      .filter((item) => item.user_id === userId)
+      .map((item) => {
+        const market = marketsMap.get(item.market_id);
+        return {
+          wardrobe_item_id: item.wardrobe_item_id,
+          name: item.name,
+          image_url: item.image_url,
+          brand: brandMap.get(item.brand_id) ?? 'Unknown',
+          season: market?.season ?? 'Unknown',
+          gender: market?.gender ?? 'Unknown',
+          piece_type: item.piece_type,
+        };
+      });
+  }
+
+  async existsById(wardrobeItemId: string): Promise<boolean> {
+    if (this.useFirestore) {
+      const snap = await this.db!.collection('wardrobe_items').doc(wardrobeItemId).get();
+      return snap.exists;
+    }
+    return this.getMockData().wardrobeItems.some((item) => item.wardrobe_item_id === wardrobeItemId);
+  }
+
+  async getAnalysisByUser(userId: string): Promise<WardrobeAnalysis> {
     const items = await this.findByUser(userId);
     return {
       total_items: items.length,
