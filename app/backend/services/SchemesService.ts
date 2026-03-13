@@ -51,6 +51,10 @@ export class SchemesService {
     return this.schemesRepo.findPublic();
   }
 
+  async listSchemesByUser(userId: string) {
+    return this.schemesRepo.findByUser(userId);
+  }
+
   async getSchemeDetails(schemeId: string) {
     return this.schemesRepo.findByIdWithItems(schemeId);
   }

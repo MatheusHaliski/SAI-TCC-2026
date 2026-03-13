@@ -13,7 +13,8 @@ type SignupPayload = {
 
 const HASH_ALGORITHM = "SHA-256";
 const HASH_ITERATIONS = 310000;
-const APP_PEPPER = "vs-usercontrol-v1";
+const APP_PEPPER = "sai-usercontrol-v1";
+const USER_COLLECTION = "sai-usercontrol";
 
 const generateSalt = () => crypto.randomBytes(16).toString("base64");
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         const normalizedEmail = parsed.data.email.trim().toLowerCase();
         const normalizedName = parsed.data.name.trim();
         const existingSnapshot = await db
-            .collection("VSusercontrol")
+            .collection(USER_COLLECTION)
             .where("email", "==", normalizedEmail)
             .limit(1)
             .get();
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         }
 
         const existingNameSnapshot = await db
-            .collection("VSusercontrol")
+            .collection(USER_COLLECTION)
             .where("name", "==", normalizedName)
             .limit(1)
             .get();
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest): Promise<Response> {
             HASH_ITERATIONS
         );
 
-        await db.collection("VSusercontrol").add({
+        await db.collection(USER_COLLECTION).add({
             name: normalizedName,
             email: normalizedEmail,
             passwordHash,
