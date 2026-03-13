@@ -74,26 +74,36 @@ export default function CreateMySchemeView() {
       return;
     }
 
-    const response = await fetch('/api/schemes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: userId,
-        title: title.trim() || 'My New Scheme',
-        style: style.trim() || 'Minimal',
-        occasion: occasion.trim() || 'Daily',
-        visibility,
-        creation_mode,
-        items: schemeItems,
-      }),
-    });
-
-    if (!response.ok) {
-      setAlertMessage('Unable to save scheme. Please try again.');
+    if (schemeItems.length === 0) {
+      setAlertMessage('Select at least one wardrobe item before saving.');
       return;
     }
 
-    setAlertMessage('Scheme saved successfully.');
+    try {
+      const response = await fetch('/api/schemes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          title: title.trim() || 'My New Scheme',
+          style: style.trim() || 'Minimal',
+          occasion: occasion.trim() || 'Daily',
+          visibility,
+          creation_mode,
+          items: schemeItems,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        setAlertMessage(payload?.error || 'Unable to save scheme. Please try again.');
+        return;
+      }
+
+      setAlertMessage('Scheme saved successfully.');
+    } catch {
+      setAlertMessage('Unable to save scheme. Please try again.');
+    }
   };
 
   const optionsByType = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
