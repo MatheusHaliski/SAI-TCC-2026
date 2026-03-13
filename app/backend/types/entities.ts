@@ -125,7 +125,6 @@ export interface CreateSchemeInput {
   cover_image_url?: string;
   items: Array<{
     wardrobe_item_id: EntityId;
-    wardrobe_item_id: string;
     slot: 'upper' | 'lower' | 'shoes' | 'accessory';
     sort_order: number;
   }>;
