@@ -1,6 +1,5 @@
 import { SchemeItemsRepository } from '@/app/backend/repositories/SchemeItemsRepository';
 import { SchemesRepository } from '@/app/backend/repositories/SchemesRepository';
-import { UsersRepository } from '@/app/backend/repositories/UsersRepository';
 import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
 import { CreateSchemeInput } from '@/app/backend/types/entities';
 import { ServiceError } from './errors';
@@ -9,14 +8,10 @@ export class SchemesService {
   constructor(
     private readonly schemesRepo = new SchemesRepository(),
     private readonly schemeItemsRepo = new SchemeItemsRepository(),
-    private readonly usersRepo = new UsersRepository(),
     private readonly wardrobeRepo = new WardrobeItemsRepository(),
   ) {}
 
   private async validateReferences(input: CreateSchemeInput) {
-    const user = await this.usersRepo.getById(input.user_id);
-    if (!user) throw new ServiceError('User not found', 404);
-
     for (const item of input.items) {
       const exists = await this.wardrobeRepo.existsById(item.wardrobe_item_id);
       if (!exists) throw new ServiceError(`Wardrobe item ${item.wardrobe_item_id} not found`, 404);

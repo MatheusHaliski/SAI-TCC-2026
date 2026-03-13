@@ -18,6 +18,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    if (!Array.isArray(body.items) || body.items.length === 0) {
+      return NextResponse.json({ error: 'Select at least one wardrobe item before saving.' }, { status: 400 });
+    }
+
     const normalized = {
       ...body,
       user_id: resolvedUserId,
