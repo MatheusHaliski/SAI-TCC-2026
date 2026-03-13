@@ -100,7 +100,11 @@ export async function POST(request: NextRequest): Promise<Response> {
             HASH_ITERATIONS
         );
 
-        const createdUser = await db.collection(USER_COLLECTION).add({
+        const userRef = db.collection(USER_COLLECTION).doc();
+        const userId = userRef.id;
+
+        await userRef.set({
+            user_id: userId,
             name: normalizedName,
             email: normalizedEmail,
             passwordHash,
@@ -109,8 +113,6 @@ export async function POST(request: NextRequest): Promise<Response> {
             passwordHashAlgorithm: HASH_ALGORITHM,
             createdAt: new Date().toISOString(),
         });
-
-        const userId = createdUser.id;
         const sessionToken = createSessionToken({
             sub: userId,
             email: normalizedEmail,

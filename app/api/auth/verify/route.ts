@@ -171,7 +171,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
         const matchedDoc = snapshot.empty ? null : snapshot.docs[0] ?? null;
         const record = matchedDoc ? (matchedDoc.data() as UserRecord) : null;
-        const userId = matchedDoc?.id ?? "";
+        const firestoreDocId = matchedDoc?.id ?? "";
 
         if (!record) {
             return NextResponse.json(
@@ -192,15 +192,21 @@ export async function POST(request: NextRequest): Promise<Response> {
             );
         }
 
+        const canonicalUserId = firestoreDocId;
+
+        if (matchedDoc && record.user_id !== firestoreDocId) {
+            await matchedDoc.ref.set({ user_id: firestoreDocId }, { merge: true });
+        }
+
         const sessionToken = createSessionToken({
-            sub: userId,
+            sub: canonicalUserId,
             email,
         });
 
         const response = NextResponse.json({
             ok: true,
             profile: {
-                user_id: userId,
+                user_id: canonicalUserId,
                 name: record.name ?? "",
                 email,
             },
