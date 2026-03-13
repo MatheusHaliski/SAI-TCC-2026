@@ -4,13 +4,11 @@ import { NextResponse } from 'next/server';
 const wardrobeController = new WardrobeController();
 
 export async function GET(_: Request, { params }: { params: Promise<{ userId: string }> }) {
-  const { userId } = await params;
-  const id = Number(userId);
-
-  if (Number.isNaN(id)) {
-    return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
+  try {
+    const { userId } = await params;
+    const data = await wardrobeController.listByUser(userId);
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }
-
-  const data = await wardrobeController.listByUser(id);
-  return NextResponse.json(data);
 }

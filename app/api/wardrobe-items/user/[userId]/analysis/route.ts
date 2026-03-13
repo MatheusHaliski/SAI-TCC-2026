@@ -4,6 +4,15 @@ import { NextResponse } from 'next/server';
 const wardrobeController = new WardrobeController();
 
 export async function GET(_: Request, { params }: { params: Promise<{ userId: string }> }) {
+<<<<<<< HEAD
+  try {
+    const { userId } = await params;
+    const data = await wardrobeController.analysisByUser(userId);
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+  }
+=======
   const { userId } = await params;
   const id = Number(userId);
 
@@ -13,4 +22,5 @@ export async function GET(_: Request, { params }: { params: Promise<{ userId: st
 
   const data = await wardrobeController.analysisByUser(id);
   return NextResponse.json(data);
+>>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
 }

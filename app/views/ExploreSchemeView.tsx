@@ -5,12 +5,12 @@ import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 
 type Scheme = {
-  scheme_id: number;
+  scheme_id: string;
   title: string;
   style: string;
   occasion: string;
   cover_image_url: string | null;
-  user_id: number;
+  user_id: string;
 };
 
 export default function ExploreSchemeView() {

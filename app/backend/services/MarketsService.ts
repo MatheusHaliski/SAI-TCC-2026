@@ -6,4 +6,8 @@ export class MarketsService {
   async listAll() {
     return this.marketsRepository.listAll();
   }
+
+  async getById(marketId: string) {
+    return this.marketsRepository.getById(marketId);
+  }
 }

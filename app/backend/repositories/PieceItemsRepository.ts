@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+import { PieceItem } from '@/app/backend/types/entities';
+=======
 import { PieceItemSearchResult } from '@/app/backend/types/entities';
+>>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
 import { BaseRepository } from './BaseRepository';
 
 interface PieceItemFilters {
@@ -9,6 +13,24 @@ interface PieceItemFilters {
 }
 
 export class PieceItemsRepository extends BaseRepository {
+<<<<<<< HEAD
+  async findAllActive(): Promise<PieceItem[]> {
+    const query = await this.db().collection('piece_items').where('is_active', '==', true).get();
+    return query.docs.map((doc) => ({ piece_item_id: doc.id, ...(doc.data() as Omit<PieceItem, 'piece_item_id'>) }));
+  }
+
+  async searchByBaseFilter(filters: PieceItemFilters): Promise<PieceItem[]> {
+    let ref: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = this.db()
+      .collection('piece_items')
+      .where('is_active', '==', true);
+
+    if (filters.piece_type) {
+      ref = ref.where('piece_type', '==', filters.piece_type);
+    }
+
+    const query = await ref.get();
+    return query.docs.map((doc) => ({ piece_item_id: doc.id, ...(doc.data() as Omit<PieceItem, 'piece_item_id'>) }));
+=======
   async search(filters: PieceItemFilters): Promise<PieceItemSearchResult[]> {
     if (this.useMysql) {
       const { getMysqlPool } = await import('@/app/lib/db/mysql');
@@ -63,5 +85,6 @@ export class PieceItemsRepository extends BaseRepository {
       .filter((item) => !filters.gender || item.gender === filters.gender)
       .filter((item) => !filters.brand || item.brand === filters.brand)
       .filter((item) => !filters.piece_type || item.piece_type === filters.piece_type);
+>>>>>>> 86fb19f (Refatora telas filhas e adiciona backend multilayer com APIs)
   }
 }
