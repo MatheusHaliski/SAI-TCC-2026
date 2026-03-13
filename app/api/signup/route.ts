@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { getAdminFirestore } from "@/app/lib/firebaseAdmin";
 import { signupPayloadSchema } from "@/app/signupview/schema";
+import { createSessionToken, setSessionCookie } from "@/app/lib/serverSession";
 
 export const runtime = "nodejs";
 
@@ -99,7 +100,11 @@ export async function POST(request: NextRequest): Promise<Response> {
             HASH_ITERATIONS
         );
 
-        await db.collection(USER_COLLECTION).add({
+        const userRef = db.collection(USER_COLLECTION).doc();
+        const userId = userRef.id;
+
+        await userRef.set({
+            user_id: userId,
             name: normalizedName,
             email: normalizedEmail,
             passwordHash,
@@ -108,8 +113,22 @@ export async function POST(request: NextRequest): Promise<Response> {
             passwordHashAlgorithm: HASH_ALGORITHM,
             createdAt: new Date().toISOString(),
         });
+        const sessionToken = createSessionToken({
+            sub: userId,
+            email: normalizedEmail,
+        });
 
-        return NextResponse.json({ ok: true });
+        const response = NextResponse.json({
+            ok: true,
+            profile: {
+                user_id: userId,
+                name: normalizedName,
+                email: normalizedEmail,
+            },
+        });
+        setSessionCookie(response, sessionToken);
+
+        return response;
     } catch (error) {
         console.error("[Signup API] failed to create account:", error);
         return NextResponse.json(
