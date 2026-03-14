@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getAuthSessionProfile } from '@/app/lib/authSession';
+import { getServerSession } from '@/app/lib/clientSession';
 import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
@@ -47,14 +49,41 @@ export default function MyWardrobeView() {
   const [savedSchemes, setSavedSchemes] = useState<SavedScheme[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/wardrobe-items/user/1').then((res) => res.json()),
-      fetch('/api/wardrobe-items/user/1/analysis').then((res) => res.json()),
-      fetch('/api/schemes/user/1').then((res) => res.json()),
-    ]).then(([wardrobeItems, wardrobeAnalysis, userSavedSchemes]) => {
-      setItems(Array.isArray(wardrobeItems) ? wardrobeItems : []);
-      setAnalysis(wardrobeAnalysis && !Array.isArray(wardrobeAnalysis) ? wardrobeAnalysis : null);
-      setSavedSchemes(Array.isArray(userSavedSchemes) ? userSavedSchemes : []);
+    const loadWardrobeData = async () => {
+      const localProfile = getAuthSessionProfile();
+      let resolvedUserId = localProfile.user_id?.trim() || '';
+
+      if (!resolvedUserId) {
+        const serverProfile = await getServerSession();
+        resolvedUserId = serverProfile?.user_id?.trim() || '';
+      }
+
+      if (!resolvedUserId) {
+        setItems([]);
+        setAnalysis(null);
+        setSavedSchemes([]);
+        return;
+      }
+
+      const [wardrobeResponse, analysisResponse, schemesResponse] = await Promise.all([
+        fetch(`/api/wardrobe-items/user/${resolvedUserId}`),
+        fetch(`/api/wardrobe-items/user/${resolvedUserId}/analysis`),
+        fetch(`/api/schemes/user/${resolvedUserId}`),
+      ]);
+
+      const wardrobeItems = await wardrobeResponse.json().catch(() => []);
+      const wardrobeAnalysis = await analysisResponse.json().catch(() => null);
+      const userSavedSchemes = await schemesResponse.json().catch(() => []);
+
+      setItems(wardrobeResponse.ok && Array.isArray(wardrobeItems) ? wardrobeItems : []);
+      setAnalysis(analysisResponse.ok && wardrobeAnalysis && !Array.isArray(wardrobeAnalysis) ? wardrobeAnalysis : null);
+      setSavedSchemes(schemesResponse.ok && Array.isArray(userSavedSchemes) ? userSavedSchemes : []);
+    };
+
+    loadWardrobeData().catch(() => {
+      setItems([]);
+      setAnalysis(null);
+      setSavedSchemes([]);
     });
   }, []);
 
