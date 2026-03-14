@@ -19,6 +19,14 @@ const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', strin
 
 const normalizePieceType = (value: string) => value.trim().toLowerCase();
 
+
+const DEFAULT_SLOT_SUGGESTIONS: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+  upper: ['Classic White Tee', 'Slim Oxford Shirt', 'Oversized Hoodie'],
+  lower: ['Black Tailored Pants', 'Straight Blue Jeans', 'Cargo Utility Pants'],
+  shoes: ['White Sneakers', 'Leather Loafers', 'Chelsea Boots'],
+  accessory: ['Minimal Watch', 'Crossbody Bag', 'Silver Chain'],
+};
+
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 
 export default function CreateMySchemeView() {
@@ -74,26 +82,36 @@ export default function CreateMySchemeView() {
       return;
     }
 
-    const response = await fetch('/api/schemes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: userId,
-        title: title.trim() || 'My New Scheme',
-        style: style.trim() || 'Minimal',
-        occasion: occasion.trim() || 'Daily',
-        visibility,
-        creation_mode,
-        items: schemeItems,
-      }),
-    });
-
-    if (!response.ok) {
-      setAlertMessage('Unable to save scheme. Please try again.');
+    if (schemeItems.length === 0) {
+      setAlertMessage('Select at least one wardrobe item before saving.');
       return;
     }
 
-    setAlertMessage('Scheme saved successfully.');
+    try {
+      const response = await fetch('/api/schemes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          title: title.trim() || 'My New Scheme',
+          style: style.trim() || 'Minimal',
+          occasion: occasion.trim() || 'Daily',
+          visibility,
+          creation_mode,
+          items: schemeItems,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        setAlertMessage(payload?.error || 'Unable to save scheme. Please try again.');
+        return;
+      }
+
+      setAlertMessage('Scheme saved successfully.');
+    } catch {
+      setAlertMessage('Unable to save scheme. Please try again.');
+    }
   };
 
   const optionsByType = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
@@ -156,6 +174,11 @@ export default function CreateMySchemeView() {
                     className="mt-2 w-full rounded-lg border border-black bg-white px-3 py-2 text-black"
                   >
                     <option value="">Select item</option>
+                    {DEFAULT_SLOT_SUGGESTIONS[slot].map((label) => (
+                      <option key={`suggested-${slot}-${label}`} value="" disabled>
+                        Suggested: {label}
+                      </option>
+                    ))}
                     {optionsByType(slot).map((item) => (
                       <option key={item.wardrobe_item_id} value={item.wardrobe_item_id}>
                         {item.name}
