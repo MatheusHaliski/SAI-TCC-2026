@@ -20,11 +20,27 @@ const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', strin
 const normalizePieceType = (value: string) => value.trim().toLowerCase();
 
 
-const DEFAULT_SLOT_SUGGESTIONS: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
-  upper: ['Classic White Tee', 'Slim Oxford Shirt', 'Oversized Hoodie'],
-  lower: ['Black Tailored Pants', 'Straight Blue Jeans', 'Cargo Utility Pants'],
-  shoes: ['White Sneakers', 'Leather Loafers', 'Chelsea Boots'],
-  accessory: ['Minimal Watch', 'Crossbody Bag', 'Silver Chain'],
+const DEFAULT_SLOT_SUGGESTIONS: Record<'upper' | 'lower' | 'shoes' | 'accessory', Array<{ value: string; label: string }>> = {
+  upper: [
+    { value: 'suggested:upper:classic-white-tee', label: 'Classic White Tee' },
+    { value: 'suggested:upper:slim-oxford-shirt', label: 'Slim Oxford Shirt' },
+    { value: 'suggested:upper:oversized-hoodie', label: 'Oversized Hoodie' },
+  ],
+  lower: [
+    { value: 'suggested:lower:black-tailored-pants', label: 'Black Tailored Pants' },
+    { value: 'suggested:lower:straight-blue-jeans', label: 'Straight Blue Jeans' },
+    { value: 'suggested:lower:cargo-utility-pants', label: 'Cargo Utility Pants' },
+  ],
+  shoes: [
+    { value: 'suggested:shoes:white-sneakers', label: 'White Sneakers' },
+    { value: 'suggested:shoes:leather-loafers', label: 'Leather Loafers' },
+    { value: 'suggested:shoes:chelsea-boots', label: 'Chelsea Boots' },
+  ],
+  accessory: [
+    { value: 'suggested:accessory:minimal-watch', label: 'Minimal Watch' },
+    { value: 'suggested:accessory:crossbody-bag', label: 'Crossbody Bag' },
+    { value: 'suggested:accessory:silver-chain', label: 'Silver Chain' },
+  ],
 };
 
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
@@ -174,9 +190,9 @@ export default function CreateMySchemeView() {
                     className="mt-2 w-full rounded-lg border border-black bg-white px-3 py-2 text-black"
                   >
                     <option value="">Select item</option>
-                    {DEFAULT_SLOT_SUGGESTIONS[slot].map((label) => (
-                      <option key={`suggested-${slot}-${label}`} value="" >
-                        Suggested: {label}
+                    {DEFAULT_SLOT_SUGGESTIONS[slot].map((suggestion) => (
+                      <option key={suggestion.value} value={suggestion.value}>
+                        Suggested: {suggestion.label}
                       </option>
                     ))}
                     {optionsByType(slot).map((item) => (

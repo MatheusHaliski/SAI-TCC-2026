@@ -13,6 +13,8 @@ export class SchemesService {
 
   private async validateReferences(input: CreateSchemeInput) {
     for (const item of input.items) {
+      if (item.wardrobe_item_id.startsWith('suggested:')) continue;
+
       const exists = await this.wardrobeRepo.existsById(item.wardrobe_item_id);
       if (!exists) throw new ServiceError(`Wardrobe item ${item.wardrobe_item_id} not found`, 404);
     }
