@@ -175,7 +175,7 @@ export default function CreateMySchemeView() {
                   >
                     <option value="">Select item</option>
                     {DEFAULT_SLOT_SUGGESTIONS[slot].map((label) => (
-                      <option key={`suggested-${slot}-${label}`} value="" disabled>
+                      <option key={`suggested-${slot}-${label}`} value="" >
                         Suggested: {label}
                       </option>
                     ))}
