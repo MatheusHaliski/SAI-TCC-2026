@@ -19,6 +19,14 @@ const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', strin
 
 const normalizePieceType = (value: string) => value.trim().toLowerCase();
 
+
+const DEFAULT_SLOT_SUGGESTIONS: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+  upper: ['Classic White Tee', 'Slim Oxford Shirt', 'Oversized Hoodie'],
+  lower: ['Black Tailored Pants', 'Straight Blue Jeans', 'Cargo Utility Pants'],
+  shoes: ['White Sneakers', 'Leather Loafers', 'Chelsea Boots'],
+  accessory: ['Minimal Watch', 'Crossbody Bag', 'Silver Chain'],
+};
+
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 
 export default function CreateMySchemeView() {
@@ -166,6 +174,11 @@ export default function CreateMySchemeView() {
                     className="mt-2 w-full rounded-lg border border-black bg-white px-3 py-2 text-black"
                   >
                     <option value="">Select item</option>
+                    {DEFAULT_SLOT_SUGGESTIONS[slot].map((label) => (
+                      <option key={`suggested-${slot}-${label}`} value="" disabled>
+                        Suggested: {label}
+                      </option>
+                    ))}
                     {optionsByType(slot).map((item) => (
                       <option key={item.wardrobe_item_id} value={item.wardrobe_item_id}>
                         {item.name}
