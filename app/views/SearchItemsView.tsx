@@ -42,7 +42,7 @@ export default function SearchItemsView() {
       <PageHeader title="Search Items" subtitle="Filter catalog by season, gender, brand and piece type." />
 
       <SectionBlock title="Search Items" subtitle="Use the SAI fashion filter panel and browse piece item cards below.">
-        <div className="relative mt-4 overflow-hidden rounded-3xl border border-white/18 bg-[#071a14] p-5 shadow-[0_14px_45px_rgba(16,185,129,0.20)]">
+        <div className="relative mt-4 overflow-hidden rounded-3xl border border-white/18 bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500 shadow-[0_14px_45px_rgba(16,185,129,0.25)]">
           <div className="pointer-events-none absolute -left-20 top-6 h-56 w-56 rounded-full bg-[#22c55e]/20 blur-[120px]" />
           <div className="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-[#38bdf8]/20 blur-[160px]" />
 
