@@ -2,6 +2,7 @@ import { BrandsRepository } from '@/app/backend/repositories/BrandsRepository';
 import { MarketsRepository } from '@/app/backend/repositories/MarketsRepository';
 import { PieceItemsRepository } from '@/app/backend/repositories/PieceItemsRepository';
 import { PieceItemSearchResult } from '@/app/backend/types/entities';
+import { ensureSaiCatalogSeeded } from '@/app/backend/services/BootstrapSaiCatalogService';
 
 export class PieceItemsService {
   constructor(
@@ -11,6 +12,8 @@ export class PieceItemsService {
   ) {}
 
   async search(filters: { season?: string; gender?: string; brand?: string; piece_type?: string }): Promise<PieceItemSearchResult[]> {
+    await ensureSaiCatalogSeeded();
+
     const items = await this.pieceRepo.searchByBaseFilter(filters);
 
     const enriched = await Promise.all(
