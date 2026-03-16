@@ -25,6 +25,7 @@ const pieceTypeOptions = ['upper_piece', 'shoes_piece', 'lower_piece', 'accessor
 export default function SearchItemsView() {
   const [filters, setFilters] = useState(defaultFilters);
   const [items, setItems] = useState<Item[]>([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -33,8 +34,18 @@ export default function SearchItemsView() {
     });
 
     fetch(`/api/piece-items?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => setItems(Array.isArray(data) ? data : []));
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load piece items.');
+        return res.json();
+      })
+      .then((data) => {
+        setItems(Array.isArray(data) ? data : []);
+        setError('');
+      })
+      .catch(() => {
+        setItems([]);
+        setError('Unable to load items right now. Please try again in a few seconds.');
+      })
   }, [filters]);
 
   return (
@@ -42,12 +53,11 @@ export default function SearchItemsView() {
       <PageHeader title="Search Items" subtitle="Filter catalog by season, gender, brand and piece type." />
 
       <SectionBlock title="Search Items" subtitle="Use the SAI fashion filter panel and browse piece item cards below.">
-        <div className="relative mt-4 overflow-hidden rounded-3xl border-4 border-white bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500 shadow-[0_14px_45px_rgba(16,185,129,0.25)]">
+        <div className="relative mt-4 overflow-hidden rounded-3xl border border-white/18 bg-[#071a14] p-5 shadow-[0_14px_45px_rgba(16,185,129,0.20)]">
           <div className="pointer-events-none absolute -left-20 top-6 h-56 w-56 rounded-full bg-[#22c55e]/20 blur-[120px]" />
           <div className="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-[#38bdf8]/20 blur-[160px]" />
 
-          <section className={["relative z-10 rounded-3xl px-5 py-4","bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500 ",
-    "shadow-[0_14px_45px_rgba(16,185,129,0.25)]"].join(' ')}>
+          <section className={["relative z-10 rounded-3xl px-5 py-4", FILTER_GLOW_BAR, FILTER_GLOW_LINE].join(' ')}>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {[
                 { key: 'season', label: 'Season', options: seasonOptions },
@@ -80,6 +90,11 @@ export default function SearchItemsView() {
 
           <div className="relative z-10 mt-5">
             <h3 className="text-lg font-semibold text-white">Piece Items</h3>
+            {error ? <p className="mt-3 text-sm text-red-200">{error}</p> : null}
+            {!error && items.length === 0 ? (
+              <p className="mt-3 text-sm text-white/80">No items found for these filters.</p>
+            ) : null}
+
             <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {items.map((item) => (
                 <article key={item.piece_item_id} className="overflow-hidden rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl">
