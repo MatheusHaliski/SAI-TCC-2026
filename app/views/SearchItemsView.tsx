@@ -46,7 +46,7 @@ export default function SearchItemsView() {
           <div className="pointer-events-none absolute -left-20 top-6 h-56 w-56 rounded-full bg-[#22c55e]/20 blur-[120px]" />
           <div className="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-[#38bdf8]/20 blur-[160px]" />
 
-          <section className={["relative z-10 rounded-3xl px-5 py-4","bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500 ",
+          <section className={["relative z-10 rounded-3xl border border-white/18 px-5 py-4","bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500 ",
     "shadow-[0_14px_45px_rgba(16,185,129,0.25)]"].join(' ')}>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {[
