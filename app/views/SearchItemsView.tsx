@@ -1,115 +1,92 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
-import { FILTER_GLOW_BAR, FILTER_GLOW_LINE } from '@/app/lib/uiToken';
 
-type Item = {
-  piece_item_id: string;
-  image_url: string;
-  gender: string;
-  brand: string;
-  name: string;
-  season: string;
-  piece_type: string;
+type PublicScheme = {
+  scheme_id: string;
+  title: string;
+  style: string;
+  occasion: string;
+  user_id: string;
+  cover_image_url: string | null;
 };
 
-const defaultFilters = { season: '', gender: '', brand: '', piece_type: '' };
+type UserPreview = { user_id: string; name: string; handle: string };
 
-const seasonOptions = ['winter', 'summer', 'autumn', 'spring'];
-const genderOptions = ['male', 'female'];
-const brandOptions = ['Adidas', 'Nike', 'Zara', 'C&A', 'Puma', 'Levis'];
-const pieceTypeOptions = ['upper_piece', 'shoes_piece', 'lower_piece', 'accessory_piece'];
+const mockUsers: UserPreview[] = [
+  { user_id: 'u1', name: 'Alice Couto', handle: '@alicefits' },
+  { user_id: 'u2', name: 'Bruno Lima', handle: '@brunowear' },
+  { user_id: 'u3', name: 'Camila Voss', handle: '@camila.styles' },
+];
 
 export default function SearchItemsView() {
-  const [filters, setFilters] = useState(defaultFilters);
-  const [items, setItems] = useState<Item[]>([]);
-  const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
+  const [schemes, setSchemes] = useState<PublicScheme[]>([]);
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.set(key, value);
-    });
+    fetch('/api/schemes/public').then((res) => res.json()).then((data) => setSchemes(Array.isArray(data) ? data : []));
+  }, []);
 
-    fetch(`/api/piece-items?${params.toString()}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load piece items.');
-        return res.json();
-      })
-      .then((data) => {
-        setItems(Array.isArray(data) ? data : []);
-        setError('');
-      })
-      .catch(() => {
-        setItems([]);
-        setError('Unable to load items right now. Please try again in a few seconds.');
-      })
-  }, [filters]);
+  const queryNorm = query.trim().toLowerCase();
+
+  const users = useMemo(
+    () => mockUsers.filter((user) => !queryNorm || `${user.name} ${user.handle}`.toLowerCase().includes(queryNorm)),
+    [queryNorm],
+  );
+
+  const outfits = useMemo(
+    () =>
+      schemes.filter(
+        (scheme) =>
+          !queryNorm || `${scheme.title} ${scheme.style} ${scheme.occasion} ${scheme.user_id}`.toLowerCase().includes(queryNorm),
+      ),
+    [queryNorm, schemes],
+  );
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Search Items" subtitle="Filter catalog by season, gender, brand and piece type." />
+      <PageHeader title="Search" subtitle="Find users and outfits (Instagram-style discovery)." />
 
-      <SectionBlock title="Search Items" subtitle="Use the SAI fashion filter panel and browse piece item cards below.">
-        <div className="relative mt-4 overflow-hidden rounded-3xl border border-white/18 bg-[#071a14] p-5 shadow-[0_14px_45px_rgba(16,185,129,0.20)]">
-          <div className="pointer-events-none absolute -left-20 top-6 h-56 w-56 rounded-full bg-[#22c55e]/20 blur-[120px]" />
-          <div className="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-[#38bdf8]/20 blur-[160px]" />
+      <SectionBlock title="Magnifying Glass Search" subtitle="Search by username, outfit title, occasion, or style.">
+        <label className="mt-4 flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
+          <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <circle cx="11" cy="11" r="6" />
+            <path d="m20 20-4.2-4.2" />
+          </svg>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search users and outfits..."
+            className="w-full bg-transparent text-white placeholder:text-white/60 focus:outline-none"
+          />
+        </label>
+      </SectionBlock>
 
-          <section className={["relative z-10 rounded-3xl px-5 py-4", FILTER_GLOW_BAR, FILTER_GLOW_LINE].join(' ')}>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {[
-                { key: 'season', label: 'Season', options: seasonOptions },
-                { key: 'gender', label: 'Gender', options: genderOptions },
-                { key: 'brand', label: 'Brand', options: brandOptions },
-                { key: 'piece_type', label: 'Piece Type', options: pieceTypeOptions },
-              ].map((field) => (
-                <label key={field.key} className="space-y-2 font-sharetech">
-                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">{field.label}</span>
-                  <select
-                    value={filters[field.key as keyof typeof defaultFilters]}
-                    onChange={(event) =>
-                      setFilters((prev) => ({ ...prev, [field.key]: event.target.value }))
-                    }
-                    className="h-12 w-full rounded-2xl border border-white/14 bg-white/[0.08] px-3 text-white backdrop-blur-2xl outline-none transition focus-visible:ring-2 focus-visible:ring-cyan-300/35"
-                  >
-                    <option value="" className="text-black">
-                      All {field.label}
-                    </option>
-                    {field.options.map((value) => (
-                      <option key={value} value={value} className="text-black">
-                        {value}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
-          </section>
+      <SectionBlock title="Users" subtitle="Profiles matching the search.">
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {users.map((user) => (
+            <article key={user.user_id} className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white">
+              <p className="font-semibold">{user.name}</p>
+              <p className="text-sm text-white/70">{user.handle}</p>
+            </article>
+          ))}
+          {!users.length ? <p className="text-sm text-white/70">No users found.</p> : null}
+        </div>
+      </SectionBlock>
 
-          <div className="relative z-10 mt-5">
-            <h3 className="text-lg font-semibold text-white">Piece Items</h3>
-            {error ? <p className="mt-3 text-sm text-red-200">{error}</p> : null}
-            {!error && items.length === 0 ? (
-              <p className="mt-3 text-sm text-white/80">No items found for these filters.</p>
-            ) : null}
-
-            <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {items.map((item) => (
-                <article key={item.piece_item_id} className="overflow-hidden rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl">
-                  <img src={item.image_url} alt={item.name} className="h-48 w-full object-cover" />
-                  <div className="space-y-1 px-4 py-3 text-white">
-                    <h4 className="font-semibold">{item.name}</h4>
-                    <p className="text-sm text-white/80">Season: {item.season}</p>
-                    <p className="text-sm text-white/80">Gender: {item.gender}</p>
-                    <p className="text-sm text-white/80">Brand: {item.brand}</p>
-                    <p className="text-sm text-white/80">Type: {item.piece_type}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
+      <SectionBlock title="Outfits" subtitle="Public outfits matching your search.">
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {outfits.map((scheme) => (
+            <article key={scheme.scheme_id} className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
+              <div className="h-32 rounded-lg bg-black/30" style={{ backgroundImage: scheme.cover_image_url ? `url(${scheme.cover_image_url})` : undefined, backgroundSize: 'cover' }} />
+              <p className="mt-2 font-semibold">{scheme.title}</p>
+              <p className="text-sm text-white/75">{scheme.style} • {scheme.occasion}</p>
+            </article>
+          ))}
+          {!outfits.length ? <p className="text-sm text-white/70">No outfits found.</p> : null}
         </div>
       </SectionBlock>
     </div>

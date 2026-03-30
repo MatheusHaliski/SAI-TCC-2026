@@ -4,6 +4,7 @@ import CreateMySchemeView from '@/app/views/CreateMySchemeView';
 import ExploreSchemeView from '@/app/views/ExploreSchemeView';
 import MyWardrobeView from '@/app/views/MyWardrobeView';
 import SearchItemsView from '@/app/views/SearchItemsView';
+import AddWardrobeItemView from '@/app/views/AddWardrobeItemView';
 
 interface ContentRouterProps {
   route: AppRoute;
@@ -14,5 +15,6 @@ export default function ContentRouter({ route }: ContentRouterProps) {
   if (route === 'search-items') return <SearchItemsView />;
   if (route === 'explore-scheme') return <ExploreSchemeView />;
   if (route === 'profile') return <ProfileView />;
+  if (route === 'add-wardrobe-item') return <AddWardrobeItemView />;
   return <MyWardrobeView />;
 }
