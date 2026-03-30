@@ -22,7 +22,17 @@ const RouteIcon = ({ route }: { route: AppRoute }) => {
   if (route === 'search-items') {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="m12 4 2.6 5.4L20 12l-5.4 2.6L12 20l-2.6-5.4L4 12l5.4-2.6z" />
+        <circle cx="11" cy="11" r="6" />
+        <path d="m20 20-4.2-4.2" />
+      </svg>
+    );
+  }
+
+  if (route === 'add-wardrobe-item') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M12 5v14M5 12h14" />
+        <path d="M4 19h16" />
       </svg>
     );
   }

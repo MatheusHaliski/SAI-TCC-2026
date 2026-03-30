@@ -1,0 +1,142 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import PageHeader from '@/app/components/shell/PageHeader';
+import SectionBlock from '@/app/components/shared/SectionBlock';
+import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
+import { getAuthSessionProfile } from '@/app/lib/authSession';
+import { getServerSession } from '@/app/lib/clientSession';
+
+type Brand = { brand_id: string; name: string };
+type Market = { market_id: string; season: string; gender: string };
+
+const DEFAULT_BRAND_ID = 'default';
+
+export default function AddWardrobeItemView() {
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [userId, setUserId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const [form, setForm] = useState({
+    name: '',
+    image_url: '',
+    piece_type: 'upper_piece',
+    color: '',
+    material: '',
+    style_tags: '',
+    occasion_tags: '',
+    market_id: '',
+    brand_id: DEFAULT_BRAND_ID,
+  });
+
+  useEffect(() => {
+    const loadDependencies = async () => {
+      const localProfile = getAuthSessionProfile();
+      let resolvedUserId = localProfile.user_id?.trim() || '';
+      if (!resolvedUserId) {
+        const serverProfile = await getServerSession();
+        resolvedUserId = serverProfile?.user_id?.trim() || '';
+      }
+      if (!resolvedUserId) {
+        setAlertMessage('User session not found. Please sign in again.');
+        return;
+      }
+      setUserId(resolvedUserId);
+
+      const [brandsResponse, marketsResponse] = await Promise.all([fetch('/api/brands'), fetch('/api/markets')]);
+      const brandsData = await brandsResponse.json().catch(() => []);
+      const marketsData = await marketsResponse.json().catch(() => []);
+
+      setBrands(Array.isArray(brandsData) ? brandsData : []);
+      setMarkets(Array.isArray(marketsData) ? marketsData : []);
+      setForm((prev) => ({ ...prev, market_id: Array.isArray(marketsData) && marketsData[0]?.market_id ? marketsData[0].market_id : '' }));
+    };
+
+    loadDependencies().catch(() => setAlertMessage('Unable to load form data. Please try again.'));
+  }, []);
+
+  const marketLabel = useMemo(
+    () => new Map(markets.map((market) => [market.market_id, `${market.season} • ${market.gender}`])),
+    [markets],
+  );
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!userId || !form.market_id || !form.name.trim() || !form.image_url.trim()) {
+      setAlertMessage('Please fill name, image URL and market before saving.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/wardrobe-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          ...form,
+          brand_id: form.brand_id || DEFAULT_BRAND_ID,
+          style_tags: form.style_tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+          occasion_tags: form.occasion_tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        setAlertMessage(payload?.error || 'Could not add the wardrobe piece.');
+        return;
+      }
+
+      setAlertMessage('Piece added to your wardrobe successfully.');
+      setForm((prev) => ({ ...prev, name: '', image_url: '', color: '', material: '', style_tags: '', occasion_tags: '' }));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="space-y-6">
+        <PageHeader title="Add Piece" subtitle="Add new items to your wardrobe. Brand can be left as default." />
+        <SectionBlock title="Wardrobe Piece Form" subtitle="Register a piece and classify it with tags and metadata.">
+          <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={handleSubmit}>
+            <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Piece name" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
+            <input value={form.image_url} onChange={(e) => setForm((prev) => ({ ...prev, image_url: e.target.value }))} placeholder="Image URL" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
+
+            <select value={form.piece_type} onChange={(e) => setForm((prev) => ({ ...prev, piece_type: e.target.value }))} className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black">
+              <option value="upper_piece">Upper piece</option>
+              <option value="lower_piece">Lower piece</option>
+              <option value="shoes_piece">Shoes</option>
+              <option value="accessory_piece">Accessory</option>
+            </select>
+
+            <select value={form.market_id} onChange={(e) => setForm((prev) => ({ ...prev, market_id: e.target.value }))} className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black">
+              {markets.map((market) => (
+                <option key={market.market_id} value={market.market_id}>{marketLabel.get(market.market_id)}</option>
+              ))}
+            </select>
+
+            <select value={form.brand_id} onChange={(e) => setForm((prev) => ({ ...prev, brand_id: e.target.value }))} className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black">
+              <option value={DEFAULT_BRAND_ID}>Default brand</option>
+              {brands.map((brand) => (
+                <option key={brand.brand_id} value={brand.brand_id}>{brand.name}</option>
+              ))}
+            </select>
+
+            <input value={form.color} onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))} placeholder="Color" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
+            <input value={form.material} onChange={(e) => setForm((prev) => ({ ...prev, material: e.target.value }))} placeholder="Material" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
+            <input value={form.style_tags} onChange={(e) => setForm((prev) => ({ ...prev, style_tags: e.target.value }))} placeholder="Style tags (comma separated)" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
+            <input value={form.occasion_tags} onChange={(e) => setForm((prev) => ({ ...prev, occasion_tags: e.target.value }))} placeholder="Occasion tags (comma separated)" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
+
+            <button type="submit" disabled={submitting} className="md:col-span-2 rounded-xl border border-white/30 bg-black px-4 py-2 text-sm font-semibold text-white">
+              {submitting ? 'Saving...' : 'Add piece'}
+            </button>
+          </form>
+        </SectionBlock>
+      </div>
+      {alertMessage ? <SaiModalAlert message={alertMessage} onConfirm={() => setAlertMessage(null)} /> : null}
+    </>
+  );
+}

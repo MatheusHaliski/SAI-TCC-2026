@@ -32,12 +32,37 @@ export class WardrobeItemsRepository extends BaseRepository {
         wardrobe_item_id: doc.id,
         name: item.name,
         image_url: item.image_url,
-        brand: brandMap.get(item.brand_id) ?? 'Unknown',
+        brand: brandMap.get(item.brand_id) ?? (item.brand_id === 'default' ? 'Default brand' : 'Unknown'),
         season: market?.season ?? 'Unknown',
         gender: market?.gender ?? 'Unknown',
         piece_type: item.piece_type,
       };
     });
+  }
+
+
+
+  async create(input: {
+    user_id: string;
+    brand_id: string;
+    market_id: string;
+    name: string;
+    image_url: string;
+    piece_type: string;
+    color: string;
+    material: string;
+    style_tags: string[];
+    occasion_tags: string[];
+  }): Promise<{ wardrobe_item_id: string }> {
+    const now = new Date().toISOString();
+    const payload = {
+      ...input,
+      is_favorite: false,
+      created_at: now,
+      updated_at: now,
+    };
+    const ref = await this.db.collection(WARDROBE_ITEMS_COLLECTION).add(payload);
+    return { wardrobe_item_id: ref.id };
   }
 
   async existsById(wardrobeItemId: string): Promise<boolean> {

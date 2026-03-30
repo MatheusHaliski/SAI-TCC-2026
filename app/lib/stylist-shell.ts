@@ -1,4 +1,4 @@
-export type AppRoute = 'create-my-scheme' | 'my-wardrobe' | 'search-items' | 'explore-scheme' | 'profile';
+export type AppRoute = 'my-wardrobe' | 'create-my-scheme' | 'explore-scheme' | 'profile' | 'search-items' | 'add-wardrobe-item';
 
 export interface NavItem {
   route: AppRoute;
@@ -9,27 +9,30 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { route: 'my-wardrobe', label: 'My Wardrobe', helperText: 'Your wardrobe collection', icon: '⌂', path: '/my-wardrobe' },
-  { route: 'search-items', label: 'Search Items', helperText: 'Catalog filters and discovery', icon: '◈', path: '/search-items' },
-  { route: 'create-my-scheme', label: 'Create My Scheme', helperText: 'Build a new scheme', icon: '✦', path: '/create-my-scheme' },
-  { route: 'explore-scheme', label: 'Explore Scheme', helperText: 'Public community schemes', icon: '◍', path: '/explore-scheme' },
-  { route: 'profile', label: 'Profile', helperText: 'Personal style identity', icon: '◉', path: '/profile' },
+  { route: 'my-wardrobe', label: 'Virtual Wardrobe', helperText: 'Available, unavailable and favorites', icon: '⌂', path: '/my-wardrobe' },
+  { route: 'create-my-scheme', label: 'Create Outfit', helperText: 'Build manually or with AI', icon: '✦', path: '/create-my-scheme' },
+  { route: 'explore-scheme', label: 'Saved Outfits', helperText: 'Manage outfits by occasion and preferences', icon: '◍', path: '/explore-scheme' },
+  { route: 'profile', label: 'Profile', helperText: 'Manage your account details', icon: '◉', path: '/profile' },
+  { route: 'search-items', label: 'Search', helperText: 'Find users and outfits', icon: '⌕', path: '/search-items' },
+  { route: 'add-wardrobe-item', label: 'Add Piece', helperText: 'Register a new wardrobe piece', icon: '+', path: '/add-wardrobe-item' },
 ];
 
 export const ROUTE_TITLES: Record<AppRoute, string> = {
-  'my-wardrobe': 'My Wardrobe',
-  'search-items': 'Search Items',
-  'create-my-scheme': 'Create My Scheme',
-  'explore-scheme': 'Explore Scheme',
+  'my-wardrobe': 'Virtual Wardrobe',
+  'create-my-scheme': 'Create Outfit',
+  'explore-scheme': 'Saved Outfits',
   profile: 'Profile',
+  'search-items': 'Search',
+  'add-wardrobe-item': 'Add Piece',
 };
 
 export const PATH_TO_ROUTE: Record<string, AppRoute> = {
   '/': 'my-wardrobe',
   '/home': 'my-wardrobe',
   '/my-wardrobe': 'my-wardrobe',
-  '/search-items': 'search-items',
   '/create-my-scheme': 'create-my-scheme',
   '/explore-scheme': 'explore-scheme',
   '/profile': 'profile',
+  '/search-items': 'search-items',
+  '/add-wardrobe-item': 'add-wardrobe-item',
 };

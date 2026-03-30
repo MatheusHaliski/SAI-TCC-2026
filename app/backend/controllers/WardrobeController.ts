@@ -10,4 +10,8 @@ export class WardrobeController {
   async analysisByUser(userId: string) {
     return this.wardrobeService.getWardrobeAnalysis(userId);
   }
+
+  async create(input: Record<string, unknown>) {
+    return this.wardrobeService.createWardrobeItem(input);
+  }
 }
