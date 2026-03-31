@@ -1,11 +1,15 @@
 import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
 import { ServiceError } from './errors';
+import { MeshyService } from './MeshyService';
 
 const DEFAULT_BRAND_ID = 'default';
 
 
 export class WardrobeService {
-  constructor(private readonly wardrobeRepo = new WardrobeItemsRepository()) {}
+  constructor(
+    private readonly wardrobeRepo = new WardrobeItemsRepository(),
+    private readonly meshyService = new MeshyService(),
+  ) {}
 
   async listUserWardrobe(userId: string) {
     return this.wardrobeRepo.findByUser(userId);
@@ -25,10 +29,14 @@ export class WardrobeService {
       throw new ServiceError('Missing required fields to create wardrobe item.', 400);
     }
 
+    const generatedModel = await this.meshyService.generate3DModelFromImage(image_url);
+
     return this.wardrobeRepo.create({
       user_id,
       name,
       image_url,
+      model_3d_url: generatedModel.model_3d_url,
+      model_preview_url: generatedModel.model_preview_url,
       piece_type,
       market_id,
       brand_id: String(input.brand_id ?? DEFAULT_BRAND_ID).trim() || DEFAULT_BRAND_ID,
