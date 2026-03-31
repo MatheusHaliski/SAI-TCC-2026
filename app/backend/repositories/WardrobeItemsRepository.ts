@@ -28,34 +28,21 @@ export class WardrobeItemsRepository extends BaseRepository {
     return snapshot.docs.map((doc) => {
       const item = doc.data() as Record<string, string | number | boolean | null>;
       const market = marketsMap.get(String(item.market_id ?? ''));
-      const model3dUrl = (item.model_3d_url as string | null) ?? null;
-      const modelBase3dUrl = (item.model_base_3d_url as string | null) ?? null;
-      const modelBranded3dUrl = (item.model_branded_3d_url as string | null) ?? null;
-      const hasAnyModelUrl = [model3dUrl, modelBase3dUrl, modelBranded3dUrl].some((url) => Boolean(url && url.trim().length > 0));
-      const rawStatus = (item.model_status as ModelGenerationStatus | undefined) ?? 'queued_base';
-      const shouldPromoteLegacyDone =
-        hasAnyModelUrl
-        && ['queued_segmentation', 'segmentation_done', 'queued_base', 'base_done', 'queued_branding', 'queued_geometry_qa', 'retrying_generation'].includes(rawStatus);
-      const normalizedStatus = shouldPromoteLegacyDone ? 'done' : rawStatus;
-
       return {
         wardrobe_item_id: doc.id,
         name: String(item.name ?? ''),
         image_url: String(item.image_url ?? ''),
-        model_3d_url: model3dUrl,
+        model_3d_url: (item.model_3d_url as string | null) ?? null,
         model_preview_url: (item.model_preview_url as string | null) ?? null,
-        model_base_3d_url: modelBase3dUrl,
-        model_branded_3d_url: modelBranded3dUrl,
+        model_base_3d_url: (item.model_base_3d_url as string | null) ?? null,
+        model_branded_3d_url: (item.model_branded_3d_url as string | null) ?? null,
         isolated_piece_image_url: (item.isolated_piece_image_url as string | null) ?? null,
         segmentation_confidence: Number(item.segmentation_confidence ?? 0) || null,
-        geometry_scope_passed:
-          typeof item.geometry_scope_passed === 'boolean'
-            ? item.geometry_scope_passed
-            : null,
+        geometry_scope_passed: Boolean(item.geometry_scope_passed),
         geometry_scope_score: Number(item.geometry_scope_score ?? 0) || null,
-        generation_attempt_count: Number(item.generation_attempt_count ?? 0) || 0,
+        generation_attempt_count: Number(item.generation_attempt_count ?? 0),
         pipeline_stage_details: (item.pipeline_stage_details as Record<string, unknown> | null) ?? null,
-        model_status: normalizedStatus,
+        model_status: (item.model_status as ModelGenerationStatus) ?? 'queued_base',
         model_generation_error: (item.model_generation_error as string | null) ?? null,
         brand: brandMap.get(String(item.brand_id ?? '')) ?? (item.brand_id === 'default' ? 'Default brand' : 'Unknown'),
         brand_detection_confidence: Number(item.brand_detection_confidence ?? 0) || null,
