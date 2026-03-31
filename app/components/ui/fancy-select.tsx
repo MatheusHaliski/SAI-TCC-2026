@@ -58,7 +58,11 @@ export default function FancySelect({
   }, []);
 
   return (
-    <div ref={rootRef} className="relative w-full">
+    <div
+      ref={rootRef}
+      className="relative w-full"
+      style={{ fontFamily: '"Gotham Light", Gotham, "Helvetica Neue", Arial, sans-serif' }}
+    >
       {label ? (
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
           {label}
@@ -68,7 +72,7 @@ export default function FancySelect({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border px-4 py-3 text-left shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl transition ${
+        className={`group relative flex w-full items-center justify-between overflow-hidden rounded-3xl border px-4 py-3 text-left shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl transition ${
           open
             ? 'border-fuchsia-400/50 bg-white/16 ring-2 ring-violet-500/30'
             : 'border-white/20 bg-white/10 hover:bg-white/14'
@@ -94,7 +98,7 @@ export default function FancySelect({
           ▾
         </div>
 
-        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-500/0 via-fuchsia-500/0 to-pink-500/0 opacity-0 transition group-hover:opacity-100 group-hover:from-violet-500/5 group-hover:via-fuchsia-500/5 group-hover:to-pink-500/5" />
+        <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-r from-violet-500/0 via-fuchsia-500/0 to-pink-500/0 opacity-0 transition group-hover:opacity-100 group-hover:from-violet-500/5 group-hover:via-fuchsia-500/5 group-hover:to-pink-500/5" />
       </button>
 
       {open ? (
@@ -123,7 +127,7 @@ export default function FancySelect({
                             onChange(option.value);
                             setOpen(false);
                           }}
-                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
+                          className={`flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left transition ${
                             isSelected
                               ? 'border-fuchsia-400/40 bg-gradient-to-r from-violet-600/70 via-fuchsia-600/70 to-pink-600/70 text-white shadow-[0_10px_30px_rgba(168,85,247,0.28)]'
                               : 'border-white/10 bg-white/5 text-white hover:border-white/20 hover:bg-white/10'
