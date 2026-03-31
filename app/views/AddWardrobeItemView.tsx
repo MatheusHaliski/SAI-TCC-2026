@@ -21,6 +21,7 @@ export default function AddWardrobeItemView() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState('');
   const [imagePreview, setImagePreview] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -59,6 +60,12 @@ export default function AddWardrobeItemView() {
 
     loadDependencies().catch(() => setAlertMessage('Unable to load form data. Please try again.'));
   }, []);
+
+  useEffect(() => () => {
+    if (imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+  }, [imagePreview]);
 
   const marketLabel = useMemo(
     () => new Map(markets.map((market) => [market.market_id, `${market.season} • ${market.gender}`])),
@@ -104,6 +111,9 @@ export default function AddWardrobeItemView() {
   const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
+      if (imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
       setForm((prev) => ({ ...prev, image_url: '' }));
       setSelectedImageName('');
       setImagePreview('');
@@ -117,21 +127,43 @@ export default function AddWardrobeItemView() {
       return;
     }
 
-    const asDataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result ?? ''));
-      reader.onerror = () => reject(new Error('Unable to read image file.'));
-      reader.readAsDataURL(file);
-    }).catch(() => '');
-
-    if (!asDataUrl) {
-      setAlertMessage('Unable to read selected image. Please try another file.');
-      return;
+    const nextPreview = URL.createObjectURL(file);
+    if (imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
     }
-
+    setImagePreview(nextPreview);
     setSelectedImageName(file.name);
-    setImagePreview(asDataUrl);
-    setForm((prev) => ({ ...prev, image_url: asDataUrl }));
+    setUploadingImage(true);
+
+    const payload = new FormData();
+    payload.append('image', file);
+
+    try {
+      const uploadResponse = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: payload,
+      }).catch(() => null);
+
+      if (!uploadResponse?.ok) {
+        const uploadError = (await uploadResponse?.json().catch(() => null)) as { error?: string } | null;
+        setAlertMessage(uploadError?.error || 'Unable to upload selected image. Please try another file.');
+        setForm((prev) => ({ ...prev, image_url: '' }));
+        setSelectedImageName('');
+        setImagePreview('');
+        return;
+      }
+
+      const uploadBody = (await uploadResponse.json().catch(() => null)) as { image_url?: string } | null;
+      if (!uploadBody?.image_url) {
+        setAlertMessage('Upload succeeded but image URL is missing. Please try again.');
+        setForm((prev) => ({ ...prev, image_url: '' }));
+        return;
+      }
+
+      setForm((prev) => ({ ...prev, image_url: uploadBody.image_url }));
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   return (
@@ -175,8 +207,8 @@ export default function AddWardrobeItemView() {
               {imagePreview ? <Image src={imagePreview} alt="Selected clothing piece preview" width={512} height={320} className="mt-2 h-40 w-auto rounded-lg object-cover" unoptimized /> : null}
             </div>
 
-            <button type="submit" disabled={submitting} className="md:col-span-2 rounded-xl border border-white/30 bg-black px-4 py-2 text-sm font-semibold text-white">
-              {submitting ? 'Saving...' : 'Add piece'}
+            <button type="submit" disabled={submitting || uploadingImage} className="md:col-span-2 rounded-xl border border-white/30 bg-black px-4 py-2 text-sm font-semibold text-white">
+              {uploadingImage ? 'Uploading image...' : submitting ? 'Saving...' : 'Add piece'}
             </button>
           </form>
         </SectionBlock>

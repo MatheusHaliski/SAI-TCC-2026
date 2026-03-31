@@ -1,5 +1,6 @@
-import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
 let firestoreInstance: Firestore | null = null;
 
@@ -24,9 +25,22 @@ export const getAdminFirestore = () => {
                 clientEmail,
                 privateKey,
             }),
+            storageBucket:
+                process.env.NEXT_FIREBASE_ADMIN_STORAGE_BUCKET ??
+                process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
         });
     }
 
     firestoreInstance = getFirestore();
     return firestoreInstance;
+};
+
+export const getAdminStorageBucket = () => {
+    getAdminFirestore();
+    const app = getApp();
+    const bucket = getStorage(app).bucket();
+    if (!bucket.name) {
+        throw new Error("Storage bucket is not configured.");
+    }
+    return bucket;
 };
