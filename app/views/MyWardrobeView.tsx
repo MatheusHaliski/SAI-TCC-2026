@@ -17,7 +17,23 @@ interface WardrobeItem {
   model_preview_url?: string | null;
   model_base_3d_url?: string | null;
   model_branded_3d_url?: string | null;
-  model_status?: 'queued_base' | 'base_done' | 'queued_branding' | 'done' | 'failed' | 'needs_brand_review';
+  isolated_piece_image_url?: string | null;
+  segmentation_confidence?: number | null;
+  geometry_scope_passed?: boolean;
+  geometry_scope_score?: number | null;
+  generation_attempt_count?: number;
+  model_status?:
+    | 'queued_segmentation'
+    | 'segmentation_done'
+    | 'queued_base'
+    | 'base_done'
+    | 'queued_branding'
+    | 'queued_geometry_qa'
+    | 'retrying_generation'
+    | 'done'
+    | 'failed_geometry_scope'
+    | 'failed'
+    | 'needs_brand_review';
   model_generation_error?: string | null;
   brand: string;
   season: string;
@@ -68,6 +84,7 @@ export default function MyWardrobeView() {
   }, [availability, favorites, items]);
 
   const safeModelUrl = useMemo(() => {
+    if (selectedItem && selectedItem.geometry_scope_passed === false) return null;
     const rawUrl = selectedItem?.model_branded_3d_url?.trim() || selectedItem?.model_3d_url?.trim() || selectedItem?.model_base_3d_url?.trim();
     if (!rawUrl) return null;
     return rawUrl.startsWith('http://') ? rawUrl.replace('http://', 'https://') : rawUrl;
@@ -146,6 +163,9 @@ export default function MyWardrobeView() {
                     <p className="text-sm text-white/70">Brand: {item.brand}</p>
                     <p className="text-sm text-white/70">Type: {item.piece_type}</p>
                     <p className="text-xs text-cyan-200/90">3D status: {item.model_status ?? 'queued_base'}</p>
+                    <p className="text-xs text-white/70">
+                      Scope QA: {item.geometry_scope_passed ? `Passed (${(item.geometry_scope_score ?? 0).toFixed(2)})` : 'Pending/Failed'}
+                    </p>
                     <p className="mt-1 text-xs text-cyan-200/90">Click to open 3D viewer</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button type="button" onClick={(event) => { event.stopPropagation(); setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'available' })); }} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">Available</button>
@@ -207,8 +227,14 @@ export default function MyWardrobeView() {
               <div className="flex h-[60vh] items-center justify-center rounded-xl border border-white/20 bg-black/40 text-center text-sm text-white/80">
                 {selectedItem.model_status === 'failed'
                   ? (selectedItem.model_generation_error || '3D generation failed for this item. Please retry.')
+                  : selectedItem.model_status === 'failed_geometry_scope'
+                    ? (selectedItem.model_generation_error || 'Generated model failed garment-only scope validation. Retry generation with cleaner piece photo.')
                   : selectedItem.model_status === 'needs_brand_review'
                     ? (selectedItem.model_generation_error || 'Brand could not be detected from the uploaded image. Please review brand/logo catalog data.')
+                    : selectedItem.model_status === 'queued_segmentation' || selectedItem.model_status === 'segmentation_done'
+                      ? 'Isolating designated piece before 3D generation...'
+                      : selectedItem.model_status === 'queued_geometry_qa' || selectedItem.model_status === 'retrying_generation'
+                        ? 'Running geometry scope checks to ensure garment-only model output...'
                     : 'This piece has no 3D model yet. Wait for base and branding passes to finish.'}
               </div>
             )}
