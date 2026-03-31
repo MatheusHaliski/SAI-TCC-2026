@@ -69,8 +69,24 @@ export default function MyWardrobeView() {
     return rawUrl.startsWith('http://') ? rawUrl.replace('http://', 'https://') : rawUrl;
   }, [selectedItem]);
 
+  const viewerModelUrl = useMemo(() => {
+    if (!safeModelUrl) return null;
+    return safeModelUrl.includes('assets.meshy.ai')
+      ? `/api/model-proxy?url=${encodeURIComponent(safeModelUrl)}`
+      : safeModelUrl;
+  }, [safeModelUrl]);
+
+  const viewerPosterUrl = useMemo(() => {
+    const rawPosterUrl = selectedItem?.model_preview_url?.trim();
+    if (!rawPosterUrl) return undefined;
+    const safePosterUrl = rawPosterUrl.startsWith('http://') ? rawPosterUrl.replace('http://', 'https://') : rawPosterUrl;
+    return safePosterUrl.includes('assets.meshy.ai')
+      ? `/api/model-proxy?url=${encodeURIComponent(safePosterUrl)}`
+      : safePosterUrl;
+  }, [selectedItem]);
+
   useEffect(() => {
-    if (!safeModelUrl || !modelViewerRef.current) return;
+    if (!viewerModelUrl || !modelViewerRef.current) return;
 
     const viewerElement = modelViewerRef.current;
     const handleLoad = () => {
@@ -91,7 +107,7 @@ export default function MyWardrobeView() {
       viewerElement.removeEventListener('load', handleLoad as EventListener);
       viewerElement.removeEventListener('error', handleError as EventListener);
     };
-  }, [safeModelUrl, selectedItem?.wardrobe_item_id, viewerLoaded]);
+  }, [viewerModelUrl, selectedItem?.wardrobe_item_id, viewerLoaded]);
 
   return (
     <>
@@ -144,12 +160,12 @@ export default function MyWardrobeView() {
               <h3 className="text-lg font-semibold text-white">{selectedItem.name} • 3D Viewer</h3>
               <button type="button" onClick={() => { setSelectedItem(null); setViewerLoading(false); setViewerError(null); setViewerLoaded(false); }} className="rounded-lg border border-white/25 px-3 py-1 text-sm text-white">Close</button>
             </div>
-            {safeModelUrl ? (
+            {viewerModelUrl ? (
               <div className="relative">
                 <model-viewer
                   ref={modelViewerRef}
-                  src={safeModelUrl}
-                  poster={selectedItem.model_preview_url ?? undefined}
+                  src={viewerModelUrl}
+                  poster={viewerPosterUrl}
                   ar={false}
                   camera-controls
                   touch-action="pan-y"
@@ -170,7 +186,7 @@ export default function MyWardrobeView() {
                 {viewerError && !viewerLoaded ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-black/65 p-4 text-center text-sm text-white">
                     <p>{viewerError}</p>
-                    <a href={safeModelUrl} target="_blank" rel="noreferrer" className="rounded-lg border border-cyan-300/60 px-3 py-1 text-cyan-200">
+                    <a href={safeModelUrl ?? viewerModelUrl} target="_blank" rel="noreferrer" className="rounded-lg border border-cyan-300/60 px-3 py-1 text-cyan-200">
                       Open model URL in new tab
                     </a>
                   </div>
