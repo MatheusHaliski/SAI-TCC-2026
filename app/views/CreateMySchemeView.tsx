@@ -47,6 +47,8 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
 };
 
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
+const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
+const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
 
 export default function CreateMySchemeView() {
   const [items, setItems] = useState<WardrobeItem[]>([]);
@@ -189,18 +191,26 @@ export default function CreateMySchemeView() {
                 className={inputClassName}
               />
 
-              <input
+              <FancySelect
                 value={style}
-                onChange={(e) => setStyle(e.target.value)}
+                onChange={setStyle}
                 placeholder="Style"
-                className={inputClassName}
+                options={STYLE_OPTIONS.map((option) => ({
+                  value: option,
+                  label: option,
+                  group: 'Style',
+                }))}
               />
 
-              <input
+              <FancySelect
                 value={occasion}
-                onChange={(e) => setOccasion(e.target.value)}
+                onChange={setOccasion}
                 placeholder="Occasion"
-                className={inputClassName}
+                options={OCCASION_OPTIONS.map((option) => ({
+                  value: option,
+                  label: option,
+                  group: 'Occasion',
+                }))}
               />
 
               <FancySelect
