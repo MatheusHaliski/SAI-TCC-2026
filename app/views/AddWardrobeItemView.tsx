@@ -13,6 +13,32 @@ type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type Market = { market_id: string; season: string; gender: string };
 
 const DEFAULT_BRAND_ID = 'default';
+const BRAND_LOGO_FALLBACKS: Record<string, string> = {
+  adidas: '/adidas.png',
+  nike: '/nike.png',
+  zara: '/zara.jpg',
+  puma: '/puma.jpg',
+  levis: '/levis.jpg',
+  'c&a': '/cea.jpg',
+  cea: '/cea.jpg',
+};
+
+function resolveBrandLogoUrl(brand: Brand): string | null {
+  if (brand.logo_url?.trim()) {
+    return brand.logo_url;
+  }
+
+  const normalizedName = brand.name.trim().toLowerCase();
+  const compactName = normalizedName.replace(/[^a-z0-9&]/g, '');
+  const normalizedId = brand.brand_id.trim().toLowerCase().replace(/^brand_/, '');
+
+  return (
+    BRAND_LOGO_FALLBACKS[normalizedName] ??
+    BRAND_LOGO_FALLBACKS[compactName] ??
+    BRAND_LOGO_FALLBACKS[normalizedId] ??
+    null
+  );
+}
 
 export default function AddWardrobeItemView() {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -293,13 +319,16 @@ export default function AddWardrobeItemView() {
               onChange={(brandId) => setForm((prev) => ({ ...prev, brand_id: brandId }))}
               options={[
                 { value: DEFAULT_BRAND_ID, label: 'Default brand', icon: { type: 'emoji', value: '🏷️', alt: 'Default brand' } },
-                ...brands.map((brand) => ({
-                  value: brand.brand_id,
-                  label: brand.name,
-                  icon: brand.logo_url
-                    ? { type: 'image' as const, value: brand.logo_url, alt: `${brand.name} logo` }
-                    : { type: 'emoji' as const, value: '🏷️', alt: `${brand.name} brand` },
-                })),
+                ...brands.map((brand) => {
+                  const logoUrl = resolveBrandLogoUrl(brand);
+                  return {
+                    value: brand.brand_id,
+                    label: brand.name,
+                    icon: logoUrl
+                      ? { type: 'image' as const, value: logoUrl, alt: `${brand.name} logo` }
+                      : { type: 'emoji' as const, value: '🏷️', alt: `${brand.name} brand` },
+                  };
+                }),
               ]}
             />
 
