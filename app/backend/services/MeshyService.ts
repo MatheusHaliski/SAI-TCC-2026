@@ -16,7 +16,7 @@ interface MeshyTaskResponse {
   [key: string]: unknown;
 }
 
-const MESHY_BASE_URL = process.env.MESHY_BASE_URL ?? 'https://api.meshy.ai/openapi/v1';
+const MESHY_BASE_URL = 'https://api.meshy.ai/openapi/v1';
 const MESHY_MAX_POLL_ATTEMPTS = Number(process.env.MESHY_MAX_POLL_ATTEMPTS ?? 80);
 const MESHY_POLL_DELAY_MS = Number(process.env.MESHY_POLL_DELAY_MS ?? 3000);
 
