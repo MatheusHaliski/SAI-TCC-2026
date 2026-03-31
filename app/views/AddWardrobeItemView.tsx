@@ -13,6 +13,13 @@ type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type Market = { market_id: string; season: string; gender: string };
 
 const DEFAULT_BRAND_ID = 'default';
+const FALLBACK_BRANDS: Brand[] = [
+  {
+    brand_id: 'lacoste',
+    name: 'Lacoste',
+    logo_url: '/lacoste.jpg',
+  },
+];
 const BRAND_LOGO_FALLBACKS: Record<string, string> = {
   adidas: '/adidas.png',
   nike: '/nike.png',
@@ -126,8 +133,15 @@ export default function AddWardrobeItemView() {
 
       const brandsData = await brandsResponse.json().catch(() => []);
       const marketsData = await marketsResponse.json().catch(() => []);
+      const apiBrands = Array.isArray(brandsData) ? (brandsData as Brand[]) : [];
+      const mergedBrands = [
+        ...FALLBACK_BRANDS.filter(
+          (fallback) => !apiBrands.some((brand) => brand.brand_id === fallback.brand_id),
+        ),
+        ...apiBrands,
+      ];
 
-      setBrands(Array.isArray(brandsData) ? brandsData : []);
+      setBrands(mergedBrands);
       setMarkets(Array.isArray(marketsData) ? marketsData : []);
       setForm((prev) => ({
         ...prev,
