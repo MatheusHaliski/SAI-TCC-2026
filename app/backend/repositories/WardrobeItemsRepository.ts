@@ -146,10 +146,10 @@ export class WardrobeItemsRepository extends BaseRepository {
       isolated_piece_image_url: string;
       segmentation_confidence: number;
       geometry_scope_passed: boolean;
-      geometry_scope_score: number;
+      geometry_scope_score: number | null;
       generation_attempt_count: number;
       pipeline_stage_details: Record<string, unknown>;
-      placement_profile_id: string;
+      placement_profile_id: string | null;
       brand_applied: boolean;
       branding_pass_version: string;
     },
