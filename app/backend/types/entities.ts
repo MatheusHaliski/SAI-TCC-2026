@@ -107,6 +107,7 @@ export interface WardrobeItem {
   placement_profile_id: string | null;
   branding_pass_version: string | null;
   piece_type: string;
+  gender: string;
   color: string;
   material: string;
   style_tags: string[];

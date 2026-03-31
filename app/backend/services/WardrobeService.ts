@@ -35,6 +35,7 @@ export class WardrobeService {
     const name = String(input.name ?? '').trim();
     const image_url = String(input.image_url ?? '').trim();
     const piece_type = String(input.piece_type ?? '').trim();
+    const gender = String(input.gender ?? '').trim() || 'unspecified';
     const market_id = String(input.market_id ?? '').trim();
     if (!user_id || !name || !image_url || !piece_type || !market_id) {
       throw new ServiceError('Missing required fields to create wardrobe item.', 400);
@@ -66,6 +67,7 @@ export class WardrobeService {
       model_status: needsBrandReview ? 'needs_brand_review' : 'queued_segmentation',
       model_generation_error: needsBrandReview ? detection.detection_explanation : null,
       piece_type,
+      gender,
       market_id,
       brand_id: resolvedBrandId,
       brand_id_selected: selectedBrandId,
