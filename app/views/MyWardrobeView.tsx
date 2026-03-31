@@ -93,6 +93,8 @@ export default function MyWardrobeView() {
       setViewerLoading(false);
       setViewerError(null);
       setViewerLoaded(true);
+      const viewerWithCamera = viewerElement as HTMLElement & { jumpCameraToGoal?: () => void };
+      viewerWithCamera.jumpCameraToGoal?.();
     };
     const handleError = () => {
       if (viewerLoaded) return;
@@ -168,14 +170,18 @@ export default function MyWardrobeView() {
                   poster={viewerPosterUrl}
                   ar={false}
                   camera-controls
-                  touch-action="pan-y"
+                  disable-pan
+                  touch-action="none"
                   interaction-prompt="auto"
                   auto-rotate
                   exposure="1.15"
                   shadow-intensity="1"
-                  camera-target="0m 0.85m 0m"
-                  min-camera-orbit="auto 75deg 0.9m"
-                  max-camera-orbit="auto 105deg 2.0m"
+                  camera-target="auto auto auto"
+                  camera-orbit="0deg 75deg 105%"
+                  min-camera-orbit="auto auto 50%"
+                  max-camera-orbit="auto auto 300%"
+                  min-field-of-view="10deg"
+                  max-field-of-view="45deg"
                   className="h-[60vh] w-full rounded-xl bg-slate-900"
                 />
                 {viewerLoading ? (

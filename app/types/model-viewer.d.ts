@@ -14,8 +14,12 @@ declare module 'react' {
         exposure?: string;
         'shadow-intensity'?: string;
         'camera-target'?: string;
+        'camera-orbit'?: string;
         'min-camera-orbit'?: string;
         'max-camera-orbit'?: string;
+        'min-field-of-view'?: string;
+        'max-field-of-view'?: string;
+        'disable-pan'?: boolean;
       };
     }
   }
