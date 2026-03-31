@@ -175,7 +175,6 @@ export default function MyWardrobeView() {
                   poster={viewerPosterUrl}
                   ar={false}
                   camera-controls
-                  disable-pan
                   touch-action="none"
                   interaction-prompt="auto"
                   auto-rotate
