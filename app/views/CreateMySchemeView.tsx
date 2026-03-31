@@ -19,8 +19,10 @@ const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', strin
 
 const normalizePieceType = (value: string) => value.trim().toLowerCase();
 
-
-const DEFAULT_SLOT_SUGGESTIONS: Record<'upper' | 'lower' | 'shoes' | 'accessory', Array<{ value: string; label: string }>> = {
+const DEFAULT_SLOT_SUGGESTIONS: Record<
+  'upper' | 'lower' | 'shoes' | 'accessory',
+  Array<{ value: string; label: string }>
+> = {
   upper: [
     { value: 'suggested:upper:classic-white-tee', label: 'Classic White Tee' },
     { value: 'suggested:upper:slim-oxford-shirt', label: 'Slim Oxford Shirt' },
@@ -51,9 +53,29 @@ export default function CreateMySchemeView() {
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
-  const [slots, setSlots] = useState<Record<string, string | null>>({ upper: null, lower: null, shoes: null, accessory: null });
+  const [slots, setSlots] = useState<Record<string, string | null>>({
+    upper: null,
+    lower: null,
+    shoes: null,
+    accessory: null,
+  });
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>('');
+
+  const inputClassName =
+    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
+
+  const selectClassName =
+    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
+
+  const slotCardClassName =
+    'rounded-xl border border-white/20 bg-white/10 p-3 text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md';
+
+  const primaryButtonClassName =
+    'rounded-xl border border-white/20 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition hover:scale-[1.01] hover:brightness-110';
+
+  const secondaryButtonClassName =
+    'rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:scale-[1.01] hover:bg-white/15';
 
   useEffect(() => {
     const loadSessionAndItems = async () => {
@@ -88,7 +110,11 @@ export default function CreateMySchemeView() {
     () =>
       Object.entries(slots ?? {})
         .filter(([, id]) => id)
-        .map(([slot, id], idx) => ({ wardrobe_item_id: String(id), slot, sort_order: idx + 1 })),
+        .map(([slot, id], idx) => ({
+          wardrobe_item_id: String(id),
+          slot,
+          sort_order: idx + 1,
+        })),
     [slots],
   );
 
@@ -139,16 +165,20 @@ export default function CreateMySchemeView() {
     <>
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <ContextSectionMenu title="Create My Scheme" sections={sections} />
+
         <div className="space-y-6">
-          <PageHeader title="Create My Scheme" subtitle="Manual composition and AI-assisted generation." />
+          <PageHeader
+            title="Create My Scheme"
+            subtitle="Manual composition and AI-assisted generation."
+          />
 
           <SectionBlock
             title="Scheme Metadata + Visual Slot Editor"
             subtitle="Define metadata and assign wardrobe pieces in one compact form."
-            className="sa-surface-header h-auto border-black/70"
+            className="sa-surface-header h-auto border-white/20"
           >
             <form
-              className="sa-premium-gradient-surface-soft mt-4 grid gap-3 rounded-2xl border border-black p-4 md:grid-cols-2"
+              className="mt-4 grid gap-3 rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md md:grid-cols-2"
               onSubmit={(e) => {
                 e.preventDefault();
                 saveScheme('manual');
@@ -158,45 +188,69 @@ export default function CreateMySchemeView() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Title"
-                className="rounded-xl border border-black bg-white/90 px-3 py-2 text-black placeholder:text-black"
+                className={inputClassName}
               />
+
               <input
                 value={style}
                 onChange={(e) => setStyle(e.target.value)}
                 placeholder="Style"
-                className="rounded-xl border border-black bg-white/90 px-3 py-2 text-black placeholder:text-black"
+                className={inputClassName}
               />
+
               <input
                 value={occasion}
                 onChange={(e) => setOccasion(e.target.value)}
                 placeholder="Occasion"
-                className="rounded-xl border border-black bg-white/90 px-3 py-2 text-black placeholder:text-black"
+                className={inputClassName}
               />
+
               <select
                 value={visibility}
                 onChange={(e) => setVisibility(e.target.value as 'private' | 'public')}
-                className="rounded-xl border border-black bg-white/90 px-3 py-2 text-black"
+                className={selectClassName}
               >
-                <option value="public">Public</option>
-                <option value="private">Private</option>
+                <option value="public" className="bg-slate-900 text-white">
+                  Public
+                </option>
+                <option value="private" className="bg-slate-900 text-white">
+                  Private
+                </option>
               </select>
 
               {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
-                <div key={slot} className="rounded-xl border border-black bg-white/80 p-3 text-black">
-                  <p className="text-sm font-semibold capitalize">{slot} piece</p>
+                <div key={slot} className={slotCardClassName}>
+                  <p className="text-sm font-semibold capitalize text-white">
+                    {slot} piece
+                  </p>
+
                   <select
                     value={slots[slot] ?? ''}
-                    onChange={(e) => setSlots((prev) => ({ ...prev, [slot]: e.target.value || null }))}
-                    className="mt-2 w-full rounded-lg border border-black bg-white px-3 py-2 text-black"
+                    onChange={(e) =>
+                      setSlots((prev) => ({ ...prev, [slot]: e.target.value || null }))
+                    }
+                    className={`mt-2 ${selectClassName}`}
                   >
-                    <option value="">Select item</option>
+                    <option value="" className="bg-slate-900 text-white">
+                      Select item
+                    </option>
+
                     {DEFAULT_SLOT_SUGGESTIONS[slot].map((suggestion) => (
-                      <option key={suggestion.value} value={suggestion.value}>
+                      <option
+                        key={suggestion.value}
+                        value={suggestion.value}
+                        className="bg-slate-900 text-white"
+                      >
                         Suggested: {suggestion.label}
                       </option>
                     ))}
+
                     {optionsByType(slot).map((item) => (
-                      <option key={item.wardrobe_item_id} value={item.wardrobe_item_id}>
+                      <option
+                        key={item.wardrobe_item_id}
+                        value={item.wardrobe_item_id}
+                        className="bg-slate-900 text-white"
+                      >
                         {item.name}
                       </option>
                     ))}
@@ -204,16 +258,27 @@ export default function CreateMySchemeView() {
                 </div>
               ))}
 
-              <div className="mt-1 flex gap-3 md:col-span-2">
-                <button type="submit" className="rounded-xl border border-black bg-black px-4 py-2 text-sm font-semibold text-white">Save Scheme</button>
-                <button type="button" onClick={() => saveScheme('ai')} className="rounded-xl border border-black bg-white px-4 py-2 text-sm font-semibold text-black">Generate with AI + Save</button>
+              <div className="mt-1 flex flex-wrap gap-3 md:col-span-2">
+                <button type="submit" className={primaryButtonClassName}>
+                  Save Scheme
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => saveScheme('ai')}
+                  className={secondaryButtonClassName}
+                >
+                  Generate with AI + Save
+                </button>
               </div>
             </form>
           </SectionBlock>
         </div>
       </div>
 
-      {alertMessage ? <SaiModalAlert message={alertMessage} onConfirm={() => setAlertMessage(null)} /> : null}
+      {alertMessage ? (
+        <SaiModalAlert message={alertMessage} onConfirm={() => setAlertMessage(null)} />
+      ) : null}
     </>
   );
 }
