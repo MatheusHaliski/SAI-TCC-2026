@@ -1,6 +1,6 @@
 import { getAdminFirestore } from '@/app/lib/firebaseAdmin';
 
-const BRAND_NAMES = ['Adidas', 'Nike', 'Zara', 'C&A', 'Puma', 'Levis'];
+const BRAND_NAMES = ['Adidas', 'Nike', 'Zara', 'C&A', 'Puma', 'Levis', 'Lacoste'];
 const SEASONS = ['winter', 'summer', 'autumn', 'spring'];
 const GENDERS = ['male', 'female'];
 
