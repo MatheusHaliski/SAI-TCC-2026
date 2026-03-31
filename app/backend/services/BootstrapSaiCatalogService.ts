@@ -88,6 +88,7 @@ function getBrandLogoUrl(brandName: string): string | null {
     zara: '/zara.jpg',
     'c&a': '/cea.jpg',
     puma: '/puma.jpg',
+    lacoste: '/lacoste.jpg',
     levis: '/levis.jpg',
   };
   return brandLogoMap[key] ?? null;
