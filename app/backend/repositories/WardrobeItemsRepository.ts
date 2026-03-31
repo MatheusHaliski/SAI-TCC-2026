@@ -36,6 +36,12 @@ export class WardrobeItemsRepository extends BaseRepository {
         model_preview_url: (item.model_preview_url as string | null) ?? null,
         model_base_3d_url: (item.model_base_3d_url as string | null) ?? null,
         model_branded_3d_url: (item.model_branded_3d_url as string | null) ?? null,
+        isolated_piece_image_url: (item.isolated_piece_image_url as string | null) ?? null,
+        segmentation_confidence: Number(item.segmentation_confidence ?? 0) || null,
+        geometry_scope_passed: Boolean(item.geometry_scope_passed),
+        geometry_scope_score: Number(item.geometry_scope_score ?? 0) || null,
+        generation_attempt_count: Number(item.generation_attempt_count ?? 0),
+        pipeline_stage_details: (item.pipeline_stage_details as Record<string, unknown> | null) ?? null,
         model_status: (item.model_status as ModelGenerationStatus) ?? 'queued_base',
         model_generation_error: (item.model_generation_error as string | null) ?? null,
         brand: brandMap.get(String(item.brand_id ?? '')) ?? (item.brand_id === 'default' ? 'Default brand' : 'Unknown'),
@@ -61,6 +67,12 @@ export class WardrobeItemsRepository extends BaseRepository {
     model_preview_url: string | null;
     model_base_3d_url: string | null;
     model_branded_3d_url: string | null;
+    isolated_piece_image_url: string | null;
+    segmentation_confidence: number | null;
+    geometry_scope_passed: boolean;
+    geometry_scope_score: number | null;
+    generation_attempt_count: number;
+    pipeline_stage_details: Record<string, unknown> | null;
     model_status: ModelGenerationStatus;
     model_generation_error: string | null;
     brand_id_selected: string;
@@ -92,10 +104,16 @@ export class WardrobeItemsRepository extends BaseRepository {
     return snap.exists;
   }
 
-  async updatePipelineStatus(wardrobeItemId: string, status: ModelGenerationStatus, modelGenerationError: string | null = null): Promise<void> {
+  async updatePipelineStatus(
+    wardrobeItemId: string,
+    status: ModelGenerationStatus,
+    modelGenerationError: string | null = null,
+    stageDetails: Record<string, unknown> | null = null,
+  ): Promise<void> {
     await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
       model_status: status,
       model_generation_error: modelGenerationError,
+      ...(stageDetails ? { pipeline_stage_details: stageDetails } : {}),
       updated_at: new Date().toISOString(),
     });
   }
@@ -107,6 +125,12 @@ export class WardrobeItemsRepository extends BaseRepository {
       model_preview_url: string | null;
       model_base_3d_url: string;
       model_branded_3d_url: string;
+      isolated_piece_image_url: string;
+      segmentation_confidence: number;
+      geometry_scope_passed: boolean;
+      geometry_scope_score: number;
+      generation_attempt_count: number;
+      pipeline_stage_details: Record<string, unknown>;
       placement_profile_id: string;
       brand_applied: boolean;
       branding_pass_version: string;
