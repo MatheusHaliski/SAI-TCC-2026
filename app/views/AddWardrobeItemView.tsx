@@ -35,6 +35,8 @@ export default function AddWardrobeItemView() {
     market_id: '',
     brand_id: DEFAULT_BRAND_ID,
   });
+  const formSurfaceClassName = 'rounded-xl border border-fuchsia-200/70 bg-gradient-to-r from-violet-200/70 via-sky-100/70 to-fuchsia-200/70 px-3 py-2 text-slate-900 placeholder:text-slate-500';
+  const formLabelClassName = 'flex items-center rounded-xl border border-fuchsia-200/70 bg-gradient-to-r from-violet-200/70 via-sky-100/70 to-fuchsia-200/70 px-3 py-2 text-slate-900';
 
   useEffect(() => {
     const loadDependencies = async () => {
@@ -194,37 +196,37 @@ export default function AddWardrobeItemView() {
         <PageHeader title="Add Piece" subtitle="Add new items to your wardrobe. Brand can be left as default." />
         <SectionBlock title="Wardrobe Piece Form" subtitle="Register a piece and classify it with tags and metadata.">
           <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={handleSubmit}>
-            <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Piece name" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black" />
-            <label className="flex items-center rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black">
-              <input type="file" accept="image/*" onChange={handleImageFileChange} className="w-full text-sm text-black file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-1 file:text-white" />
+            <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Piece name" className={formSurfaceClassName} />
+            <label className={formLabelClassName}>
+              <input type="file" accept="image/*" onChange={handleImageFileChange} className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white" />
             </label>
 
-            <select value={form.piece_type} onChange={(e) => setForm((prev) => ({ ...prev, piece_type: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black">
+            <select value={form.piece_type} onChange={(e) => setForm((prev) => ({ ...prev, piece_type: e.target.value }))} className={formSurfaceClassName}>
               <option value="upper_piece">Upper piece</option>
               <option value="lower_piece">Lower piece</option>
               <option value="shoes_piece">Shoes</option>
               <option value="accessory_piece">Accessory</option>
             </select>
 
-            <select value={form.market_id} onChange={(e) => setForm((prev) => ({ ...prev, market_id: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black">
+            <select value={form.market_id} onChange={(e) => setForm((prev) => ({ ...prev, market_id: e.target.value }))} className={formSurfaceClassName}>
               {markets.map((market) => (
                 <option key={market.market_id} value={market.market_id}>{marketLabel.get(market.market_id)}</option>
               ))}
             </select>
 
-            <select value={form.brand_id} onChange={(e) => setForm((prev) => ({ ...prev, brand_id: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black">
+            <select value={form.brand_id} onChange={(e) => setForm((prev) => ({ ...prev, brand_id: e.target.value }))} className={formSurfaceClassName}>
               <option value={DEFAULT_BRAND_ID}>Default brand</option>
               {brands.map((brand) => (
                 <option key={brand.brand_id} value={brand.brand_id}>{brand.name}</option>
               ))}
             </select>
 
-            <input value={form.color} onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))} placeholder="Color" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black" />
-            <input value={form.material} onChange={(e) => setForm((prev) => ({ ...prev, material: e.target.value }))} placeholder="Material" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black" />
-            <input value={form.style_tags} onChange={(e) => setForm((prev) => ({ ...prev, style_tags: e.target.value }))} placeholder="Style tags (comma separated)" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black" />
-            <input value={form.occasion_tags} onChange={(e) => setForm((prev) => ({ ...prev, occasion_tags: e.target.value }))} placeholder="Occasion tags (comma separated)" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black" />
+            <input value={form.color} onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))} placeholder="Color" className={formSurfaceClassName} />
+            <input value={form.material} onChange={(e) => setForm((prev) => ({ ...prev, material: e.target.value }))} placeholder="Material" className={formSurfaceClassName} />
+            <input value={form.style_tags} onChange={(e) => setForm((prev) => ({ ...prev, style_tags: e.target.value }))} placeholder="Style tags (comma separated)" className={formSurfaceClassName} />
+            <input value={form.occasion_tags} onChange={(e) => setForm((prev) => ({ ...prev, occasion_tags: e.target.value }))} placeholder="Occasion tags (comma separated)" className={formSurfaceClassName} />
 
-            <div className="md:col-span-2 rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 p-3 text-sm text-black/80">
+            <div className="md:col-span-2 rounded-xl border border-fuchsia-200/70 bg-gradient-to-r from-violet-200/70 via-sky-100/70 to-fuchsia-200/70 p-3 text-sm text-slate-700">
               {selectedImageName ? `Selected file: ${selectedImageName}` : 'Select an image file to continue.'}
               {imagePreview ? <Image src={imagePreview} alt="Selected clothing piece preview" width={512} height={320} className="mt-2 h-40 w-auto rounded-lg object-cover" unoptimized /> : null}
             </div>
