@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type FancyOption = {
@@ -7,6 +8,11 @@ type FancyOption = {
   label: string;
   hint?: string;
   group?: string;
+  icon?: {
+    type?: 'emoji' | 'image';
+    value: string;
+    alt?: string;
+  };
 };
 
 type FancySelectProps = {
@@ -57,6 +63,24 @@ export default function FancySelect({
     return () => window.removeEventListener('mousedown', handleOutside);
   }, []);
 
+  const renderOptionIcon = (option?: FancyOption) => {
+    if (!option?.icon?.value) return null;
+    if (option.icon.type === 'image') {
+      return (
+        <Image
+          src={option.icon.value}
+          alt={option.icon.alt ?? option.label}
+          width={20}
+          height={20}
+          className="h-5 w-5 rounded-full object-contain"
+          unoptimized
+        />
+      );
+    }
+
+    return <span className="text-base leading-none">{option.icon.value}</span>;
+  };
+
   return (
     <div
       ref={rootRef}
@@ -82,8 +106,9 @@ export default function FancySelect({
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
             Selection
           </div>
-          <div className={`truncate text-sm font-medium ${selected ? 'text-white' : 'text-white/55'}`}>
-            {selected?.label ?? placeholder}
+          <div className={`flex items-center gap-2 truncate text-sm font-medium ${selected ? 'text-white' : 'text-white/55'}`}>
+            {renderOptionIcon(selected)}
+            <span className="truncate">{selected?.label ?? placeholder}</span>
           </div>
           <div className="truncate text-xs text-white/45">
             {selected?.hint ?? 'Open to choose an item'}
@@ -134,8 +159,9 @@ export default function FancySelect({
                           }`}
                         >
                           <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold">
-                              {option.label}
+                            <div className="flex items-center gap-2 truncate text-sm font-semibold">
+                              {renderOptionIcon(option)}
+                              <span className="truncate">{option.label}</span>
                             </div>
                             {option.hint ? (
                               <div className="truncate text-xs text-white/60">

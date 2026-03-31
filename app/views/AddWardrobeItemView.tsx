@@ -9,7 +9,7 @@ import FancySelect from '@/app/components/ui/fancy-select';
 import { getAuthSessionProfile } from '@/app/lib/authSession';
 import { getServerSession } from '@/app/lib/clientSession';
 
-type Brand = { brand_id: string; name: string };
+type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type Market = { market_id: string; season: string; gender: string };
 
 const DEFAULT_BRAND_ID = 'default';
@@ -271,10 +271,10 @@ export default function AddWardrobeItemView() {
               value={form.piece_type}
               onChange={(pieceType) => setForm((prev) => ({ ...prev, piece_type: pieceType }))}
               options={[
-                { value: 'upper_piece', label: 'Upper piece' },
-                { value: 'lower_piece', label: 'Lower piece' },
-                { value: 'shoes_piece', label: 'Shoes' },
-                { value: 'accessory_piece', label: 'Accessory' },
+                { value: 'upper_piece', label: 'Upper piece', icon: { type: 'emoji', value: '👕', alt: 'T-shirt' } },
+                { value: 'lower_piece', label: 'Lower piece', icon: { type: 'emoji', value: '👖', alt: 'Pants' } },
+                { value: 'shoes_piece', label: 'Shoes', icon: { type: 'emoji', value: '👟', alt: 'Shoes' } },
+                { value: 'accessory_piece', label: 'Accessory', icon: { type: 'emoji', value: '🧢', alt: 'Accessory' } },
               ]}
             />
 
@@ -292,10 +292,13 @@ export default function AddWardrobeItemView() {
               value={form.brand_id}
               onChange={(brandId) => setForm((prev) => ({ ...prev, brand_id: brandId }))}
               options={[
-                { value: DEFAULT_BRAND_ID, label: 'Default brand' },
+                { value: DEFAULT_BRAND_ID, label: 'Default brand', icon: { type: 'emoji', value: '🏷️', alt: 'Default brand' } },
                 ...brands.map((brand) => ({
                   value: brand.brand_id,
                   label: brand.name,
+                  icon: brand.logo_url
+                    ? { type: 'image' as const, value: brand.logo_url, alt: `${brand.name} logo` }
+                    : { type: 'emoji' as const, value: '🏷️', alt: `${brand.name} brand` },
                 })),
               ]}
             />
