@@ -141,5 +141,30 @@ export async function ensureSaiCatalogSeeded() {
       ),
   );
 
-  await Promise.all([...brandWrites, ...marketWrites, ...pieceItemWrites]);
+
+  const logoCatalogWrites = BRAND_NAMES.map((brandName) =>
+    db
+      .collection('sai-brandLogoCatalog')
+      .doc(`catalog_${getBrandDocId(brandName)}`)
+      .set(
+        {
+          brand_id: getBrandDocId(brandName),
+          logo_image_url: null,
+          logo_glb_url: null,
+          detection_aliases: [brandName.toLowerCase()],
+          placement_profiles: [
+            { profile_id: 'upper_chest_center', piece_type: 'upper_piece', anchor: 'chest_center', offset: { x: 0, y: 0.1, z: 0.03 }, rotation: { x: 0, y: 0, z: 0 }, scale: 0.12 },
+            { profile_id: 'lower_thigh_front', piece_type: 'lower_piece', anchor: 'thigh_front', offset: { x: 0.05, y: -0.25, z: 0.02 }, rotation: { x: 0, y: 0, z: 0 }, scale: 0.1 },
+            { profile_id: 'shoes_side_outer', piece_type: 'shoes_piece', anchor: 'outer_side', offset: { x: 0.08, y: -0.45, z: 0.08 }, rotation: { x: 0, y: 90, z: 0 }, scale: 0.09 },
+            { profile_id: 'accessory_front_center', piece_type: 'accessory_piece', anchor: 'front_center', offset: { x: 0, y: 0, z: 0.02 }, rotation: { x: 0, y: 0, z: 0 }, scale: 0.08 },
+          ],
+          is_active: true,
+          created_at: now,
+          updated_at: now,
+        },
+        { merge: true },
+      ),
+  );
+
+  await Promise.all([...brandWrites, ...logoCatalogWrites, ...marketWrites, ...pieceItemWrites]);
 }
