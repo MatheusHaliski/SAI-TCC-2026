@@ -47,7 +47,7 @@ export class MeshyService {
   }
 
   private async createTask(imageUrl: string): Promise<string> {
-    const response = await fetch(`${MESHY_BASE_URL}/image-to-3d`, {
+    const response = await fetch(`https://api.meshy.ai/openapi/v2/image-to-3d`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
@@ -74,7 +74,7 @@ export class MeshyService {
 
   private async waitUntilFinished(taskId: string): Promise<MeshyTaskResponse> {
     for (let attempt = 1; attempt <= MESHY_MAX_POLL_ATTEMPTS; attempt += 1) {
-      const response = await fetch(`${MESHY_BASE_URL}/image-to-3d/${taskId}`, {
+      const response = await fetch(`https://api.meshy.ai/openapi/v2/image-to-3d/${taskId}`, {
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
         },
