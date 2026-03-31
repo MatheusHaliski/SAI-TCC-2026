@@ -1,10 +1,15 @@
 export type EntityId = string;
 
 export type ModelGenerationStatus =
+  | 'queued_segmentation'
+  | 'segmentation_done'
   | 'queued_base'
   | 'base_done'
   | 'queued_branding'
+  | 'queued_geometry_qa'
   | 'done'
+  | 'retrying_generation'
+  | 'failed_geometry_scope'
   | 'failed'
   | 'needs_brand_review';
 
@@ -86,6 +91,12 @@ export interface WardrobeItem {
   model_preview_url: string | null;
   model_base_3d_url: string | null;
   model_branded_3d_url: string | null;
+  isolated_piece_image_url: string | null;
+  segmentation_confidence: number | null;
+  geometry_scope_passed: boolean;
+  geometry_scope_score: number | null;
+  generation_attempt_count: number;
+  pipeline_stage_details: Record<string, unknown> | null;
   model_status: ModelGenerationStatus;
   model_generation_error: string | null;
   brand_id_selected: string;
@@ -137,6 +148,12 @@ export interface WardrobeViewItem {
   model_preview_url?: string | null;
   model_base_3d_url?: string | null;
   model_branded_3d_url?: string | null;
+  isolated_piece_image_url?: string | null;
+  segmentation_confidence?: number | null;
+  geometry_scope_passed?: boolean | null;
+  geometry_scope_score?: number | null;
+  generation_attempt_count?: number;
+  pipeline_stage_details?: Record<string, unknown> | null;
   model_status?: ModelGenerationStatus;
   model_generation_error?: string | null;
   brand: string;

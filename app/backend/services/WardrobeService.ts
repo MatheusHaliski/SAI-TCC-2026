@@ -3,9 +3,12 @@ import { ServiceError } from './errors';
 import { MeshyService } from './MeshyService';
 import { BrandDetectionService } from './BrandDetectionService';
 import { BrandPlacementService } from './BrandPlacementService';
+import { PieceIsolationService } from './PieceIsolationService';
+import { GeometryScopeService } from './GeometryScopeService';
 
 const DEFAULT_BRAND_ID = 'default';
 const BRANDING_PASS_VERSION = 'v2-image-first';
+const SEGMENTATION_MIN_CONFIDENCE = Number(process.env.SEGMENTATION_MIN_CONFIDENCE ?? 0.75);
 
 export class WardrobeService {
   constructor(
@@ -13,6 +16,8 @@ export class WardrobeService {
     private readonly meshyService = new MeshyService(),
     private readonly brandDetectionService = new BrandDetectionService(),
     private readonly brandPlacementService = new BrandPlacementService(),
+    private readonly pieceIsolationService = new PieceIsolationService(),
+    private readonly geometryScopeService = new GeometryScopeService(),
   ) {}
 
   async listUserWardrobe(userId: string) {
@@ -50,7 +55,13 @@ export class WardrobeService {
       model_preview_url: null,
       model_base_3d_url: null,
       model_branded_3d_url: null,
-      model_status: needsBrandReview ? 'needs_brand_review' : 'queued_base',
+      isolated_piece_image_url: null,
+      segmentation_confidence: null,
+      geometry_scope_passed: false,
+      geometry_scope_score: null,
+      generation_attempt_count: 0,
+      pipeline_stage_details: null,
+      model_status: needsBrandReview ? 'needs_brand_review' : 'queued_segmentation',
       model_generation_error: needsBrandReview ? detection.detection_explanation : null,
       piece_type,
       market_id,
@@ -87,8 +98,39 @@ export class WardrobeService {
     brandId: string;
   }): Promise<void> {
     try {
+      await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_segmentation');
+      const isolation = await this.pieceIsolationService.isolate({
+        imageUrl: input.imageUrl,
+        pieceType: input.pieceType,
+      });
+
+      await this.wardrobeRepo.updatePipelineStatus(
+        input.wardrobeItemId,
+        'segmentation_done',
+        null,
+        {
+          stage: 'segmentation_done',
+          segmentation_confidence: isolation.segmentationConfidence,
+          ...isolation.stageDetails,
+        },
+      );
+
+      if (isolation.segmentationConfidence < SEGMENTATION_MIN_CONFIDENCE) {
+        await this.wardrobeRepo.updatePipelineStatus(
+          input.wardrobeItemId,
+          'needs_brand_review',
+          `Segmentation confidence ${isolation.segmentationConfidence.toFixed(2)} below threshold ${SEGMENTATION_MIN_CONFIDENCE.toFixed(2)}.`,
+          {
+            stage: 'segmentation_rejected',
+            segmentation_confidence: isolation.segmentationConfidence,
+          },
+        );
+        return;
+      }
+
       await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_base');
-      const baseModel = await this.meshyService.generate3DModelFromImage(input.imageUrl);
+      const basePrompt = `Create a single ${input.pieceType} standalone asset only. Exclude person body, mannequin, full outfit, and scene props.`;
+      const baseModel = await this.meshyService.generate3DModelFromImage(isolation.isolatedImageUrl, { prompt: basePrompt });
 
       await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'base_done');
       await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_branding');
@@ -98,8 +140,8 @@ export class WardrobeService {
         pieceType: input.pieceType,
       });
 
-      const brandingPrompt = `Use detected brand ${input.brandId} logo only. Place at ${placementProfile.anchor} profile ${placementProfile.profile_id} scale ${placementProfile.scale}.`; 
-      const brandedModel = await this.meshyService.generate3DModelFromImage(input.imageUrl, { prompt: brandingPrompt });
+      const brandingPrompt = `Create a single ${input.pieceType} standalone asset only with no person body. Use detected brand ${input.brandId} logo only. Place at ${placementProfile.anchor} profile ${placementProfile.profile_id} scale ${placementProfile.scale}.`;
+      const brandedModel = await this.meshyService.generate3DModelFromImage(isolation.isolatedImageUrl, { prompt: brandingPrompt });
 
       const qaPassed = this.qualityChecksPass({
         baseModelUrl: baseModel.model_3d_url,
@@ -110,15 +152,107 @@ export class WardrobeService {
         throw new ServiceError('Branding quality checks failed (logo visibility/placement validation).', 502);
       }
 
+      await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_geometry_qa');
+      const geometryScope = await this.geometryScopeService.validate({
+        modelUrl: brandedModel.model_3d_url,
+        pieceType: input.pieceType,
+      });
+
+      if (!geometryScope.passed) {
+        const shouldRetry = geometryScope.scopeScore >= 0.35;
+        if (shouldRetry) {
+          await this.wardrobeRepo.updatePipelineStatus(
+            input.wardrobeItemId,
+            'retrying_generation',
+            `Geometry scope failed first pass: ${geometryScope.reasons.join(' | ')}`,
+            {
+              stage: 'geometry_scope_retry',
+              reasons: geometryScope.reasons,
+              scopeScore: geometryScope.scopeScore,
+            },
+          );
+
+          const retryModel = await this.meshyService.generate3DModelFromImage(
+            isolation.isolatedImageUrl,
+            { prompt: `${brandingPrompt} Strictly output only the garment mesh with no humanoid rig.` },
+          );
+
+          const retryScope = await this.geometryScopeService.validate({
+            modelUrl: retryModel.model_3d_url,
+            pieceType: input.pieceType,
+          });
+
+          if (!retryScope.passed) {
+            await this.wardrobeRepo.updatePipelineStatus(
+              input.wardrobeItemId,
+              'failed_geometry_scope',
+              retryScope.reasons.join(' | '),
+              {
+                stage: 'geometry_scope_failed_after_retry',
+                reasons: retryScope.reasons,
+                scopeScore: retryScope.scopeScore,
+              },
+            );
+            return;
+          }
+
+          await this.wardrobeRepo.updateModelAssets(input.wardrobeItemId, {
+            model_3d_url: retryModel.model_3d_url,
+            model_preview_url: retryModel.model_preview_url ?? baseModel.model_preview_url,
+            model_base_3d_url: baseModel.model_3d_url,
+            model_branded_3d_url: retryModel.model_3d_url,
+            isolated_piece_image_url: isolation.isolatedImageUrl,
+            segmentation_confidence: isolation.segmentationConfidence,
+            geometry_scope_passed: true,
+            geometry_scope_score: retryScope.scopeScore,
+            generation_attempt_count: 2,
+            pipeline_stage_details: {
+              stage: 'done_after_retry',
+              segmentation: isolation.stageDetails,
+              geometry: retryScope.reasons,
+            },
+            placement_profile_id: placementProfile.profile_id,
+            brand_applied: true,
+            branding_pass_version: BRANDING_PASS_VERSION,
+          });
+          this.logPipelineMetrics(input.wardrobeItemId, input.pieceType, true, isolation.segmentationConfidence, retryScope.scopeScore);
+          return;
+        }
+
+        await this.wardrobeRepo.updatePipelineStatus(
+          input.wardrobeItemId,
+          'failed_geometry_scope',
+          geometryScope.reasons.join(' | '),
+          {
+            stage: 'geometry_scope_failed',
+            reasons: geometryScope.reasons,
+            scopeScore: geometryScope.scopeScore,
+          },
+        );
+        this.logPipelineMetrics(input.wardrobeItemId, input.pieceType, false, isolation.segmentationConfidence, geometryScope.scopeScore);
+        return;
+      }
+
       await this.wardrobeRepo.updateModelAssets(input.wardrobeItemId, {
         model_3d_url: brandedModel.model_3d_url,
         model_preview_url: brandedModel.model_preview_url ?? baseModel.model_preview_url,
         model_base_3d_url: baseModel.model_3d_url,
         model_branded_3d_url: brandedModel.model_3d_url,
+        isolated_piece_image_url: isolation.isolatedImageUrl,
+        segmentation_confidence: isolation.segmentationConfidence,
+        geometry_scope_passed: true,
+        geometry_scope_score: geometryScope.scopeScore,
+        generation_attempt_count: 1,
+        pipeline_stage_details: {
+          stage: 'done',
+          segmentation: isolation.stageDetails,
+          geometry: geometryScope.reasons,
+        },
         placement_profile_id: placementProfile.profile_id,
         brand_applied: true,
         branding_pass_version: BRANDING_PASS_VERSION,
       });
+      this.logPipelineMetrics(input.wardrobeItemId, input.pieceType, true, isolation.segmentationConfidence, geometryScope.scopeScore);
     } catch (error) {
       await this.wardrobeRepo.updatePipelineStatus(
         input.wardrobeItemId,
@@ -134,5 +268,22 @@ export class WardrobeService {
     const urlsDiffer = input.baseModelUrl !== input.brandedModelUrl;
 
     return baseValid && brandedValid && urlsDiffer;
+  }
+
+  private logPipelineMetrics(
+    wardrobeItemId: string,
+    pieceType: string,
+    scopePassed: boolean,
+    segmentationConfidence: number,
+    scopeScore: number,
+  ) {
+    console.info('[wardrobe-model-pipeline]', {
+      wardrobe_item_id: wardrobeItemId,
+      piece_type: pieceType,
+      scope_passed: scopePassed,
+      segmentation_confidence: segmentationConfidence,
+      geometry_scope_score: scopeScore,
+      timestamp: new Date().toISOString(),
+    });
   }
 }
