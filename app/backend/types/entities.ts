@@ -5,7 +5,8 @@ export type ModelGenerationStatus =
   | 'base_done'
   | 'queued_branding'
   | 'done'
-  | 'failed';
+  | 'failed'
+  | 'needs_brand_review';
 
 export type BrandDetectionSource = 'manual' | 'ocr' | 'vision' | 'hybrid';
 
@@ -24,6 +25,7 @@ export interface BrandLogoCatalog {
   logo_image_url: string | null;
   logo_glb_url: string | null;
   placement_profiles: PlacementProfile[];
+  detection_aliases: string[];
   is_active: boolean;
   created_at: string;
   updated_at: string;

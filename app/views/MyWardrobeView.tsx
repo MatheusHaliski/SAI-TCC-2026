@@ -17,7 +17,7 @@ interface WardrobeItem {
   model_preview_url?: string | null;
   model_base_3d_url?: string | null;
   model_branded_3d_url?: string | null;
-  model_status?: 'queued_base' | 'base_done' | 'queued_branding' | 'done' | 'failed';
+  model_status?: 'queued_base' | 'base_done' | 'queued_branding' | 'done' | 'failed' | 'needs_brand_review';
   model_generation_error?: string | null;
   brand: string;
   season: string;
@@ -207,7 +207,9 @@ export default function MyWardrobeView() {
               <div className="flex h-[60vh] items-center justify-center rounded-xl border border-white/20 bg-black/40 text-center text-sm text-white/80">
                 {selectedItem.model_status === 'failed'
                   ? (selectedItem.model_generation_error || '3D generation failed for this item. Please retry.')
-                  : 'This piece has no 3D model yet. Wait for base and branding passes to finish.'}
+                  : selectedItem.model_status === 'needs_brand_review'
+                    ? (selectedItem.model_generation_error || 'Brand could not be detected from the uploaded image. Please review brand/logo catalog data.')
+                    : 'This piece has no 3D model yet. Wait for base and branding passes to finish.'}
               </div>
             )}
           </div>

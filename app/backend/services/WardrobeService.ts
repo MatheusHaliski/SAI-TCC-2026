@@ -5,7 +5,7 @@ import { BrandDetectionService } from './BrandDetectionService';
 import { BrandPlacementService } from './BrandPlacementService';
 
 const DEFAULT_BRAND_ID = 'default';
-const BRANDING_PASS_VERSION = 'v1';
+const BRANDING_PASS_VERSION = 'v2-image-first';
 
 export class WardrobeService {
   constructor(
@@ -39,6 +39,8 @@ export class WardrobeService {
       name,
       imageUrl: image_url,
     });
+    const resolvedBrandId = detection.brand_id_detected ?? selectedBrandId;
+    const needsBrandReview = !detection.brand_id_detected;
 
     const createdItem = await this.wardrobeRepo.create({
       user_id,
@@ -48,11 +50,11 @@ export class WardrobeService {
       model_preview_url: null,
       model_base_3d_url: null,
       model_branded_3d_url: null,
-      model_status: 'queued_base',
-      model_generation_error: null,
+      model_status: needsBrandReview ? 'needs_brand_review' : 'queued_base',
+      model_generation_error: needsBrandReview ? detection.detection_explanation : null,
       piece_type,
       market_id,
-      brand_id: selectedBrandId,
+      brand_id: resolvedBrandId,
       brand_id_selected: selectedBrandId,
       brand_id_detected: detection.brand_id_detected,
       brand_detection_confidence: detection.brand_detection_confidence,
@@ -66,12 +68,14 @@ export class WardrobeService {
       occasion_tags: Array.isArray(input.occasion_tags) ? input.occasion_tags.map((tag) => String(tag)) : [],
     });
 
-    void this.enrichWardrobeItemModel({
-      wardrobeItemId: createdItem.wardrobe_item_id,
-      imageUrl: image_url,
-      pieceType: piece_type,
-      brandId: detection.brand_id_detected ?? selectedBrandId,
-    });
+    if (!needsBrandReview) {
+      void this.enrichWardrobeItemModel({
+        wardrobeItemId: createdItem.wardrobe_item_id,
+        imageUrl: image_url,
+        pieceType: piece_type,
+        brandId: resolvedBrandId,
+      });
+    }
 
     return createdItem;
   }
@@ -94,7 +98,7 @@ export class WardrobeService {
         pieceType: input.pieceType,
       });
 
-      const brandingPrompt = `Apply only the ${input.brandId} logo using placement ${placementProfile.anchor} (${placementProfile.profile_id}) with scale ${placementProfile.scale}.`;
+      const brandingPrompt = `Use detected brand ${input.brandId} logo only. Place at ${placementProfile.anchor} profile ${placementProfile.profile_id} scale ${placementProfile.scale}.`; 
       const brandedModel = await this.meshyService.generate3DModelFromImage(input.imageUrl, { prompt: brandingPrompt });
 
       const qaPassed = this.qualityChecksPass({

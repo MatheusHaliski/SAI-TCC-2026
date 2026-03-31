@@ -23,9 +23,10 @@
 - `sai-schemes/{schemeId}/items/{schemeItemId}.wardrobe_item_id -> sai-wardrobeItems.wardrobe_item_id`
 
 ## 3D pipeline fields on `sai-wardrobeItems`
-- `model_status`: `queued_base | base_done | queued_branding | done | failed`
+- `model_status`: `queued_base | base_done | queued_branding | done | failed | needs_brand_review`
 - `model_base_3d_url`, `model_branded_3d_url`, `model_3d_url`, `model_preview_url`
 - `brand_id_selected`, `brand_id_detected`, `brand_detection_confidence`, `brand_detection_source`
 - `brand_applied`, `placement_profile_id`, `branding_pass_version`
+- `sai-brandLogoCatalog.detection_aliases` is required for image-first brand matching
 
 All relationship integrity is validated in the Service layer before writes.

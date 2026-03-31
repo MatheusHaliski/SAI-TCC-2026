@@ -151,6 +151,7 @@ export async function ensureSaiCatalogSeeded() {
           brand_id: getBrandDocId(brandName),
           logo_image_url: null,
           logo_glb_url: null,
+          detection_aliases: [brandName.toLowerCase()],
           placement_profiles: [
             { profile_id: 'upper_chest_center', piece_type: 'upper_piece', anchor: 'chest_center', offset: { x: 0, y: 0.1, z: 0.03 }, rotation: { x: 0, y: 0, z: 0 }, scale: 0.12 },
             { profile_id: 'lower_thigh_front', piece_type: 'lower_piece', anchor: 'thigh_front', offset: { x: 0.05, y: -0.25, z: 0.02 }, rotation: { x: 0, y: 0, z: 0 }, scale: 0.1 },

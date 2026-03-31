@@ -26,6 +26,15 @@ export class BrandsRepository extends BaseRepository {
     return new Map(active.map((brand) => [brand.brand_id, brand.name]));
   }
 
+  async listActiveLogoCatalogs(): Promise<BrandLogoCatalog[]> {
+    const snapshot = await this.db.collection(BRAND_LOGO_CATALOG_COLLECTION).where('is_active', '==', true).get();
+    return snapshot.docs.map((doc) => ({
+      brand_logo_catalog_id: doc.id,
+      detection_aliases: [],
+      ...(doc.data() as Omit<BrandLogoCatalog, 'brand_logo_catalog_id'>),
+    }));
+  }
+
   async getActiveLogoCatalogByBrandId(brandId: string): Promise<BrandLogoCatalog | null> {
     const snapshot = await this.db
       .collection(BRAND_LOGO_CATALOG_COLLECTION)
@@ -38,6 +47,7 @@ export class BrandsRepository extends BaseRepository {
     if (!first) return null;
     return {
       brand_logo_catalog_id: first.id,
+      detection_aliases: [],
       ...(first.data() as Omit<BrandLogoCatalog, 'brand_logo_catalog_id'>),
     };
   }
@@ -47,6 +57,7 @@ export class BrandsRepository extends BaseRepository {
     logoImageUrl: string | null;
     logoGlbUrl: string | null;
     placementProfiles: BrandLogoCatalog['placement_profiles'];
+    detectionAliases?: string[];
   }): Promise<void> {
     const now = new Date().toISOString();
     const docId = `catalog_${input.brandId}`;
@@ -56,6 +67,7 @@ export class BrandsRepository extends BaseRepository {
         logo_image_url: input.logoImageUrl,
         logo_glb_url: input.logoGlbUrl,
         placement_profiles: input.placementProfiles,
+        detection_aliases: input.detectionAliases ?? [],
         is_active: true,
         updated_at: now,
         created_at: now,
