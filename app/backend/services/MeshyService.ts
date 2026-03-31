@@ -16,7 +16,7 @@ interface MeshyTaskResponse {
   [key: string]: unknown;
 }
 
-const MESHY_BASE_URL = process.env.MESHY_BASE_URL ?? 'https://api.meshy.ai/openapi/v1/image-to-3d';
+const MESHY_BASE_URL ='https://api.meshy.ai/openapi/v2/image-to-3d';
 const MESHY_MAX_POLL_ATTEMPTS = Number(process.env.MESHY_MAX_POLL_ATTEMPTS ?? 10);
 const MESHY_POLL_DELAY_MS = Number(process.env.MESHY_POLL_DELAY_MS ?? 2500);
 
@@ -74,7 +74,7 @@ export class MeshyService {
 
   private async waitUntilFinished(taskId: string): Promise<MeshyTaskResponse> {
     for (let attempt = 1; attempt <= MESHY_MAX_POLL_ATTEMPTS; attempt += 1) {
-      const response = await fetch(`https://api.meshy.ai/openapi/v1/image-to-3d/${taskId}`, {
+      const response = await fetch(`https://api.meshy.ai/openapi/v2/image-to-3d/${taskId}`, {
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
         },
