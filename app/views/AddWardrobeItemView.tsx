@@ -35,8 +35,24 @@ export default function AddWardrobeItemView() {
     market_id: '',
     brand_id: DEFAULT_BRAND_ID,
   });
-  const formSurfaceClassName = 'rounded-xl border border-fuchsia-200/70 bg-gradient-to-r from-violet-200/70 via-sky-100/70 to-fuchsia-200/70 px-3 py-2 text-slate-900 placeholder:text-slate-500';
-  const formLabelClassName = 'flex items-center rounded-xl border border-fuchsia-200/70 bg-gradient-to-r from-violet-200/70 via-sky-100/70 to-fuchsia-200/70 px-3 py-2 text-slate-900';
+
+  const inputClassName =
+    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
+
+  const selectClassName =
+    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
+
+  const fileInputClassName =
+    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-600 file:to-fuchsia-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:brightness-110';
+
+  const fileWrapperClassName =
+    'flex items-center rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md';
+
+  const infoBoxClassName =
+    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-3 text-sm text-white/90 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md';
+
+  const submitButtonClassName =
+    'w-full rounded-xl border border-white/20 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition hover:scale-[1.01] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60';
 
   useEffect(() => {
     const loadDependencies = async () => {
@@ -52,26 +68,46 @@ export default function AddWardrobeItemView() {
       }
       setUserId(resolvedUserId);
 
-      const [brandsResponse, marketsResponse] = await Promise.all([fetch('/api/brands'), fetch('/api/markets')]);
+      const [brandsResponse, marketsResponse] = await Promise.all([
+        fetch('/api/brands'),
+        fetch('/api/markets'),
+      ]);
+
       const brandsData = await brandsResponse.json().catch(() => []);
       const marketsData = await marketsResponse.json().catch(() => []);
 
       setBrands(Array.isArray(brandsData) ? brandsData : []);
       setMarkets(Array.isArray(marketsData) ? marketsData : []);
-      setForm((prev) => ({ ...prev, market_id: Array.isArray(marketsData) && marketsData[0]?.market_id ? marketsData[0].market_id : '' }));
+      setForm((prev) => ({
+        ...prev,
+        market_id:
+          Array.isArray(marketsData) && marketsData[0]?.market_id
+            ? marketsData[0].market_id
+            : '',
+      }));
     };
 
-    loadDependencies().catch(() => setAlertMessage('Unable to load form data. Please try again.'));
+    loadDependencies().catch(() =>
+      setAlertMessage('Unable to load form data. Please try again.'),
+    );
   }, []);
 
-  useEffect(() => () => {
-    if (imagePreview.startsWith('blob:')) {
-      URL.revokeObjectURL(imagePreview);
-    }
+  useEffect(() => {
+    return () => {
+      if (imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
   }, [imagePreview]);
 
   const marketLabel = useMemo(
-    () => new Map(markets.map((market) => [market.market_id, `${market.season} • ${market.gender}`])),
+    () =>
+      new Map(
+        markets.map((market) => [
+          market.market_id,
+          `${market.season} • ${market.gender}`,
+        ]),
+      ),
     [markets],
   );
 
@@ -121,7 +157,15 @@ export default function AddWardrobeItemView() {
 
       setSubmitProgress(100);
       setAlertMessage('Piece added to your wardrobe successfully.');
-      setForm((prev) => ({ ...prev, name: '', image_url: '', color: '', material: '', style_tags: '', occasion_tags: '' }));
+      setForm((prev) => ({
+        ...prev,
+        name: '',
+        image_url: '',
+        color: '',
+        material: '',
+        style_tags: '',
+        occasion_tags: '',
+      }));
       setSelectedImageName('');
       setImagePreview('');
     } finally {
@@ -152,6 +196,7 @@ export default function AddWardrobeItemView() {
     if (imagePreview.startsWith('blob:')) {
       URL.revokeObjectURL(imagePreview);
     }
+
     setImagePreview(nextPreview);
     setSelectedImageName(file.name);
     setUploadingImage(true);
@@ -166,7 +211,9 @@ export default function AddWardrobeItemView() {
       }).catch(() => null);
 
       if (!uploadResponse?.ok) {
-        const uploadError = (await uploadResponse?.json().catch(() => null)) as { error?: string } | null;
+        const uploadError = (await uploadResponse?.json().catch(() => null)) as
+          | { error?: string }
+          | null;
         setAlertMessage(uploadError?.error || 'Unable to upload selected image. Please try another file.');
         setForm((prev) => ({ ...prev, image_url: '' }));
         setSelectedImageName('');
@@ -174,17 +221,20 @@ export default function AddWardrobeItemView() {
         return;
       }
 
-      const uploadBody = (await uploadResponse.json().catch(() => null)) as { image_url?: string } | null;
+      const uploadBody = (await uploadResponse.json().catch(() => null)) as
+        | { image_url?: string }
+        | null;
+
       if (!uploadBody?.image_url) {
         setAlertMessage('Upload succeeded but image URL is missing. Please try again.');
         setForm((prev) => ({ ...prev, image_url: '' }));
         return;
       }
 
-     setForm((prev) => ({
-  ...prev,
-  image_url: uploadBody.image_url ?? "",
-}));
+      setForm((prev) => ({
+        ...prev,
+        image_url: uploadBody.image_url ?? '',
+      }));
     } finally {
       setUploadingImage(false);
     }
@@ -193,52 +243,148 @@ export default function AddWardrobeItemView() {
   return (
     <>
       <div className="space-y-6">
-        <PageHeader title="Add Piece" subtitle="Add new items to your wardrobe. Brand can be left as default." />
-        <SectionBlock title="Wardrobe Piece Form" subtitle="Register a piece and classify it with tags and metadata.">
+        <PageHeader
+          title="Add Piece"
+          subtitle="Add new items to your wardrobe. Brand can be left as default."
+        />
+
+        <SectionBlock
+          title="Wardrobe Piece Form"
+          subtitle="Register a piece and classify it with tags and metadata."
+        >
           <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={handleSubmit}>
-            <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Piece name" className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white" />
-            <label className={formLabelClassName}>
-              <input type="file" accept="image/*" onChange={handleImageFileChange} className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white" />
+            <input
+              value={form.name}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="Piece name"
+              className={inputClassName}
+            />
+
+            <label className={fileWrapperClassName}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageFileChange}
+                className={fileInputClassName}
+              />
             </label>
 
-            <select value={form.piece_type} onChange={(e) => setForm((prev) => ({ ...prev, piece_type: e.target.value }))} className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white">
-              <option value="upper_piece">Upper piece</option>
-              <option value="lower_piece">Lower piece</option>
-              <option value="shoes_piece">Shoes</option>
-              <option value="accessory_piece">Accessory</option>
+            <select
+              value={form.piece_type}
+              onChange={(e) => setForm((prev) => ({ ...prev, piece_type: e.target.value }))}
+              className={selectClassName}
+            >
+              <option value="upper_piece" className="bg-slate-900 text-white">
+                Upper piece
+              </option>
+              <option value="lower_piece" className="bg-slate-900 text-white">
+                Lower piece
+              </option>
+              <option value="shoes_piece" className="bg-slate-900 text-white">
+                Shoes
+              </option>
+              <option value="accessory_piece" className="bg-slate-900 text-white">
+                Accessory
+              </option>
             </select>
 
-            <select value={form.market_id} onChange={(e) => setForm((prev) => ({ ...prev, market_id: e.target.value }))} className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white">
+            <select
+              value={form.market_id}
+              onChange={(e) => setForm((prev) => ({ ...prev, market_id: e.target.value }))}
+              className={selectClassName}
+            >
               {markets.map((market) => (
-                <option key={market.market_id} value={market.market_id}>{marketLabel.get(market.market_id)}</option>
+                <option
+                  key={market.market_id}
+                  value={market.market_id}
+                  className="bg-slate-900 text-white"
+                >
+                  {marketLabel.get(market.market_id)}
+                </option>
               ))}
             </select>
 
-            <select value={form.brand_id} onChange={(e) => setForm((prev) => ({ ...prev, brand_id: e.target.value }))} className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white">
-              <option value={DEFAULT_BRAND_ID}>Default brand</option>
+            <select
+              value={form.brand_id}
+              onChange={(e) => setForm((prev) => ({ ...prev, brand_id: e.target.value }))}
+              className={selectClassName}
+            >
+              <option value={DEFAULT_BRAND_ID} className="bg-slate-900 text-white">
+                Default brand
+              </option>
               {brands.map((brand) => (
-                <option key={brand.brand_id} value={brand.brand_id}>{brand.name}</option>
+                <option
+                  key={brand.brand_id}
+                  value={brand.brand_id}
+                  className="bg-slate-900 text-white"
+                >
+                  {brand.name}
+                </option>
               ))}
             </select>
 
-            <input value={form.color} onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))} placeholder="Color" className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white" />
-            <input value={form.material} onChange={(e) => setForm((prev) => ({ ...prev, material: e.target.value }))} placeholder="Material" className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white" />
-            <input value={form.style_tags} onChange={(e) => setForm((prev) => ({ ...prev, style_tags: e.target.value }))} placeholder="Style tags (comma separated)" className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white" />
-            <input value={form.occasion_tags} onChange={(e) => setForm((prev) => ({ ...prev, occasion_tags: e.target.value }))} placeholder="Occasion tags (comma separated)" className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white" />
+            <input
+              value={form.color}
+              onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))}
+              placeholder="Color"
+              className={inputClassName}
+            />
 
-            <div className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white">
-              {selectedImageName ? `Selected file: ${selectedImageName}` : 'Select an image file to continue.'}
-              {imagePreview ? <Image src={imagePreview} alt="Selected clothing piece preview" width={512} height={320} className="mt-2 h-40 w-auto rounded-lg object-cover" unoptimized /> : null}
+            <input
+              value={form.material}
+              onChange={(e) => setForm((prev) => ({ ...prev, material: e.target.value }))}
+              placeholder="Material"
+              className={inputClassName}
+            />
+
+            <input
+              value={form.style_tags}
+              onChange={(e) => setForm((prev) => ({ ...prev, style_tags: e.target.value }))}
+              placeholder="Style tags (comma separated)"
+              className={inputClassName}
+            />
+
+            <input
+              value={form.occasion_tags}
+              onChange={(e) => setForm((prev) => ({ ...prev, occasion_tags: e.target.value }))}
+              placeholder="Occasion tags (comma separated)"
+              className={inputClassName}
+            />
+
+            <div className={`${infoBoxClassName} md:col-span-2`}>
+              <p className="text-sm text-white/80">
+                {selectedImageName
+                  ? `Selected file: ${selectedImageName}`
+                  : 'Select an image file to continue.'}
+              </p>
+
+              {imagePreview ? (
+                <Image
+                  src={imagePreview}
+                  alt="Selected clothing piece preview"
+                  width={512}
+                  height={320}
+                  className="mt-3 h-40 w-auto rounded-xl border border-white/20 object-cover"
+                  unoptimized
+                />
+              ) : null}
             </div>
 
-            <button type="submit" disabled={submitting || uploadingImage} className="w-full bg-transparent text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-700 file:to-fuchsia-700 file:px-3 file:py-1 file:text-white">
+            <button
+              type="submit"
+              disabled={submitting || uploadingImage}
+              className={`${submitButtonClassName} md:col-span-2`}
+            >
               {uploadingImage ? 'Uploading image...' : submitting ? 'Saving...' : 'Add piece'}
             </button>
 
             {submitting ? (
               <div className="md:col-span-2 space-y-1" role="status" aria-live="polite">
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/30">
-                  <div className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 transition-[width] duration-200" style={{ width: `${submitProgress}%` }} />
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/20">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 transition-[width] duration-200"
+                    style={{ width: `${submitProgress}%` }}
+                  />
                 </div>
                 <p className="text-xs text-white/80">Adding piece... {submitProgress}%</p>
               </div>
@@ -246,7 +392,10 @@ export default function AddWardrobeItemView() {
           </form>
         </SectionBlock>
       </div>
-      {alertMessage ? <SaiModalAlert message={alertMessage} onConfirm={() => setAlertMessage(null)} /> : null}
+
+      {alertMessage ? (
+        <SaiModalAlert message={alertMessage} onConfirm={() => setAlertMessage(null)} />
+      ) : null}
     </>
   );
 }
