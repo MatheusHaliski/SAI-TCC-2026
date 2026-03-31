@@ -10,7 +10,9 @@ interface SectionBlockProps {
 
 export default function SectionBlock({ title, subtitle, action, children, className }: SectionBlockProps) {
   return (
-    <section className="sa-surface-header lg:h-[1400px] border-8 rounded-3xl border-white border-black p-5 shadow-lg backdrop-blur-sm">
+    <section
+      className={`sa-surface-header overflow-visible rounded-3xl border-8 border-white p-5 shadow-lg backdrop-blur-sm ${className ?? ''}`}
+    >
       <header className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-white">{title}</h2>
