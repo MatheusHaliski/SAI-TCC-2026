@@ -80,6 +80,19 @@ function getMarketDocId(season: string, gender: string): string {
   return `market_${season}_${gender}`;
 }
 
+function getBrandLogoUrl(brandName: string): string | null {
+  const key = brandName.trim().toLowerCase();
+  const brandLogoMap: Record<string, string> = {
+    adidas: '/adidas.png',
+    nike: '/nike.png',
+    zara: '/zara.jpg',
+    'c&a': '/cea.jpg',
+    puma: '/puma.jpg',
+    levis: '/levis.jpg',
+  };
+  return brandLogoMap[key] ?? null;
+}
+
 export async function ensureSaiCatalogSeeded() {
   const db = getAdminFirestore();
   const now = new Date().toISOString();
@@ -91,7 +104,7 @@ export async function ensureSaiCatalogSeeded() {
       .set(
         {
           name: brandName,
-          logo_url: null,
+          logo_url: getBrandLogoUrl(brandName),
           is_active: true,
           created_at: now,
           updated_at: now,
@@ -149,7 +162,7 @@ export async function ensureSaiCatalogSeeded() {
       .set(
         {
           brand_id: getBrandDocId(brandName),
-          logo_image_url: null,
+          logo_image_url: getBrandLogoUrl(brandName),
           logo_glb_url: null,
           detection_aliases: [brandName.toLowerCase()],
           placement_profiles: [
