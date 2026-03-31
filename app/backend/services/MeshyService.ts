@@ -47,7 +47,7 @@ export class MeshyService {
   }
 
   private async createTask(imageUrl: string): Promise<string> {
-    const response = await fetch(`https://api.meshy.ai/openapi/v1/image-to-3d`, {
+    const response = await fetch(`https://api.meshy.ai/openapi/v2/image-to-3d`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
