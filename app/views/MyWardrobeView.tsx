@@ -19,7 +19,7 @@ interface WardrobeItem {
   model_branded_3d_url?: string | null;
   isolated_piece_image_url?: string | null;
   segmentation_confidence?: number | null;
-  geometry_scope_passed?: boolean;
+  geometry_scope_passed?: boolean | null;
   geometry_scope_score?: number | null;
   generation_attempt_count?: number;
   model_status?:
@@ -45,12 +45,15 @@ const sections = ['Available', 'Unavailable', 'Favorites'];
 
 export default function MyWardrobeView() {
   const [items, setItems] = useState<WardrobeItem[]>([]);
+  const [resolvedUserId, setResolvedUserId] = useState('');
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
+  const [viewerModelIndex, setViewerModelIndex] = useState(0);
   const [viewerLoading, setViewerLoading] = useState(false);
   const [viewerError, setViewerError] = useState<string | null>(null);
   const [viewerLoaded, setViewerLoaded] = useState(false);
+  const [statusTick, setStatusTick] = useState(0);
   const modelViewerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -68,6 +71,7 @@ export default function MyWardrobeView() {
         return;
       }
 
+      setResolvedUserId(resolvedUserId);
       const wardrobeResponse = await fetch(`/api/wardrobe-items/user/${resolvedUserId}`);
       const wardrobeItems = await wardrobeResponse.json().catch(() => []);
       setItems(wardrobeResponse.ok && Array.isArray(wardrobeItems) ? wardrobeItems : []);
@@ -83,12 +87,21 @@ export default function MyWardrobeView() {
     return { available, unavailable, favorite };
   }, [availability, favorites, items]);
 
-  const safeModelUrl = useMemo(() => {
-    if (selectedItem && selectedItem.geometry_scope_passed === false) return null;
-    const rawUrl = selectedItem?.model_branded_3d_url?.trim() || selectedItem?.model_3d_url?.trim() || selectedItem?.model_base_3d_url?.trim();
-    if (!rawUrl) return null;
-    return rawUrl.startsWith('http://') ? rawUrl.replace('http://', 'https://') : rawUrl;
+  const viewerCandidateUrls = useMemo(() => {
+    if (!selectedItem) return [];
+
+    const candidates = [
+      selectedItem.model_branded_3d_url?.trim(),
+      selectedItem.model_3d_url?.trim(),
+      selectedItem.model_base_3d_url?.trim(),
+    ]
+      .filter((value): value is string => Boolean(value))
+      .map((url) => (url.startsWith('http://') ? url.replace('http://', 'https://') : url));
+
+    return [...new Set(candidates)];
   }, [selectedItem]);
+
+  const safeModelUrl = viewerCandidateUrls[viewerModelIndex] ?? null;
 
   const viewerModelUrl = useMemo(() => {
     if (!safeModelUrl) return null;
@@ -106,6 +119,73 @@ export default function MyWardrobeView() {
       : safePosterUrl;
   }, [selectedItem]);
 
+  const selectedItemStatusMessage = useMemo(() => {
+    if (!selectedItem) return '';
+    const dots = '.'.repeat((statusTick % 3) + 1);
+
+    switch (selectedItem.model_status) {
+      case 'queued_segmentation':
+        return `Isolating piece from source image${dots}`;
+      case 'segmentation_done':
+        return `Piece isolated. Preparing base model generation${dots}`;
+      case 'queued_base':
+      case 'base_done':
+      case 'queued_branding':
+        return `Generating 3D mesh asset${dots}`;
+      case 'queued_geometry_qa':
+        return `Running geometry scope QA checks${dots}`;
+      case 'retrying_generation':
+        return `Retrying 3D generation with stricter garment constraints${dots}`;
+      case 'needs_brand_review':
+        return selectedItem.model_generation_error || `Needs brand review before new branded model can be generated${dots}`;
+      case 'failed_geometry_scope':
+        return selectedItem.model_generation_error || 'Generated mesh failed scope QA.';
+      case 'failed':
+        return selectedItem.model_generation_error || '3D generation failed.';
+      default:
+        return viewerLoading ? `Loading model in viewer${dots}` : '';
+    }
+  }, [selectedItem, statusTick, viewerLoading]);
+
+  useEffect(() => {
+    if (!selectedItem) return;
+
+    const timer = window.setInterval(() => {
+      setStatusTick((value) => value + 1);
+    }, 650);
+
+    return () => window.clearInterval(timer);
+  }, [selectedItem]);
+
+  useEffect(() => {
+    if (!selectedItem || !resolvedUserId) return;
+    const realtimeStatuses = new Set([
+      'queued_segmentation',
+      'segmentation_done',
+      'queued_base',
+      'base_done',
+      'queued_branding',
+      'queued_geometry_qa',
+      'retrying_generation',
+      'needs_brand_review',
+    ]);
+    if (!realtimeStatuses.has(selectedItem.model_status ?? '')) return;
+
+    const poll = window.setInterval(async () => {
+      const response = await fetch(`/api/wardrobe-items/user/${resolvedUserId}`).catch(() => null);
+      if (!response?.ok) return;
+      const data = (await response.json().catch(() => [])) as WardrobeItem[];
+      if (!Array.isArray(data)) return;
+      setItems(data);
+      const refreshed = data.find((item) => item.wardrobe_item_id === selectedItem.wardrobe_item_id);
+      if (refreshed) {
+        setSelectedItem(refreshed);
+      }
+    }, 4500);
+
+    return () => window.clearInterval(poll);
+  }, [selectedItem, resolvedUserId]);
+
   useEffect(() => {
     if (!viewerModelUrl || !modelViewerRef.current) return;
 
@@ -119,6 +199,12 @@ export default function MyWardrobeView() {
     };
     const handleError = () => {
       if (viewerLoaded) return;
+      if (viewerModelIndex < viewerCandidateUrls.length - 1) {
+        setViewerModelIndex((index) => index + 1);
+        setViewerLoading(true);
+        setViewerError('Primary 3D asset failed. Trying fallback model...');
+        return;
+      }
       setViewerLoading(false);
       setViewerError('Could not load this 3D model in the embedded viewer.');
     };
@@ -130,7 +216,7 @@ export default function MyWardrobeView() {
       viewerElement.removeEventListener('load', handleLoad as EventListener);
       viewerElement.removeEventListener('error', handleError as EventListener);
     };
-  }, [viewerModelUrl, selectedItem?.wardrobe_item_id, viewerLoaded]);
+  }, [viewerModelUrl, selectedItem?.wardrobe_item_id, viewerLoaded, viewerModelIndex, viewerCandidateUrls.length]);
 
   return (
     <>
@@ -152,7 +238,8 @@ export default function MyWardrobeView() {
                     key={item.wardrobe_item_id}
                     onClick={() => {
                       setSelectedItem(item);
-                      setViewerLoading(Boolean(item.model_3d_url));
+                      setViewerModelIndex(0);
+                      setViewerLoading(Boolean(item.model_3d_url || item.model_base_3d_url || item.model_branded_3d_url));
                       setViewerError(null);
                       setViewerLoaded(false);
                     }}
@@ -164,7 +251,13 @@ export default function MyWardrobeView() {
                     <p className="text-sm text-white/70">Type: {item.piece_type}</p>
                     <p className="text-xs text-cyan-200/90">3D status: {item.model_status ?? 'queued_base'}</p>
                     <p className="text-xs text-white/70">
-                      Scope QA: {item.geometry_scope_passed ? `Passed (${(item.geometry_scope_score ?? 0).toFixed(2)})` : 'Pending/Failed'}
+                      Scope QA: {item.geometry_scope_passed === true
+                        ? `Passed (${(item.geometry_scope_score ?? 0).toFixed(2)})`
+                        : item.model_status === 'failed_geometry_scope'
+                          ? 'Failed'
+                          : item.model_3d_url || item.model_base_3d_url || item.model_branded_3d_url
+                            ? 'Legacy model (not evaluated)'
+                          : 'Pending'}
                     </p>
                     <p className="mt-1 text-xs text-cyan-200/90">Click to open 3D viewer</p>
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -185,8 +278,13 @@ export default function MyWardrobeView() {
           <div className="w-full max-w-4xl rounded-2xl border border-white/20 bg-slate-950 p-4 shadow-2xl">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">{selectedItem.name} • 3D Viewer</h3>
-              <button type="button" onClick={() => { setSelectedItem(null); setViewerLoading(false); setViewerError(null); setViewerLoaded(false); }} className="rounded-lg border border-white/25 px-3 py-1 text-sm text-white">Close</button>
+              <button type="button" onClick={() => { setSelectedItem(null); setViewerModelIndex(0); setViewerLoading(false); setViewerError(null); setViewerLoaded(false); }} className="rounded-lg border border-white/25 px-3 py-1 text-sm text-white">Close</button>
             </div>
+            {selectedItemStatusMessage ? (
+              <p className="mb-3 rounded-lg border border-cyan-300/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100">
+                Status: {selectedItemStatusMessage}
+              </p>
+            ) : null}
             {viewerModelUrl ? (
               <div className="relative">
                 <model-viewer
