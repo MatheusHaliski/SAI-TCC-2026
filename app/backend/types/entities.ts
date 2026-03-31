@@ -51,6 +51,8 @@ export interface WardrobeItem {
   market_id: EntityId;
   name: string;
   image_url: string;
+  model_3d_url: string | null;
+  model_preview_url: string | null;
   piece_type: string;
   color: string;
   material: string;
@@ -89,6 +91,8 @@ export interface WardrobeViewItem {
   wardrobe_item_id: EntityId;
   name: string;
   image_url: string;
+  model_3d_url?: string | null;
+  model_preview_url?: string | null;
   brand: string;
   season: string;
   gender: string;

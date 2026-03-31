@@ -32,6 +32,8 @@ export class WardrobeItemsRepository extends BaseRepository {
         wardrobe_item_id: doc.id,
         name: item.name,
         image_url: item.image_url,
+        model_3d_url: item.model_3d_url ?? null,
+        model_preview_url: item.model_preview_url ?? null,
         brand: brandMap.get(item.brand_id) ?? (item.brand_id === 'default' ? 'Default brand' : 'Unknown'),
         season: market?.season ?? 'Unknown',
         gender: market?.gender ?? 'Unknown',
@@ -48,6 +50,8 @@ export class WardrobeItemsRepository extends BaseRepository {
     market_id: string;
     name: string;
     image_url: string;
+    model_3d_url: string | null;
+    model_preview_url: string | null;
     piece_type: string;
     color: string;
     material: string;
