@@ -6,14 +6,28 @@ const BRAND_LOGO_CATALOG_COLLECTION = 'sai-brandLogoCatalog';
 
 export class BrandsRepository extends BaseRepository {
   async listActive(): Promise<Brand[]> {
-    const snapshot = await this.db.collection(BRANDS_COLLECTION).where('is_active', '==', true).get();
-    return snapshot.docs.map((doc) => ({ brand_id: doc.id, ...(doc.data() as Omit<Brand, 'brand_id'>) }));
+    const snapshot = await this.db
+      .collection(BRANDS_COLLECTION)
+      .where('is_active', '==', true)
+      .get();
+
+    return snapshot.docs.map((doc) => ({
+      brand_id: doc.id,
+      ...(doc.data() as Omit<Brand, 'brand_id'>),
+    }));
   }
 
   async getById(brandId: string): Promise<Brand | null> {
     const snap = await this.db.collection(BRANDS_COLLECTION).doc(brandId).get();
-    if (!snap.exists) return null;
-    return { brand_id: snap.id, ...(snap.data() as Omit<Brand, 'brand_id'>) };
+
+    if (!snap.exists) {
+      return null;
+    }
+
+    return {
+      brand_id: snap.id,
+      ...(snap.data() as Omit<Brand, 'brand_id'>),
+    };
   }
 
   async existsById(brandId: string): Promise<boolean> {
@@ -27,15 +41,27 @@ export class BrandsRepository extends BaseRepository {
   }
 
   async listActiveLogoCatalogs(): Promise<BrandLogoCatalog[]> {
-    const snapshot = await this.db.collection(BRAND_LOGO_CATALOG_COLLECTION).where('is_active', '==', true).get();
-    return snapshot.docs.map((doc) => ({
-      brand_logo_catalog_id: doc.id,
-      detection_aliases: [],
-      ...(doc.data() as Omit<BrandLogoCatalog, 'brand_logo_catalog_id'>),
-    }));
+    const snapshot = await this.db
+      .collection(BRAND_LOGO_CATALOG_COLLECTION)
+      .where('is_active', '==', true)
+      .get();
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data() as Omit<BrandLogoCatalog, 'brand_logo_catalog_id'>;
+
+      return {
+        brand_logo_catalog_id: doc.id,
+        ...data,
+        detection_aliases: Array.isArray(data.detection_aliases)
+          ? data.detection_aliases
+          : [],
+      };
+    });
   }
 
-  async getActiveLogoCatalogByBrandId(brandId: string): Promise<BrandLogoCatalog | null> {
+  async getActiveLogoCatalogByBrandId(
+    brandId: string,
+  ): Promise<BrandLogoCatalog | null> {
     const snapshot = await this.db
       .collection(BRAND_LOGO_CATALOG_COLLECTION)
       .where('brand_id', '==', brandId)
@@ -44,11 +70,19 @@ export class BrandsRepository extends BaseRepository {
       .get();
 
     const first = snapshot.docs[0];
-    if (!first) return null;
+
+    if (!first) {
+      return null;
+    }
+
+    const data = first.data() as Omit<BrandLogoCatalog, 'brand_logo_catalog_id'>;
+
     return {
       brand_logo_catalog_id: first.id,
-      detection_aliases: [],
-      ...(first.data() as Omit<BrandLogoCatalog, 'brand_logo_catalog_id'>),
+      ...data,
+      detection_aliases: Array.isArray(data.detection_aliases)
+        ? data.detection_aliases
+        : [],
     };
   }
 
@@ -61,18 +95,22 @@ export class BrandsRepository extends BaseRepository {
   }): Promise<void> {
     const now = new Date().toISOString();
     const docId = `catalog_${input.brandId}`;
-    await this.db.collection(BRAND_LOGO_CATALOG_COLLECTION).doc(docId).set(
-      {
-        brand_id: input.brandId,
-        logo_image_url: input.logoImageUrl,
-        logo_glb_url: input.logoGlbUrl,
-        placement_profiles: input.placementProfiles,
-        detection_aliases: input.detectionAliases ?? [],
-        is_active: true,
-        updated_at: now,
-        created_at: now,
-      },
-      { merge: true },
-    );
+
+    await this.db
+      .collection(BRAND_LOGO_CATALOG_COLLECTION)
+      .doc(docId)
+      .set(
+        {
+          brand_id: input.brandId,
+          logo_image_url: input.logoImageUrl,
+          logo_glb_url: input.logoGlbUrl,
+          placement_profiles: input.placementProfiles,
+          detection_aliases: input.detectionAliases ?? [],
+          is_active: true,
+          updated_at: now,
+          created_at: now,
+        },
+        { merge: true },
+      );
   }
 }
