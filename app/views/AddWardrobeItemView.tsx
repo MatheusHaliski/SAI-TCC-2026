@@ -22,6 +22,7 @@ export default function AddWardrobeItemView() {
   const [selectedImageName, setSelectedImageName] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [submitProgress, setSubmitProgress] = useState(0);
 
   const [form, setForm] = useState({
     name: '',
@@ -72,6 +73,23 @@ export default function AddWardrobeItemView() {
     [markets],
   );
 
+  useEffect(() => {
+    if (!submitting) {
+      setSubmitProgress(0);
+      return;
+    }
+
+    setSubmitProgress(12);
+    const progressTimer = window.setInterval(() => {
+      setSubmitProgress((current) => {
+        if (current >= 90) return current;
+        return Math.min(90, current + Math.ceil((100 - current) * 0.12));
+      });
+    }, 180);
+
+    return () => window.clearInterval(progressTimer);
+  }, [submitting]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!userId || !form.market_id || !form.name.trim() || !form.image_url.trim()) {
@@ -99,6 +117,7 @@ export default function AddWardrobeItemView() {
         return;
       }
 
+      setSubmitProgress(100);
       setAlertMessage('Piece added to your wardrobe successfully.');
       setForm((prev) => ({ ...prev, name: '', image_url: '', color: '', material: '', style_tags: '', occasion_tags: '' }));
       setSelectedImageName('');
@@ -172,37 +191,37 @@ export default function AddWardrobeItemView() {
         <PageHeader title="Add Piece" subtitle="Add new items to your wardrobe. Brand can be left as default." />
         <SectionBlock title="Wardrobe Piece Form" subtitle="Register a piece and classify it with tags and metadata.">
           <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={handleSubmit}>
-            <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Piece name" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black" />
-            <label className="flex items-center rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black">
+            <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Piece name" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black" />
+            <label className="flex items-center rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black">
               <input type="file" accept="image/*" onChange={handleImageFileChange} className="w-full text-sm text-black file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-1 file:text-white" />
             </label>
 
-            <select value={form.piece_type} onChange={(e) => setForm((prev) => ({ ...prev, piece_type: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black">
+            <select value={form.piece_type} onChange={(e) => setForm((prev) => ({ ...prev, piece_type: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black">
               <option value="upper_piece">Upper piece</option>
               <option value="lower_piece">Lower piece</option>
               <option value="shoes_piece">Shoes</option>
               <option value="accessory_piece">Accessory</option>
             </select>
 
-            <select value={form.market_id} onChange={(e) => setForm((prev) => ({ ...prev, market_id: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black">
+            <select value={form.market_id} onChange={(e) => setForm((prev) => ({ ...prev, market_id: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black">
               {markets.map((market) => (
                 <option key={market.market_id} value={market.market_id}>{marketLabel.get(market.market_id)}</option>
               ))}
             </select>
 
-            <select value={form.brand_id} onChange={(e) => setForm((prev) => ({ ...prev, brand_id: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black">
+            <select value={form.brand_id} onChange={(e) => setForm((prev) => ({ ...prev, brand_id: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black">
               <option value={DEFAULT_BRAND_ID}>Default brand</option>
               {brands.map((brand) => (
                 <option key={brand.brand_id} value={brand.brand_id}>{brand.name}</option>
               ))}
             </select>
 
-            <input value={form.color} onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))} placeholder="Color" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black" />
-            <input value={form.material} onChange={(e) => setForm((prev) => ({ ...prev, material: e.target.value }))} placeholder="Material" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black" />
-            <input value={form.style_tags} onChange={(e) => setForm((prev) => ({ ...prev, style_tags: e.target.value }))} placeholder="Style tags (comma separated)" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black" />
-            <input value={form.occasion_tags} onChange={(e) => setForm((prev) => ({ ...prev, occasion_tags: e.target.value }))} placeholder="Occasion tags (comma separated)" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black" />
+            <input value={form.color} onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))} placeholder="Color" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black" />
+            <input value={form.material} onChange={(e) => setForm((prev) => ({ ...prev, material: e.target.value }))} placeholder="Material" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black" />
+            <input value={form.style_tags} onChange={(e) => setForm((prev) => ({ ...prev, style_tags: e.target.value }))} placeholder="Style tags (comma separated)" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black" />
+            <input value={form.occasion_tags} onChange={(e) => setForm((prev) => ({ ...prev, occasion_tags: e.target.value }))} placeholder="Occasion tags (comma separated)" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 px-3 py-2 text-black" />
 
-            <div className="md:col-span-2 rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 p-3 text-sm text-black/80">
+            <div className="md:col-span-2 rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 p-3 text-sm text-black/80">
               {selectedImageName ? `Selected file: ${selectedImageName}` : 'Select an image file to continue.'}
               {imagePreview ? <Image src={imagePreview} alt="Selected clothing piece preview" width={512} height={320} className="mt-2 h-40 w-auto rounded-lg object-cover" unoptimized /> : null}
             </div>
@@ -210,6 +229,15 @@ export default function AddWardrobeItemView() {
             <button type="submit" disabled={submitting || uploadingImage} className="md:col-span-2 rounded-xl border border-white/30 bg-black px-4 py-2 text-sm font-semibold text-white">
               {uploadingImage ? 'Uploading image...' : submitting ? 'Saving...' : 'Add piece'}
             </button>
+
+            {submitting ? (
+              <div className="md:col-span-2 space-y-1" role="status" aria-live="polite">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/30">
+                  <div className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 transition-[width] duration-200" style={{ width: `${submitProgress}%` }} />
+                </div>
+                <p className="text-xs text-white/80">Adding piece... {submitProgress}%</p>
+              </div>
+            ) : null}
           </form>
         </SectionBlock>
       </div>
