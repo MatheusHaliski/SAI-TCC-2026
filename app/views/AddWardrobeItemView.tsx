@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
@@ -18,6 +19,8 @@ export default function AddWardrobeItemView() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [selectedImageName, setSelectedImageName] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -65,13 +68,13 @@ export default function AddWardrobeItemView() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!userId || !form.market_id || !form.name.trim() || !form.image_url.trim()) {
-      setAlertMessage('Please fill name, image URL and market before saving.');
+      setAlertMessage('Please fill name, image file and market before saving.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/wardrobe-items', {
+      const response = await fetch('/api/add-piece', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,9 +94,44 @@ export default function AddWardrobeItemView() {
 
       setAlertMessage('Piece added to your wardrobe successfully.');
       setForm((prev) => ({ ...prev, name: '', image_url: '', color: '', material: '', style_tags: '', occasion_tags: '' }));
+      setSelectedImageName('');
+      setImagePreview('');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setForm((prev) => ({ ...prev, image_url: '' }));
+      setSelectedImageName('');
+      setImagePreview('');
+      return;
+    }
+
+    const isImage = file.type.startsWith('image/');
+    if (!isImage) {
+      event.target.value = '';
+      setAlertMessage('Please select a valid image file.');
+      return;
+    }
+
+    const asDataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ''));
+      reader.onerror = () => reject(new Error('Unable to read image file.'));
+      reader.readAsDataURL(file);
+    }).catch(() => '');
+
+    if (!asDataUrl) {
+      setAlertMessage('Unable to read selected image. Please try another file.');
+      return;
+    }
+
+    setSelectedImageName(file.name);
+    setImagePreview(asDataUrl);
+    setForm((prev) => ({ ...prev, image_url: asDataUrl }));
   };
 
   return (
@@ -102,33 +140,40 @@ export default function AddWardrobeItemView() {
         <PageHeader title="Add Piece" subtitle="Add new items to your wardrobe. Brand can be left as default." />
         <SectionBlock title="Wardrobe Piece Form" subtitle="Register a piece and classify it with tags and metadata.">
           <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={handleSubmit}>
-            <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Piece name" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
-            <input value={form.image_url} onChange={(e) => setForm((prev) => ({ ...prev, image_url: e.target.value }))} placeholder="Image URL" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
+            <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Piece name" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black" />
+            <label className="flex items-center rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black">
+              <input type="file" accept="image/*" onChange={handleImageFileChange} className="w-full text-sm text-black file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-1 file:text-white" />
+            </label>
 
-            <select value={form.piece_type} onChange={(e) => setForm((prev) => ({ ...prev, piece_type: e.target.value }))} className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black">
+            <select value={form.piece_type} onChange={(e) => setForm((prev) => ({ ...prev, piece_type: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black">
               <option value="upper_piece">Upper piece</option>
               <option value="lower_piece">Lower piece</option>
               <option value="shoes_piece">Shoes</option>
               <option value="accessory_piece">Accessory</option>
             </select>
 
-            <select value={form.market_id} onChange={(e) => setForm((prev) => ({ ...prev, market_id: e.target.value }))} className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black">
+            <select value={form.market_id} onChange={(e) => setForm((prev) => ({ ...prev, market_id: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black">
               {markets.map((market) => (
                 <option key={market.market_id} value={market.market_id}>{marketLabel.get(market.market_id)}</option>
               ))}
             </select>
 
-            <select value={form.brand_id} onChange={(e) => setForm((prev) => ({ ...prev, brand_id: e.target.value }))} className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black">
+            <select value={form.brand_id} onChange={(e) => setForm((prev) => ({ ...prev, brand_id: e.target.value }))} className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black">
               <option value={DEFAULT_BRAND_ID}>Default brand</option>
               {brands.map((brand) => (
                 <option key={brand.brand_id} value={brand.brand_id}>{brand.name}</option>
               ))}
             </select>
 
-            <input value={form.color} onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))} placeholder="Color" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
-            <input value={form.material} onChange={(e) => setForm((prev) => ({ ...prev, material: e.target.value }))} placeholder="Material" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
-            <input value={form.style_tags} onChange={(e) => setForm((prev) => ({ ...prev, style_tags: e.target.value }))} placeholder="Style tags (comma separated)" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
-            <input value={form.occasion_tags} onChange={(e) => setForm((prev) => ({ ...prev, occasion_tags: e.target.value }))} placeholder="Occasion tags (comma separated)" className="rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-black" />
+            <input value={form.color} onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))} placeholder="Color" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black" />
+            <input value={form.material} onChange={(e) => setForm((prev) => ({ ...prev, material: e.target.value }))} placeholder="Material" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black" />
+            <input value={form.style_tags} onChange={(e) => setForm((prev) => ({ ...prev, style_tags: e.target.value }))} placeholder="Style tags (comma separated)" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black" />
+            <input value={form.occasion_tags} onChange={(e) => setForm((prev) => ({ ...prev, occasion_tags: e.target.value }))} placeholder="Occasion tags (comma separated)" className="rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 text-black" />
+
+            <div className="md:col-span-2 rounded-xl border border-purple-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 p-3 text-sm text-black/80">
+              {selectedImageName ? `Selected file: ${selectedImageName}` : 'Select an image file to continue.'}
+              {imagePreview ? <Image src={imagePreview} alt="Selected clothing piece preview" width={512} height={320} className="mt-2 h-40 w-auto rounded-lg object-cover" unoptimized /> : null}
+            </div>
 
             <button type="submit" disabled={submitting} className="md:col-span-2 rounded-xl border border-white/30 bg-black px-4 py-2 text-sm font-semibold text-white">
               {submitting ? 'Saving...' : 'Add piece'}
