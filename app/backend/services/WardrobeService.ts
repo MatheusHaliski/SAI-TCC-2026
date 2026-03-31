@@ -5,6 +5,7 @@ import { BrandDetectionService } from './BrandDetectionService';
 import { BrandPlacementService } from './BrandPlacementService';
 import { PieceIsolationService } from './PieceIsolationService';
 import { GeometryScopeService } from './GeometryScopeService';
+import { BrandsRepository } from '@/app/backend/repositories/BrandsRepository';
 
 const DEFAULT_BRAND_ID = 'default';
 const BRANDING_PASS_VERSION = 'v2-image-first';
@@ -18,6 +19,7 @@ export class WardrobeService {
     private readonly brandPlacementService = new BrandPlacementService(),
     private readonly pieceIsolationService = new PieceIsolationService(),
     private readonly geometryScopeService = new GeometryScopeService(),
+    private readonly brandsRepository = new BrandsRepository(),
   ) {}
 
   async listUserWardrobe(userId: string) {
@@ -133,6 +135,32 @@ export class WardrobeService {
       const baseModel = await this.meshyService.generate3DModelFromImage(isolation.isolatedImageUrl, { prompt: basePrompt });
 
       await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'base_done');
+
+      const shouldSkipBrandingPipeline = await this.shouldSkipBrandingPipeline(input.brandId);
+      if (shouldSkipBrandingPipeline) {
+        await this.wardrobeRepo.updateModelAssets(input.wardrobeItemId, {
+          model_3d_url: baseModel.model_3d_url,
+          model_preview_url: baseModel.model_preview_url,
+          model_base_3d_url: baseModel.model_3d_url,
+          model_branded_3d_url: null,
+          isolated_piece_image_url: isolation.isolatedImageUrl,
+          segmentation_confidence: isolation.segmentationConfidence,
+          geometry_scope_passed: true,
+          geometry_scope_score: null,
+          generation_attempt_count: 1,
+          pipeline_stage_details: {
+            stage: 'done_branding_skipped',
+            reason: 'Brand is Zara; logo placement pass intentionally skipped.',
+            segmentation: isolation.stageDetails,
+          },
+          placement_profile_id: null,
+          brand_applied: false,
+          branding_pass_version: 'skipped-zara',
+        });
+        this.logPipelineMetrics(input.wardrobeItemId, input.pieceType, true, isolation.segmentationConfidence, 1);
+        return;
+      }
+
       await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_branding');
 
       const placementProfile = await this.brandPlacementService.getPlacementProfile({
@@ -260,6 +288,12 @@ export class WardrobeService {
         error instanceof Error ? error.message : 'Unknown model pipeline failure.',
       );
     }
+  }
+
+  private async shouldSkipBrandingPipeline(brandId: string): Promise<boolean> {
+    if (!brandId) return false;
+    const brand = await this.brandsRepository.getById(brandId);
+    return brand?.name?.trim().toLowerCase() === 'zara';
   }
 
   private qualityChecksPass(input: { baseModelUrl: string; brandedModelUrl: string }): boolean {
