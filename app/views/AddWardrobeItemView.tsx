@@ -56,6 +56,10 @@ const MATERIAL_OPTIONS = [
 
 const STYLE_TAG_OPTIONS = ['Urban', 'day', 'night', 'outdoors'];
 const OCCASION_TAG_OPTIONS = ['Party', 'Formal', 'Casual', 'Work'];
+const GENDER_OPTIONS = [
+  { value: 'masculino', label: 'Masculino' },
+  { value: 'feminino', label: 'Feminino' },
+];
 
 function resolveBrandLogoUrl(brand: Brand): string | null {
   if (brand.logo_url?.trim()) {
@@ -88,6 +92,7 @@ export default function AddWardrobeItemView() {
   const [form, setForm] = useState({
     name: '',
     image_url: '',
+    gender: 'masculino',
     piece_type: 'upper_piece',
     color: '',
     material: '',
@@ -333,6 +338,17 @@ export default function AddWardrobeItemView() {
                 className={fileInputClassName}
               />
             </label>
+
+            <FancySelect
+              value={form.gender}
+              onChange={(gender) => setForm((prev) => ({ ...prev, gender }))}
+              placeholder="Gênero"
+              options={GENDER_OPTIONS.map((gender) => ({
+                value: gender.value,
+                label: gender.label,
+                group: 'Gênero da peça',
+              }))}
+            />
 
             <FancySelect
               value={form.piece_type}
