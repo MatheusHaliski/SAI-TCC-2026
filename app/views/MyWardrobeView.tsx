@@ -8,6 +8,7 @@ import { getServerSession } from '@/app/lib/clientSession';
 import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
+import { resolveWardrobeModelCandidateUrls, resolveWardrobeModelUrl } from '@/app/lib/wardrobeModelUrl';
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -90,12 +91,7 @@ export default function MyWardrobeView() {
   const viewerCandidateUrls = useMemo(() => {
     if (!selectedItem) return [];
 
-    const candidates = [
-      selectedItem.model_branded_3d_url?.trim(),
-      selectedItem.model_3d_url?.trim(),
-      selectedItem.model_base_3d_url?.trim(),
-    ]
-      .filter((value): value is string => Boolean(value))
+    const candidates = resolveWardrobeModelCandidateUrls(selectedItem)
       .map((url) => (url.startsWith('http://') ? url.replace('http://', 'https://') : url));
 
     return [...new Set(candidates)];
@@ -239,7 +235,7 @@ export default function MyWardrobeView() {
                     onClick={() => {
                       setSelectedItem(item);
                       setViewerModelIndex(0);
-                      setViewerLoading(Boolean(item.model_3d_url || item.model_base_3d_url || item.model_branded_3d_url));
+                      setViewerLoading(Boolean(resolveWardrobeModelUrl(item)));
                       setViewerError(null);
                       setViewerLoaded(false);
                     }}
@@ -255,9 +251,9 @@ export default function MyWardrobeView() {
                         ? `Passed (${(item.geometry_scope_score ?? 0).toFixed(2)})`
                         : item.model_status === 'failed_geometry_scope'
                           ? 'Failed'
-                          : item.model_3d_url || item.model_base_3d_url || item.model_branded_3d_url
+                          : resolveWardrobeModelUrl(item)
                             ? 'Legacy model (not evaluated)'
-                          : 'Pending'}
+                            : 'Pending'}
                     </p>
                     <p className="mt-1 text-xs text-cyan-200/90">Click to open 3D viewer</p>
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -330,9 +326,9 @@ export default function MyWardrobeView() {
                     ? (selectedItem.model_generation_error || 'Brand could not be detected from the uploaded image. Please review brand/logo catalog data.')
                     : selectedItem.model_status === 'queued_segmentation' || selectedItem.model_status === 'segmentation_done'
                       ? 'Isolating designated piece before 3D generation...'
-                      : selectedItem.model_status === 'queued_geometry_qa' || selectedItem.model_status === 'retrying_generation'
+                    : selectedItem.model_status === 'queued_geometry_qa' || selectedItem.model_status === 'retrying_generation'
                         ? 'Running geometry scope checks to ensure garment-only model output...'
-                    : 'This piece has no 3D model yet. Wait for base and branding passes to finish.'}
+                    : 'No usable 3D asset is available yet.'}
               </div>
             )}
           </div>

@@ -1,4 +1,5 @@
 import { ModelGenerationStatus, WardrobeAnalysis, WardrobeViewItem } from '@/app/backend/types/entities';
+import { resolveWardrobeModelUrl } from '@/app/lib/wardrobeModelUrl';
 import { BaseRepository } from './BaseRepository';
 import { BrandsRepository } from './BrandsRepository';
 import { MarketsRepository } from './MarketsRepository';
@@ -28,7 +29,11 @@ export class WardrobeItemsRepository extends BaseRepository {
     return snapshot.docs.map((doc) => {
       const item = doc.data() as Record<string, string | number | boolean | null>;
       const market = marketsMap.get(String(item.market_id ?? ''));
-      const model3dUrl = (item.model_3d_url as string | null) ?? null;
+      const model3dUrl = resolveWardrobeModelUrl({
+        model_3d_url: (item.model_3d_url as string | null) ?? null,
+        model_branded_3d_url: (item.model_branded_3d_url as string | null) ?? null,
+        model_base_3d_url: (item.model_base_3d_url as string | null) ?? null,
+      });
       const modelBase3dUrl = (item.model_base_3d_url as string | null) ?? null;
       const modelBranded3dUrl = (item.model_branded_3d_url as string | null) ?? null;
       const hasAnyModelUrl = [model3dUrl, modelBase3dUrl, modelBranded3dUrl].some((url) => Boolean(url && url.trim().length > 0));
@@ -134,10 +139,10 @@ export class WardrobeItemsRepository extends BaseRepository {
   async updateModelAssets(
     wardrobeItemId: string,
     input: {
-      model_3d_url: string;
+      model_3d_url: string | null;
       model_preview_url: string | null;
-      model_base_3d_url: string;
-      model_branded_3d_url: string;
+      model_base_3d_url: string | null;
+      model_branded_3d_url: string | null;
       isolated_piece_image_url: string;
       segmentation_confidence: number;
       geometry_scope_passed: boolean;
@@ -149,8 +154,11 @@ export class WardrobeItemsRepository extends BaseRepository {
       branding_pass_version: string;
     },
   ): Promise<void> {
+    const resolvedModel3dUrl = resolveWardrobeModelUrl(input);
+
     await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
       ...input,
+      model_3d_url: resolvedModel3dUrl,
       model_status: 'done',
       updated_at: new Date().toISOString(),
     });
