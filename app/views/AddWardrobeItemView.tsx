@@ -181,7 +181,10 @@ export default function AddWardrobeItemView() {
         return;
       }
 
-      setForm((prev) => ({ ...prev, image_url: uploadBody.image_url }));
+     setForm((prev) => ({
+  ...prev,
+  image_url: uploadBody.image_url ?? "",
+}));
     } finally {
       setUploadingImage(false);
     }
