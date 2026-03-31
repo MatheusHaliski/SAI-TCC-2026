@@ -30,6 +30,7 @@ export default function MyWardrobeView() {
   const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
   const [viewerLoading, setViewerLoading] = useState(false);
   const [viewerError, setViewerError] = useState<string | null>(null);
+  const [viewerLoaded, setViewerLoaded] = useState(false);
   const modelViewerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -75,8 +76,10 @@ export default function MyWardrobeView() {
     const handleLoad = () => {
       setViewerLoading(false);
       setViewerError(null);
+      setViewerLoaded(true);
     };
     const handleError = () => {
+      if (viewerLoaded) return;
       setViewerLoading(false);
       setViewerError('Could not load this 3D model in the embedded viewer.');
     };
@@ -88,7 +91,7 @@ export default function MyWardrobeView() {
       viewerElement.removeEventListener('load', handleLoad as EventListener);
       viewerElement.removeEventListener('error', handleError as EventListener);
     };
-  }, [safeModelUrl, selectedItem?.wardrobe_item_id]);
+  }, [safeModelUrl, selectedItem?.wardrobe_item_id, viewerLoaded]);
 
   return (
     <>
@@ -112,6 +115,7 @@ export default function MyWardrobeView() {
                       setSelectedItem(item);
                       setViewerLoading(Boolean(item.model_3d_url));
                       setViewerError(null);
+                      setViewerLoaded(false);
                     }}
                     className="cursor-pointer rounded-2xl border border-white/25 p-4 transition hover:border-cyan-300/60"
                   >
@@ -138,7 +142,7 @@ export default function MyWardrobeView() {
           <div className="w-full max-w-4xl rounded-2xl border border-white/20 bg-slate-950 p-4 shadow-2xl">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">{selectedItem.name} • 3D Viewer</h3>
-              <button type="button" onClick={() => { setSelectedItem(null); setViewerLoading(false); setViewerError(null); }} className="rounded-lg border border-white/25 px-3 py-1 text-sm text-white">Close</button>
+              <button type="button" onClick={() => { setSelectedItem(null); setViewerLoading(false); setViewerError(null); setViewerLoaded(false); }} className="rounded-lg border border-white/25 px-3 py-1 text-sm text-white">Close</button>
             </div>
             {safeModelUrl ? (
               <div className="relative">
@@ -153,6 +157,9 @@ export default function MyWardrobeView() {
                   auto-rotate
                   exposure="1.15"
                   shadow-intensity="1"
+                  camera-target="0m 0.85m 0m"
+                  min-camera-orbit="auto 75deg 0.9m"
+                  max-camera-orbit="auto 105deg 2.0m"
                   className="h-[60vh] w-full rounded-xl bg-slate-900"
                 />
                 {viewerLoading ? (
@@ -160,7 +167,7 @@ export default function MyWardrobeView() {
                     Loading 3D model...
                   </div>
                 ) : null}
-                {viewerError ? (
+                {viewerError && !viewerLoaded ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-black/65 p-4 text-center text-sm text-white">
                     <p>{viewerError}</p>
                     <a href={safeModelUrl} target="_blank" rel="noreferrer" className="rounded-lg border border-cyan-300/60 px-3 py-1 text-cyan-200">

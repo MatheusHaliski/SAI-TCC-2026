@@ -13,6 +13,9 @@ declare module 'react' {
         'auto-rotate'?: boolean;
         exposure?: string;
         'shadow-intensity'?: string;
+        'camera-target'?: string;
+        'min-camera-orbit'?: string;
+        'max-camera-orbit'?: string;
       };
     }
   }
