@@ -7,6 +7,7 @@ import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
+import FancySelect from '@/app/components/ui/fancy-select';
 
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
@@ -64,9 +65,6 @@ export default function CreateMySchemeView() {
 
   const inputClassName =
     'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
-
-  const selectClassName =
-    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
 
   const slotCardClassName =
     'rounded-xl border border-white/20 bg-white/10 p-3 text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md';
@@ -205,18 +203,16 @@ export default function CreateMySchemeView() {
                 className={inputClassName}
               />
 
-              <select
+              <FancySelect
                 value={visibility}
-                onChange={(e) => setVisibility(e.target.value as 'private' | 'public')}
-                className={selectClassName}
-              >
-                <option value="public" className="bg-slate-900 text-white">
-                  Public
-                </option>
-                <option value="private" className="bg-slate-900 text-white">
-                  Private
-                </option>
-              </select>
+                onChange={(selectedVisibility) =>
+                  setVisibility(selectedVisibility as 'private' | 'public')
+                }
+                options={[
+                  { value: 'public', label: 'Public' },
+                  { value: 'private', label: 'Private' },
+                ]}
+              />
 
               {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
                 <div key={slot} className={slotCardClassName}>
@@ -224,37 +220,27 @@ export default function CreateMySchemeView() {
                     {slot} piece
                   </p>
 
-                  <select
-                    value={slots[slot] ?? ''}
-                    onChange={(e) =>
-                      setSlots((prev) => ({ ...prev, [slot]: e.target.value || null }))
-                    }
-                    className={`mt-2 ${selectClassName}`}
-                  >
-                    <option value="" className="bg-slate-900 text-white">
-                      Select item
-                    </option>
-
-                    {DEFAULT_SLOT_SUGGESTIONS[slot].map((suggestion) => (
-                      <option
-                        key={suggestion.value}
-                        value={suggestion.value}
-                        className="bg-slate-900 text-white"
-                      >
-                        Suggested: {suggestion.label}
-                      </option>
-                    ))}
-
-                    {optionsByType(slot).map((item) => (
-                      <option
-                        key={item.wardrobe_item_id}
-                        value={item.wardrobe_item_id}
-                        className="bg-slate-900 text-white"
-                      >
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="mt-2">
+                    <FancySelect
+                      value={slots[slot] ?? ''}
+                      onChange={(selectedValue) =>
+                        setSlots((prev) => ({ ...prev, [slot]: selectedValue || null }))
+                      }
+                      placeholder="Select item"
+                      options={[
+                        { value: '', label: 'Select item' },
+                        ...DEFAULT_SLOT_SUGGESTIONS[slot].map((suggestion) => ({
+                          value: suggestion.value,
+                          label: suggestion.label,
+                          hint: 'Suggested',
+                        })),
+                        ...optionsByType(slot).map((item) => ({
+                          value: item.wardrobe_item_id,
+                          label: item.name,
+                        })),
+                      ]}
+                    />
+                  </div>
                 </div>
               ))}
 

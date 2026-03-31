@@ -5,6 +5,7 @@ import Image from 'next/image';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
+import FancySelect from '@/app/components/ui/fancy-select';
 import { getAuthSessionProfile } from '@/app/lib/authSession';
 import { getServerSession } from '@/app/lib/clientSession';
 
@@ -38,9 +39,6 @@ export default function AddWardrobeItemView() {
 
   const inputClassName =
     'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
-
-  const selectClassName =
-    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
 
   const fileInputClassName =
     'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-600 file:to-fuchsia-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:brightness-110';
@@ -269,59 +267,38 @@ export default function AddWardrobeItemView() {
               />
             </label>
 
-            <select
+            <FancySelect
               value={form.piece_type}
-              onChange={(e) => setForm((prev) => ({ ...prev, piece_type: e.target.value }))}
-              className={selectClassName}
-            >
-              <option value="upper_piece" className="bg-slate-900 text-white">
-                Upper piece
-              </option>
-              <option value="lower_piece" className="bg-slate-900 text-white">
-                Lower piece
-              </option>
-              <option value="shoes_piece" className="bg-slate-900 text-white">
-                Shoes
-              </option>
-              <option value="accessory_piece" className="bg-slate-900 text-white">
-                Accessory
-              </option>
-            </select>
+              onChange={(pieceType) => setForm((prev) => ({ ...prev, piece_type: pieceType }))}
+              options={[
+                { value: 'upper_piece', label: 'Upper piece' },
+                { value: 'lower_piece', label: 'Lower piece' },
+                { value: 'shoes_piece', label: 'Shoes' },
+                { value: 'accessory_piece', label: 'Accessory' },
+              ]}
+            />
 
-            <select
+            <FancySelect
               value={form.market_id}
-              onChange={(e) => setForm((prev) => ({ ...prev, market_id: e.target.value }))}
-              className={selectClassName}
-            >
-              {markets.map((market) => (
-                <option
-                  key={market.market_id}
-                  value={market.market_id}
-                  className="bg-slate-900 text-white"
-                >
-                  {marketLabel.get(market.market_id)}
-                </option>
-              ))}
-            </select>
+              onChange={(marketId) => setForm((prev) => ({ ...prev, market_id: marketId }))}
+              placeholder="Select market"
+              options={markets.map((market) => ({
+                value: market.market_id,
+                label: marketLabel.get(market.market_id) ?? market.market_id,
+              }))}
+            />
 
-            <select
+            <FancySelect
               value={form.brand_id}
-              onChange={(e) => setForm((prev) => ({ ...prev, brand_id: e.target.value }))}
-              className={selectClassName}
-            >
-              <option value={DEFAULT_BRAND_ID} className="bg-slate-900 text-white">
-                Default brand
-              </option>
-              {brands.map((brand) => (
-                <option
-                  key={brand.brand_id}
-                  value={brand.brand_id}
-                  className="bg-slate-900 text-white"
-                >
-                  {brand.name}
-                </option>
-              ))}
-            </select>
+              onChange={(brandId) => setForm((prev) => ({ ...prev, brand_id: brandId }))}
+              options={[
+                { value: DEFAULT_BRAND_ID, label: 'Default brand' },
+                ...brands.map((brand) => ({
+                  value: brand.brand_id,
+                  label: brand.name,
+                })),
+              ]}
+            />
 
             <input
               value={form.color}
