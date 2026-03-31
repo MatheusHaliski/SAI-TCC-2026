@@ -1,5 +1,34 @@
 export type EntityId = string;
 
+export type ModelGenerationStatus =
+  | 'queued_base'
+  | 'base_done'
+  | 'queued_branding'
+  | 'done'
+  | 'failed';
+
+export type BrandDetectionSource = 'manual' | 'ocr' | 'vision' | 'hybrid';
+
+export interface PlacementProfile {
+  profile_id: string;
+  piece_type: 'upper_piece' | 'lower_piece' | 'shoes_piece' | 'accessory_piece';
+  anchor: string;
+  offset: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
+  scale: number;
+}
+
+export interface BrandLogoCatalog {
+  brand_logo_catalog_id: EntityId;
+  brand_id: EntityId;
+  logo_image_url: string | null;
+  logo_glb_url: string | null;
+  placement_profiles: PlacementProfile[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface User {
   user_id: EntityId;
   name: string;
@@ -53,6 +82,17 @@ export interface WardrobeItem {
   image_url: string;
   model_3d_url: string | null;
   model_preview_url: string | null;
+  model_base_3d_url: string | null;
+  model_branded_3d_url: string | null;
+  model_status: ModelGenerationStatus;
+  model_generation_error: string | null;
+  brand_id_selected: string;
+  brand_id_detected: string | null;
+  brand_detection_confidence: number | null;
+  brand_detection_source: BrandDetectionSource | null;
+  brand_applied: boolean;
+  placement_profile_id: string | null;
+  branding_pass_version: string | null;
   piece_type: string;
   color: string;
   material: string;
@@ -93,7 +133,16 @@ export interface WardrobeViewItem {
   image_url: string;
   model_3d_url?: string | null;
   model_preview_url?: string | null;
+  model_base_3d_url?: string | null;
+  model_branded_3d_url?: string | null;
+  model_status?: ModelGenerationStatus;
+  model_generation_error?: string | null;
   brand: string;
+  brand_detection_confidence?: number | null;
+  brand_detection_source?: BrandDetectionSource | null;
+  brand_applied?: boolean;
+  placement_profile_id?: string | null;
+  branding_pass_version?: string | null;
   season: string;
   gender: string;
   piece_type: string;

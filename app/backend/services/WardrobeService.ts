@@ -1,14 +1,18 @@
 import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
 import { ServiceError } from './errors';
 import { MeshyService } from './MeshyService';
+import { BrandDetectionService } from './BrandDetectionService';
+import { BrandPlacementService } from './BrandPlacementService';
 
 const DEFAULT_BRAND_ID = 'default';
-
+const BRANDING_PASS_VERSION = 'v1';
 
 export class WardrobeService {
   constructor(
     private readonly wardrobeRepo = new WardrobeItemsRepository(),
     private readonly meshyService = new MeshyService(),
+    private readonly brandDetectionService = new BrandDetectionService(),
+    private readonly brandPlacementService = new BrandPlacementService(),
   ) {}
 
   async listUserWardrobe(userId: string) {
@@ -29,34 +33,102 @@ export class WardrobeService {
       throw new ServiceError('Missing required fields to create wardrobe item.', 400);
     }
 
+    const selectedBrandId = String(input.brand_id ?? DEFAULT_BRAND_ID).trim() || DEFAULT_BRAND_ID;
+    const detection = await this.brandDetectionService.detect({
+      selectedBrandId,
+      name,
+      imageUrl: image_url,
+    });
+
     const createdItem = await this.wardrobeRepo.create({
       user_id,
       name,
       image_url,
       model_3d_url: null,
       model_preview_url: null,
+      model_base_3d_url: null,
+      model_branded_3d_url: null,
+      model_status: 'queued_base',
+      model_generation_error: null,
       piece_type,
       market_id,
-      brand_id: String(input.brand_id ?? DEFAULT_BRAND_ID).trim() || DEFAULT_BRAND_ID,
+      brand_id: selectedBrandId,
+      brand_id_selected: selectedBrandId,
+      brand_id_detected: detection.brand_id_detected,
+      brand_detection_confidence: detection.brand_detection_confidence,
+      brand_detection_source: detection.brand_detection_source,
+      brand_applied: false,
+      placement_profile_id: null,
+      branding_pass_version: null,
       color: String(input.color ?? '').trim() || 'unspecified',
       material: String(input.material ?? '').trim() || 'unspecified',
       style_tags: Array.isArray(input.style_tags) ? input.style_tags.map((tag) => String(tag)) : [],
       occasion_tags: Array.isArray(input.occasion_tags) ? input.occasion_tags.map((tag) => String(tag)) : [],
     });
 
-    void this.enrichWardrobeItemModel(createdItem.wardrobe_item_id, image_url);
+    void this.enrichWardrobeItemModel({
+      wardrobeItemId: createdItem.wardrobe_item_id,
+      imageUrl: image_url,
+      pieceType: piece_type,
+      brandId: detection.brand_id_detected ?? selectedBrandId,
+    });
+
     return createdItem;
   }
 
-  private async enrichWardrobeItemModel(wardrobeItemId: string, imageUrl: string): Promise<void> {
+  private async enrichWardrobeItemModel(input: {
+    wardrobeItemId: string;
+    imageUrl: string;
+    pieceType: string;
+    brandId: string;
+  }): Promise<void> {
     try {
-      const generatedModel = await this.meshyService.generate3DModelFromImage(imageUrl);
-      await this.wardrobeRepo.updateModelAssets(wardrobeItemId, {
-        model_3d_url: generatedModel.model_3d_url,
-        model_preview_url: generatedModel.model_preview_url,
+      await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_base');
+      const baseModel = await this.meshyService.generate3DModelFromImage(input.imageUrl);
+
+      await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'base_done');
+      await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_branding');
+
+      const placementProfile = await this.brandPlacementService.getPlacementProfile({
+        brandId: input.brandId,
+        pieceType: input.pieceType,
       });
-    } catch {
-      // Model generation is best-effort; wardrobe item creation should still succeed.
+
+      const brandingPrompt = `Apply only the ${input.brandId} logo using placement ${placementProfile.anchor} (${placementProfile.profile_id}) with scale ${placementProfile.scale}.`;
+      const brandedModel = await this.meshyService.generate3DModelFromImage(input.imageUrl, { prompt: brandingPrompt });
+
+      const qaPassed = this.qualityChecksPass({
+        baseModelUrl: baseModel.model_3d_url,
+        brandedModelUrl: brandedModel.model_3d_url,
+      });
+
+      if (!qaPassed) {
+        throw new ServiceError('Branding quality checks failed (logo visibility/placement validation).', 502);
+      }
+
+      await this.wardrobeRepo.updateModelAssets(input.wardrobeItemId, {
+        model_3d_url: brandedModel.model_3d_url,
+        model_preview_url: brandedModel.model_preview_url ?? baseModel.model_preview_url,
+        model_base_3d_url: baseModel.model_3d_url,
+        model_branded_3d_url: brandedModel.model_3d_url,
+        placement_profile_id: placementProfile.profile_id,
+        brand_applied: true,
+        branding_pass_version: BRANDING_PASS_VERSION,
+      });
+    } catch (error) {
+      await this.wardrobeRepo.updatePipelineStatus(
+        input.wardrobeItemId,
+        'failed',
+        error instanceof Error ? error.message : 'Unknown model pipeline failure.',
+      );
     }
+  }
+
+  private qualityChecksPass(input: { baseModelUrl: string; brandedModelUrl: string }): boolean {
+    const baseValid = input.baseModelUrl.trim().length > 0 && input.baseModelUrl.toLowerCase().endsWith('.glb');
+    const brandedValid = input.brandedModelUrl.trim().length > 0 && input.brandedModelUrl.toLowerCase().endsWith('.glb');
+    const urlsDiffer = input.baseModelUrl !== input.brandedModelUrl;
+
+    return baseValid && brandedValid && urlsDiffer;
   }
 }

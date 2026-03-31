@@ -27,12 +27,12 @@ function sleep(ms: number) {
 export class MeshyService {
   private readonly apiKey = process.env.MESHY_API_KEY;
 
-  async generate3DModelFromImage(imageUrl: string): Promise<MeshyGenerationResult> {
+  async generate3DModelFromImage(imageUrl: string, options?: { prompt?: string }): Promise<MeshyGenerationResult> {
     if (!this.apiKey) {
       throw new ServiceError('MESHY_API_KEY is not configured.', 500);
     }
 
-    const taskId = await this.createTask(imageUrl);
+    const taskId = await this.createTask(imageUrl, options?.prompt);
     const taskResult = await this.waitUntilFinished(taskId);
 
     const model3dUrl = taskResult.model_urls?.glb;
@@ -46,17 +46,23 @@ export class MeshyService {
     };
   }
 
-  private async createTask(imageUrl: string): Promise<string> {
+  private async createTask(imageUrl: string, prompt?: string): Promise<string> {
+    const body: Record<string, unknown> = {
+      image_url: imageUrl,
+      should_texture: true,
+    };
+
+    if (prompt?.trim()) {
+      body.prompt = prompt.trim();
+    }
+
     const response = await fetch(`${MESHY_BASE_URL}/image-to-3d`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        image_url: imageUrl,
-        should_texture: true,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

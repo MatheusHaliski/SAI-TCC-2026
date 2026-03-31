@@ -10,4 +10,8 @@ export class BrandsService {
   async getById(brandId: string) {
     return this.brandsRepository.getById(brandId);
   }
+
+  async getActiveLogoCatalogByBrandId(brandId: string) {
+    return this.brandsRepository.getActiveLogoCatalogByBrandId(brandId);
+  }
 }

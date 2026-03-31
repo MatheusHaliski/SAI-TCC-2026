@@ -6,4 +6,8 @@ export class BrandsController {
   async listActive() {
     return this.brandsService.listActive();
   }
+
+  async logoCatalogByBrandId(brandId: string) {
+    return this.brandsService.getActiveLogoCatalogByBrandId(brandId);
+  }
 }

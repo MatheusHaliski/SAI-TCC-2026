@@ -15,6 +15,10 @@ interface WardrobeItem {
   image_url: string;
   model_3d_url?: string | null;
   model_preview_url?: string | null;
+  model_base_3d_url?: string | null;
+  model_branded_3d_url?: string | null;
+  model_status?: 'queued_base' | 'base_done' | 'queued_branding' | 'done' | 'failed';
+  model_generation_error?: string | null;
   brand: string;
   season: string;
   gender: string;
@@ -64,7 +68,7 @@ export default function MyWardrobeView() {
   }, [availability, favorites, items]);
 
   const safeModelUrl = useMemo(() => {
-    const rawUrl = selectedItem?.model_3d_url?.trim();
+    const rawUrl = selectedItem?.model_branded_3d_url?.trim() || selectedItem?.model_3d_url?.trim() || selectedItem?.model_base_3d_url?.trim();
     if (!rawUrl) return null;
     return rawUrl.startsWith('http://') ? rawUrl.replace('http://', 'https://') : rawUrl;
   }, [selectedItem]);
@@ -141,6 +145,7 @@ export default function MyWardrobeView() {
                     <h3 className="mt-3 text-base font-semibold text-white">{item.name}</h3>
                     <p className="text-sm text-white/70">Brand: {item.brand}</p>
                     <p className="text-sm text-white/70">Type: {item.piece_type}</p>
+                    <p className="text-xs text-cyan-200/90">3D status: {item.model_status ?? 'queued_base'}</p>
                     <p className="mt-1 text-xs text-cyan-200/90">Click to open 3D viewer</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button type="button" onClick={(event) => { event.stopPropagation(); setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'available' })); }} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">Available</button>
@@ -200,7 +205,9 @@ export default function MyWardrobeView() {
               </div>
             ) : (
               <div className="flex h-[60vh] items-center justify-center rounded-xl border border-white/20 bg-black/40 text-center text-sm text-white/80">
-                This piece has no 3D model yet. Add it again after Meshy finishes processing.
+                {selectedItem.model_status === 'failed'
+                  ? (selectedItem.model_generation_error || '3D generation failed for this item. Please retry.')
+                  : 'This piece has no 3D model yet. Wait for base and branding passes to finish.'}
               </div>
             )}
           </div>
