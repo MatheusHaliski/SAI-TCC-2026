@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type FancyOption = {
@@ -7,6 +8,11 @@ type FancyOption = {
   label: string;
   hint?: string;
   group?: string;
+  icon?: {
+    type?: 'emoji' | 'image';
+    value: string;
+    alt?: string;
+  };
 };
 
 type FancySelectProps = {
@@ -57,8 +63,30 @@ export default function FancySelect({
     return () => window.removeEventListener('mousedown', handleOutside);
   }, []);
 
+  const renderOptionIcon = (option?: FancyOption) => {
+    if (!option?.icon?.value) return null;
+    if (option.icon.type === 'image') {
+      return (
+        <Image
+          src={option.icon.value}
+          alt={option.icon.alt ?? option.label}
+          width={20}
+          height={20}
+          className="h-5 w-5 rounded-full object-contain"
+          unoptimized
+        />
+      );
+    }
+
+    return <span className="text-base leading-none">{option.icon.value}</span>;
+  };
+
   return (
-    <div ref={rootRef} className="relative w-full">
+    <div
+      ref={rootRef}
+      className="relative w-full"
+      style={{ fontFamily: '"Gotham Light", Gotham, "Helvetica Neue", Arial, sans-serif' }}
+    >
       {label ? (
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
           {label}
@@ -68,7 +96,7 @@ export default function FancySelect({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border px-4 py-3 text-left shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl transition ${
+        className={`group relative flex w-full items-center justify-between overflow-hidden rounded-3xl border px-4 py-3 text-left shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl transition ${
           open
             ? 'border-fuchsia-400/50 bg-white/16 ring-2 ring-violet-500/30'
             : 'border-white/20 bg-white/10 hover:bg-white/14'
@@ -78,8 +106,9 @@ export default function FancySelect({
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
             Selection
           </div>
-          <div className={`truncate text-sm font-medium ${selected ? 'text-white' : 'text-white/55'}`}>
-            {selected?.label ?? placeholder}
+          <div className={`flex items-center gap-2 truncate text-sm font-medium ${selected ? 'text-white' : 'text-white/55'}`}>
+            {renderOptionIcon(selected)}
+            <span className="truncate">{selected?.label ?? placeholder}</span>
           </div>
           <div className="truncate text-xs text-white/45">
             {selected?.hint ?? 'Open to choose an item'}
@@ -94,7 +123,7 @@ export default function FancySelect({
           ▾
         </div>
 
-        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-500/0 via-fuchsia-500/0 to-pink-500/0 opacity-0 transition group-hover:opacity-100 group-hover:from-violet-500/5 group-hover:via-fuchsia-500/5 group-hover:to-pink-500/5" />
+        <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-r from-violet-500/0 via-fuchsia-500/0 to-pink-500/0 opacity-0 transition group-hover:opacity-100 group-hover:from-violet-500/5 group-hover:via-fuchsia-500/5 group-hover:to-pink-500/5" />
       </button>
 
       {open ? (
@@ -123,15 +152,16 @@ export default function FancySelect({
                             onChange(option.value);
                             setOpen(false);
                           }}
-                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
+                          className={`flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left transition ${
                             isSelected
                               ? 'border-fuchsia-400/40 bg-gradient-to-r from-violet-600/70 via-fuchsia-600/70 to-pink-600/70 text-white shadow-[0_10px_30px_rgba(168,85,247,0.28)]'
                               : 'border-white/10 bg-white/5 text-white hover:border-white/20 hover:bg-white/10'
                           }`}
                         >
                           <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold">
-                              {option.label}
+                            <div className="flex items-center gap-2 truncate text-sm font-semibold">
+                              {renderOptionIcon(option)}
+                              <span className="truncate">{option.label}</span>
                             </div>
                             {option.hint ? (
                               <div className="truncate text-xs text-white/60">
