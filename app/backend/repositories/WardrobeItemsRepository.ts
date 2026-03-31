@@ -74,6 +74,19 @@ export class WardrobeItemsRepository extends BaseRepository {
     return snap.exists;
   }
 
+  async updateModelAssets(
+    wardrobeItemId: string,
+    input: {
+      model_3d_url: string;
+      model_preview_url: string | null;
+    },
+  ): Promise<void> {
+    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
+      ...input,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
   async getAnalysisByUser(userId: string): Promise<WardrobeAnalysis> {
     const items = await this.findByUser(userId);
     return {

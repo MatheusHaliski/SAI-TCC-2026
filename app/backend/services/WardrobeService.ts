@@ -29,14 +29,12 @@ export class WardrobeService {
       throw new ServiceError('Missing required fields to create wardrobe item.', 400);
     }
 
-    const generatedModel = await this.meshyService.generate3DModelFromImage(image_url);
-
-    return this.wardrobeRepo.create({
+    const createdItem = await this.wardrobeRepo.create({
       user_id,
       name,
       image_url,
-      model_3d_url: generatedModel.model_3d_url,
-      model_preview_url: generatedModel.model_preview_url,
+      model_3d_url: null,
+      model_preview_url: null,
       piece_type,
       market_id,
       brand_id: String(input.brand_id ?? DEFAULT_BRAND_ID).trim() || DEFAULT_BRAND_ID,
@@ -45,5 +43,20 @@ export class WardrobeService {
       style_tags: Array.isArray(input.style_tags) ? input.style_tags.map((tag) => String(tag)) : [],
       occasion_tags: Array.isArray(input.occasion_tags) ? input.occasion_tags.map((tag) => String(tag)) : [],
     });
+
+    void this.enrichWardrobeItemModel(createdItem.wardrobe_item_id, image_url);
+    return createdItem;
+  }
+
+  private async enrichWardrobeItemModel(wardrobeItemId: string, imageUrl: string): Promise<void> {
+    try {
+      const generatedModel = await this.meshyService.generate3DModelFromImage(imageUrl);
+      await this.wardrobeRepo.updateModelAssets(wardrobeItemId, {
+        model_3d_url: generatedModel.model_3d_url,
+        model_preview_url: generatedModel.model_preview_url,
+      });
+    } catch {
+      // Model generation is best-effort; wardrobe item creation should still succeed.
+    }
   }
 }
