@@ -18,6 +18,7 @@ const BRAND_LOGO_FALLBACKS: Record<string, string> = {
   nike: '/nike.png',
   zara: '/zara.jpg',
   puma: '/puma.jpg',
+  lacoste: '/lacoste.jpg',
   levis: '/levis.jpg',
   'c&a': '/cea.jpg',
   cea: '/cea.jpg',
