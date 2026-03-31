@@ -22,6 +22,32 @@ const BRAND_LOGO_FALLBACKS: Record<string, string> = {
   'c&a': '/cea.jpg',
   cea: '/cea.jpg',
 };
+const COLOR_OPTIONS = [
+  'Blue',
+  'Red',
+  'Green',
+  'Yellow',
+  'Black',
+  'White',
+  'Gray',
+  'Brown',
+  'Beige',
+  'Purple',
+];
+
+const MATERIAL_OPTIONS = [
+  'Leather',
+  'Cotton',
+  'Denim',
+  'Wool',
+  'Linen',
+  'Polyester',
+  'Silk',
+  'Nylon',
+];
+
+const STYLE_TAG_OPTIONS = ['Urban', 'day', 'night', 'outdoors'];
+const OCCASION_TAG_OPTIONS = ['Party', 'Formal', 'Casual', 'Work'];
 
 function resolveBrandLogoUrl(brand: Brand): string | null {
   if (brand.logo_url?.trim()) {
@@ -332,32 +358,44 @@ export default function AddWardrobeItemView() {
               ]}
             />
 
-            <input
+            <FancySelect
               value={form.color}
-              onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))}
+              onChange={(color) => setForm((prev) => ({ ...prev, color }))}
               placeholder="Color"
-              className={inputClassName}
+              options={COLOR_OPTIONS.map((color) => ({ value: color, label: color, group: 'Color' }))}
             />
 
-            <input
+            <FancySelect
               value={form.material}
-              onChange={(e) => setForm((prev) => ({ ...prev, material: e.target.value }))}
+              onChange={(material) => setForm((prev) => ({ ...prev, material }))}
               placeholder="Material"
-              className={inputClassName}
+              options={MATERIAL_OPTIONS.map((material) => ({
+                value: material,
+                label: material,
+                group: 'Material',
+              }))}
             />
 
-            <input
+            <FancySelect
               value={form.style_tags}
-              onChange={(e) => setForm((prev) => ({ ...prev, style_tags: e.target.value }))}
-              placeholder="Style tags (comma separated)"
-              className={inputClassName}
+              onChange={(styleTag) => setForm((prev) => ({ ...prev, style_tags: styleTag }))}
+              placeholder="Style tag"
+              options={STYLE_TAG_OPTIONS.map((styleTag) => ({
+                value: styleTag,
+                label: styleTag,
+                group: 'Style Tags',
+              }))}
             />
 
-            <input
+            <FancySelect
               value={form.occasion_tags}
-              onChange={(e) => setForm((prev) => ({ ...prev, occasion_tags: e.target.value }))}
-              placeholder="Occasion tags (comma separated)"
-              className={inputClassName}
+              onChange={(occasionTag) => setForm((prev) => ({ ...prev, occasion_tags: occasionTag }))}
+              placeholder="Occasion tag"
+              options={OCCASION_TAG_OPTIONS.map((occasionTag) => ({
+                value: occasionTag,
+                label: occasionTag,
+                group: 'Occasion Tags',
+              }))}
             />
 
             <div className={`${infoBoxClassName} md:col-span-2`}>
