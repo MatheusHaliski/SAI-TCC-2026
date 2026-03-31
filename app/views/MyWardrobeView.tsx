@@ -19,7 +19,7 @@ interface WardrobeItem {
   model_branded_3d_url?: string | null;
   isolated_piece_image_url?: string | null;
   segmentation_confidence?: number | null;
-  geometry_scope_passed?: boolean;
+  geometry_scope_passed?: boolean | null;
   geometry_scope_score?: number | null;
   generation_attempt_count?: number;
   model_status?:
@@ -84,7 +84,7 @@ export default function MyWardrobeView() {
   }, [availability, favorites, items]);
 
   const safeModelUrl = useMemo(() => {
-    if (selectedItem && selectedItem.geometry_scope_passed === false) return null;
+    if (selectedItem?.model_status === 'failed_geometry_scope') return null;
     const rawUrl = selectedItem?.model_branded_3d_url?.trim() || selectedItem?.model_3d_url?.trim() || selectedItem?.model_base_3d_url?.trim();
     if (!rawUrl) return null;
     return rawUrl.startsWith('http://') ? rawUrl.replace('http://', 'https://') : rawUrl;
@@ -164,7 +164,13 @@ export default function MyWardrobeView() {
                     <p className="text-sm text-white/70">Type: {item.piece_type}</p>
                     <p className="text-xs text-cyan-200/90">3D status: {item.model_status ?? 'queued_base'}</p>
                     <p className="text-xs text-white/70">
-                      Scope QA: {item.geometry_scope_passed ? `Passed (${(item.geometry_scope_score ?? 0).toFixed(2)})` : 'Pending/Failed'}
+                      Scope QA: {item.geometry_scope_passed === true
+                        ? `Passed (${(item.geometry_scope_score ?? 0).toFixed(2)})`
+                        : item.model_status === 'failed_geometry_scope'
+                          ? 'Failed'
+                          : item.model_3d_url || item.model_base_3d_url || item.model_branded_3d_url
+                            ? 'Legacy model (not evaluated)'
+                          : 'Pending'}
                     </p>
                     <p className="mt-1 text-xs text-cyan-200/90">Click to open 3D viewer</p>
                     <div className="mt-3 flex flex-wrap gap-2">
