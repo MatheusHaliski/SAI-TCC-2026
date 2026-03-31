@@ -5,11 +5,14 @@ declare module 'react' {
     interface IntrinsicElements {
       'model-viewer': DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> & {
         src?: string;
+        poster?: string;
         ar?: boolean;
         'camera-controls'?: boolean;
         'touch-action'?: string;
         'interaction-prompt'?: string;
         'auto-rotate'?: boolean;
+        exposure?: string;
+        'shadow-intensity'?: string;
       };
     }
   }

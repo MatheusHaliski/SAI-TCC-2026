@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Script from 'next/script';
 import Image from 'next/image';
 import { getAuthSessionProfile } from '@/app/lib/authSession';
@@ -28,6 +28,9 @@ export default function MyWardrobeView() {
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
+  const [viewerLoading, setViewerLoading] = useState(false);
+  const [viewerError, setViewerError] = useState<string | null>(null);
+  const modelViewerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const loadWardrobeData = async () => {
@@ -59,6 +62,34 @@ export default function MyWardrobeView() {
     return { available, unavailable, favorite };
   }, [availability, favorites, items]);
 
+  const safeModelUrl = useMemo(() => {
+    const rawUrl = selectedItem?.model_3d_url?.trim();
+    if (!rawUrl) return null;
+    return rawUrl.startsWith('http://') ? rawUrl.replace('http://', 'https://') : rawUrl;
+  }, [selectedItem]);
+
+  useEffect(() => {
+    if (!safeModelUrl || !modelViewerRef.current) return;
+
+    const viewerElement = modelViewerRef.current;
+    const handleLoad = () => {
+      setViewerLoading(false);
+      setViewerError(null);
+    };
+    const handleError = () => {
+      setViewerLoading(false);
+      setViewerError('Could not load this 3D model in the embedded viewer.');
+    };
+
+    viewerElement.addEventListener('load', handleLoad as EventListener);
+    viewerElement.addEventListener('error', handleError as EventListener);
+
+    return () => {
+      viewerElement.removeEventListener('load', handleLoad as EventListener);
+      viewerElement.removeEventListener('error', handleError as EventListener);
+    };
+  }, [safeModelUrl, selectedItem?.wardrobe_item_id]);
+
   return (
     <>
       <Script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js" />
@@ -77,7 +108,11 @@ export default function MyWardrobeView() {
                 {group.data.map((item) => (
                   <article
                     key={item.wardrobe_item_id}
-                    onClick={() => setSelectedItem(item)}
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setViewerLoading(Boolean(item.model_3d_url));
+                      setViewerError(null);
+                    }}
                     className="cursor-pointer rounded-2xl border border-white/25 p-4 transition hover:border-cyan-300/60"
                   >
                     <Image src={item.image_url} alt={item.name} width={640} height={360} className="h-36 w-full rounded-xl object-cover" unoptimized />
@@ -103,18 +138,37 @@ export default function MyWardrobeView() {
           <div className="w-full max-w-4xl rounded-2xl border border-white/20 bg-slate-950 p-4 shadow-2xl">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">{selectedItem.name} • 3D Viewer</h3>
-              <button type="button" onClick={() => setSelectedItem(null)} className="rounded-lg border border-white/25 px-3 py-1 text-sm text-white">Close</button>
+              <button type="button" onClick={() => { setSelectedItem(null); setViewerLoading(false); setViewerError(null); }} className="rounded-lg border border-white/25 px-3 py-1 text-sm text-white">Close</button>
             </div>
-            {selectedItem.model_3d_url ? (
-              <model-viewer
-                src={selectedItem.model_3d_url}
-                ar={false}
-                camera-controls
-                touch-action="pan-y"
-                interaction-prompt="auto"
-                auto-rotate
-                className="h-[60vh] w-full rounded-xl bg-black/40"
-              />
+            {safeModelUrl ? (
+              <div className="relative">
+                <model-viewer
+                  ref={modelViewerRef}
+                  src={safeModelUrl}
+                  poster={selectedItem.model_preview_url ?? undefined}
+                  ar={false}
+                  camera-controls
+                  touch-action="pan-y"
+                  interaction-prompt="auto"
+                  auto-rotate
+                  exposure="1.15"
+                  shadow-intensity="1"
+                  className="h-[60vh] w-full rounded-xl bg-slate-900"
+                />
+                {viewerLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/55 text-sm text-white/90">
+                    Loading 3D model...
+                  </div>
+                ) : null}
+                {viewerError ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-black/65 p-4 text-center text-sm text-white">
+                    <p>{viewerError}</p>
+                    <a href={safeModelUrl} target="_blank" rel="noreferrer" className="rounded-lg border border-cyan-300/60 px-3 py-1 text-cyan-200">
+                      Open model URL in new tab
+                    </a>
+                  </div>
+                ) : null}
+              </div>
             ) : (
               <div className="flex h-[60vh] items-center justify-center rounded-xl border border-white/20 bg-black/40 text-center text-sm text-white/80">
                 This piece has no 3D model yet. Add it again after Meshy finishes processing.
