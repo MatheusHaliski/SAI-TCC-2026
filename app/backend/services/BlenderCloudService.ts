@@ -13,6 +13,7 @@ interface RunpodStatusResponse {
 
 export interface SubmitBlenderCloudJobInput {
   modelUrl: string;
+  imageUrl?: string;
   jobType: string;
   options?: Record<string, unknown>;
 }
@@ -55,6 +56,7 @@ export class BlenderCloudService {
     const payload = {
       input: {
         modelUrl: input.modelUrl,
+        ...(input.imageUrl ? { imageUrl: input.imageUrl } : {}),
         jobType: input.jobType,
         options: input.options ?? {},
       },

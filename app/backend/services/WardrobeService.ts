@@ -8,12 +8,14 @@ import { BrandsRepository } from '@/app/backend/repositories/BrandsRepository';
 import { PipelineJobsRepository } from '@/app/backend/repositories/PipelineJobsRepository';
 import { BlenderPipelineService } from './BlenderPipelineService';
 import { BlenderCloudService } from './BlenderCloudService';
+import type { ModelGenerationStatus } from '@/app/backend/types/entities';
 
 const DEFAULT_BRAND_ID = 'default';
 const BRANDING_PASS_VERSION = 'v2-image-first';
 const SEGMENTATION_MIN_CONFIDENCE = Number(process.env.SEGMENTATION_MIN_CONFIDENCE ?? 0.75);
-const MODEL_GENERATION_MAX_POLLS = Number(process.env.BLENDER_MODEL_MAX_POLLS ?? 120);
-const MODEL_GENERATION_POLL_MS = Number(process.env.BLENDER_MODEL_POLL_MS ?? 5000);
+const MODEL_GENERATION_MAX_POLLS = Number(process.env.BLENDER_MODEL_MAX_POLLS ?? 36);
+const MODEL_GENERATION_POLL_MS = Number(process.env.BLENDER_MODEL_POLL_MS ?? 3000);
+const MODEL_GENERATION_JOB_TYPE = (process.env.BLENDER_MODEL_JOB_TYPE ?? 'image_to_garment').trim() || 'image_to_garment';
 
 interface BlenderGenerationResult {
   model_3d_url: string;
@@ -158,6 +160,9 @@ export class WardrobeService {
       const baseModel = await this.generateModelFromImage(isolation.isolatedImageUrl, {
         prompt: basePrompt,
         pieceType: input.pieceType,
+        wardrobeItemId: input.wardrobeItemId,
+        status: 'queued_base',
+        stageLabel: 'base_generation',
       });
 
       await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'base_done');
@@ -198,6 +203,9 @@ export class WardrobeService {
       const brandedModel = await this.generateModelFromImage(isolation.isolatedImageUrl, {
         prompt: brandingPrompt,
         pieceType: input.pieceType,
+        wardrobeItemId: input.wardrobeItemId,
+        status: 'queued_branding',
+        stageLabel: 'branding_generation',
       });
 
       const qaPassed = this.qualityChecksPass({
@@ -232,6 +240,9 @@ export class WardrobeService {
           const retryModel = await this.generateModelFromImage(isolation.isolatedImageUrl, {
             prompt: `${brandingPrompt} Strictly output only the garment mesh with no humanoid rig.`,
             pieceType: input.pieceType,
+            wardrobeItemId: input.wardrobeItemId,
+            status: 'retrying_generation',
+            stageLabel: 'retry_generation',
           });
 
           const retryScope = await this.geometryScopeService.validate({
@@ -327,19 +338,37 @@ export class WardrobeService {
 
   private async generateModelFromImage(
     imageUrl: string,
-    options: { prompt: string; pieceType: string },
+    options: { prompt: string; pieceType: string; wardrobeItemId: string; status: ModelGenerationStatus; stageLabel: string },
   ): Promise<BlenderGenerationResult> {
     const submitted = await this.blenderCloudService.submitBlenderCloudJob({
       modelUrl: imageUrl,
-      jobType: 'image_to_garment',
+      imageUrl,
+      jobType: MODEL_GENERATION_JOB_TYPE,
       options: {
         prompt: options.prompt,
         pieceType: options.pieceType,
         mode: 'model_generation',
+        sourceImageUrl: imageUrl,
       },
     });
 
+    await this.wardrobeRepo.updatePipelineStatus(options.wardrobeItemId, options.status, null, {
+      stage: `${options.stageLabel}_submitted`,
+      provider: 'runpod',
+      cloud_job_id: submitted.cloudJobId,
+      job_type: MODEL_GENERATION_JOB_TYPE,
+    });
+
     for (let poll = 0; poll < MODEL_GENERATION_MAX_POLLS; poll += 1) {
+      if (poll > 0 && poll % 6 === 0) {
+        await this.wardrobeRepo.updatePipelineStatus(options.wardrobeItemId, options.status, null, {
+          stage: `${options.stageLabel}_polling`,
+          provider: 'runpod',
+          cloud_job_id: submitted.cloudJobId,
+          poll_count: poll,
+        });
+      }
+
       const status = await this.blenderCloudService.getBlenderCloudJobStatus(submitted.cloudJobId);
       if (status.status === 'completed') {
         const artifacts = status.artifacts ?? {};
@@ -359,12 +388,13 @@ export class WardrobeService {
         const model_preview_url =
           previewUrlCandidates.find((url) => typeof url === 'string' && url.trim().length > 0) ?? null;
 
-        if (!model_3d_url || !model_3d_url.toLowerCase().startsWith('http')) {
+        const resolvedModelUrl = typeof model_3d_url === 'string' ? model_3d_url.trim() : '';
+        if (!resolvedModelUrl || !resolvedModelUrl.toLowerCase().startsWith('http')) {
           throw new ServiceError('RunPod Blender model generation completed without a valid model URL.', 502);
         }
 
         return {
-          model_3d_url: model_3d_url.trim(),
+          model_3d_url: resolvedModelUrl,
           model_preview_url: typeof model_preview_url === 'string' ? model_preview_url.trim() : null,
         };
       }
