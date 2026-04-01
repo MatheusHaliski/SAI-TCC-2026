@@ -46,6 +46,7 @@ const sections = ['Available', 'Unavailable', 'Favorites'];
 
 export default function MyWardrobeView() {
   const [items, setItems] = useState<WardrobeItem[]>([]);
+  const [selectedSection, setSelectedSection] = useState(sections[0]?.toLowerCase() ?? 'available');
   const [resolvedUserId, setResolvedUserId] = useState('');
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
@@ -87,6 +88,25 @@ export default function MyWardrobeView() {
     const favorite = items.filter((item) => favorites[item.wardrobe_item_id]);
     return { available, unavailable, favorite };
   }, [availability, favorites, items]);
+
+  const orderedGroups = useMemo(() => {
+    const groups = [
+      { key: 'available', title: 'Available Pieces', data: grouped.available },
+      { key: 'unavailable', title: 'Unavailable Pieces', data: grouped.unavailable },
+      { key: 'favorite', title: 'Favorite Pieces', data: grouped.favorite },
+    ] as const;
+
+    const sectionToGroupKey: Record<string, (typeof groups)[number]['key']> = {
+      available: 'available',
+      unavailable: 'unavailable',
+      favorites: 'favorite',
+    };
+    const selectedGroupKey = sectionToGroupKey[selectedSection] ?? 'available';
+    const selectedGroup = groups.find((group) => group.key === selectedGroupKey);
+    const remainingGroups = groups.filter((group) => group.key !== selectedGroupKey);
+
+    return selectedGroup ? [selectedGroup, ...remainingGroups] : groups;
+  }, [grouped, selectedSection]);
 
   const viewerCandidateUrls = useMemo(() => {
     if (!selectedItem) return [];
@@ -218,15 +238,16 @@ export default function MyWardrobeView() {
     <>
       <Script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js" />
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <ContextSectionMenu title="Virtual Wardrobe" sections={sections} />
+        <ContextSectionMenu
+          title="Virtual Wardrobe"
+          sections={sections}
+          selectedSection={sections.find((section) => section.toLowerCase() === selectedSection) ?? sections[0]}
+          onSelectSection={(section) => setSelectedSection(section.toLowerCase())}
+        />
         <div className="space-y-6">
           <PageHeader title="Virtual Wardrobe" subtitle="Classify pieces as available, unavailable, and favorites." />
 
-          {([
-            { key: 'available', title: 'Available Pieces', data: grouped.available },
-            { key: 'unavailable', title: 'Unavailable Pieces', data: grouped.unavailable },
-            { key: 'favorite', title: 'Favorite Pieces', data: grouped.favorite },
-          ] as const).map((group) => (
+          {orderedGroups.map((group) => (
             <SectionBlock key={group.key} title={group.title} subtitle="Manage list status for each wardrobe item.">
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {group.data.map((item) => (

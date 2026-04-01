@@ -1,16 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import ContextSectionItem from './ContextSectionItem';
 
 interface ContextSectionMenuProps {
   title: string;
   sections: string[];
+  selectedSection: string;
+  onSelectSection: (section: string) => void;
 }
 
-export default function ContextSectionMenu({ title, sections }: ContextSectionMenuProps) {
-    const [selectedSection, setSelectedSection] = useState(sections[0] ?? '');
-
+export default function ContextSectionMenu({ title, sections, selectedSection, onSelectSection }: ContextSectionMenuProps) {
     const orderedSections = useMemo(() => {
         if (!selectedSection) return sections;
         return [
@@ -30,7 +30,7 @@ export default function ContextSectionMenu({ title, sections }: ContextSectionMe
                         key={section}
                         label={section}
                         isActive={index === 0}
-                        onSelect={() => setSelectedSection(section)}
+                        onSelect={() => onSelectSection(section)}
                     />
                 ))}
             </ul>
