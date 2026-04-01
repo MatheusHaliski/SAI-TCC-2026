@@ -84,6 +84,8 @@ export default function AddWardrobeItemView() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [uvJobId, setUvJobId] = useState<string | null>(null);
+  const [uvJobStatus, setUvJobStatus] = useState<string | null>(null);
   const [selectedImageName, setSelectedImageName] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -181,6 +183,11 @@ export default function AddWardrobeItemView() {
     [markets],
   );
 
+  const selectedBrand = useMemo(
+    () => brands.find((brand) => brand.brand_id === form.brand_id) ?? null,
+    [brands, form.brand_id],
+  );
+
   useEffect(() => {
     if (!submitting) {
       setSubmitProgress(0);
@@ -225,6 +232,37 @@ export default function AddWardrobeItemView() {
         return;
       }
 
+      const createdPiece = (await response.json().catch(() => null)) as
+        | { wardrobe_item_id?: string }
+        | null;
+      const createdWardrobeItemId = createdPiece?.wardrobe_item_id?.trim();
+      if (createdWardrobeItemId && form.piece_type === 'upper_piece') {
+        const uvResponse = await fetch('/api/wardrobe-items/generate-uv', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            wardrobe_item_id: createdWardrobeItemId,
+            category: 'upper_body',
+            garment_prompt: `${form.color || 'unspecified'} ${selectedBrand?.name || 'generic'} shirt`,
+            color: form.color || 'unspecified',
+            brand: selectedBrand?.name || 'unspecified',
+            base_model_id: 'upper_body_v1',
+            generation_mode: 'fast_uv',
+          }),
+        });
+        if (uvResponse.ok) {
+          const uvPayload = (await uvResponse.json().catch(() => null)) as
+            | { jobId?: string; status?: string }
+            | null;
+          setUvJobId(uvPayload?.jobId ?? null);
+          setUvJobStatus(uvPayload?.status ?? 'pending');
+        } else {
+          setUvJobId(null);
+          setUvJobStatus('failed_to_schedule');
+        }
+      }
+
       setSubmitProgress(100);
       setAlertMessage('Piece added to your wardrobe successfully.');
       setForm((prev) => ({
@@ -242,6 +280,28 @@ export default function AddWardrobeItemView() {
       setSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (!uvJobId) return;
+    let cancelled = false;
+    const timer = window.setInterval(async () => {
+      const response = await fetch(`/api/pipeline-jobs/${uvJobId}`);
+      if (!response.ok) return;
+      const payload = (await response.json().catch(() => null)) as
+        | { status?: string }
+        | null;
+      if (!payload?.status || cancelled) return;
+      setUvJobStatus(payload.status);
+      if (payload.status === 'completed' || payload.status === 'failed') {
+        window.clearInterval(timer);
+      }
+    }, 2500);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [uvJobId]);
 
   const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -466,6 +526,12 @@ export default function AddWardrobeItemView() {
                 </div>
                 <p className="text-xs text-white/80">Adding piece... {submitProgress}%</p>
               </div>
+            ) : null}
+
+            {uvJobId ? (
+              <p className="md:col-span-2 text-xs text-white/80">
+                UV job <span className="font-mono">{uvJobId}</span> status: {uvJobStatus ?? 'pending'}
+              </p>
             ) : null}
           </form>
         </SectionBlock>
