@@ -84,7 +84,7 @@ export default function FancySelect({
   return (
     <div
       ref={rootRef}
-      className="relative w-full"
+      className={`relative w-full ${open ? 'z-[140]' : 'z-10'}`}
       style={{ fontFamily: '"Gotham Light", Gotham, "Helvetica Neue", Arial, sans-serif' }}
     >
       {label ? (
@@ -127,7 +127,7 @@ export default function FancySelect({
       </button>
 
       {open ? (
-        <div className="absolute z-[90] mt-3 w-full rounded-3xl border border-white/20 bg-slate-950/80 shadow-[0_24px_60px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
+        <div className="absolute z-[150] mt-3 w-full rounded-3xl border border-white/20 bg-slate-950/80 shadow-[0_24px_60px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
           <div className="max-h-80 overflow-auto p-3">
             {groupedOptions.length === 0 ? (
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/55">
