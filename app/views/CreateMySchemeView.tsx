@@ -49,6 +49,12 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
+const SLOT_LAYER_CLASS: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
+  upper: 'relative z-30',
+  lower: 'relative z-30',
+  shoes: 'relative z-20',
+  accessory: 'relative z-20',
+};
 
 export default function CreateMySchemeView() {
   const [items, setItems] = useState<WardrobeItem[]>([]);
@@ -225,7 +231,7 @@ export default function CreateMySchemeView() {
               />
 
               {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
-                <div key={slot} className={slotCardClassName}>
+                <div key={slot} className={`${slotCardClassName} ${SLOT_LAYER_CLASS[slot]}`}>
                   <p className="text-sm font-semibold capitalize text-white">
                     {slot} piece
                   </p>
