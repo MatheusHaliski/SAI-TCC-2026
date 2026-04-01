@@ -89,7 +89,7 @@ export default function MyWardrobeView() {
     return { available, unavailable, favorite };
   }, [availability, favorites, items]);
 
-  const orderedGroups = useMemo(() => {
+  const activeGroups = useMemo(() => {
     const groups = [
       { key: 'available', title: 'Available Pieces', data: grouped.available },
       { key: 'unavailable', title: 'Unavailable Pieces', data: grouped.unavailable },
@@ -103,9 +103,8 @@ export default function MyWardrobeView() {
     };
     const selectedGroupKey = sectionToGroupKey[selectedSection] ?? 'available';
     const selectedGroup = groups.find((group) => group.key === selectedGroupKey);
-    const remainingGroups = groups.filter((group) => group.key !== selectedGroupKey);
 
-    return selectedGroup ? [selectedGroup, ...remainingGroups] : groups;
+    return selectedGroup ? [selectedGroup] : [groups[0]];
   }, [grouped, selectedSection]);
 
   const viewerCandidateUrls = useMemo(() => {
@@ -247,7 +246,7 @@ export default function MyWardrobeView() {
         <div className="space-y-6">
           <PageHeader title="Virtual Wardrobe" subtitle="Classify pieces as available, unavailable, and favorites." />
 
-          {orderedGroups.map((group) => (
+          {activeGroups.map((group) => (
             <SectionBlock key={group.key} title={group.title} subtitle="Manage list status for each wardrobe item.">
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {group.data.map((item) => (
