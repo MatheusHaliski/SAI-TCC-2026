@@ -13,16 +13,29 @@ export class BlenderPipelineService {
   async createUvJob(input: Record<string, unknown>) {
     const user_id = String(input.user_id ?? '').trim();
     const wardrobe_item_id = String(input.wardrobe_item_id ?? '').trim();
-    const modelUrl = String(input.modelUrl ?? '').trim();
+    const requestedModelUrl = String(input.modelUrl ?? '').trim();
     const generation_mode = String(input.generation_mode ?? 'fast_uv').trim() === 'hq_uv' ? 'hq_uv' : 'fast_uv';
 
-    if (!user_id || !wardrobe_item_id || !modelUrl) {
-      throw new ServiceError('Missing required fields for UV generation job (user_id, wardrobe_item_id, modelUrl).', 400);
+    if (!user_id || !wardrobe_item_id) {
+      throw new ServiceError('Missing required fields for UV generation job (user_id, wardrobe_item_id).', 400);
     }
 
-    const exists = await this.wardrobeItemsRepository.existsById(wardrobe_item_id);
-    if (!exists) {
+    const wardrobeItem = await this.wardrobeItemsRepository.findById(wardrobe_item_id);
+    if (!wardrobeItem) {
       throw new ServiceError('Wardrobe item not found for UV generation.', 404);
+    }
+
+    const modelUrlCandidates = [
+      requestedModelUrl,
+      typeof wardrobeItem.model_3d_url === 'string' ? wardrobeItem.model_3d_url : '',
+      typeof wardrobeItem.model_branded_3d_url === 'string' ? wardrobeItem.model_branded_3d_url : '',
+      typeof wardrobeItem.model_base_3d_url === 'string' ? wardrobeItem.model_base_3d_url : '',
+    ];
+
+    const modelUrl = modelUrlCandidates.find((url) => url.trim().length > 0)?.trim() ?? '';
+
+    if (!modelUrl) {
+      throw new ServiceError('Model URL not available yet for UV generation. Wait until 3D model generation is done.', 409);
     }
 
     const created = await this.pipelineJobsRepository.create({
@@ -60,13 +73,6 @@ export class BlenderPipelineService {
       metrics: {
         runpodSubmitResponse: runpodSubmitted.raw,
       },
-    });
-
-    await this.wardrobeItemsRepository.updatePipelineStatus(wardrobe_item_id, 'queued_base', null, {
-      stage: 'uv_pipeline_queued_in_runpod',
-      pipeline_job_id: created.pipeline_job_id,
-      cloud_job_id: runpodSubmitted.cloudJobId,
-      provider: 'runpod',
     });
 
     return {

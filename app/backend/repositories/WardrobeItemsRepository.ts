@@ -118,6 +118,16 @@ export class WardrobeItemsRepository extends BaseRepository {
     return { wardrobe_item_id: ref.id };
   }
 
+
+  async findById(wardrobeItemId: string): Promise<(Record<string, unknown> & { wardrobe_item_id: string }) | null> {
+    const doc = await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).get();
+    if (!doc.exists) return null;
+    return {
+      wardrobe_item_id: doc.id,
+      ...(doc.data() as Record<string, unknown>),
+    };
+  }
+
   async existsById(wardrobeItemId: string): Promise<boolean> {
     const snap = await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).get();
     return snap.exists;

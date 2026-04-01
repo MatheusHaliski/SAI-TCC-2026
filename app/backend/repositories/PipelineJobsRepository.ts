@@ -44,6 +44,20 @@ export class PipelineJobsRepository extends BaseRepository {
     };
   }
 
+  async findActiveByUser(userId: string): Promise<Array<UvPipelineJobRecord & { pipeline_job_id: string }>> {
+    const snapshot = await this.db
+      .collection(PIPELINE_JOBS_COLLECTION)
+      .where('user_id', '==', userId)
+      .where('status', 'in', ['pending', 'running'])
+      .limit(25)
+      .get();
+
+    return snapshot.docs.map((doc) => ({
+      pipeline_job_id: doc.id,
+      ...(doc.data() as UvPipelineJobRecord),
+    }));
+  }
+
   async update(
     pipelineJobId: string,
     input: Partial<Omit<UvPipelineJobRecord, 'created_at' | 'user_id' | 'wardrobe_item_id' | 'input_payload'>>,
