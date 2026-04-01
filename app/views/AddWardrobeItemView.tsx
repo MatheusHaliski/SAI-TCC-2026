@@ -249,6 +249,7 @@ export default function AddWardrobeItemView() {
             brand: selectedBrand?.name || 'unspecified',
             base_model_id: 'upper_body_v1',
             generation_mode: 'fast_uv',
+            modelUrl: form.image_url,
           }),
         });
         if (uvResponse.ok) {
