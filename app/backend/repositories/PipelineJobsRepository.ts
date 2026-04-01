@@ -7,6 +7,8 @@ export type UvPipelineStatus = 'pending' | 'running' | 'completed' | 'failed';
 export interface UvPipelineJobRecord {
   user_id: string;
   wardrobe_item_id: string;
+  provider: 'runpod';
+  cloud_job_id: string | null;
   status: UvPipelineStatus;
   stage: string;
   input_payload: Record<string, unknown>;
@@ -40,6 +42,20 @@ export class PipelineJobsRepository extends BaseRepository {
       pipeline_job_id: doc.id,
       ...(doc.data() as UvPipelineJobRecord),
     };
+  }
+
+  async findActiveByUser(userId: string): Promise<Array<UvPipelineJobRecord & { pipeline_job_id: string }>> {
+    const snapshot = await this.db
+      .collection(PIPELINE_JOBS_COLLECTION)
+      .where('user_id', '==', userId)
+      .where('status', 'in', ['pending', 'running'])
+      .limit(25)
+      .get();
+
+    return snapshot.docs.map((doc) => ({
+      pipeline_job_id: doc.id,
+      ...(doc.data() as UvPipelineJobRecord),
+    }));
   }
 
   async update(

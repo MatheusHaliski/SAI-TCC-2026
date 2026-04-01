@@ -253,7 +253,7 @@ export default function AddWardrobeItemView() {
         });
         if (uvResponse.ok) {
           const uvPayload = (await uvResponse.json().catch(() => null)) as
-            | { jobId?: string; status?: string }
+            | { jobId?: string; cloudJobId?: string; status?: string }
             | null;
           setUvJobId(uvPayload?.jobId ?? null);
           setUvJobStatus(uvPayload?.status ?? 'pending');

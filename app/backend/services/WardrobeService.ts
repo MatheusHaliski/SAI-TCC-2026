@@ -6,6 +6,8 @@ import { BrandPlacementService } from './BrandPlacementService';
 import { PieceIsolationService } from './PieceIsolationService';
 import { GeometryScopeService } from './GeometryScopeService';
 import { BrandsRepository } from '@/app/backend/repositories/BrandsRepository';
+import { PipelineJobsRepository } from '@/app/backend/repositories/PipelineJobsRepository';
+import { BlenderPipelineService } from './BlenderPipelineService';
 
 const DEFAULT_BRAND_ID = 'default';
 const BRANDING_PASS_VERSION = 'v2-image-first';
@@ -20,10 +22,22 @@ export class WardrobeService {
     private readonly pieceIsolationService = new PieceIsolationService(),
     private readonly geometryScopeService = new GeometryScopeService(),
     private readonly brandsRepository = new BrandsRepository(),
+    private readonly pipelineJobsRepository = new PipelineJobsRepository(),
+    private readonly blenderPipelineService = new BlenderPipelineService(),
   ) {}
 
   async listUserWardrobe(userId: string) {
+    await this.syncActiveUvJobs(userId);
     return this.wardrobeRepo.findByUser(userId);
+  }
+
+  private async syncActiveUvJobs(userId: string): Promise<void> {
+    try {
+      const activeJobs = await this.pipelineJobsRepository.findActiveByUser(userId);
+      await Promise.all(activeJobs.map((job) => this.blenderPipelineService.syncBlenderCloudJob(job.pipeline_job_id)));
+    } catch (error) {
+      console.warn('[wardrobe-service] failed to sync active UV jobs', { userId, error });
+    }
   }
 
   async getWardrobeAnalysis(userId: string) {
