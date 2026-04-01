@@ -1,31 +1,23 @@
 import { PipelineJobsRepository } from '@/app/backend/repositories/PipelineJobsRepository';
 import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
+import { BlenderCloudService } from './BlenderCloudService';
 import { ServiceError } from './errors';
-
-interface BlenderApiJobResult {
-  stage?: string;
-  artifacts?: Record<string, unknown>;
-  metrics?: Record<string, unknown>;
-}
 
 export class BlenderPipelineService {
   constructor(
     private readonly pipelineJobsRepository = new PipelineJobsRepository(),
     private readonly wardrobeItemsRepository = new WardrobeItemsRepository(),
+    private readonly blenderCloudService = new BlenderCloudService(),
   ) {}
 
   async createUvJob(input: Record<string, unknown>) {
     const user_id = String(input.user_id ?? '').trim();
     const wardrobe_item_id = String(input.wardrobe_item_id ?? '').trim();
-    const category = String(input.category ?? '').trim() || 'upper_body';
-    const garment_prompt = String(input.garment_prompt ?? '').trim();
-    const color = String(input.color ?? '').trim() || 'unspecified';
-    const brand = String(input.brand ?? '').trim() || 'unspecified';
-    const base_model_id = String(input.base_model_id ?? '').trim() || 'upper_body_v1';
+    const modelUrl = String(input.modelUrl ?? '').trim();
     const generation_mode = String(input.generation_mode ?? 'fast_uv').trim() === 'hq_uv' ? 'hq_uv' : 'fast_uv';
 
-    if (!user_id || !wardrobe_item_id || !garment_prompt) {
-      throw new ServiceError('Missing required fields for UV generation job.', 400);
+    if (!user_id || !wardrobe_item_id || !modelUrl) {
+      throw new ServiceError('Missing required fields for UV generation job (user_id, wardrobe_item_id, modelUrl).', 400);
     }
 
     const exists = await this.wardrobeItemsRepository.existsById(wardrobe_item_id);
@@ -36,17 +28,16 @@ export class BlenderPipelineService {
     const created = await this.pipelineJobsRepository.create({
       user_id,
       wardrobe_item_id,
+      provider: 'runpod',
+      cloud_job_id: null,
       status: 'pending',
       stage: 'queued',
       input_payload: {
-        user_id,
-        wardrobe_item_id,
-        category,
-        garment_prompt,
-        color,
-        brand,
-        base_model_id,
-        generation_mode,
+        modelUrl,
+        jobType: 'uv_unwrap',
+        options: {
+          generation_mode,
+        },
       },
       artifacts: null,
       metrics: null,
@@ -55,23 +46,44 @@ export class BlenderPipelineService {
       finished_at: null,
     });
 
-    void this.runJob(created.pipeline_job_id);
+    const runpodSubmitted = await this.blenderCloudService.submitBlenderCloudJob({
+      modelUrl,
+      jobType: 'uv_unwrap',
+      options: { generation_mode },
+    });
+
+    await this.pipelineJobsRepository.update(created.pipeline_job_id, {
+      cloud_job_id: runpodSubmitted.cloudJobId,
+      status: 'running',
+      stage: 'queued_in_runpod',
+      started_at: new Date().toISOString(),
+      metrics: {
+        runpodSubmitResponse: runpodSubmitted.raw,
+      },
+    });
+
+    await this.wardrobeItemsRepository.updatePipelineStatus(wardrobe_item_id, 'queued_base', null, {
+      stage: 'uv_pipeline_queued_in_runpod',
+      pipeline_job_id: created.pipeline_job_id,
+      cloud_job_id: runpodSubmitted.cloudJobId,
+      provider: 'runpod',
+    });
 
     return {
       jobId: created.pipeline_job_id,
+      cloudJobId: runpodSubmitted.cloudJobId,
+      provider: 'runpod',
       status: 'pending',
       stage: 'queued',
     };
   }
 
   async getJob(pipelineJobId: string) {
-    const job = await this.pipelineJobsRepository.findById(pipelineJobId);
-    if (!job) {
-      throw new ServiceError('Pipeline job not found.', 404);
-    }
-
+    const job = await this.syncBlenderCloudJob(pipelineJobId);
     return {
       jobId: job.pipeline_job_id,
+      cloudJobId: job.cloud_job_id,
+      provider: job.provider,
       status: job.status,
       stage: job.stage,
       artifacts: job.artifacts,
@@ -83,77 +95,74 @@ export class BlenderPipelineService {
     };
   }
 
-  private async runJob(pipelineJobId: string): Promise<void> {
+  async syncBlenderCloudJob(pipelineJobId: string) {
     const job = await this.pipelineJobsRepository.findById(pipelineJobId);
-    if (!job) return;
+    if (!job) {
+      throw new ServiceError('Pipeline job not found.', 404);
+    }
 
-    await this.pipelineJobsRepository.update(pipelineJobId, {
-      status: 'running',
-      stage: 'dispatching_to_blender',
-      started_at: new Date().toISOString(),
-    });
+    if (!job.cloud_job_id) {
+      return job;
+    }
 
-    try {
-      const blenderResult = await this.requestLocalBlender(job.input_payload);
+    if (job.status === 'completed' || job.status === 'failed') {
+      return job;
+    }
 
+    const remote = await this.blenderCloudService.getBlenderCloudJobStatus(job.cloud_job_id);
+
+    if (remote.status === 'completed') {
       await this.pipelineJobsRepository.update(pipelineJobId, {
         status: 'completed',
-        stage: blenderResult.stage ?? 'completed',
-        artifacts: blenderResult.artifacts ?? null,
-        metrics: blenderResult.metrics ?? null,
+        stage: 'completed',
+        artifacts: remote.artifacts,
+        metrics: {
+          ...(job.metrics ?? {}),
+          ...(remote.metrics ?? {}),
+        },
         error_message: null,
         finished_at: new Date().toISOString(),
       });
 
-      await this.wardrobeItemsRepository.updatePipelineStatus(
-        job.wardrobe_item_id,
-        'done',
-        null,
-        {
-          stage: 'uv_pipeline_completed',
-          pipeline_job_id: pipelineJobId,
-          uv_job_artifacts: blenderResult.artifacts ?? null,
-          uv_job_metrics: blenderResult.metrics ?? null,
-        },
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown Blender pipeline error.';
+      await this.wardrobeItemsRepository.updatePipelineStatus(job.wardrobe_item_id, 'done', null, {
+        stage: 'uv_pipeline_completed',
+        pipeline_job_id: pipelineJobId,
+        cloud_job_id: job.cloud_job_id,
+        provider: 'runpod',
+        uv_job_artifacts: remote.artifacts,
+        uv_job_metrics: remote.metrics,
+      });
+    } else if (remote.status === 'failed') {
       await this.pipelineJobsRepository.update(pipelineJobId, {
         status: 'failed',
         stage: 'failed',
-        error_message: message,
+        artifacts: remote.artifacts,
+        metrics: {
+          ...(job.metrics ?? {}),
+          ...(remote.metrics ?? {}),
+        },
+        error_message: JSON.stringify(remote.raw.error ?? 'RunPod job failed'),
         finished_at: new Date().toISOString(),
       });
 
-      await this.wardrobeItemsRepository.updatePipelineStatus(job.wardrobe_item_id, 'failed', message, {
+      await this.wardrobeItemsRepository.updatePipelineStatus(job.wardrobe_item_id, 'failed', 'RunPod Blender job failed.', {
         stage: 'uv_pipeline_failed',
         pipeline_job_id: pipelineJobId,
+        cloud_job_id: job.cloud_job_id,
+        provider: 'runpod',
+      });
+    } else {
+      await this.pipelineJobsRepository.update(pipelineJobId, {
+        status: 'running',
+        stage: remote.status === 'in_progress' ? 'in_progress' : 'queued',
       });
     }
-  }
 
-  private async requestLocalBlender(payload: Record<string, unknown>): Promise<BlenderApiJobResult> {
-    const endpoint = process.env.BLENDER_PIPELINE_API_URL;
-    if (!endpoint) {
-      throw new Error('BLENDER_PIPELINE_API_URL is not configured.');
+    const synced = await this.pipelineJobsRepository.findById(pipelineJobId);
+    if (!synced) {
+      throw new ServiceError('Pipeline job not found after synchronization.', 404);
     }
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(process.env.BLENDER_PIPELINE_API_TOKEN
-          ? { Authorization: `Bearer ${process.env.BLENDER_PIPELINE_API_TOKEN}` }
-          : {}),
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Local Blender API request failed (${response.status}): ${text}`);
-    }
-
-    return (await response.json()) as BlenderApiJobResult;
+    return synced;
   }
 }
