@@ -7,6 +7,8 @@ export type UvPipelineStatus = 'pending' | 'running' | 'completed' | 'failed';
 export interface UvPipelineJobRecord {
   user_id: string;
   wardrobe_item_id: string;
+  provider: 'runpod';
+  cloud_job_id: string | null;
   status: UvPipelineStatus;
   stage: string;
   input_payload: Record<string, unknown>;

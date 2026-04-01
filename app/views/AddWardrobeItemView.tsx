@@ -249,11 +249,12 @@ export default function AddWardrobeItemView() {
             brand: selectedBrand?.name || 'unspecified',
             base_model_id: 'upper_body_v1',
             generation_mode: 'fast_uv',
+            modelUrl: form.image_url,
           }),
         });
         if (uvResponse.ok) {
           const uvPayload = (await uvResponse.json().catch(() => null)) as
-            | { jobId?: string; status?: string }
+            | { jobId?: string; cloudJobId?: string; status?: string }
             | null;
           setUvJobId(uvPayload?.jobId ?? null);
           setUvJobStatus(uvPayload?.status ?? 'pending');
