@@ -31,8 +31,15 @@ function resolveRunpodBaseUrl(): string {
   const explicit = process.env.BLENDER_CLOUD_API_URL?.trim();
   if (explicit) return explicit;
 
+  const endpointUrl = process.env.RUNPOD_ENDPOINT_URL?.trim();
+  if (endpointUrl) return endpointUrl;
+
   const endpointId = process.env.RUNPOD_ENDPOINT_ID?.trim();
-  if (!endpointId) throw new Error('RUNPOD_ENDPOINT_ID is not configured.');
+  if (!endpointId) {
+    throw new Error(
+      'RunPod is not configured. Set BLENDER_CLOUD_API_URL or RUNPOD_ENDPOINT_URL or RUNPOD_ENDPOINT_ID.',
+    );
+  }
   return `https://api.runpod.ai/v2/${endpointId}`;
 }
 
