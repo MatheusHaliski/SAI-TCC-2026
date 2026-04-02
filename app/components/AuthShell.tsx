@@ -116,8 +116,8 @@ export default function AuthShell({
                 <div className="w-full">
                   <div className="overflow-hidden rounded-2xl border-8 border-orange-500 shadow-[0_18px_60px_rgba(0,0,0,0.25)]">
                     <img
-                      src="/A24AE234-1A0D-44E2-B7E6-AFE6282C832A.png"
-                      alt="SAI featured visual"
+                      src="/Firefly_Gemini Flash_Crie arte visual para um site chamado Fashion AI (uma AI de moda), tente combinar cam 425577 (3).png"
+                      alt="FAI featured visual"
                       className="h-full w-full object-cover"
                     />
                   </div>
