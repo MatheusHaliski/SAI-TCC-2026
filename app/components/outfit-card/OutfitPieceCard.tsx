@@ -39,7 +39,7 @@ export default function OutfitPieceCard({ piece }: OutfitPieceCardProps) {
       </div>
 
       <div className="mt-3">
-        <WearstyleChips wearstyles={piece.wearstyles} />
+        <WearstyleChips wearstyles={piece.wearstyles} pieceType={piece.pieceType} />
       </div>
     </article>
   );

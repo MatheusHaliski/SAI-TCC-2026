@@ -1,11 +1,13 @@
-import { getWearstyleIconPath, normalizeWearstyles } from '@/app/lib/outfit-card';
+import { getWearstyleIconPath, inferWearstylesByPieceType, normalizeWearstyles } from '@/app/lib/outfit-card';
 
 interface WearstyleChipsProps {
   wearstyles?: string[];
+  pieceType?: string;
 }
 
-export default function WearstyleChips({ wearstyles }: WearstyleChipsProps) {
+export default function WearstyleChips({ wearstyles, pieceType }: WearstyleChipsProps) {
   const normalized = normalizeWearstyles(wearstyles);
+  const resolvedWearstyles = normalized.length ? normalized : inferWearstylesByPieceType(pieceType);
 
   const fallbackIcon = (wearstyle: string) => {
     const normalizedName = wearstyle.toLowerCase();
@@ -15,14 +17,10 @@ export default function WearstyleChips({ wearstyles }: WearstyleChipsProps) {
     return '✨';
   };
 
-  if (!normalized.length) {
-    return <span className="text-xs text-slate-500">Unclassified</span>;
-  }
-
   return (
     <div className="space-y-1.5">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">WearStyles:</p>
-      {normalized.map((wearstyle) => (
+      {resolvedWearstyles.map((wearstyle) => (
         <div
           key={wearstyle}
           className="flex items-center gap-2 text-xs font-medium text-slate-700"
