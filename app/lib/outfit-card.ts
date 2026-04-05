@@ -67,6 +67,27 @@ export function normalizeWearstyles(wearstyles?: string[]) {
   return wearstyles.filter(Boolean).slice(0, 3);
 }
 
+const PIECE_TYPE_WEARSTYLE_FALLBACKS: Array<{ matchers: string[]; wearstyles: string[] }> = [
+  { matchers: ['jacket', 'coat', 'blazer'], wearstyles: ['Statement Piece', 'Visual Anchor'] },
+  { matchers: ['hoodie', 'sweatshirt', 'sweater'], wearstyles: ['Street Core', 'Balanced Fit'] },
+  { matchers: ['shirt', 'tee', 'top', 'blouse'], wearstyles: ['Visual Anchor', 'Balanced Fit'] },
+  { matchers: ['dress'], wearstyles: ['Visual Highlight', 'Statement Piece'] },
+  { matchers: ['pants', 'trouser', 'jeans', 'skirt', 'shorts', 'lower', 'bottom'], wearstyles: ['Base Structure', 'Balanced Fit'] },
+  { matchers: ['shoes', 'shoe', 'footwear', 'boots', 'sneakers', 'heels', 'loafers'], wearstyles: ['Trend Driver', 'Street Energy'] },
+  { matchers: ['accessory', 'bag', 'watch', 'belt', 'hat', 'jewelry', 'jewellery'], wearstyles: ['Style Accent', 'Attention Grabber'] },
+];
+
+export function inferWearstylesByPieceType(pieceType?: string) {
+  const normalizedType = pieceType?.trim().toLowerCase() ?? '';
+  if (!normalizedType) return ['Style Accent'];
+
+  const matchedFallback = PIECE_TYPE_WEARSTYLE_FALLBACKS.find(({ matchers }) =>
+    matchers.some((matcher) => normalizedType.includes(matcher)),
+  );
+
+  return matchedFallback?.wearstyles ?? ['Style Accent'];
+}
+
 const WEARSTYLE_ICON_FILE_MAP: Record<string, string> = {
   'statement piece': '/statementpiece.png',
   'street core': '/streetcore.png',
@@ -78,7 +99,6 @@ const WEARSTYLE_ICON_FILE_MAP: Record<string, string> = {
   'visual highlight': '/visualhighlight.png',
   'style accent': '/styleaccent.png',
   'attention grabber': '/attentiongrabber.png',
-  unclassified: '/unclassified.png',
 };
 
 export function getWearstyleIconPath(wearstyle: string) {
