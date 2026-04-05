@@ -223,6 +223,8 @@ export default function FancySelect({
                               type="button"
                               onMouseDown={(event) => {
                                 event.preventDefault();
+                              }}
+                              onClick={() => {
                                 selectOption(option.value);
                               }}
                               className={`flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left transition ${
