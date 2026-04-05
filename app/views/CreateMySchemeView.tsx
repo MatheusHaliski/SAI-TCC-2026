@@ -53,6 +53,23 @@ const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', strin
 
 const normalizePieceType = (value: string) => value.trim().toLowerCase();
 
+function resolveBrandLogoUrl(brand: Brand): string | null {
+  if (brand.logo_url?.trim()) {
+    return brand.logo_url;
+  }
+
+  const normalizedName = brand.name.trim().toLowerCase();
+  const compactName = normalizedName.replace(/[^a-z0-9&]/g, '');
+  const normalizedId = brand.brand_id.trim().toLowerCase().replace(/^brand_/, '');
+
+  return (
+    BRAND_LOGO_FALLBACKS[normalizedName] ??
+    BRAND_LOGO_FALLBACKS[compactName] ??
+    BRAND_LOGO_FALLBACKS[normalizedId] ??
+    null
+  );
+}
+
 const DEFAULT_SLOT_SUGGESTIONS: Record<
   'upper' | 'lower' | 'shoes' | 'accessory',
   Array<{ value: string; label: string }>
