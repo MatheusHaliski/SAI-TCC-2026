@@ -1,4 +1,4 @@
-import { OutfitPiece, getCategoryFallbackIcon, getPieceTypeFallbackIcon } from '@/app/lib/outfit-card';
+import { OutfitPiece, getCategoryFallbackIcon, getPieceTypeFallbackIcon, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
 import WearstyleChips from '@/app/components/outfit-card/WearstyleChips';
 
 interface OutfitPieceCardProps {
@@ -8,6 +8,7 @@ interface OutfitPieceCardProps {
 export default function OutfitPieceCard({ piece }: OutfitPieceCardProps) {
   const pieceName = piece.name?.trim() || 'Unnamed Piece';
   const brandName = piece.brand?.trim() || 'Brand not specified';
+  const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
   const categoryLabel = piece.category ?? 'Standard';
   const pieceTypeLabel = piece.pieceType || 'Garment';
 
@@ -19,9 +20,9 @@ export default function OutfitPieceCard({ piece }: OutfitPieceCardProps) {
           {pieceName}
         </p>
         <div className="flex items-center gap-2">
-          {piece.brandLogoUrl ? (
+          {brandLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={piece.brandLogoUrl} alt={`${brandName} logo`} className="h-4 w-4 object-contain" />
+            <img src={brandLogoUrl} alt={`${brandName} logo`} className="h-4 w-4 object-contain" />
           ) : null}
           <p className="truncate text-xs text-slate-600">{brandName}</p>
         </div>
@@ -39,7 +40,7 @@ export default function OutfitPieceCard({ piece }: OutfitPieceCardProps) {
       </div>
 
       <div className="mt-3">
-        <WearstyleChips wearstyles={piece.wearstyles} />
+        <WearstyleChips wearstyles={piece.wearstyles} pieceType={piece.pieceType} />
       </div>
     </article>
   );

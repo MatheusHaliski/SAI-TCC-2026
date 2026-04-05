@@ -120,7 +120,7 @@ export default function ExploreSchemeView() {
               brand: 'Brand not specified',
               pieceType: 'Garment',
               category: 'Standard',
-              wearstyles: ['Unclassified'],
+              wearstyles: ['Style Accent'],
             },
           ],
     };

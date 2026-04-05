@@ -45,6 +45,17 @@ const PIECE_TYPE_FALLBACK_ICON: Record<string, string> = {
   watch: '⌚',
 };
 
+const BRAND_LOGO_BY_NAME: Record<string, string> = {
+  adidas: '/adidas.png',
+  nike: '/nike.png',
+  zara: '/zara.jpg',
+  puma: '/puma.jpg',
+  lacoste: '/lacoste.jpg',
+  levis: '/levis.jpg',
+  'c&a': '/cea.jpg',
+  cea: '/cea.jpg',
+};
+
 const DESCRIPTION_FALLBACKS = [
   'Balanced outfit with clean visual composition.',
   'Strong style identity with curated piece selection.',
@@ -67,6 +78,27 @@ export function normalizeWearstyles(wearstyles?: string[]) {
   return wearstyles.filter(Boolean).slice(0, 3);
 }
 
+const PIECE_TYPE_WEARSTYLE_FALLBACKS: Array<{ matchers: string[]; wearstyles: string[] }> = [
+  { matchers: ['jacket', 'coat', 'blazer'], wearstyles: ['Statement Piece', 'Visual Anchor'] },
+  { matchers: ['hoodie', 'sweatshirt', 'sweater'], wearstyles: ['Street Core', 'Balanced Fit'] },
+  { matchers: ['shirt', 'tee', 'top', 'blouse'], wearstyles: ['Visual Anchor', 'Balanced Fit'] },
+  { matchers: ['dress'], wearstyles: ['Visual Highlight', 'Statement Piece'] },
+  { matchers: ['pants', 'trouser', 'jeans', 'skirt', 'shorts', 'lower', 'bottom'], wearstyles: ['Base Structure', 'Balanced Fit'] },
+  { matchers: ['shoes', 'shoe', 'footwear', 'boots', 'sneakers', 'heels', 'loafers'], wearstyles: ['Trend Driver', 'Street Energy'] },
+  { matchers: ['accessory', 'bag', 'watch', 'belt', 'hat', 'jewelry', 'jewellery'], wearstyles: ['Style Accent', 'Attention Grabber'] },
+];
+
+export function inferWearstylesByPieceType(pieceType?: string) {
+  const normalizedType = pieceType?.trim().toLowerCase() ?? '';
+  if (!normalizedType) return ['Style Accent'];
+
+  const matchedFallback = PIECE_TYPE_WEARSTYLE_FALLBACKS.find(({ matchers }) =>
+    matchers.some((matcher) => normalizedType.includes(matcher)),
+  );
+
+  return matchedFallback?.wearstyles ?? ['Style Accent'];
+}
+
 const WEARSTYLE_ICON_FILE_MAP: Record<string, string> = {
   'statement piece': '/statementpiece.png',
   'street core': '/streetcore.png',
@@ -78,7 +110,6 @@ const WEARSTYLE_ICON_FILE_MAP: Record<string, string> = {
   'visual highlight': '/visualhighlight.png',
   'style accent': '/styleaccent.png',
   'attention grabber': '/attentiongrabber.png',
-  unclassified: '/unclassified.png',
 };
 
 export function getWearstyleIconPath(wearstyle: string) {
@@ -107,6 +138,13 @@ export function getPieceTypeFallbackIcon(pieceType?: string) {
 
 export function getCategoryFallbackIcon(category?: PieceCategory) {
   return CATEGORY_FALLBACK_ICON[category ?? 'Standard'];
+}
+
+export function resolveBrandLogoUrlByName(brandName?: string) {
+  if (!brandName?.trim()) return null;
+  const normalizedName = brandName.trim().toLowerCase();
+  const compactName = normalizedName.replace(/[^a-z0-9&]/g, '');
+  return BRAND_LOGO_BY_NAME[normalizedName] ?? BRAND_LOGO_BY_NAME[compactName] ?? null;
 }
 
 export function buildOutfitDescriptionFallback(input: {

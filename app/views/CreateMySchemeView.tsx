@@ -9,9 +9,19 @@ import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
-import { OutfitCardData, OutfitPiece, PieceCategory, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
+import { OutfitCardData, OutfitPiece, PieceCategory, buildOutfitDescriptionFallback, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
 
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
+type Brand = { brand_id: string; name: string; logo_url?: string | null };
+
+const DEFAULT_BRAND_ID = 'default';
+const FALLBACK_BRANDS: Brand[] = [
+  {
+    brand_id: 'lacoste',
+    name: 'Lacoste',
+    logo_url: '/lacoste.jpg',
+  },
+];
 
 const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
   upper: [
@@ -120,6 +130,8 @@ const SLOT_DEFAULT_PIECE_TYPES: Record<'upper' | 'lower' | 'shoes' | 'accessory'
 
 export default function CreateMySchemeView() {
   const [items, setItems] = useState<WardrobeItem[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [selectedBrandId, setSelectedBrandId] = useState(DEFAULT_BRAND_ID);
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
@@ -169,16 +181,36 @@ export default function CreateMySchemeView() {
 
       setUserId(resolvedUserId);
 
-      const response = await fetch(`/api/wardrobe-items/user/${resolvedUserId}`);
-      const data = await response.json();
-      setItems(Array.isArray(data) ? data : []);
+      const [itemsResponse, brandsResponse] = await Promise.all([
+        fetch(`/api/wardrobe-items/user/${resolvedUserId}`),
+        fetch('/api/brands'),
+      ]);
+      const itemsData = await itemsResponse.json().catch(() => []);
+      const brandsData = await brandsResponse.json().catch(() => []);
+
+      setItems(Array.isArray(itemsData) ? itemsData : []);
+
+      const apiBrands = Array.isArray(brandsData) ? (brandsData as Brand[]) : [];
+      const mergedBrands = [
+        ...apiBrands,
+        ...FALLBACK_BRANDS.filter(
+          (fallback) => !apiBrands.some((brand) => brand.brand_id === fallback.brand_id),
+        ),
+      ];
+      setBrands(mergedBrands);
     };
 
     loadSessionAndItems().catch(() => {
       setAlertMessage('Unable to load user session. Please sign in again.');
       setItems([]);
+      setBrands(FALLBACK_BRANDS);
     });
   }, []);
+
+  const selectedBrand = useMemo(
+    () => brands.find((brand) => brand.brand_id === selectedBrandId) ?? null,
+    [brands, selectedBrandId],
+  );
 
   const schemeItems = useMemo(
     () =>
@@ -296,7 +328,8 @@ export default function CreateMySchemeView() {
     return {
       id: `${slot}:${selectedId}`,
       name: formattedName || 'Unnamed Piece',
-      brand: 'Brand not specified',
+      brand: selectedBrand?.name || 'Brand not specified',
+      brandLogoUrl: selectedBrand ? resolveBrandLogoUrlByName(selectedBrand.name) || selectedBrand.logo_url || undefined : undefined,
       pieceType: selectedItem?.piece_type || SLOT_DEFAULT_PIECE_TYPES[slot],
       category: SLOT_DEFAULT_CATEGORIES[slot] ?? 'Standard',
       wearstyles: SLOT_AUTO_WEARSTYLE[slot],
@@ -387,6 +420,29 @@ export default function CreateMySchemeView() {
                 options={[
                   { value: 'public', label: 'Public' },
                   { value: 'private', label: 'Private' },
+                ]}
+              />
+
+              <FancySelect
+                value={selectedBrandId}
+                onChange={setSelectedBrandId}
+                placeholder="SELECTION Default Brand"
+                options={[
+                  {
+                    value: DEFAULT_BRAND_ID,
+                    label: 'SELECTION Default Brand',
+                    icon: { type: 'emoji', value: '🏷️', alt: 'Default brand' },
+                  },
+                  ...brands.map((brand) => {
+                    const logoUrl = resolveBrandLogoUrlByName(brand.name) || brand.logo_url || null;
+                    return {
+                      value: brand.brand_id,
+                      label: brand.name,
+                      icon: logoUrl
+                        ? { type: 'image' as const, value: logoUrl, alt: `${brand.name} logo` }
+                        : { type: 'emoji' as const, value: '🏷️', alt: `${brand.name} brand` },
+                    };
+                  }),
                 ]}
               />
 
