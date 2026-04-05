@@ -14,7 +14,28 @@ import { OutfitCardData, OutfitPiece, PieceCategory, buildOutfitDescriptionFallb
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
 const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
-  upper: ['upper', 'upper piece', 'top', 'tops'],
+  upper: [
+    'upper',
+    'upper piece',
+    'top',
+    'tops',
+    'upper_body',
+    'upper body',
+    'shirt',
+    't-shirt',
+    'tee',
+    'blouse',
+    'sweater',
+    'sweatshirt',
+    'hoodie',
+    'jacket',
+    'coat',
+    'blazer',
+    'dress',
+    'mini dress',
+    'midi dress',
+    'maxi dress',
+  ],
   lower: ['lower', 'lower piece', 'bottom', 'bottoms'],
   shoes: ['shoes', 'shoes piece', 'shoe', 'footwear'],
   accessory: ['accessory', 'accessories'],
@@ -30,6 +51,20 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
     { value: 'suggested:upper:classic-white-tee', label: 'Classic White Tee' },
     { value: 'suggested:upper:slim-oxford-shirt', label: 'Slim Oxford Shirt' },
     { value: 'suggested:upper:oversized-hoodie', label: 'Oversized Hoodie' },
+    { value: 'suggested:upper:cropped-sweatshirt', label: 'Cropped Sweatshirt' },
+    { value: 'suggested:upper:zip-up-sweatshirt', label: 'Zip-Up Sweatshirt' },
+    { value: 'suggested:upper:bomber-jacket', label: 'Bomber Jacket' },
+    { value: 'suggested:upper:denim-jacket', label: 'Denim Jacket' },
+    { value: 'suggested:upper:leather-jacket', label: 'Leather Jacket' },
+    { value: 'suggested:upper:tailored-blazer', label: 'Tailored Blazer' },
+    { value: 'suggested:upper:trench-coat', label: 'Trench Coat' },
+    { value: 'suggested:upper:slip-dress', label: 'Slip Dress' },
+    { value: 'suggested:upper:mini-dress', label: 'Mini Dress' },
+    { value: 'suggested:upper:midi-dress', label: 'Midi Dress' },
+    { value: 'suggested:upper:maxi-dress', label: 'Maxi Dress' },
+    { value: 'suggested:upper:bodycon-dress', label: 'Bodycon Dress' },
+    { value: 'suggested:upper:shirt-dress', label: 'Shirt Dress' },
+    { value: 'suggested:upper:wrap-dress', label: 'Wrap Dress' },
   ],
   lower: [
     { value: 'suggested:lower:black-tailored-pants', label: 'Black Tailored Pants' },
@@ -57,11 +92,11 @@ const SLOT_DEFAULT_CATEGORIES: Record<'upper' | 'lower' | 'shoes' | 'accessory',
   shoes: 'Rare',
   accessory: 'Limited Edition',
 };
-const SLOT_DEFAULT_WEARSTYLES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
-  upper: ['Statement Piece', 'Street Core', 'Visual Anchor'],
-  lower: ['Base Structure', 'Balanced Fit'],
-  shoes: ['Trend Driver', 'Street Energy', 'Visual Highlight'],
-  accessory: ['Style Accent', 'Attention Grabber'],
+const SLOT_AUTO_WEARSTYLE: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+  upper: ['Statement Piece'],
+  lower: ['Visual Anchor'],
+  shoes: ['Street Energy'],
+  accessory: ['Style Accent'],
 };
 const SLOT_DEFAULT_PIECE_TYPES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
   upper: 'Jacket',
@@ -234,7 +269,7 @@ export default function CreateMySchemeView() {
       brand: 'Brand not specified',
       pieceType: selectedItem?.piece_type || SLOT_DEFAULT_PIECE_TYPES[slot],
       category: SLOT_DEFAULT_CATEGORIES[slot] ?? 'Standard',
-      wearstyles: SLOT_DEFAULT_WEARSTYLES[slot],
+      wearstyles: SLOT_AUTO_WEARSTYLE[slot],
     };
   };
 
