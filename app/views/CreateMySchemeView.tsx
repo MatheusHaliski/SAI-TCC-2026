@@ -89,8 +89,8 @@ const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
 const OUTFIT_BACKGROUND_PRESETS = [
   { value: 'solid|#f8fafc', label: 'Solid · Soft Silver' },
   { value: 'solid|#e2e8f0', label: 'Solid · Cool Gray' },
-  { value: 'gradient|linear-gradient(135deg,#f8fafc_0%,#dbeafe_42%,#e9d5ff_100%)', label: 'Gradient · Aurora Soft' },
-  { value: 'gradient|linear-gradient(135deg,#cffafe_0%,#dbeafe_45%,#fce7f3_100%)', label: 'Gradient · Sky Rose' },
+  { value: 'gradient|linear-gradient(135deg, #f8fafc 0%, #dbeafe 42%, #e9d5ff 100%)', label: 'Gradient · Aurora Soft' },
+  { value: 'gradient|linear-gradient(135deg, #cffafe 0%, #dbeafe 45%, #fce7f3 100%)', label: 'Gradient · Sky Rose' },
   { value: 'image|/ai-special-bg.png', label: 'AI Image · Dreamscape' },
 ];
 const OUTFIT_BACKGROUND_SHAPES = [
