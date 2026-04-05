@@ -35,10 +35,11 @@ export default function FancySelect({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number }>({
+  const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number; maxHeight: number }>({
     top: 0,
     left: 0,
     width: 0,
+    maxHeight: 300,
   });
 
   const selected = useMemo(
@@ -87,11 +88,18 @@ export default function FancySelect({
     const syncDropdownPosition = () => {
       const rect = triggerRef.current?.getBoundingClientRect();
       if (!rect) return;
+      const spaceBelow = window.innerHeight - rect.bottom - 16;
+      const spaceAbove = rect.top - 16;
+      const shouldOpenAbove = spaceBelow < 260 && spaceAbove > spaceBelow;
+      const availableHeight = shouldOpenAbove ? spaceAbove : spaceBelow;
+      const maxHeight = Math.max(180, Math.min(420, availableHeight - 12));
+      const top = shouldOpenAbove ? Math.max(8, rect.top - maxHeight - 12) : rect.bottom + 12;
 
       setDropdownStyle({
-        top: rect.bottom + 12,
+        top,
         left: rect.left,
         width: rect.width,
+        maxHeight,
       });
     };
 
@@ -190,7 +198,10 @@ export default function FancySelect({
                 width: `${dropdownStyle.width}px`,
               }}
             >
-              <div className="max-h-80 overflow-auto p-3">
+              <div
+                className="overflow-x-hidden overflow-y-auto overscroll-contain p-3"
+                style={{ maxHeight: `${dropdownStyle.maxHeight}px` }}
+              >
                 {groupedOptions.length === 0 ? (
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/55">
                     No options available
