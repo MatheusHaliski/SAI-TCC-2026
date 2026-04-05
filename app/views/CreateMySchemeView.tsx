@@ -86,6 +86,19 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
+const OUTFIT_BACKGROUND_PRESETS = [
+  { value: 'solid|#f8fafc', label: 'Solid · Soft Silver' },
+  { value: 'solid|#e2e8f0', label: 'Solid · Cool Gray' },
+  { value: 'gradient|linear-gradient(135deg,#f8fafc_0%,#dbeafe_42%,#e9d5ff_100%)', label: 'Gradient · Aurora Soft' },
+  { value: 'gradient|linear-gradient(135deg,#cffafe_0%,#dbeafe_45%,#fce7f3_100%)', label: 'Gradient · Sky Rose' },
+  { value: 'image|/ai-special-bg.png', label: 'AI Image · Dreamscape' },
+];
+const OUTFIT_BACKGROUND_SHAPES = [
+  { value: 'none', label: 'No shape' },
+  { value: 'orb', label: 'Orb glow' },
+  { value: 'diamond', label: 'Diamond light' },
+  { value: 'mesh', label: 'Mesh pattern' },
+];
 const SLOT_DEFAULT_CATEGORIES: Record<'upper' | 'lower' | 'shoes' | 'accessory', PieceCategory> = {
   upper: 'Premium',
   lower: 'Standard',
@@ -113,6 +126,9 @@ export default function CreateMySchemeView() {
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [heroImageUploading, setHeroImageUploading] = useState(false);
+  const [outfitBackgroundPreset, setOutfitBackgroundPreset] = useState(OUTFIT_BACKGROUND_PRESETS[2].value);
+  const [outfitBackgroundShape, setOutfitBackgroundShape] = useState<'none' | 'orb' | 'diamond' | 'mesh'>('orb');
+  const [aiBackgroundImageUrl, setAiBackgroundImageUrl] = useState('');
   const [slots, setSlots] = useState<Record<string, string | null>>({
     upper: null,
     lower: null,
@@ -176,6 +192,18 @@ export default function CreateMySchemeView() {
     [slots],
   );
 
+  const buildOutfitBackgroundConfig = () => {
+    const [backgroundType, presetValue] = outfitBackgroundPreset.split('|', 2) as ['solid' | 'gradient' | 'image', string];
+    const resolvedBackgroundValue =
+      backgroundType === 'image' ? aiBackgroundImageUrl.trim() || presetValue : presetValue;
+
+    return {
+      type: backgroundType,
+      value: resolvedBackgroundValue,
+      shape: outfitBackgroundShape,
+    } as const;
+  };
+
   const saveScheme = async (creation_mode: 'manual' | 'ai') => {
     if (!userId) {
       setAlertMessage('User session not found. Please sign in again.');
@@ -188,12 +216,14 @@ export default function CreateMySchemeView() {
     }
 
     try {
+      const selectedBackground = buildOutfitBackgroundConfig();
       const response = await fetch('/api/schemes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: userId,
           title: title.trim() || 'My New Scheme',
+          description: JSON.stringify({ outfitBackground: selectedBackground }),
           style: style.trim() || 'Minimal',
           occasion: occasion.trim() || 'Daily',
           cover_image_url: heroImageUrl.trim() || null,
@@ -277,6 +307,7 @@ export default function CreateMySchemeView() {
     const pieces = (Object.entries(slots) as Array<['upper' | 'lower' | 'shoes' | 'accessory', string | null]>)
       .filter((entry): entry is ['upper' | 'lower' | 'shoes' | 'accessory', string] => Boolean(entry[1]))
       .map(([slot, selectedId]) => buildOutfitPiece(slot, selectedId));
+    const selectedBackground = buildOutfitBackgroundConfig();
 
     const outfitStyleLine = `${style || 'Streetwear'} • ${occasion || 'Daily'}`;
     return {
@@ -284,6 +315,7 @@ export default function CreateMySchemeView() {
       outfitStyleLine,
       outfitDescription: buildOutfitDescriptionFallback({ pieces, outfitStyleLine }),
       heroImageUrl: heroImageUrl.trim() || '/welcome-newcomers.png',
+      outfitBackground: selectedBackground,
       pieces,
     } satisfies OutfitCardData;
   };
@@ -357,6 +389,37 @@ export default function CreateMySchemeView() {
                   { value: 'private', label: 'Private' },
                 ]}
               />
+
+              <FancySelect
+                value={outfitBackgroundPreset}
+                onChange={setOutfitBackgroundPreset}
+                placeholder="Outfit card background"
+                options={OUTFIT_BACKGROUND_PRESETS.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                  group: 'Card Background',
+                }))}
+              />
+
+              <FancySelect
+                value={outfitBackgroundShape}
+                onChange={(value) => setOutfitBackgroundShape(value as 'none' | 'orb' | 'diamond' | 'mesh')}
+                placeholder="Background shape"
+                options={OUTFIT_BACKGROUND_SHAPES.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                  group: 'Shape',
+                }))}
+              />
+
+              {outfitBackgroundPreset.startsWith('image|') ? (
+                <input
+                  value={aiBackgroundImageUrl}
+                  onChange={(e) => setAiBackgroundImageUrl(e.target.value)}
+                  placeholder="AI background image URL (optional)"
+                  className={inputClassName}
+                />
+              ) : null}
 
               <label className={`${inputClassName} block cursor-pointer`}>
                 <span className="block text-[11px] uppercase tracking-[0.12em] text-white/60">
