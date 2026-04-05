@@ -9,6 +9,7 @@ import { OutfitCardData } from '@/app/lib/outfit-card';
 type Scheme = {
   scheme_id: string;
   title: string;
+  description?: string | null;
   style: string;
   occasion: string;
   cover_image_url: string | null;
@@ -85,12 +86,23 @@ export default function ExploreSchemeView() {
   const buildOutfitPreviewData = (scheme: Scheme): OutfitCardData => {
     const styleLine = `${scheme.style || 'Streetwear'} • ${scheme.occasion || 'General'}`;
     const relatedItems = itemsBySchemeId[scheme.scheme_id] ?? [];
+    let parsedBackground: OutfitCardData['outfitBackground'] = undefined;
+
+    try {
+      const parsedDescription = scheme.description ? JSON.parse(scheme.description) : null;
+      if (parsedDescription?.outfitBackground) {
+        parsedBackground = parsedDescription.outfitBackground;
+      }
+    } catch {
+      parsedBackground = undefined;
+    }
 
     return {
       outfitName: scheme.title || 'Untitled Outfit',
       outfitStyleLine: styleLine,
       outfitDescription: `Strong ${scheme.style?.toLowerCase() || 'style'} identity with curated piece selection.`,
       heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
+      outfitBackground: parsedBackground,
       pieces: relatedItems.length
         ? relatedItems.map((item) => ({
             id: item.scheme_item_id,

@@ -16,6 +16,11 @@ export type OutfitCardData = {
   outfitStyleLine: string;
   outfitDescription?: string;
   heroImageUrl: string;
+  outfitBackground?: {
+    type: 'solid' | 'gradient' | 'image';
+    value: string;
+    shape?: 'none' | 'orb' | 'diamond' | 'mesh';
+  };
   pieces: OutfitPiece[];
 };
 
@@ -55,13 +60,35 @@ export function normalizeWearstyles(wearstyles?: string[]) {
   return wearstyles.filter(Boolean).slice(0, 3);
 }
 
+const WEARSTYLE_ICON_FILE_MAP: Record<string, string> = {
+  'statement piece': '/statementpiece.png',
+  'street core': '/streetcore.png',
+  'visual anchor': '/visualanchor.png',
+  'base structure': '/basestructure.png',
+  'balanced fit': '/balancedfit.png',
+  'trend driver': '/trenddriver.png',
+  'street energy': '/streetenergy.png',
+  'visual highlight': '/visualhighlight.png',
+  'style accent': '/styleaccent.png',
+  'attention grabber': '/attentiongrabber.png',
+  unclassified: '/unclassified.png',
+};
+
 export function getWearstyleIconPath(wearstyle: string) {
+  const mapped = WEARSTYLE_ICON_FILE_MAP[wearstyle.trim().toLowerCase()];
+  if (mapped) return mapped;
+
   const normalizedFileName = wearstyle
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '');
 
   return `/${normalizedFileName}.png`;
+}
+
+export function getDefaultWearstyleIconDataUri() {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'><rect x='1.5' y='1.5' width='15' height='15' rx='4' fill='#EEF2FF' stroke='#CBD5E1'/><circle cx='9' cy='9' r='3.25' fill='#6366F1'/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 export function getPieceTypeFallbackIcon(pieceType?: string) {
