@@ -69,6 +69,24 @@ const SLOT_DEFAULT_PIECE_TYPES: Record<'upper' | 'lower' | 'shoes' | 'accessory'
   shoes: 'Footwear',
   accessory: 'Accessory',
 };
+const SLOT_DEFAULT_CATEGORIES: Record<'upper' | 'lower' | 'shoes' | 'accessory', PieceCategory> = {
+  upper: 'Premium',
+  lower: 'Standard',
+  shoes: 'Rare',
+  accessory: 'Limited Edition',
+};
+const SLOT_DEFAULT_WEARSTYLES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+  upper: ['Statement Piece', 'Street Core', 'Visual Anchor'],
+  lower: ['Base Structure', 'Balanced Fit'],
+  shoes: ['Trend Driver', 'Street Energy', 'Visual Highlight'],
+  accessory: ['Style Accent', 'Attention Grabber'],
+};
+const SLOT_DEFAULT_PIECE_TYPES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
+  upper: 'Jacket',
+  lower: 'Pants',
+  shoes: 'Footwear',
+  accessory: 'Accessory',
+};
 
 export default function CreateMySchemeView() {
   const [items, setItems] = useState<WardrobeItem[]>([]);
