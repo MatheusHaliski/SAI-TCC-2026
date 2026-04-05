@@ -333,6 +333,17 @@ export default function CreateMySchemeView() {
   const getPieceById = (wardrobeItemId: string | null) =>
     items.find((item) => item.wardrobe_item_id === wardrobeItemId);
 
+  const resolveSlotSelectionLabel = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
+    const selectedValue = slots[slot];
+    if (!selectedValue) return 'No piece selected';
+
+    const suggestedOption = DEFAULT_SLOT_SUGGESTIONS[slot].find((suggestion) => suggestion.value === selectedValue);
+    if (suggestedOption) return suggestedOption.label;
+
+    const wardrobeOption = items.find((item) => item.wardrobe_item_id === selectedValue);
+    return wardrobeOption?.name?.trim() || 'Unnamed Piece';
+  };
+
   const buildOutfitPiece = (slot: 'upper' | 'lower' | 'shoes' | 'accessory', selectedId: string): OutfitPiece => {
     const selectedItem = getPieceById(selectedId);
     const selectedName = selectedItem?.name?.trim() || selectedId.split(':').pop()?.replaceAll('-', ' ') || '';
@@ -544,6 +555,17 @@ export default function CreateMySchemeView() {
                       ]}
                     />
                   </div>
+
+                  {slot === 'upper' || slot === 'lower' ? (
+                    <div className="mt-3 rounded-lg border border-white/20 bg-white/5 px-3 py-2">
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-white/60">
+                        {slot === 'upper' ? 'Upper body piece' : 'Lower body piece'}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {resolveSlotSelectionLabel(slot)}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               ))}
 
