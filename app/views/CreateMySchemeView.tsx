@@ -5,14 +5,37 @@ import { getAuthSessionProfile } from '@/app/lib/authSession';
 import { getServerSession } from '@/app/lib/clientSession';
 import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
+import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
+import { OutfitCardData, OutfitPiece, PieceCategory, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
 
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
 const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
-  upper: ['upper', 'upper piece', 'top', 'tops'],
+  upper: [
+    'upper',
+    'upper piece',
+    'top',
+    'tops',
+    'upper_body',
+    'upper body',
+    'shirt',
+    't-shirt',
+    'tee',
+    'blouse',
+    'sweater',
+    'sweatshirt',
+    'hoodie',
+    'jacket',
+    'coat',
+    'blazer',
+    'dress',
+    'mini dress',
+    'midi dress',
+    'maxi dress',
+  ],
   lower: ['lower', 'lower piece', 'bottom', 'bottoms'],
   shoes: ['shoes', 'shoes piece', 'shoe', 'footwear'],
   accessory: ['accessory', 'accessories'],
@@ -28,6 +51,20 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
     { value: 'suggested:upper:classic-white-tee', label: 'Classic White Tee' },
     { value: 'suggested:upper:slim-oxford-shirt', label: 'Slim Oxford Shirt' },
     { value: 'suggested:upper:oversized-hoodie', label: 'Oversized Hoodie' },
+    { value: 'suggested:upper:cropped-sweatshirt', label: 'Cropped Sweatshirt' },
+    { value: 'suggested:upper:zip-up-sweatshirt', label: 'Zip-Up Sweatshirt' },
+    { value: 'suggested:upper:bomber-jacket', label: 'Bomber Jacket' },
+    { value: 'suggested:upper:denim-jacket', label: 'Denim Jacket' },
+    { value: 'suggested:upper:leather-jacket', label: 'Leather Jacket' },
+    { value: 'suggested:upper:tailored-blazer', label: 'Tailored Blazer' },
+    { value: 'suggested:upper:trench-coat', label: 'Trench Coat' },
+    { value: 'suggested:upper:slip-dress', label: 'Slip Dress' },
+    { value: 'suggested:upper:mini-dress', label: 'Mini Dress' },
+    { value: 'suggested:upper:midi-dress', label: 'Midi Dress' },
+    { value: 'suggested:upper:maxi-dress', label: 'Maxi Dress' },
+    { value: 'suggested:upper:bodycon-dress', label: 'Bodycon Dress' },
+    { value: 'suggested:upper:shirt-dress', label: 'Shirt Dress' },
+    { value: 'suggested:upper:wrap-dress', label: 'Wrap Dress' },
   ],
   lower: [
     { value: 'suggested:lower:black-tailored-pants', label: 'Black Tailored Pants' },
@@ -49,11 +86,36 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
-const SLOT_LAYER_CLASS: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
-  upper: 'relative z-30',
-  lower: 'relative z-30',
-  shoes: 'relative z-20',
-  accessory: 'relative z-20',
+const OUTFIT_BACKGROUND_PRESETS = [
+  { value: 'solid|#f8fafc', label: 'Solid · Soft Silver' },
+  { value: 'solid|#e2e8f0', label: 'Solid · Cool Gray' },
+  { value: 'gradient|linear-gradient(135deg,#f8fafc_0%,#dbeafe_42%,#e9d5ff_100%)', label: 'Gradient · Aurora Soft' },
+  { value: 'gradient|linear-gradient(135deg,#cffafe_0%,#dbeafe_45%,#fce7f3_100%)', label: 'Gradient · Sky Rose' },
+  { value: 'image|/ai-special-bg.png', label: 'AI Image · Dreamscape' },
+];
+const OUTFIT_BACKGROUND_SHAPES = [
+  { value: 'none', label: 'No shape' },
+  { value: 'orb', label: 'Orb glow' },
+  { value: 'diamond', label: 'Diamond light' },
+  { value: 'mesh', label: 'Mesh pattern' },
+];
+const SLOT_DEFAULT_CATEGORIES: Record<'upper' | 'lower' | 'shoes' | 'accessory', PieceCategory> = {
+  upper: 'Premium',
+  lower: 'Standard',
+  shoes: 'Rare',
+  accessory: 'Limited Edition',
+};
+const SLOT_AUTO_WEARSTYLE: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+  upper: ['Statement Piece'],
+  lower: ['Visual Anchor'],
+  shoes: ['Street Energy'],
+  accessory: ['Style Accent'],
+};
+const SLOT_DEFAULT_PIECE_TYPES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
+  upper: 'Jacket',
+  lower: 'Pants',
+  shoes: 'Footwear',
+  accessory: 'Accessory',
 };
 
 export default function CreateMySchemeView() {
@@ -62,6 +124,11 @@ export default function CreateMySchemeView() {
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
+  const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [heroImageUploading, setHeroImageUploading] = useState(false);
+  const [outfitBackgroundPreset, setOutfitBackgroundPreset] = useState(OUTFIT_BACKGROUND_PRESETS[2].value);
+  const [outfitBackgroundShape, setOutfitBackgroundShape] = useState<'none' | 'orb' | 'diamond' | 'mesh'>('orb');
+  const [aiBackgroundImageUrl, setAiBackgroundImageUrl] = useState('');
   const [slots, setSlots] = useState<Record<string, string | null>>({
     upper: null,
     lower: null,
@@ -70,6 +137,7 @@ export default function CreateMySchemeView() {
   });
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>('');
+  const [generatedCardData, setGeneratedCardData] = useState<OutfitCardData | null>(null);
 
   const inputClassName =
     'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
@@ -124,26 +192,41 @@ export default function CreateMySchemeView() {
     [slots],
   );
 
+  const buildOutfitBackgroundConfig = () => {
+    const [backgroundType, presetValue] = outfitBackgroundPreset.split('|', 2) as ['solid' | 'gradient' | 'image', string];
+    const resolvedBackgroundValue =
+      backgroundType === 'image' ? aiBackgroundImageUrl.trim() || presetValue : presetValue;
+
+    return {
+      type: backgroundType,
+      value: resolvedBackgroundValue,
+      shape: outfitBackgroundShape,
+    } as const;
+  };
+
   const saveScheme = async (creation_mode: 'manual' | 'ai') => {
     if (!userId) {
       setAlertMessage('User session not found. Please sign in again.');
-      return;
+      return false;
     }
 
     if (schemeItems.length === 0) {
       setAlertMessage('Select at least one wardrobe item before saving.');
-      return;
+      return false;
     }
 
     try {
+      const selectedBackground = buildOutfitBackgroundConfig();
       const response = await fetch('/api/schemes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: userId,
           title: title.trim() || 'My New Scheme',
+          description: JSON.stringify({ outfitBackground: selectedBackground }),
           style: style.trim() || 'Minimal',
           occasion: occasion.trim() || 'Daily',
+          cover_image_url: heroImageUrl.trim() || null,
           visibility,
           creation_mode,
           items: schemeItems,
@@ -153,18 +236,88 @@ export default function CreateMySchemeView() {
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
       if (!response.ok) {
         setAlertMessage(payload?.error || 'Unable to save scheme. Please try again.');
-        return;
+        return false;
       }
 
       setAlertMessage('Scheme saved successfully.');
+      return true;
     } catch {
       setAlertMessage('Unable to save scheme. Please try again.');
+      return false;
     }
   };
 
   const optionsByType = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
     const aliases = SLOT_TYPE_ALIASES[slot];
     return items.filter((item) => aliases.includes(normalizePieceType(item.piece_type)));
+  };
+
+  const uploadHeroImage = async (file: File) => {
+    setHeroImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const payload = (await response.json().catch(() => null)) as { image_url?: string; error?: string } | null;
+
+      if (!response.ok || !payload?.image_url) {
+        setAlertMessage(payload?.error || 'Unable to upload hero image.');
+        return;
+      }
+
+      setHeroImageUrl(payload.image_url);
+    } catch {
+      setAlertMessage('Unable to upload hero image.');
+    } finally {
+      setHeroImageUploading(false);
+    }
+  };
+
+  const isFormValid = useMemo(() => {
+    return Boolean(title.trim()) && Boolean(style.trim()) && Boolean(occasion.trim()) && schemeItems.length > 0;
+  }, [occasion, schemeItems.length, style, title]);
+
+  const getPieceById = (wardrobeItemId: string | null) =>
+    items.find((item) => item.wardrobe_item_id === wardrobeItemId);
+
+  const buildOutfitPiece = (slot: 'upper' | 'lower' | 'shoes' | 'accessory', selectedId: string): OutfitPiece => {
+    const selectedItem = getPieceById(selectedId);
+    const selectedName = selectedItem?.name?.trim() || selectedId.split(':').pop()?.replaceAll('-', ' ') || '';
+    const formattedName = selectedName
+      .split(' ')
+      .filter(Boolean)
+      .map((chunk) => `${chunk[0]?.toUpperCase() ?? ''}${chunk.slice(1)}`)
+      .join(' ');
+
+    return {
+      id: `${slot}:${selectedId}`,
+      name: formattedName || 'Unnamed Piece',
+      brand: 'Brand not specified',
+      pieceType: selectedItem?.piece_type || SLOT_DEFAULT_PIECE_TYPES[slot],
+      category: SLOT_DEFAULT_CATEGORIES[slot] ?? 'Standard',
+      wearstyles: SLOT_AUTO_WEARSTYLE[slot],
+    };
+  };
+
+  const buildGeneratedOutfitCardData = () => {
+    const pieces = (Object.entries(slots) as Array<['upper' | 'lower' | 'shoes' | 'accessory', string | null]>)
+      .filter((entry): entry is ['upper' | 'lower' | 'shoes' | 'accessory', string] => Boolean(entry[1]))
+      .map(([slot, selectedId]) => buildOutfitPiece(slot, selectedId));
+    const selectedBackground = buildOutfitBackgroundConfig();
+
+    const outfitStyleLine = `${style || 'Streetwear'} • ${occasion || 'Daily'}`;
+    return {
+      outfitName: title.trim() || 'Untitled Outfit',
+      outfitStyleLine,
+      outfitDescription: buildOutfitDescriptionFallback({ pieces, outfitStyleLine }),
+      heroImageUrl: heroImageUrl.trim() || '/welcome-newcomers.png',
+      outfitBackground: selectedBackground,
+      pieces,
+    } satisfies OutfitCardData;
   };
 
   return (
@@ -185,9 +338,16 @@ export default function CreateMySchemeView() {
           >
             <form
               className="mt-4 grid gap-3 rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md md:grid-cols-2"
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                saveScheme('manual');
+                if (!isFormValid) {
+                  setAlertMessage('Fill title, style, occasion, and select at least one piece before generating the outfit card.');
+                  return;
+                }
+
+                const isSaved = await saveScheme('manual');
+                if (!isSaved) return;
+                setGeneratedCardData(buildGeneratedOutfitCardData());
               }}
             >
               <input
@@ -230,8 +390,62 @@ export default function CreateMySchemeView() {
                 ]}
               />
 
+              <FancySelect
+                value={outfitBackgroundPreset}
+                onChange={setOutfitBackgroundPreset}
+                placeholder="Outfit card background"
+                options={OUTFIT_BACKGROUND_PRESETS.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                  group: 'Card Background',
+                }))}
+              />
+
+              <FancySelect
+                value={outfitBackgroundShape}
+                onChange={(value) => setOutfitBackgroundShape(value as 'none' | 'orb' | 'diamond' | 'mesh')}
+                placeholder="Background shape"
+                options={OUTFIT_BACKGROUND_SHAPES.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                  group: 'Shape',
+                }))}
+              />
+
+              {outfitBackgroundPreset.startsWith('image|') ? (
+                <input
+                  value={aiBackgroundImageUrl}
+                  onChange={(e) => setAiBackgroundImageUrl(e.target.value)}
+                  placeholder="AI background image URL (optional)"
+                  className={inputClassName}
+                />
+              ) : null}
+
+              <label className={`${inputClassName} block cursor-pointer`}>
+                <span className="block text-[11px] uppercase tracking-[0.12em] text-white/60">
+                  Hero image upload
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="mt-2 block w-full text-xs text-white file:mr-3 file:rounded-lg file:border-0 file:bg-white/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-white/30"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    uploadHeroImage(file);
+                  }}
+                />
+                <span className="mt-1 block text-xs text-white/65">
+                  {heroImageUploading
+                    ? 'Uploading image...'
+                    : heroImageUrl
+                      ? 'Hero image uploaded successfully.'
+                      : 'Upload a photo of the person wearing the outfit.'}
+                </span>
+              </label>
+
               {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
-                <div key={slot} className={`${slotCardClassName} ${SLOT_LAYER_CLASS[slot]}`}>
+                <div key={slot} className={`${slotCardClassName} relative overflow-visible`}>
                   <p className="text-sm font-semibold capitalize text-white">
                     {slot} piece
                   </p>
@@ -261,12 +475,13 @@ export default function CreateMySchemeView() {
               ))}
 
               <div className="mt-1 flex flex-wrap gap-3 md:col-span-2">
-                <button type="submit" className={primaryButtonClassName}>
+                <button type="submit" disabled={heroImageUploading} className={primaryButtonClassName}>
                   Save Scheme
                 </button>
 
                 <button
                   type="button"
+                  disabled={heroImageUploading}
                   onClick={() => saveScheme('ai')}
                   className={secondaryButtonClassName}
                 >
@@ -275,6 +490,16 @@ export default function CreateMySchemeView() {
               </div>
             </form>
           </SectionBlock>
+
+          {generatedCardData ? (
+            <SectionBlock
+              title="Generated Outfit Card"
+              subtitle="Rendered automatically after a successful form submit."
+              className="sa-surface-header h-auto border-white/20"
+            >
+              <OutfitCard data={generatedCardData} />
+            </SectionBlock>
+          ) : null}
         </div>
       </div>
 
