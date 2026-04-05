@@ -1,4 +1,4 @@
-import { getDefaultWearstyleIconDataUri, getWearstyleIconPath, normalizeWearstyles } from '@/app/lib/outfit-card';
+import { getWearstyleIconPath, normalizeWearstyles } from '@/app/lib/outfit-card';
 
 interface WearstyleChipsProps {
   wearstyles?: string[];
@@ -27,17 +27,17 @@ export default function WearstyleChips({ wearstyles }: WearstyleChipsProps) {
           key={wearstyle}
           className="flex items-center gap-2 text-xs font-medium text-slate-700"
         >
-          {!failedIcons[wearstyle] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={getWearstyleIconPath(wearstyle)}
-              alt={`${wearstyle} icon`}
-              className="h-4 w-4 object-contain"
-              onError={() => setFailedIcons((prev) => ({ ...prev, [wearstyle]: true }))}
-            />
-          ) : (
-            <span aria-hidden>{fallbackIcon(wearstyle)}</span>
-          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={getWearstyleIconPath(wearstyle)}
+            alt={`${wearstyle} icon`}
+            className="h-4 w-4 object-contain"
+            onError={(event) => {
+              event.currentTarget.style.display = 'none';
+              event.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+          <span className="hidden" aria-hidden>{fallbackIcon(wearstyle)}</span>
           <span>{wearstyle}</span>
         </div>
       ))}
