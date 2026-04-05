@@ -46,29 +46,26 @@ const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', strin
     'midi dress',
     'maxi dress',
   ],
-  lower: ['lower', 'lower piece', 'bottom', 'bottoms'],
+  lower: [
+    'lower',
+    'lower piece',
+    'bottom',
+    'bottoms',
+    'pants',
+    'trousers',
+    'jeans',
+    'shorts',
+    'skirt',
+    'mini skirt',
+    'midi skirt',
+    'maxi skirt',
+    'leggings',
+  ],
   shoes: ['shoes', 'shoes piece', 'shoe', 'footwear'],
   accessory: ['accessory', 'accessories'],
 };
 
 const normalizePieceType = (value: string) => value.trim().toLowerCase();
-
-function resolveBrandLogoUrl(brand: Brand): string | null {
-  if (brand.logo_url?.trim()) {
-    return brand.logo_url;
-  }
-
-  const normalizedName = brand.name.trim().toLowerCase();
-  const compactName = normalizedName.replace(/[^a-z0-9&]/g, '');
-  const normalizedId = brand.brand_id.trim().toLowerCase().replace(/^brand_/, '');
-
-  return (
-    BRAND_LOGO_FALLBACKS[normalizedName] ??
-    BRAND_LOGO_FALLBACKS[compactName] ??
-    BRAND_LOGO_FALLBACKS[normalizedId] ??
-    null
-  );
-}
 
 const DEFAULT_SLOT_SUGGESTIONS: Record<
   'upper' | 'lower' | 'shoes' | 'accessory',
@@ -128,7 +125,7 @@ const OUTFIT_BACKGROUND_SHAPES = [
 ];
 const SLOT_DEFAULT_CATEGORIES: Record<'upper' | 'lower' | 'shoes' | 'accessory', PieceCategory> = {
   upper: 'Premium',
-  lower: 'Standard',
+  lower: 'Premium',
   shoes: 'Rare',
   accessory: 'Limited Edition',
 };
@@ -341,25 +338,51 @@ export default function CreateMySchemeView() {
     if (suggestedOption) return suggestedOption.label;
 
     const wardrobeOption = items.find((item) => item.wardrobe_item_id === selectedValue);
-    return wardrobeOption?.name?.trim() || 'Unnamed Piece';
+    return wardrobeOption?.name?.trim() || 'Selected piece';
+  };
+
+  const toReadablePieceName = (value: string) =>
+    value
+      .split(' ')
+      .filter(Boolean)
+      .map((chunk) => `${chunk[0]?.toUpperCase() ?? ''}${chunk.slice(1)}`)
+      .join(' ')
+      .trim();
+
+  const resolveSlotPieceName = (slot: 'upper' | 'lower' | 'shoes' | 'accessory', selectedId: string) => {
+    const selectedItem = getPieceById(selectedId);
+    if (selectedItem?.name?.trim()) {
+      return toReadablePieceName(selectedItem.name.trim());
+    }
+
+    const suggestedOption = DEFAULT_SLOT_SUGGESTIONS[slot].find((suggestion) => suggestion.value === selectedId);
+    if (suggestedOption?.label?.trim()) {
+      return suggestedOption.label.trim();
+    }
+
+    if (selectedId.startsWith('suggested:')) {
+      const [, , slug = ''] = selectedId.split(':');
+      return toReadablePieceName(slug.replaceAll('-', ' ')) || `${slot[0].toUpperCase()}${slot.slice(1)} Piece`;
+    }
+
+    return `${slot[0].toUpperCase()}${slot.slice(1)} Piece`;
   };
 
   const buildOutfitPiece = (slot: 'upper' | 'lower' | 'shoes' | 'accessory', selectedId: string): OutfitPiece => {
     const selectedItem = getPieceById(selectedId);
-    const selectedName = selectedItem?.name?.trim() || selectedId.split(':').pop()?.replaceAll('-', ' ') || '';
-    const formattedName = selectedName
-      .split(' ')
-      .filter(Boolean)
-      .map((chunk) => `${chunk[0]?.toUpperCase() ?? ''}${chunk.slice(1)}`)
-      .join(' ');
+    const resolvedPieceType = selectedItem?.piece_type?.trim() || SLOT_DEFAULT_PIECE_TYPES[slot];
+    const resolvedBrandName = selectedBrand?.name?.trim() || 'Selection Default Brand';
+    const resolvedBrandLogoUrl = selectedBrand
+      ? resolveBrandLogoUrlByName(selectedBrand.name) || selectedBrand.logo_url || undefined
+      : undefined;
 
     return {
       id: `${slot}:${selectedId}`,
-      name: formattedName || 'Unnamed Piece',
-      brand: selectedBrand?.name || 'Brand not specified',
-      brandLogoUrl: selectedBrand ? resolveBrandLogoUrlByName(selectedBrand.name) || selectedBrand.logo_url || undefined : undefined,
-      pieceType: selectedItem?.piece_type || SLOT_DEFAULT_PIECE_TYPES[slot],
-      category: SLOT_DEFAULT_CATEGORIES[slot] ?? 'Standard',
+      name: resolveSlotPieceName(slot, selectedId),
+      brand: resolvedBrandName,
+      brandLogoUrl: resolvedBrandLogoUrl,
+      pieceType: resolvedPieceType,
+      category: SLOT_DEFAULT_CATEGORIES[slot],
       wearstyles: SLOT_AUTO_WEARSTYLE[slot],
     };
   };
@@ -408,7 +431,14 @@ export default function CreateMySchemeView() {
 
                 const isSaved = await saveScheme('manual');
                 if (!isSaved) return;
-                setGeneratedCardData(buildGeneratedOutfitCardData());
+
+                const nextGeneratedCardData = buildGeneratedOutfitCardData();
+                console.log('[CreateMySchemeView] Submit snapshot', {
+                  slots,
+                  schemeItems,
+                  'generatedCardData.pieces': nextGeneratedCardData.pieces,
+                });
+                setGeneratedCardData(nextGeneratedCardData);
               }}
             >
               <input
