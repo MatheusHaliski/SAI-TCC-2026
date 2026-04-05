@@ -34,6 +34,7 @@ export default function FancySelect({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number }>({
     top: 0,
     left: 0,
@@ -60,14 +61,24 @@ export default function FancySelect({
 
   useEffect(() => {
     const handleOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (!rootRef.current) return;
-      if (!rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      if (rootRef.current.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
     };
 
     window.addEventListener('mousedown', handleOutside);
-    return () => window.removeEventListener('mousedown', handleOutside);
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('mousedown', handleOutside);
+      window.removeEventListener('keydown', handleEscape);
+    };
   }, []);
 
   useEffect(() => {
@@ -93,6 +104,12 @@ export default function FancySelect({
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) {
+      menuRef.current = null;
+    }
+  }, [open]);
+
   const renderOptionIcon = (option?: FancyOption) => {
     if (!option?.icon?.value) return null;
     if (option.icon.type === 'image') {
@@ -109,6 +126,11 @@ export default function FancySelect({
     }
 
     return <span className="text-base leading-none">{option.icon.value}</span>;
+  };
+
+  const selectOption = (optionValue: string) => {
+    onChange(optionValue);
+    setOpen(false);
   };
 
   return (
@@ -160,6 +182,7 @@ export default function FancySelect({
       {open && typeof window !== 'undefined'
         ? createPortal(
             <div
+              ref={menuRef}
               className="fixed z-[9999] rounded-3xl border border-white/20 bg-slate-950/80 shadow-[0_24px_60px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
               style={{
                 top: `${dropdownStyle.top}px`,
@@ -187,9 +210,9 @@ export default function FancySelect({
                             <button
                               key={option.value}
                               type="button"
-                              onClick={() => {
-                                onChange(option.value);
-                                setOpen(false);
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                selectOption(option.value);
                               }}
                               className={`flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left transition ${
                                 isSelected
