@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { getWearstyleIconPath, normalizeWearstyles } from '@/app/lib/outfit-card';
+import { getDefaultWearstyleIconDataUri, getWearstyleIconPath, normalizeWearstyles } from '@/app/lib/outfit-card';
 
 interface WearstyleChipsProps {
   wearstyles?: string[];
@@ -7,7 +6,6 @@ interface WearstyleChipsProps {
 
 export default function WearstyleChips({ wearstyles }: WearstyleChipsProps) {
   const normalized = normalizeWearstyles(wearstyles);
-  const [failedIcons, setFailedIcons] = useState<Record<string, boolean>>({});
 
   const fallbackIcon = (wearstyle: string) => {
     const normalizedName = wearstyle.toLowerCase();
