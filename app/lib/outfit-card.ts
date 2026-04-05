@@ -46,6 +46,13 @@ const DESCRIPTION_FALLBACKS = [
   'Clean structure with a clear visual anchor.',
 ];
 
+const CATEGORY_FALLBACK_ICON: Record<PieceCategory, string> = {
+  Premium: '💎',
+  Standard: '✨',
+  'Limited Edition': '🪄',
+  Rare: '⭐',
+};
+
 export function getCategoryBadgeStyle(category?: PieceCategory) {
   return CATEGORY_STYLES[category ?? 'Standard'];
 }
@@ -69,6 +76,10 @@ export function getPieceTypeFallbackIcon(pieceType?: string) {
   const normalized = pieceType.trim().toLowerCase();
   const matchedKey = Object.keys(PIECE_TYPE_FALLBACK_ICON).find((key) => normalized.includes(key));
   return matchedKey ? PIECE_TYPE_FALLBACK_ICON[matchedKey] : '👗';
+}
+
+export function getCategoryFallbackIcon(category?: PieceCategory) {
+  return CATEGORY_FALLBACK_ICON[category ?? 'Standard'];
 }
 
 export function buildOutfitDescriptionFallback(input: {

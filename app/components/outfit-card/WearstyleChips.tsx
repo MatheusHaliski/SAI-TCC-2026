@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { getWearstyleIconPath, normalizeWearstyles } from '@/app/lib/outfit-card';
 
 interface WearstyleChipsProps {
@@ -7,30 +6,40 @@ interface WearstyleChipsProps {
 
 export default function WearstyleChips({ wearstyles }: WearstyleChipsProps) {
   const normalized = normalizeWearstyles(wearstyles);
-  const [failedIcons, setFailedIcons] = useState<Record<string, boolean>>({});
+
+  const fallbackIcon = (wearstyle: string) => {
+    const normalizedName = wearstyle.toLowerCase();
+    if (normalizedName.includes('statement')) return '🔥';
+    if (normalizedName.includes('street')) return '⚡';
+    if (normalizedName.includes('anchor')) return '⚓';
+    return '✨';
+  };
 
   if (!normalized.length) {
     return <span className="text-xs text-slate-500">Unclassified</span>;
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="space-y-1.5">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">WearStyles:</p>
       {normalized.map((wearstyle) => (
-        <span
+        <div
           key={wearstyle}
-          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700"
+          className="flex items-center gap-2 text-xs font-medium text-slate-700"
         >
-          {!failedIcons[wearstyle] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={getWearstyleIconPath(wearstyle)}
-              alt={`${wearstyle} icon`}
-              className="h-3.5 w-3.5 object-contain"
-              onError={() => setFailedIcons((prev) => ({ ...prev, [wearstyle]: true }))}
-            />
-          ) : null}
-          {wearstyle}
-        </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={getWearstyleIconPath(wearstyle)}
+            alt={`${wearstyle} icon`}
+            className="h-4 w-4 object-contain"
+            onError={(event) => {
+              event.currentTarget.style.display = 'none';
+              event.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+          <span className="hidden" aria-hidden>{fallbackIcon(wearstyle)}</span>
+          <span>{wearstyle}</span>
+        </div>
       ))}
     </div>
   );
