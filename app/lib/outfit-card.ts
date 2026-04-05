@@ -45,6 +45,17 @@ const PIECE_TYPE_FALLBACK_ICON: Record<string, string> = {
   watch: '⌚',
 };
 
+const BRAND_LOGO_BY_NAME: Record<string, string> = {
+  adidas: '/adidas.png',
+  nike: '/nike.png',
+  zara: '/zara.jpg',
+  puma: '/puma.jpg',
+  lacoste: '/lacoste.jpg',
+  levis: '/levis.jpg',
+  'c&a': '/cea.jpg',
+  cea: '/cea.jpg',
+};
+
 const DESCRIPTION_FALLBACKS = [
   'Balanced outfit with clean visual composition.',
   'Strong style identity with curated piece selection.',
@@ -127,6 +138,13 @@ export function getPieceTypeFallbackIcon(pieceType?: string) {
 
 export function getCategoryFallbackIcon(category?: PieceCategory) {
   return CATEGORY_FALLBACK_ICON[category ?? 'Standard'];
+}
+
+export function resolveBrandLogoUrlByName(brandName?: string) {
+  if (!brandName?.trim()) return null;
+  const normalizedName = brandName.trim().toLowerCase();
+  const compactName = normalizedName.replace(/[^a-z0-9&]/g, '');
+  return BRAND_LOGO_BY_NAME[normalizedName] ?? BRAND_LOGO_BY_NAME[compactName] ?? null;
 }
 
 export function buildOutfitDescriptionFallback(input: {

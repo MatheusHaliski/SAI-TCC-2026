@@ -9,7 +9,7 @@ import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
-import { OutfitCardData, OutfitPiece, PieceCategory, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
+import { OutfitCardData, OutfitPiece, PieceCategory, buildOutfitDescriptionFallback, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
 
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 type Brand = { brand_id: string; name: string; logo_url?: string | null };
@@ -22,16 +22,6 @@ const FALLBACK_BRANDS: Brand[] = [
     logo_url: '/lacoste.jpg',
   },
 ];
-const BRAND_LOGO_FALLBACKS: Record<string, string> = {
-  adidas: '/adidas.png',
-  nike: '/nike.png',
-  zara: '/zara.jpg',
-  puma: '/puma.jpg',
-  lacoste: '/lacoste.jpg',
-  levis: '/levis.jpg',
-  'c&a': '/cea.jpg',
-  cea: '/cea.jpg',
-};
 
 const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
   upper: [
@@ -356,7 +346,7 @@ export default function CreateMySchemeView() {
       id: `${slot}:${selectedId}`,
       name: formattedName || 'Unnamed Piece',
       brand: selectedBrand?.name || 'Brand not specified',
-      brandLogoUrl: selectedBrand ? resolveBrandLogoUrl(selectedBrand) || undefined : undefined,
+      brandLogoUrl: selectedBrand ? resolveBrandLogoUrlByName(selectedBrand.name) || selectedBrand.logo_url || undefined : undefined,
       pieceType: selectedItem?.piece_type || SLOT_DEFAULT_PIECE_TYPES[slot],
       category: SLOT_DEFAULT_CATEGORIES[slot] ?? 'Standard',
       wearstyles: SLOT_AUTO_WEARSTYLE[slot],
@@ -461,7 +451,7 @@ export default function CreateMySchemeView() {
                     icon: { type: 'emoji', value: '🏷️', alt: 'Default brand' },
                   },
                   ...brands.map((brand) => {
-                    const logoUrl = resolveBrandLogoUrl(brand);
+                    const logoUrl = resolveBrandLogoUrlByName(brand.name) || brand.logo_url || null;
                     return {
                       value: brand.brand_id,
                       label: brand.name,
