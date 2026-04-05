@@ -77,6 +77,7 @@ export default function CreateMySchemeView() {
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
   const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [slots, setSlots] = useState<Record<string, string | null>>({
     upper: null,
     lower: null,
@@ -184,6 +185,31 @@ export default function CreateMySchemeView() {
   const optionsByType = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
     const aliases = SLOT_TYPE_ALIASES[slot];
     return items.filter((item) => aliases.includes(normalizePieceType(item.piece_type)));
+  };
+
+  const uploadHeroImage = async (file: File) => {
+    setHeroImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const payload = (await response.json().catch(() => null)) as { image_url?: string; error?: string } | null;
+
+      if (!response.ok || !payload?.image_url) {
+        setAlertMessage(payload?.error || 'Unable to upload hero image.');
+        return;
+      }
+
+      setHeroImageUrl(payload.image_url);
+    } catch {
+      setAlertMessage('Unable to upload hero image.');
+    } finally {
+      setHeroImageUploading(false);
+    }
   };
 
   const isFormValid = useMemo(() => {
@@ -297,12 +323,28 @@ export default function CreateMySchemeView() {
                 ]}
               />
 
-              <input
-                value={heroImageUrl}
-                onChange={(e) => setHeroImageUrl(e.target.value)}
-                placeholder="Hero image URL (person with outfit)"
-                className={inputClassName}
-              />
+              <label className={`${inputClassName} block cursor-pointer`}>
+                <span className="block text-[11px] uppercase tracking-[0.12em] text-white/60">
+                  Hero image upload
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="mt-2 block w-full text-xs text-white file:mr-3 file:rounded-lg file:border-0 file:bg-white/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-white/30"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    uploadHeroImage(file);
+                  }}
+                />
+                <span className="mt-1 block text-xs text-white/65">
+                  {heroImageUploading
+                    ? 'Uploading image...'
+                    : heroImageUrl
+                      ? 'Hero image uploaded successfully.'
+                      : 'Upload a photo of the person wearing the outfit.'}
+                </span>
+              </label>
 
               {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
                 <div key={slot} className={`${slotCardClassName} relative overflow-visible`}>
@@ -335,12 +377,13 @@ export default function CreateMySchemeView() {
               ))}
 
               <div className="mt-1 flex flex-wrap gap-3 md:col-span-2">
-                <button type="submit" className={primaryButtonClassName}>
+                <button type="submit" disabled={heroImageUploading} className={primaryButtonClassName}>
                   Save Scheme
                 </button>
 
                 <button
                   type="button"
+                  disabled={heroImageUploading}
                   onClick={() => saveScheme('ai')}
                   className={secondaryButtonClassName}
                 >

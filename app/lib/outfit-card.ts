@@ -55,6 +55,15 @@ export function normalizeWearstyles(wearstyles?: string[]) {
   return wearstyles.filter(Boolean).slice(0, 3);
 }
 
+export function getWearstyleIconPath(wearstyle: string) {
+  const normalizedFileName = wearstyle
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+
+  return `/${normalizedFileName}.png`;
+}
+
 export function getPieceTypeFallbackIcon(pieceType?: string) {
   if (!pieceType) return '👗';
   const normalized = pieceType.trim().toLowerCase();

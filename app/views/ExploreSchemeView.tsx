@@ -14,14 +14,63 @@ type Scheme = {
   cover_image_url: string | null;
   user_id: string;
 };
+type SchemeDetailItem = {
+  scheme_item_id: string;
+  slot: 'upper' | 'lower' | 'shoes' | 'accessory';
+  wardrobe_name: string;
+  image_url: string;
+};
+type SchemeDetailsResponse = {
+  scheme: Scheme;
+  items: SchemeDetailItem[];
+};
+
+const SLOT_PREVIEW_DEFAULTS: Record<
+  SchemeDetailItem['slot'],
+  { pieceType: string; category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare'; wearstyles: string[] }
+> = {
+  upper: { pieceType: 'Jacket', category: 'Premium', wearstyles: ['Statement Piece', 'Visual Anchor'] },
+  lower: { pieceType: 'Pants', category: 'Standard', wearstyles: ['Base Structure', 'Balanced Fit'] },
+  shoes: { pieceType: 'Footwear', category: 'Rare', wearstyles: ['Trend Driver', 'Street Energy'] },
+  accessory: { pieceType: 'Accessory', category: 'Limited Edition', wearstyles: ['Style Accent', 'Attention Grabber'] },
+};
 
 export default function ExploreSchemeView() {
   const [schemes, setSchemes] = useState<Scheme[]>([]);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
+  const [itemsBySchemeId, setItemsBySchemeId] = useState<Record<string, SchemeDetailItem[]>>({});
 
   useEffect(() => {
-    fetch('/api/schemes/public').then((res) => res.json()).then((data) => setSchemes(Array.isArray(data) ? data : []));
+    const loadSchemesWithItems = async () => {
+      const response = await fetch('/api/schemes/public');
+      const data = await response.json();
+      const safeSchemes = Array.isArray(data) ? (data as Scheme[]) : [];
+      setSchemes(safeSchemes);
+
+      const detailResponses = await Promise.all(
+        safeSchemes.map((scheme) =>
+          fetch(`/api/schemes/${scheme.scheme_id}`)
+            .then((res) => (res.ok ? res.json() : null))
+            .catch(() => null),
+        ),
+      );
+
+      const nextItemsBySchemeId: Record<string, SchemeDetailItem[]> = {};
+
+      detailResponses.forEach((details, index) => {
+        const currentScheme = safeSchemes[index];
+        const detailPayload = details as SchemeDetailsResponse | null;
+        nextItemsBySchemeId[currentScheme.scheme_id] = detailPayload?.items ?? [];
+      });
+
+      setItemsBySchemeId(nextItemsBySchemeId);
+    };
+
+    loadSchemesWithItems().catch(() => {
+      setSchemes([]);
+      setItemsBySchemeId({});
+    });
   }, []);
 
   const grouped = useMemo(() => {
@@ -35,30 +84,33 @@ export default function ExploreSchemeView() {
 
   const buildOutfitPreviewData = (scheme: Scheme): OutfitCardData => {
     const styleLine = `${scheme.style || 'Streetwear'} • ${scheme.occasion || 'General'}`;
+    const relatedItems = itemsBySchemeId[scheme.scheme_id] ?? [];
 
     return {
       outfitName: scheme.title || 'Untitled Outfit',
       outfitStyleLine: styleLine,
       outfitDescription: `Strong ${scheme.style?.toLowerCase() || 'style'} identity with curated piece selection.`,
       heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
-      pieces: [
-        {
-          id: `${scheme.scheme_id}-upper`,
-          name: 'Primary Layer',
-          brand: 'Brand not specified',
-          pieceType: 'Garment',
-          category: 'Premium',
-          wearstyles: ['Statement Piece', 'Visual Anchor'],
-        },
-        {
-          id: `${scheme.scheme_id}-base`,
-          name: 'Base Composition',
-          brand: 'Brand not specified',
-          pieceType: 'Core Piece',
-          category: 'Standard',
-          wearstyles: ['Balanced Fit'],
-        },
-      ],
+      pieces: relatedItems.length
+        ? relatedItems.map((item) => ({
+            id: item.scheme_item_id,
+            name: item.wardrobe_name || 'Unnamed Piece',
+            brand: 'Brand not specified',
+            pieceType: SLOT_PREVIEW_DEFAULTS[item.slot].pieceType,
+            category: SLOT_PREVIEW_DEFAULTS[item.slot].category,
+            wearstyles: SLOT_PREVIEW_DEFAULTS[item.slot].wearstyles,
+            pieceTypeIconUrl: item.image_url || undefined,
+          }))
+        : [
+            {
+              id: `${scheme.scheme_id}-fallback`,
+              name: 'Unnamed Piece',
+              brand: 'Brand not specified',
+              pieceType: 'Garment',
+              category: 'Standard',
+              wearstyles: ['Unclassified'],
+            },
+          ],
     };
   };
 
