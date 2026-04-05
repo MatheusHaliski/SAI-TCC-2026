@@ -23,10 +23,20 @@ type WardrobeItem = {
   piece_type: string;
 };
 
-type Brand = {
-  brand_id: string;
+type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
+type Brand = { brand_id: string; name: string; logo_url?: string | null };
+type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
+type SchemePieceSnapshot = {
+  id: string;
+  slot: SlotKey;
+  sourceType: 'wardrobe' | 'suggested';
+  sourceId: string;
   name: string;
-  logo_url?: string | null;
+  brand: string;
+  brandLogoUrl?: string;
+  category: PieceCategory;
+  pieceType: string;
+  wearstyles: string[];
 };
 
 const DEFAULT_BRAND_ID = 'default';
@@ -39,7 +49,7 @@ const FALLBACK_BRANDS: Brand[] = [
   },
 ];
 
-const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+const SLOT_TYPE_ALIASES: Record<SlotKey, string[]> = {
   upper: [
     'upper',
     'upper piece',
@@ -118,7 +128,26 @@ const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', strin
     'ring',
     'rings',
   ],
+  lower: [
+    'lower',
+    'lower piece',
+    'bottom',
+    'bottoms',
+    'pants',
+    'trousers',
+    'jeans',
+    'shorts',
+    'skirt',
+    'mini skirt',
+    'midi skirt',
+    'maxi skirt',
+    'leggings',
+  ],
+  shoes: ['shoes', 'shoes piece', 'shoe', 'footwear'],
+  accessory: ['accessory', 'accessories'],
 };
+
+const normalizePieceType = (value: string) => value.trim().toLowerCase();
 
 const DEFAULT_SLOT_SUGGESTIONS: Record<
   'upper' | 'lower' | 'shoes' | 'accessory',
@@ -172,22 +201,19 @@ const OUTFIT_BACKGROUND_SHAPES = [
   { value: 'diamond', label: 'Diamond light' },
   { value: 'mesh', label: 'Mesh pattern' },
 ];
-
-const SLOT_DEFAULT_CATEGORIES: Record<'upper' | 'lower' | 'shoes' | 'accessory', PieceCategory> = {
+const SLOT_DEFAULT_CATEGORIES: Record<SlotKey, PieceCategory> = {
   upper: 'Premium',
-  lower: 'Standard',
+  lower: 'Premium',
   shoes: 'Rare',
   accessory: 'Limited Edition',
 };
-
-const SLOT_AUTO_WEARSTYLE: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+const SLOT_AUTO_WEARSTYLE: Record<SlotKey, string[]> = {
   upper: ['Statement Piece'],
   lower: ['Visual Anchor'],
   shoes: ['Street Energy'],
   accessory: ['Style Accent'],
 };
-
-const SLOT_DEFAULT_PIECE_TYPES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
+const SLOT_DEFAULT_PIECE_TYPES: Record<SlotKey, string> = {
   upper: 'Jacket',
   lower: 'Pants',
   shoes: 'Footwear',
@@ -326,87 +352,10 @@ export default function CreateMySchemeView() {
     } as const;
   };
 
-  const optionsByType = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
-    const aliases = SLOT_TYPE_ALIASES[slot];
-
-    return items.filter((item) => {
-      const normalized = normalizePieceType(item.piece_type);
-      return aliases.some((alias) => normalized.includes(normalizePieceType(alias)));
-    });
-  };
-
-  const getPieceById = (wardrobeItemId: string | null) =>
-    items.find((item) => item.wardrobe_item_id === wardrobeItemId);
-
-  const resolveSlotSelectionLabel = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
-    const selectedValue = slots[slot];
-    if (!selectedValue) return 'No piece selected';
-
-    const suggestedOption = DEFAULT_SLOT_SUGGESTIONS[slot].find(
-      (suggestion) => suggestion.value === selectedValue,
-    );
-    if (suggestedOption) return suggestedOption.label;
-
-    const wardrobeOption = items.find((item) => item.wardrobe_item_id === selectedValue);
-    return wardrobeOption?.name?.trim() || 'Unnamed Piece';
-  };
-
-  const buildOutfitPiece = (
-    slot: 'upper' | 'lower' | 'shoes' | 'accessory',
-    selectedId: string,
-  ): OutfitPiece => {
-    const selectedItem = getPieceById(selectedId);
-    const isSuggested = selectedId.startsWith('suggested:');
-
-    if (!selectedItem && !isSuggested) {
-      console.warn('ITEM NOT FOUND FOR SLOT:', slot, selectedId);
-    }
-
-    const suggestedName = isSuggested
-      ? selectedId.split(':').pop()?.replaceAll('-', ' ')
-      : '';
-
-    const resolvedName = formatDisplayName(
-      selectedItem?.name?.trim() || suggestedName || '',
-    );
-
-    const resolvedPieceType =
-      selectedItem?.piece_type?.trim() || SLOT_DEFAULT_PIECE_TYPES[slot];
-
-    return {
-      id: `${slot}:${selectedId}`,
-      name: resolvedName || 'Unnamed Piece',
-      brand: selectedBrand?.name?.trim() || 'Brand not specified',
-      brandLogoUrl: selectedBrand
-        ? resolveBrandLogoUrlByName(selectedBrand.name) || selectedBrand.logo_url || undefined
-        : undefined,
-      pieceType: resolvedPieceType,
-      category: SLOT_DEFAULT_CATEGORIES[slot] ?? 'Standard',
-      wearstyles: SLOT_AUTO_WEARSTYLE[slot],
-    };
-  };
-
-  const buildGeneratedOutfitCardData = (): OutfitCardData => {
-    const pieces = (Object.entries(slots) as Array<
-      ['upper' | 'lower' | 'shoes' | 'accessory', string | null]
-    >)
-      .filter((entry): entry is ['upper' | 'lower' | 'shoes' | 'accessory', string] => Boolean(entry[1]))
-      .map(([slot, selectedId]) => buildOutfitPiece(slot, selectedId));
-
-    const selectedBackground = buildOutfitBackgroundConfig();
-    const outfitStyleLine = `${style || 'Streetwear'} • ${occasion || 'Daily'}`;
-
-    return {
-      outfitName: title.trim() || 'Untitled Outfit',
-      outfitStyleLine,
-      outfitDescription: buildOutfitDescriptionFallback({ pieces, outfitStyleLine }),
-      heroImageUrl: heroImageUrl.trim() || '/welcome-newcomers.png',
-      outfitBackground: selectedBackground,
-      pieces,
-    };
-  };
-
-  const saveScheme = async (creation_mode: 'manual' | 'ai') => {
+  const saveScheme = async (
+    creation_mode: 'manual' | 'ai',
+    pieceSnapshots: SchemePieceSnapshot[],
+  ) => {
     if (!userId) {
       setAlertMessage('User session not found. Please sign in again.');
       return false;
@@ -432,6 +381,7 @@ export default function CreateMySchemeView() {
           cover_image_url: heroImageUrl.trim() || null,
           visibility,
           creation_mode,
+          pieces: pieceSnapshots,
           items: schemeItems,
         }),
       });
@@ -449,6 +399,11 @@ export default function CreateMySchemeView() {
       setAlertMessage('Unable to save scheme. Please try again.');
       return false;
     }
+  };
+
+  const optionsByType = (slot: SlotKey) => {
+    const aliases = SLOT_TYPE_ALIASES[slot];
+    return items.filter((item) => aliases.includes(normalizePieceType(item.piece_type)));
   };
 
   const uploadHeroImage = async (file: File) => {
@@ -481,13 +436,106 @@ export default function CreateMySchemeView() {
   };
 
   const isFormValid = useMemo(() => {
-    return (
-      Boolean(title.trim()) &&
-      Boolean(style.trim()) &&
-      Boolean(occasion.trim()) &&
-      schemeItems.length > 0
-    );
-  }, [title, style, occasion, schemeItems.length]);
+    return Boolean(title.trim()) && Boolean(style.trim()) && Boolean(occasion.trim()) && schemeItems.length > 0;
+  }, [occasion, schemeItems.length, style, title]);
+
+  const getPieceById = (wardrobeItemId: string | null) =>
+    items.find((item) => item.wardrobe_item_id === wardrobeItemId);
+
+  const resolveSlotSelectionLabel = (slot: SlotKey) => {
+    const selectedValue = slots[slot];
+    if (!selectedValue) return 'No piece selected';
+
+    const suggestedOption = DEFAULT_SLOT_SUGGESTIONS[slot].find((suggestion) => suggestion.value === selectedValue);
+    if (suggestedOption) return suggestedOption.label;
+
+    const wardrobeOption = items.find((item) => item.wardrobe_item_id === selectedValue);
+    return wardrobeOption?.name?.trim() || 'Selected piece';
+  };
+
+  const toReadablePieceName = (value: string) =>
+    value
+      .split(' ')
+      .filter(Boolean)
+      .map((chunk) => `${chunk[0]?.toUpperCase() ?? ''}${chunk.slice(1)}`)
+      .join(' ')
+      .trim();
+
+  const resolveSlotPieceName = (slot: SlotKey, selectedId: string) => {
+    const selectedItem = getPieceById(selectedId);
+    if (selectedItem?.name?.trim()) {
+      return toReadablePieceName(selectedItem.name.trim());
+    }
+
+    const suggestedOption = DEFAULT_SLOT_SUGGESTIONS[slot].find((suggestion) => suggestion.value === selectedId);
+    if (suggestedOption?.label?.trim()) {
+      return suggestedOption.label.trim();
+    }
+
+    if (selectedId.startsWith('suggested:')) {
+      const [, , slug = ''] = selectedId.split(':');
+      return toReadablePieceName(slug.replaceAll('-', ' ')) || `${slot[0].toUpperCase()}${slot.slice(1)} Piece`;
+    }
+
+    return `${slot[0].toUpperCase()}${slot.slice(1)} Piece`;
+  };
+
+  const buildOutfitPiece = (slot: SlotKey, selectedId: string): OutfitPiece => {
+    const selectedItem = getPieceById(selectedId);
+    const resolvedPieceType = selectedItem?.piece_type?.trim() || SLOT_DEFAULT_PIECE_TYPES[slot];
+    const resolvedBrandName = selectedBrand?.name?.trim() || 'Selection Default Brand';
+    const resolvedBrandLogoUrl = selectedBrand
+      ? resolveBrandLogoUrlByName(selectedBrand.name) || selectedBrand.logo_url || undefined
+      : undefined;
+
+    return {
+      id: `${slot}:${selectedId}`,
+      name: resolveSlotPieceName(slot, selectedId),
+      brand: resolvedBrandName,
+      brandLogoUrl: resolvedBrandLogoUrl,
+      pieceType: resolvedPieceType,
+      category: SLOT_DEFAULT_CATEGORIES[slot],
+      wearstyles: SLOT_AUTO_WEARSTYLE[slot],
+    };
+  };
+
+  const buildSchemePieceSnapshots = (pieces: OutfitPiece[]): SchemePieceSnapshot[] =>
+    pieces.map((piece) => {
+      const [slot, ...sourceParts] = piece.id.split(':');
+      const sourceId = sourceParts.join(':');
+      const normalizedSlot = (slot as SlotKey) || 'upper';
+      const sourceType = sourceId.startsWith('suggested:') ? 'suggested' : 'wardrobe';
+
+      return {
+        id: piece.id,
+        slot: normalizedSlot,
+        sourceType,
+        sourceId,
+        name: piece.name,
+        brand: piece.brand,
+        brandLogoUrl: piece.brandLogoUrl,
+        category: piece.category ?? SLOT_DEFAULT_CATEGORIES[normalizedSlot],
+        pieceType: piece.pieceType,
+        wearstyles: piece.wearstyles ?? SLOT_AUTO_WEARSTYLE[normalizedSlot],
+      };
+    });
+
+  const buildGeneratedOutfitCardData = () => {
+    const pieces = (Object.entries(slots) as Array<[SlotKey, string | null]>)
+      .filter((entry): entry is [SlotKey, string] => Boolean(entry[1]))
+      .map(([slot, selectedId]) => buildOutfitPiece(slot, selectedId));
+    const selectedBackground = buildOutfitBackgroundConfig();
+
+    const outfitStyleLine = `${style || 'Streetwear'} • ${occasion || 'Daily'}`;
+    return {
+      outfitName: title.trim() || 'Untitled Outfit',
+      outfitStyleLine,
+      outfitDescription: buildOutfitDescriptionFallback({ pieces, outfitStyleLine }),
+      heroImageUrl: heroImageUrl.trim() || '/welcome-newcomers.png',
+      outfitBackground: selectedBackground,
+      pieces,
+    } satisfies OutfitCardData;
+  };
 
   return (
     <>
@@ -522,10 +570,16 @@ export default function CreateMySchemeView() {
                   return;
                 }
 
-                const isSaved = await saveScheme('manual');
+                const nextGeneratedCardData = buildGeneratedOutfitCardData();
+                const pieceSnapshots = buildSchemePieceSnapshots(nextGeneratedCardData.pieces);
+                const isSaved = await saveScheme('manual', pieceSnapshots);
                 if (!isSaved) return;
-
-                setGeneratedCardData(previewData);
+                console.log('[CreateMySchemeView] Submit snapshot', {
+                  slots,
+                  schemeItems,
+                  'generatedCardData.pieces': nextGeneratedCardData.pieces,
+                });
+                setGeneratedCardData(nextGeneratedCardData);
               }}
             >
               <input
@@ -696,7 +750,11 @@ export default function CreateMySchemeView() {
                 <button
                   type="button"
                   disabled={heroImageUploading}
-                  onClick={() => saveScheme('ai')}
+                  onClick={() => {
+                    const nextGeneratedCardData = buildGeneratedOutfitCardData();
+                    const pieceSnapshots = buildSchemePieceSnapshots(nextGeneratedCardData.pieces);
+                    saveScheme('ai', pieceSnapshots);
+                  }}
                   className={secondaryButtonClassName}
                 >
                   Generate with AI + Save
