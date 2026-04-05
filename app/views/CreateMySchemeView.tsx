@@ -51,11 +51,23 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
-const SLOT_LAYER_CLASS: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
-  upper: 'relative z-30',
-  lower: 'relative z-30',
-  shoes: 'relative z-20',
-  accessory: 'relative z-20',
+const SLOT_DEFAULT_CATEGORIES: Record<'upper' | 'lower' | 'shoes' | 'accessory', PieceCategory> = {
+  upper: 'Premium',
+  lower: 'Standard',
+  shoes: 'Rare',
+  accessory: 'Limited Edition',
+};
+const SLOT_DEFAULT_WEARSTYLES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+  upper: ['Statement Piece', 'Street Core', 'Visual Anchor'],
+  lower: ['Base Structure', 'Balanced Fit'],
+  shoes: ['Trend Driver', 'Street Energy', 'Visual Highlight'],
+  accessory: ['Style Accent', 'Attention Grabber'],
+};
+const SLOT_DEFAULT_PIECE_TYPES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
+  upper: 'Jacket',
+  lower: 'Pants',
+  shoes: 'Footwear',
+  accessory: 'Accessory',
 };
 const SLOT_DEFAULT_CATEGORIES: Record<'upper' | 'lower' | 'shoes' | 'accessory', PieceCategory> = {
   upper: 'Premium',
@@ -82,6 +94,7 @@ export default function CreateMySchemeView() {
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
+  const [heroImageUrl, setHeroImageUrl] = useState('');
   const [slots, setSlots] = useState<Record<string, string | null>>({
     upper: null,
     lower: null,
@@ -165,6 +178,7 @@ export default function CreateMySchemeView() {
           title: title.trim() || 'My New Scheme',
           style: style.trim() || 'Minimal',
           occasion: occasion.trim() || 'Daily',
+          cover_image_url: heroImageUrl.trim() || null,
           visibility,
           creation_mode,
           items: schemeItems,
@@ -226,7 +240,7 @@ export default function CreateMySchemeView() {
       outfitName: title.trim() || 'Untitled Outfit',
       outfitStyleLine,
       outfitDescription: buildOutfitDescriptionFallback({ pieces, outfitStyleLine }),
-      heroImageUrl: '/welcome-newcomers.png',
+      heroImageUrl: heroImageUrl.trim() || '/welcome-newcomers.png',
       pieces,
     } satisfies OutfitCardData;
   };
@@ -301,8 +315,15 @@ export default function CreateMySchemeView() {
                 ]}
               />
 
+              <input
+                value={heroImageUrl}
+                onChange={(e) => setHeroImageUrl(e.target.value)}
+                placeholder="Hero image URL (person with outfit)"
+                className={inputClassName}
+              />
+
               {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
-                <div key={slot} className={`${slotCardClassName} ${SLOT_LAYER_CLASS[slot]}`}>
+                <div key={slot} className={`${slotCardClassName} relative overflow-visible`}>
                   <p className="text-sm font-semibold capitalize text-white">
                     {slot} piece
                   </p>
