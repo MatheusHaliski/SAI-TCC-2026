@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 type FancyOption = {
   value: string;
@@ -32,6 +33,13 @@ export default function FancySelect({
 }: FancySelectProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
   const selected = useMemo(
     () => options.find((option) => option.value === value),
@@ -53,15 +61,54 @@ export default function FancySelect({
 
   useEffect(() => {
     const handleOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (!rootRef.current) return;
-      if (!rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      if (rootRef.current.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
     };
 
     window.addEventListener('mousedown', handleOutside);
-    return () => window.removeEventListener('mousedown', handleOutside);
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('mousedown', handleOutside);
+      window.removeEventListener('keydown', handleEscape);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const syncDropdownPosition = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      setDropdownStyle({
+        top: rect.bottom + 12,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+
+    syncDropdownPosition();
+    window.addEventListener('resize', syncDropdownPosition);
+    window.addEventListener('scroll', syncDropdownPosition, true);
+    return () => {
+      window.removeEventListener('resize', syncDropdownPosition);
+      window.removeEventListener('scroll', syncDropdownPosition, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      menuRef.current = null;
+    }
+  }, [open]);
 
   const renderOptionIcon = (option?: FancyOption) => {
     if (!option?.icon?.value) return null;
@@ -81,6 +128,11 @@ export default function FancySelect({
     return <span className="text-base leading-none">{option.icon.value}</span>;
   };
 
+  const selectOption = (optionValue: string) => {
+    onChange(optionValue);
+    setOpen(false);
+  };
+
   return (
     <div
       ref={rootRef}
@@ -94,6 +146,7 @@ export default function FancySelect({
       ) : null}
 
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={`group relative flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl transition ${
@@ -126,69 +179,80 @@ export default function FancySelect({
         <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-r from-violet-500/0 via-fuchsia-500/0 to-pink-500/0 opacity-0 transition group-hover:opacity-100 group-hover:from-violet-500/5 group-hover:via-fuchsia-500/5 group-hover:to-pink-500/5" />
       </button>
 
-      {open ? (
-        <div className="absolute z-[150] mt-3 w-full rounded-3xl border border-white/20 bg-slate-950/80 shadow-[0_24px_60px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
-          <div className="max-h-80 overflow-auto p-3">
-            {groupedOptions.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/55">
-                No options available
-              </div>
-            ) : (
-              groupedOptions.map(([groupName, groupItems]) => (
-                <div key={groupName} className="mb-3 last:mb-0">
-                  <div className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">
-                    {groupName}
+      {open && typeof window !== 'undefined'
+        ? createPortal(
+            <div
+              ref={menuRef}
+              className="fixed z-[9999] rounded-3xl border border-white/20 bg-slate-950/80 shadow-[0_24px_60px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
+              style={{
+                top: `${dropdownStyle.top}px`,
+                left: `${dropdownStyle.left}px`,
+                width: `${dropdownStyle.width}px`,
+              }}
+            >
+              <div className="max-h-80 overflow-auto p-3">
+                {groupedOptions.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/55">
+                    No options available
                   </div>
+                ) : (
+                  groupedOptions.map(([groupName, groupItems]) => (
+                    <div key={groupName} className="mb-3 last:mb-0">
+                      <div className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">
+                        {groupName}
+                      </div>
 
-                  <div className="space-y-2">
-                    {groupItems.map((option) => {
-                      const isSelected = option.value === value;
+                      <div className="space-y-2">
+                        {groupItems.map((option) => {
+                          const isSelected = option.value === value;
 
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => {
-                            onChange(option.value);
-                            setOpen(false);
-                          }}
-                          className={`flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left transition ${
-                            isSelected
-                              ? 'border-fuchsia-400/40 bg-gradient-to-r from-violet-600/70 via-fuchsia-600/70 to-pink-600/70 text-white shadow-[0_10px_30px_rgba(168,85,247,0.28)]'
-                              : 'border-white/10 bg-white/5 text-white hover:border-white/20 hover:bg-white/10'
-                          }`}
-                        >
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 truncate text-sm font-semibold">
-                              {renderOptionIcon(option)}
-                              <span className="truncate">{option.label}</span>
-                            </div>
-                            {option.hint ? (
-                              <div className="truncate text-xs text-white/60">
-                                {option.hint}
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                selectOption(option.value);
+                              }}
+                              className={`flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left transition ${
+                                isSelected
+                                  ? 'border-fuchsia-400/40 bg-gradient-to-r from-violet-600/70 via-fuchsia-600/70 to-pink-600/70 text-white shadow-[0_10px_30px_rgba(168,85,247,0.28)]'
+                                  : 'border-white/10 bg-white/5 text-white hover:border-white/20 hover:bg-white/10'
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 truncate text-sm font-semibold">
+                                  {renderOptionIcon(option)}
+                                  <span className="truncate">{option.label}</span>
+                                </div>
+                                {option.hint ? (
+                                  <div className="truncate text-xs text-white/60">
+                                    {option.hint}
+                                  </div>
+                                ) : null}
                               </div>
-                            ) : null}
-                          </div>
 
-                          <div
-                            className={`ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs ${
-                              isSelected
-                                ? 'border-white/20 bg-white/15 text-white'
-                                : 'border-white/10 bg-transparent text-white/40'
-                            }`}
-                          >
-                            {isSelected ? '✓' : '•'}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      ) : null}
+                              <div
+                                className={`ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs ${
+                                  isSelected
+                                    ? 'border-white/20 bg-white/15 text-white'
+                                    : 'border-white/10 bg-transparent text-white/40'
+                                }`}
+                              >
+                                {isSelected ? '✓' : '•'}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

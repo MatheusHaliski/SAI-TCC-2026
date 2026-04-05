@@ -5,9 +5,11 @@ import { getAuthSessionProfile } from '@/app/lib/authSession';
 import { getServerSession } from '@/app/lib/clientSession';
 import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
+import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
+import { OutfitCardData, OutfitPiece, PieceCategory, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
 
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
@@ -49,11 +51,23 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
-const SLOT_LAYER_CLASS: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
-  upper: 'relative z-30',
-  lower: 'relative z-30',
-  shoes: 'relative z-20',
-  accessory: 'relative z-20',
+const SLOT_DEFAULT_CATEGORIES: Record<'upper' | 'lower' | 'shoes' | 'accessory', PieceCategory> = {
+  upper: 'Premium',
+  lower: 'Standard',
+  shoes: 'Rare',
+  accessory: 'Limited Edition',
+};
+const SLOT_DEFAULT_WEARSTYLES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+  upper: ['Statement Piece', 'Street Core', 'Visual Anchor'],
+  lower: ['Base Structure', 'Balanced Fit'],
+  shoes: ['Trend Driver', 'Street Energy', 'Visual Highlight'],
+  accessory: ['Style Accent', 'Attention Grabber'],
+};
+const SLOT_DEFAULT_PIECE_TYPES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
+  upper: 'Jacket',
+  lower: 'Pants',
+  shoes: 'Footwear',
+  accessory: 'Accessory',
 };
 
 export default function CreateMySchemeView() {
@@ -62,6 +76,7 @@ export default function CreateMySchemeView() {
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
+  const [heroImageUrl, setHeroImageUrl] = useState('');
   const [slots, setSlots] = useState<Record<string, string | null>>({
     upper: null,
     lower: null,
@@ -70,6 +85,7 @@ export default function CreateMySchemeView() {
   });
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>('');
+  const [generatedCardData, setGeneratedCardData] = useState<OutfitCardData | null>(null);
 
   const inputClassName =
     'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
@@ -127,12 +143,12 @@ export default function CreateMySchemeView() {
   const saveScheme = async (creation_mode: 'manual' | 'ai') => {
     if (!userId) {
       setAlertMessage('User session not found. Please sign in again.');
-      return;
+      return false;
     }
 
     if (schemeItems.length === 0) {
       setAlertMessage('Select at least one wardrobe item before saving.');
-      return;
+      return false;
     }
 
     try {
@@ -144,6 +160,7 @@ export default function CreateMySchemeView() {
           title: title.trim() || 'My New Scheme',
           style: style.trim() || 'Minimal',
           occasion: occasion.trim() || 'Daily',
+          cover_image_url: heroImageUrl.trim() || null,
           visibility,
           creation_mode,
           items: schemeItems,
@@ -153,18 +170,61 @@ export default function CreateMySchemeView() {
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
       if (!response.ok) {
         setAlertMessage(payload?.error || 'Unable to save scheme. Please try again.');
-        return;
+        return false;
       }
 
       setAlertMessage('Scheme saved successfully.');
+      return true;
     } catch {
       setAlertMessage('Unable to save scheme. Please try again.');
+      return false;
     }
   };
 
   const optionsByType = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
     const aliases = SLOT_TYPE_ALIASES[slot];
     return items.filter((item) => aliases.includes(normalizePieceType(item.piece_type)));
+  };
+
+  const isFormValid = useMemo(() => {
+    return Boolean(title.trim()) && Boolean(style.trim()) && Boolean(occasion.trim()) && schemeItems.length > 0;
+  }, [occasion, schemeItems.length, style, title]);
+
+  const getPieceById = (wardrobeItemId: string | null) =>
+    items.find((item) => item.wardrobe_item_id === wardrobeItemId);
+
+  const buildOutfitPiece = (slot: 'upper' | 'lower' | 'shoes' | 'accessory', selectedId: string): OutfitPiece => {
+    const selectedItem = getPieceById(selectedId);
+    const selectedName = selectedItem?.name?.trim() || selectedId.split(':').pop()?.replaceAll('-', ' ') || '';
+    const formattedName = selectedName
+      .split(' ')
+      .filter(Boolean)
+      .map((chunk) => `${chunk[0]?.toUpperCase() ?? ''}${chunk.slice(1)}`)
+      .join(' ');
+
+    return {
+      id: `${slot}:${selectedId}`,
+      name: formattedName || 'Unnamed Piece',
+      brand: 'Brand not specified',
+      pieceType: selectedItem?.piece_type || SLOT_DEFAULT_PIECE_TYPES[slot],
+      category: SLOT_DEFAULT_CATEGORIES[slot] ?? 'Standard',
+      wearstyles: SLOT_DEFAULT_WEARSTYLES[slot],
+    };
+  };
+
+  const buildGeneratedOutfitCardData = () => {
+    const pieces = (Object.entries(slots) as Array<['upper' | 'lower' | 'shoes' | 'accessory', string | null]>)
+      .filter((entry): entry is ['upper' | 'lower' | 'shoes' | 'accessory', string] => Boolean(entry[1]))
+      .map(([slot, selectedId]) => buildOutfitPiece(slot, selectedId));
+
+    const outfitStyleLine = `${style || 'Streetwear'} • ${occasion || 'Daily'}`;
+    return {
+      outfitName: title.trim() || 'Untitled Outfit',
+      outfitStyleLine,
+      outfitDescription: buildOutfitDescriptionFallback({ pieces, outfitStyleLine }),
+      heroImageUrl: heroImageUrl.trim() || '/welcome-newcomers.png',
+      pieces,
+    } satisfies OutfitCardData;
   };
 
   return (
@@ -185,9 +245,16 @@ export default function CreateMySchemeView() {
           >
             <form
               className="mt-4 grid gap-3 rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md md:grid-cols-2"
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                saveScheme('manual');
+                if (!isFormValid) {
+                  setAlertMessage('Fill title, style, occasion, and select at least one piece before generating the outfit card.');
+                  return;
+                }
+
+                const isSaved = await saveScheme('manual');
+                if (!isSaved) return;
+                setGeneratedCardData(buildGeneratedOutfitCardData());
               }}
             >
               <input
@@ -230,8 +297,15 @@ export default function CreateMySchemeView() {
                 ]}
               />
 
+              <input
+                value={heroImageUrl}
+                onChange={(e) => setHeroImageUrl(e.target.value)}
+                placeholder="Hero image URL (person with outfit)"
+                className={inputClassName}
+              />
+
               {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
-                <div key={slot} className={`${slotCardClassName} ${SLOT_LAYER_CLASS[slot]}`}>
+                <div key={slot} className={`${slotCardClassName} relative overflow-visible`}>
                   <p className="text-sm font-semibold capitalize text-white">
                     {slot} piece
                   </p>
@@ -275,6 +349,16 @@ export default function CreateMySchemeView() {
               </div>
             </form>
           </SectionBlock>
+
+          {generatedCardData ? (
+            <SectionBlock
+              title="Generated Outfit Card"
+              subtitle="Rendered automatically after a successful form submit."
+              className="sa-surface-header h-auto border-white/20"
+            >
+              <OutfitCard data={generatedCardData} />
+            </SectionBlock>
+          ) : null}
         </div>
       </div>
 
