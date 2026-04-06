@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
-import { OutfitCardData } from '@/app/lib/outfit-card';
+import { OutfitCardData, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
 type Scheme = {
@@ -123,39 +123,54 @@ export default function ExploreSchemeView() {
       parsedBackground = undefined;
     }
 
+    const normalizedPieces = savedPieces.length
+      ? savedPieces.map((piece, index) => ({
+          id: (piece as { id?: string; piece_id?: string }).id
+            || (piece as { id?: string; piece_id?: string }).piece_id
+            || `${scheme.scheme_id}-piece-${index}`,
+          name: (piece as { name?: string; piece_name?: string }).name
+            || (piece as { name?: string; piece_name?: string }).piece_name
+            || 'Selected piece',
+          brand: (piece as { brand?: string; brand_name?: string }).brand
+            || (piece as { brand?: string; brand_name?: string }).brand_name
+            || 'Selection Default Brand',
+          brandLogoUrl: (piece as { brandLogoUrl?: string; brand_logo_url?: string }).brandLogoUrl
+            || (piece as { brandLogoUrl?: string; brand_logo_url?: string }).brand_logo_url,
+          pieceType: (piece as { pieceType?: string; piece_type?: string }).pieceType
+            || (piece as { pieceType?: string; piece_type?: string }).piece_type
+            || 'Garment',
+          category: piece.category,
+          wearstyles: piece.wearstyles,
+        }))
+      : relatedItems.length
+        ? relatedItems.map((item) => {
+            const derivedName = item.wardrobe_name?.trim()
+              || (item.wardrobe_item_id.startsWith('suggested:')
+                ? toReadableSuggestedName(item.wardrobe_item_id)
+                : 'Selected piece');
+            return {
+              id: item.scheme_item_id,
+              name: derivedName,
+              brand: 'Selection Default Brand',
+              pieceType: SLOT_PREVIEW_DEFAULTS[item.slot].pieceType,
+              category: SLOT_PREVIEW_DEFAULTS[item.slot].category,
+              wearstyles: SLOT_PREVIEW_DEFAULTS[item.slot].wearstyles,
+              pieceTypeIconUrl: item.image_url || undefined,
+            };
+          })
+        : [];
+
     return {
       outfitName: scheme.title || 'Untitled Outfit',
       outfitStyleLine: styleLine,
-      outfitDescription: `Strong ${scheme.style?.toLowerCase() || 'style'} identity with curated piece selection.`,
+      outfitDescription: buildOutfitDescriptionFallback({
+        pieces: normalizedPieces,
+        outfitStyleLine: `${scheme.style || 'Minimal'} ${scheme.occasion || 'General'}`,
+        outfitName: scheme.title || 'Untitled Outfit',
+      }),
       heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
       outfitBackground: parsedBackground,
-      pieces: savedPieces.length
-        ? savedPieces.map((piece) => ({
-            id: piece.id,
-            name: piece.name,
-            brand: piece.brand,
-            brandLogoUrl: piece.brandLogoUrl,
-            pieceType: piece.pieceType,
-            category: piece.category,
-            wearstyles: piece.wearstyles,
-          }))
-        : relatedItems.length
-          ? relatedItems.map((item) => {
-              const derivedName = item.wardrobe_name?.trim()
-                || (item.wardrobe_item_id.startsWith('suggested:')
-                  ? toReadableSuggestedName(item.wardrobe_item_id)
-                  : 'Selected piece');
-              return {
-                id: item.scheme_item_id,
-                name: derivedName,
-                brand: 'Selection Default Brand',
-                pieceType: SLOT_PREVIEW_DEFAULTS[item.slot].pieceType,
-                category: SLOT_PREVIEW_DEFAULTS[item.slot].category,
-                wearstyles: SLOT_PREVIEW_DEFAULTS[item.slot].wearstyles,
-                pieceTypeIconUrl: item.image_url || undefined,
-              };
-            })
-          : [],
+      pieces: normalizedPieces,
     };
   };
 

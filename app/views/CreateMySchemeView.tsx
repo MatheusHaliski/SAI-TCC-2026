@@ -18,10 +18,14 @@ import {
 
 type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type SchemePieceSnapshot = {
-  piece_id: string;
-  piece_name: string;
-  brand_name: string;
-  piece_type: string;
+  id: string;
+  slot: SlotKey;
+  sourceType: 'wardrobe' | 'suggested';
+  sourceId: string;
+  name: string;
+  brand: string;
+  brandLogoUrl?: string;
+  pieceType: string;
   category: NonNullable<OutfitPiece['category']>;
   wearstyles: string[];
 };
@@ -138,6 +142,12 @@ export default function CreateMySchemeView() {
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
   const [selectedBrandId, setSelectedBrandId] = useState(DEFAULT_BRAND_ID);
+  const [slotBrandIds, setSlotBrandIds] = useState<Record<SlotKey, string>>({
+    upper: DEFAULT_BRAND_ID,
+    lower: DEFAULT_BRAND_ID,
+    shoes: DEFAULT_BRAND_ID,
+    accessory: DEFAULT_BRAND_ID,
+  });
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [outfitBackgroundPreset, setOutfitBackgroundPreset] = useState(OUTFIT_BACKGROUND_PRESETS[0].value);
@@ -218,6 +228,11 @@ export default function CreateMySchemeView() {
     () => brands.find((brand) => brand.brand_id === selectedBrandId) ?? null,
     [brands, selectedBrandId],
   );
+
+  const resolvedBrands = useMemo(() => ({
+    defaultBrand: selectedBrand,
+    byId: new Map(brands.map((brand) => [brand.brand_id, brand])),
+  }), [brands, selectedBrand]);
   const isFormValid = useMemo(
     () =>
       Boolean(title.trim()) &&
@@ -248,8 +263,14 @@ export default function CreateMySchemeView() {
     return selectedItem?.name || 'Custom selection';
   };
 
+  const resolveBrandForSlot = (slot: SlotKey) => {
+    const configuredBrandId = slotBrandIds[slot] || DEFAULT_BRAND_ID;
+    if (configuredBrandId === DEFAULT_BRAND_ID) return resolvedBrands.defaultBrand;
+    return resolvedBrands.byId.get(configuredBrandId) ?? resolvedBrands.defaultBrand;
+  };
+
   const buildGeneratedOutfitCardData = (): OutfitCardData => {
-    const selectedBrandName = selectedBrand?.name || 'SELECTION';
+    const defaultBrandName = selectedBrand?.name || 'SELECTION';
 
     const pieces = (Object.keys(slots) as SlotKey[])
       .map((slot) => {
@@ -260,12 +281,14 @@ export default function CreateMySchemeView() {
         const suggestedItem = DEFAULT_SLOT_SUGGESTIONS[slot].find((suggestion) => suggestion.value === selectedValue);
         const derivedName = inventoryItem?.name || suggestedItem?.label || `${formatDisplayName(slot)} Piece`;
         const pieceType = formatDisplayName(inventoryItem?.piece_type || SLOT_DEFAULT_PIECE_TYPES[slot]);
+        const resolvedSlotBrand = resolveBrandForSlot(slot);
+        const slotBrandName = resolvedSlotBrand?.name || defaultBrandName;
 
         return {
           id: selectedValue,
           name: derivedName,
-          brand: selectedBrandName,
-          brandLogoUrl: resolveBrandLogoUrlByName(selectedBrandName) || selectedBrand?.logo_url || undefined,
+          brand: slotBrandName,
+          brandLogoUrl: resolveBrandLogoUrlByName(slotBrandName) || resolvedSlotBrand?.logo_url || undefined,
           pieceType,
           category: SLOT_DEFAULT_CATEGORIES[slot],
           wearstyles: SLOT_AUTO_WEARSTYLE[slot],
@@ -279,6 +302,7 @@ export default function CreateMySchemeView() {
       outfitDescription: buildOutfitDescriptionFallback({
         pieces,
         outfitStyleLine: `${style.trim() || 'Minimal'} ${occasion.trim() || 'Daily'}`,
+        outfitName: title.trim() || 'My New Scheme',
       }),
       heroImageUrl: heroImageUrl.trim() || '/models/model-default.jpeg',
       outfitBackground: buildOutfitBackgroundConfig(),
@@ -287,14 +311,22 @@ export default function CreateMySchemeView() {
   };
 
   const buildSchemePieceSnapshots = (pieces: OutfitPiece[]): SchemePieceSnapshot[] =>
-    pieces.map((piece) => ({
-      piece_id: piece.id,
-      piece_name: piece.name,
-      brand_name: piece.brand,
-      piece_type: normalizePieceType(piece.pieceType) || piece.pieceType,
-      category: piece.category || 'Standard',
-      wearstyles: piece.wearstyles || [],
-    }));
+    pieces.map((piece) => {
+      const slot = (Object.keys(slots) as SlotKey[]).find((slotKey) => slots[slotKey] === piece.id) || 'upper';
+      const sourceType = piece.id.startsWith('suggested:') ? 'suggested' : 'wardrobe';
+      return {
+        id: piece.id,
+        slot,
+        sourceType,
+        sourceId: piece.id,
+        name: piece.name,
+        brand: piece.brand,
+        brandLogoUrl: piece.brandLogoUrl,
+        pieceType: normalizePieceType(piece.pieceType) || piece.pieceType,
+        category: piece.category || 'Standard',
+        wearstyles: piece.wearstyles || [],
+      };
+    });
 
   const uploadHeroImage = (file: File) => {
     setHeroImageUploading(true);
@@ -570,6 +602,30 @@ export default function CreateMySchemeView() {
                         ...optionsByType(slot).map((item) => ({
                           value: item.wardrobe_item_id,
                           label: item.name,
+                        })),
+                      ]}
+                    />
+                  </div>
+
+                  <div className="mt-2">
+                    <FancySelect
+                      value={slotBrandIds[slot] ?? DEFAULT_BRAND_ID}
+                      onChange={(selectedSlotBrandId) =>
+                        setSlotBrandIds((prev) => ({
+                          ...prev,
+                          [slot]: selectedSlotBrandId || DEFAULT_BRAND_ID,
+                        }))
+                      }
+                      placeholder="Brand for this piece"
+                      options={[
+                        {
+                          value: DEFAULT_BRAND_ID,
+                          label: 'Use default outfit brand',
+                          hint: selectedBrand?.name || 'SELECTION',
+                        },
+                        ...brands.map((brand) => ({
+                          value: brand.brand_id,
+                          label: brand.name,
                         })),
                       ]}
                     />

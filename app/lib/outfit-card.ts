@@ -60,6 +60,9 @@ const DESCRIPTION_FALLBACKS = [
   'Balanced outfit with clean visual composition.',
   'Strong style identity with curated piece selection.',
   'Clean structure with a clear visual anchor.',
+  'Refined mix of essentials shaped for confident everyday wear.',
+  'Intentional layering creates a polished and expressive silhouette.',
+  'Versatile combination tuned for comfort, impact, and flow.',
 ];
 
 const CATEGORY_FALLBACK_ICON: Record<PieceCategory, string> = {
@@ -150,17 +153,33 @@ export function resolveBrandLogoUrlByName(brandName?: string) {
 export function buildOutfitDescriptionFallback(input: {
   pieces: OutfitPiece[];
   outfitStyleLine?: string;
+  outfitName?: string;
 }) {
   const firstPiece = input.pieces[0];
-  const dominantWearstyle = normalizeWearstyles(firstPiece?.wearstyles)[0];
+  const normalizedWearstyles = normalizeWearstyles(firstPiece?.wearstyles);
+  const dominantWearstyle = normalizedWearstyles[0];
+  const styleLine = input.outfitStyleLine?.trim();
 
   if (dominantWearstyle && firstPiece?.name) {
     return `${firstPiece.name} leads this composition with ${dominantWearstyle.toLowerCase()} influence.`;
   }
 
-  if (input.outfitStyleLine) {
-    return `Curated ${input.outfitStyleLine.toLowerCase()} direction with cohesive piece harmony.`;
+  if (styleLine && input.pieces.length >= 3) {
+    return `Curated ${styleLine.toLowerCase()} direction with layered balance across ${input.pieces.length} key pieces.`;
   }
 
-  return DESCRIPTION_FALLBACKS[0];
+  if (styleLine && input.outfitName?.trim()) {
+    return `${input.outfitName.trim()} explores a ${styleLine.toLowerCase()} mood with clean, intentional styling.`;
+  }
+
+  if (styleLine) {
+    return `Curated ${styleLine.toLowerCase()} direction with cohesive piece harmony.`;
+  }
+
+  const seed = input.pieces
+    .map((piece) => `${piece.name}|${piece.pieceType}|${piece.category ?? 'standard'}`)
+    .join('|')
+    .length;
+
+  return DESCRIPTION_FALLBACKS[seed % DESCRIPTION_FALLBACKS.length];
 }
