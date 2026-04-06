@@ -128,8 +128,22 @@ export interface Scheme {
   visibility: 'private' | 'public';
   community_indexed: boolean;
   cover_image_url: string | null;
+  pieces?: SchemePieceSnapshot[];
   created_at: string;
   updated_at: string;
+}
+
+export interface SchemePieceSnapshot {
+  id: string;
+  slot: 'upper' | 'lower' | 'shoes' | 'accessory';
+  sourceType: 'wardrobe' | 'suggested';
+  sourceId: string;
+  name: string;
+  brand: string;
+  brandLogoUrl?: string;
+  category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
+  pieceType: string;
+  wearstyles: string[];
 }
 
 export interface SchemeItem {
@@ -196,6 +210,7 @@ export interface CreateSchemeInput {
   visibility: 'private' | 'public';
   community_indexed?: boolean;
   cover_image_url?: string;
+  pieces?: SchemePieceSnapshot[];
   items: Array<{
     wardrobe_item_id: EntityId;
     slot: 'upper' | 'lower' | 'shoes' | 'accessory';
