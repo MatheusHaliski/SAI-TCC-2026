@@ -27,6 +27,7 @@ export type OutfitCardData = {
     shape?: 'none' | 'orb' | 'diamond' | 'mesh';
   };
   metaBadges?: OutfitMetaBadge[];
+  brands?: string[];
   pieces: OutfitPiece[];
 };
 

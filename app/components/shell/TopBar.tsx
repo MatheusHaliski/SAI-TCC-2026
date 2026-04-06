@@ -1,10 +1,14 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import SearchInput from '../shared/SearchInput';
-import IconButton from '../shared/IconButton';
+import TopbarActionIcon from '@/app/components/search/TopbarActionIcon';
+import { NotificationsPanel, QuickNavDrawer, SystemInboxPanel, UserAccountDrawer } from '@/app/components/search/TopbarPanels';
+import { useDiscoverySearch } from '@/app/components/shell/DiscoverySearchContext';
 
 interface TopBarProps {
   pageTitle: string;
-  onToggleNav: () => void;
-  navOpen: boolean;
 }
 
 const BellIcon = () => (
@@ -28,40 +32,63 @@ const UserIcon = () => (
   </svg>
 );
 
-export default function TopBar({ pageTitle, onToggleNav, navOpen }: TopBarProps) {
+const MenuIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <path d="M4 7h16M4 12h16M4 17h16" />
+  </svg>
+);
+
+export default function TopBar({ pageTitle }: TopBarProps) {
+  const pathname = usePathname();
+  const { query, setQuery } = useDiscoverySearch();
+  const [panel, setPanel] = useState<'notifications' | 'inbox' | 'menu' | 'account' | null>(null);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPanel(null);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   return (
+    <>
       <header className="sa-surface-topbar h-full w-full rounded-2xl border-8 border-orange-500 px-4 py-3 backdrop-blur-md lg:px-6">
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-semibold text-white">{pageTitle}</p>
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-lg font-semibold text-white">{pageTitle}</p>
+          </div>
+
+          <div className="hidden w-full max-w-xl lg:block">
+            <SearchInput
+              placeholder="Search outfits, brands, styles, or wardrobe items"
+              value={query}
+              onChange={setQuery}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <TopbarActionIcon label="Notifications" icon={<BellIcon />} onClick={() => setPanel('notifications')} />
+            <TopbarActionIcon label="System Inbox" icon={<MailIcon />} onClick={() => setPanel('inbox')} />
+            <TopbarActionIcon label="Quick Navigation" icon={<MenuIcon />} onClick={() => setPanel('menu')} />
+            <TopbarActionIcon label="Account" icon={<UserIcon />} onClick={() => setPanel('account')} />
+          </div>
         </div>
 
-        <div className="hidden w-full max-w-xl lg:block">
-          <SearchInput placeholder="Search outfits, brands, styles, or wardrobe items" />
+        <div className="mt-3 lg:hidden">
+          <SearchInput
+            placeholder="Search outfits, brands, styles, or wardrobe items"
+            value={query}
+            onChange={setQuery}
+          />
         </div>
+      </header>
 
-        <div className="flex items-center gap-2">
-          <IconButton label="Notifications" icon={<BellIcon />} />
-          <IconButton label="Messages" icon={<MailIcon />} />
-          <button
-            type="button"
-            onClick={onToggleNav}
-            aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/10 text-white transition hover:bg-white/20"
-          >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          </button>
-          <button className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-sm font-semibold text-white transition hover:bg-white/20">
-            <UserIcon />
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-3 lg:hidden">
-        <SearchInput placeholder="Search outfits, brands, styles, or wardrobe items" />
-      </div>
-    </header>
+      {panel === 'notifications' ? <NotificationsPanel onClose={() => setPanel(null)} /> : null}
+      {panel === 'inbox' ? <SystemInboxPanel onClose={() => setPanel(null)} /> : null}
+      {panel === 'menu' ? <QuickNavDrawer onClose={() => setPanel(null)} activePath={pathname} /> : null}
+      {panel === 'account' ? <UserAccountDrawer onClose={() => setPanel(null)} /> : null}
+    </>
   );
 }
