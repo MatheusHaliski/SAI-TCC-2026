@@ -9,6 +9,22 @@ import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
+import {
+  OutfitCardData,
+  OutfitPiece,
+  buildOutfitDescriptionFallback,
+  resolveBrandLogoUrlByName,
+} from '@/app/lib/outfit-card';
+
+type Brand = { brand_id: string; name: string; logo_url?: string | null };
+type SchemePieceSnapshot = {
+  piece_id: string;
+  piece_name: string;
+  brand_name: string;
+  piece_type: string;
+  category: NonNullable<OutfitPiece['category']>;
+  wearstyles: string[];
+};
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
 
@@ -70,6 +86,34 @@ const SLOT_DEFAULT_PIECE_TYPES: Record<SlotKey, string> = {
   shoes: 'Footwear',
   accessory: 'Accessory',
 };
+const SLOT_DEFAULT_CATEGORIES: Record<SlotKey, NonNullable<OutfitPiece['category']>> = {
+  upper: 'Premium',
+  lower: 'Standard',
+  shoes: 'Rare',
+  accessory: 'Limited Edition',
+};
+
+const DEFAULT_BRAND_ID = 'default';
+const FALLBACK_BRANDS: Brand[] = [
+  {
+    brand_id: 'lacoste',
+    name: 'Lacoste',
+    logo_url: '/lacoste.jpg',
+  },
+];
+
+const OUTFIT_BACKGROUND_PRESETS: Array<{ value: string; label: string }> = [
+  { value: 'gradient|linear-gradient(135deg,#0f172a,#4c1d95)', label: 'Deep Violet Gradient' },
+  { value: 'solid|#111827', label: 'Midnight Solid' },
+  { value: 'gradient|linear-gradient(140deg,#0b132b,#1c2541,#3a506b)', label: 'Aurora Navy' },
+  { value: 'image|/models/model-default.jpeg', label: 'Default Photo Background' },
+];
+const OUTFIT_BACKGROUND_SHAPES: Array<{ value: 'none' | 'orb' | 'diamond' | 'mesh'; label: string }> = [
+  { value: 'none', label: 'None' },
+  { value: 'orb', label: 'Orb' },
+  { value: 'diamond', label: 'Diamond' },
+  { value: 'mesh', label: 'Mesh' },
+];
 
 const normalizePieceType = (value?: string) =>
   String(value || '')
@@ -88,10 +132,17 @@ const formatDisplayName = (value?: string) =>
 
 export default function CreateMySchemeView() {
   const [items, setItems] = useState<Array<{ wardrobe_item_id: string; name: string; piece_type: string }>>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
+  const [selectedBrandId, setSelectedBrandId] = useState(DEFAULT_BRAND_ID);
+  const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [heroImageUploading, setHeroImageUploading] = useState(false);
+  const [outfitBackgroundPreset, setOutfitBackgroundPreset] = useState(OUTFIT_BACKGROUND_PRESETS[0].value);
+  const [outfitBackgroundShape, setOutfitBackgroundShape] = useState<'none' | 'orb' | 'diamond' | 'mesh'>('orb');
+  const [aiBackgroundImageUrl, setAiBackgroundImageUrl] = useState('');
   const [slots, setSlots] = useState<Record<SlotKey, string | null>>({
     upper: null,
     lower: null,
