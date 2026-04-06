@@ -1,5 +1,6 @@
 import { OutfitMetaBadge as OutfitMetaBadgeType } from '@/app/lib/outfit-card';
 import OutfitMetaBadge from '@/app/components/outfit-card/OutfitMetaBadge';
+import BrandInlineBadgeList from '@/app/components/outfit-card/BrandInlineBadgeList';
 
 interface OutfitHeaderProps {
   outfitName: string;

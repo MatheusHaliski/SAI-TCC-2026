@@ -49,6 +49,8 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
           ? 'bg-[linear-gradient(120deg,rgba(15,23,42,0.08)_25%,transparent_25%),linear-gradient(240deg,rgba(15,23,42,0.08)_25%,transparent_25%)] bg-[size:24px_24px]'
           : '';
 
+  const compactPieceSummary = data.pieces.slice(0, 2).map((piece) => piece.name).join(' · ');
+
   return (
     <section
       className={`relative overflow-hidden rounded-3xl border border-slate-200/70 shadow-[0_12px_45px_rgba(15,23,42,0.08)] ${variant === 'compact' ? 'space-y-3 p-3' : 'space-y-4 p-4 sm:p-6'}`}
