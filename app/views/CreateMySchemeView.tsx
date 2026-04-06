@@ -9,19 +9,19 @@ import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
 
-type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
+type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
 
-const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+const SLOT_TYPE_ALIASES: Record<SlotKey, string[]> = {
   upper: ['upper', 'upper piece', 'top', 'tops'],
   lower: ['lower', 'lower piece', 'bottom', 'bottoms'],
   shoes: ['shoes', 'shoes piece', 'shoe', 'footwear'],
   accessory: ['accessory', 'accessories'],
 };
 
-const normalizePieceType = (value: string) => value.trim().toLowerCase();
+const normalizeSchemePieceType = (value: string) => value.trim().toLowerCase();
 
 const DEFAULT_SLOT_SUGGESTIONS: Record<
-  'upper' | 'lower' | 'shoes' | 'accessory',
+  SlotKey,
   Array<{ value: string; label: string }>
 > = {
   upper: [
@@ -49,7 +49,7 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
-const SLOT_LAYER_CLASS: Record<'upper' | 'lower' | 'shoes' | 'accessory', string> = {
+const SLOT_LAYER_CLASS: Record<SlotKey, string> = {
   upper: 'relative z-30',
   lower: 'relative z-30',
   shoes: 'relative z-20',
@@ -57,12 +57,12 @@ const SLOT_LAYER_CLASS: Record<'upper' | 'lower' | 'shoes' | 'accessory', string
 };
 
 export default function CreateMySchemeView() {
-  const [items, setItems] = useState<WardrobeItem[]>([]);
+  const [items, setItems] = useState<Array<{ wardrobe_item_id: string; name: string; piece_type: string }>>([]);
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
-  const [slots, setSlots] = useState<Record<string, string | null>>({
+  const [slots, setSlots] = useState<Record<SlotKey, string | null>>({
     upper: null,
     lower: null,
     shoes: null,
@@ -162,9 +162,9 @@ export default function CreateMySchemeView() {
     }
   };
 
-  const optionsByType = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
+  const optionsByType = (slot: SlotKey) => {
     const aliases = SLOT_TYPE_ALIASES[slot];
-    return items.filter((item) => aliases.includes(normalizePieceType(item.piece_type)));
+    return items.filter((item) => aliases.includes(normalizeSchemePieceType(item.piece_type)));
   };
 
   return (
