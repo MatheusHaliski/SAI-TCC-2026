@@ -8,10 +8,13 @@ interface GeneratedOutfitCardProps {
 }
 
 export default function OutfitCard({ data }: GeneratedOutfitCardProps) {
-  const description = data.outfitDescription?.trim() || buildOutfitDescriptionFallback({
-    pieces: data.pieces,
-    outfitStyleLine: data.outfitStyleLine,
-  });
+  const description =
+    data.outfitDescription === undefined
+      ? buildOutfitDescriptionFallback({
+          pieces: data.pieces,
+          outfitStyleLine: data.outfitStyleLine,
+        })
+      : data.outfitDescription?.trim() || undefined;
 
   const resolvedBackground = data.outfitBackground ?? {
     type: 'gradient' as const,
@@ -48,13 +51,14 @@ export default function OutfitCard({ data }: GeneratedOutfitCardProps) {
         <div aria-hidden className={`pointer-events-none absolute inset-0 opacity-95 ${shapeOverlayClassName}`} />
       ) : null}
       <div className="relative z-[1] space-y-4">
-      <OutfitHeroImage src={data.heroImageUrl} alt={`${data.outfitName} hero preview`} />
-      <OutfitHeader
-        outfitName={data.outfitName}
-        outfitStyleLine={data.outfitStyleLine}
-        description={description}
-      />
-      <OutfitPieceList pieces={data.pieces} />
+        <OutfitHeroImage src={data.heroImageUrl} alt={`${data.outfitName} hero preview`} />
+        <OutfitHeader
+          outfitName={data.outfitName}
+          outfitStyleLine={data.outfitStyleLine}
+          description={description}
+          badges={data.metaBadges}
+        />
+        <OutfitPieceList pieces={data.pieces} />
       </div>
     </section>
   );

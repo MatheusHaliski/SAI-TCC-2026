@@ -11,6 +11,11 @@ export type OutfitPiece = {
   wearstyles?: string[];
 };
 
+export type OutfitMetaBadge = {
+  label: string;
+  icon?: string;
+};
+
 export type OutfitCardData = {
   outfitName: string;
   outfitStyleLine: string;
@@ -21,6 +26,7 @@ export type OutfitCardData = {
     value: string;
     shape?: 'none' | 'orb' | 'diamond' | 'mesh';
   };
+  metaBadges?: OutfitMetaBadge[];
   pieces: OutfitPiece[];
 };
 
@@ -70,6 +76,32 @@ const CATEGORY_FALLBACK_ICON: Record<PieceCategory, string> = {
   Standard: '✨',
   'Limited Edition': '🪄',
   Rare: '⭐',
+};
+
+const DESCRIPTION_TEMPLATES = [
+  ({ mood, styleLine, heroPiece, slotCount }: DescriptionGeneratorInput) =>
+    `This composition explores a ${mood} mood with ${styleLine.toLowerCase()} direction, anchored by ${heroPiece} and balanced across ${slotCount} curated slots.`,
+  ({ occasion, palette, styleLine, heroPiece }: DescriptionGeneratorInput) =>
+    `Built for ${occasion.toLowerCase()} use, this ${styleLine.toLowerCase()} look pairs ${palette} tones with ${heroPiece} as the visual lead.`,
+  ({ styleLine, piecesSummary, mood }: DescriptionGeneratorInput) =>
+    `A ${styleLine.toLowerCase()} outfit with ${piecesSummary}, delivering a ${mood} aesthetic and a polished premium feel.`,
+  ({ heroPiece, palette, occasion }: DescriptionGeneratorInput) =>
+    `${heroPiece} drives the statement while ${palette} accents keep the silhouette cohesive for ${occasion.toLowerCase()} moments.`,
+  ({ styleLine, piecesSummary, mood, occasion }: DescriptionGeneratorInput) =>
+    `Curated for ${occasion.toLowerCase()}, this ${styleLine.toLowerCase()} composition combines ${piecesSummary} to create a ${mood} identity.`,
+  ({ styleLine, heroPiece, palette }: DescriptionGeneratorInput) =>
+    `Editorial-inspired and ${styleLine.toLowerCase()}, this outfit positions ${heroPiece} against ${palette} accents for refined visual rhythm.`,
+];
+
+type DescriptionGeneratorInput = {
+  outfitName?: string;
+  style?: string;
+  occasion?: string;
+  visibility?: 'private' | 'public';
+  brand?: string;
+  palette?: string;
+  mood?: string;
+  pieces: OutfitPiece[];
 };
 
 export function getCategoryBadgeStyle(category?: PieceCategory) {
@@ -148,6 +180,41 @@ export function resolveBrandLogoUrlByName(brandName?: string) {
   const normalizedName = brandName.trim().toLowerCase();
   const compactName = normalizedName.replace(/[^a-z0-9&]/g, '');
   return BRAND_LOGO_BY_NAME[normalizedName] ?? BRAND_LOGO_BY_NAME[compactName] ?? null;
+}
+
+export function buildOutfitDescriptionRich(input: DescriptionGeneratorInput) {
+  const style = input.style?.trim() || 'casual';
+  const occasion = input.occasion?.trim() || 'daily';
+  const styleLine = `${style} ${occasion}`;
+  const mood = input.mood?.trim() || 'refined urban';
+  const palette = input.palette?.trim() || 'balanced neutral';
+  const heroPiece = input.pieces[0]?.name || 'the selected hero piece';
+  const piecesSummary = input.pieces
+    .slice(0, 3)
+    .map((piece) => piece.name)
+    .join(', ') || 'curated essentials';
+
+  const seedSource = `${input.outfitName || ''}|${style}|${occasion}|${input.brand || ''}|${input.visibility || ''}|${input.pieces
+    .map((piece) => piece.id)
+    .join('|')}`;
+  const seed = seedSource.length % DESCRIPTION_TEMPLATES.length;
+
+  return DESCRIPTION_TEMPLATES[seed]({
+    ...input,
+    style,
+    occasion,
+    mood,
+    palette,
+    heroPiece,
+    styleLine,
+    piecesSummary,
+    slotCount: input.pieces.length || 1,
+  } as DescriptionGeneratorInput & {
+    heroPiece: string;
+    styleLine: string;
+    piecesSummary: string;
+    slotCount: number;
+  });
 }
 
 export function buildOutfitDescriptionFallback(input: {
