@@ -25,7 +25,7 @@ export default function SignupViewPage() {
     }, [pathname]);
     return (
         <AuthShell
-            title="Start your Dine Explorer journey"
+            title="Start your Fashion AI journey"
             subtitle="Create your account in minutes"
         >
 
@@ -41,7 +41,7 @@ export default function SignupViewPage() {
     ].join(" ")}
             >
                 <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-600">
-                    Start your Dine Explorer journey
+                    Start your Fashion AI
                 </p>
                 <h1 className="mt-3 text-3xl font-semibold text-orange-600">
                     Build your new account
