@@ -223,3 +223,68 @@ export interface SchemeWithItems {
   items: Array<SchemeItem & { wardrobe_name: string; image_url: string }>;
   author: string;
 }
+
+
+export type PieceAssetStatus = 'draft' | 'asset_pending' | 'asset_review' | 'ready_for_tester' | 'published';
+
+export interface Mannequin2D {
+  mannequin_id: EntityId;
+  name: string;
+  gender: string;
+  body_type: string;
+  pose_code: string;
+  canvas_width: number;
+  canvas_height: number;
+  preview_width: number;
+  preview_height: number;
+  base_image_url: string;
+  shadow_image_url?: string;
+  hair_back_url?: string;
+  hair_front_url?: string;
+  face_layer_url?: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WardrobePiece2D {
+  piece_id: EntityId;
+  name: string;
+  brand_id: EntityId;
+  market_id: EntityId;
+  piece_type: 'top' | 'bottom' | 'dress' | 'shoes' | 'bag' | 'outerwear' | 'accessory';
+  category_tier: string;
+  mannequin_type: string;
+  pose_code: string;
+  render_layer: number;
+  image_url: string;
+  thumbnail_url: string;
+  hide_layers: string[];
+  hides_piece_types: Array<'top' | 'bottom' | 'dress' | 'shoes' | 'bag' | 'outerwear' | 'accessory'>;
+  conflicts_with: string[];
+  compatible_piece_types: Array<'top' | 'bottom' | 'dress' | 'shoes' | 'bag' | 'outerwear' | 'accessory'>;
+  anchor: { x: number; y: number; scale: number };
+  wearstyles: string[];
+  colors: string[];
+  materials: string[];
+  season: string;
+  gender: string;
+  asset_status: PieceAssetStatus;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OutfitSelection2D {
+  mannequin_id: EntityId;
+  pose_code: string;
+  top: EntityId | null;
+  bottom: EntityId | null;
+  dress: EntityId | null;
+  shoes: EntityId | null;
+  bag: EntityId | null;
+  outerwear: EntityId | null;
+  accessory: EntityId | null;
+  created_at: string;
+  updated_at: string;
+}
