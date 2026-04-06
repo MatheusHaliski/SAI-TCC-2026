@@ -2,7 +2,12 @@ import OutfitHeroImage from '@/app/components/outfit-card/OutfitHeroImage';
 import OutfitHeader from '@/app/components/outfit-card/OutfitHeader';
 import OutfitPieceList from '@/app/components/outfit-card/OutfitPieceList';
 import CompactCardActionBar from '@/app/components/profile/CompactCardActionBar';
-import { OutfitCardData, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
+import {
+  OutfitCardData,
+  buildBackgroundCssStyle,
+  buildOutfitDescriptionFallback,
+  resolveOutfitBackgroundForRender,
+} from '@/app/lib/outfit-card';
 
 interface GeneratedOutfitCardProps {
   data: OutfitCardData;
@@ -23,33 +28,17 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
         })
       : data.outfitDescription?.trim() || undefined;
 
-  const resolvedBackground = data.outfitBackground ?? {
-    type: 'gradient' as const,
-    value: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
-    shape: 'none' as const,
-  };
-
-  const backgroundStyle =
-    resolvedBackground.type === 'solid'
-      ? { background: resolvedBackground.value }
-      : resolvedBackground.type === 'gradient'
-        ? { backgroundImage: resolvedBackground.value }
-        : {
-            backgroundImage: `url(${resolvedBackground.value})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          };
+  const resolvedBackground = resolveOutfitBackgroundForRender(data.outfitBackground);
+  const backgroundStyle = buildBackgroundCssStyle(resolvedBackground);
 
   const shapeOverlayClassName =
-    resolvedBackground.shape === 'orb'
+    (resolvedBackground.shape ?? 'none') === 'orb'
       ? 'bg-[radial-gradient(circle_at_80%_12%,rgba(99,102,241,0.22),transparent_55%)]'
-      : resolvedBackground.shape === 'diamond'
+      : (resolvedBackground.shape ?? 'none') === 'diamond'
         ? 'bg-[linear-gradient(135deg,rgba(59,130,246,0.16)_0%,transparent_40%,rgba(168,85,247,0.14)_100%)]'
-        : resolvedBackground.shape === 'mesh'
+        : (resolvedBackground.shape ?? 'none') === 'mesh'
           ? 'bg-[linear-gradient(120deg,rgba(15,23,42,0.08)_25%,transparent_25%),linear-gradient(240deg,rgba(15,23,42,0.08)_25%,transparent_25%)] bg-[size:24px_24px]'
           : '';
-
-  const compactPieceSummary = data.pieces.slice(0, 2).map((piece) => piece.name).join(' · ');
 
   return (
     <section

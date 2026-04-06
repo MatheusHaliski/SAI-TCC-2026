@@ -14,9 +14,12 @@ import GenerationModePanel from '@/app/components/create-scheme/GenerationModePa
 import SaveSummaryPanel from '@/app/components/create-scheme/SaveSummaryPanel';
 import SchemeStepCard from '@/app/components/create-scheme/SchemeStepCard';
 import SlotReviewCard from '@/app/components/create-scheme/SlotReviewCard';
+import OutfitBackgroundStudioModal from '@/app/components/create-scheme/OutfitBackgroundStudioModal';
 import {
+  OutfitBackgroundConfig,
   OutfitCardData,
   OutfitPiece,
+  resolveOutfitBackgroundForRender,
   buildOutfitDescriptionRich,
   resolveBrandLogoUrlByName,
 } from '@/app/lib/outfit-card';
@@ -115,18 +118,19 @@ const FALLBACK_BRANDS: Brand[] = [
   },
 ];
 
-const OUTFIT_BACKGROUND_PRESETS: Array<{ value: string; label: string }> = [
-  { value: 'gradient|linear-gradient(135deg,#0f172a,#4c1d95)', label: 'Deep Violet Gradient' },
-  { value: 'solid|#111827', label: 'Midnight Solid' },
-  { value: 'gradient|linear-gradient(140deg,#0b132b,#1c2541,#3a506b)', label: 'Aurora Navy' },
-  { value: 'image|/models/model-default.jpeg', label: 'Default Photo Background' },
-];
-const OUTFIT_BACKGROUND_SHAPES: Array<{ value: 'none' | 'orb' | 'diamond' | 'mesh'; label: string }> = [
-  { value: 'none', label: 'None' },
-  { value: 'orb', label: 'Orb' },
-  { value: 'diamond', label: 'Diamond' },
-  { value: 'mesh', label: 'Mesh' },
-];
+const DEFAULT_BACKGROUND_CONFIG: OutfitBackgroundConfig = {
+  background_mode: 'gradient',
+  gradient: {
+    type: 'linear',
+    angle: 135,
+    intensity: 100,
+    stops: [
+      { color: '#0f172a', position: 0 },
+      { color: '#4c1d95', position: 100 },
+    ],
+  },
+  shape: 'orb',
+};
 
 const formatDisplayName = (value?: string) =>
   String(value || '')
@@ -152,9 +156,8 @@ export default function CreateMySchemeView() {
   });
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [heroImageUploading, setHeroImageUploading] = useState(false);
-  const [outfitBackgroundPreset, setOutfitBackgroundPreset] = useState(OUTFIT_BACKGROUND_PRESETS[0].value);
-  const [outfitBackgroundShape, setOutfitBackgroundShape] = useState<'none' | 'orb' | 'diamond' | 'mesh'>('orb');
-  const [aiBackgroundImageUrl, setAiBackgroundImageUrl] = useState('');
+  const [outfitBackgroundConfig, setOutfitBackgroundConfig] = useState<OutfitBackgroundConfig>(DEFAULT_BACKGROUND_CONFIG);
+  const [backgroundStudioOpen, setBackgroundStudioOpen] = useState(false);
   const [descriptionMode, setDescriptionMode] = useState<DescriptionMode>('ai');
   const [manualDescription, setManualDescription] = useState('');
   const [palette, setPalette] = useState('Neutral');
@@ -275,19 +278,7 @@ export default function CreateMySchemeView() {
   };
 
   const buildOutfitBackgroundConfig = () => {
-    const [backgroundType, presetValue] = outfitBackgroundPreset.split('|', 2) as [
-      'solid' | 'gradient' | 'image',
-      string,
-    ];
-
-    const resolvedBackgroundValue =
-      backgroundType === 'image' ? aiBackgroundImageUrl.trim() || presetValue : presetValue;
-
-    return {
-      type: backgroundType,
-      value: resolvedBackgroundValue,
-      shape: outfitBackgroundShape,
-    } as const;
+    return outfitBackgroundConfig;
   };
 
   const buildGeneratedOutfitCardData = (): OutfitCardData => {
@@ -558,35 +549,42 @@ export default function CreateMySchemeView() {
         />
 
         <FancySelect
-          value={outfitBackgroundPreset}
-          onChange={setOutfitBackgroundPreset}
-          placeholder="Outfit card background"
-          options={OUTFIT_BACKGROUND_PRESETS.map((option) => ({
-            value: option.value,
-            label: option.label,
-            group: 'Card Background',
-          }))}
+          value={outfitBackgroundConfig.background_mode}
+          onChange={() => setBackgroundStudioOpen(true)}
+          placeholder="Background Studio"
+          options={[
+            { value: 'solid', label: 'Open Background Studio · Solid' },
+            { value: 'gradient', label: 'Open Background Studio · Gradient' },
+            { value: 'ai_artwork', label: 'Open Background Studio · AI Artwork' },
+          ]}
         />
 
-        <FancySelect
-          value={outfitBackgroundShape}
-          onChange={(value) => setOutfitBackgroundShape(value as 'none' | 'orb' | 'diamond' | 'mesh')}
-          placeholder="Background shape"
-          options={OUTFIT_BACKGROUND_SHAPES.map((option) => ({
-            value: option.value,
-            label: option.label,
-            group: 'Shape',
-          }))}
-        />
-
-        {outfitBackgroundPreset.startsWith('image|') ? (
-          <input
-            value={aiBackgroundImageUrl}
-            onChange={(e) => setAiBackgroundImageUrl(e.target.value)}
-            placeholder="AI background image URL (optional)"
-            className={inputClassName}
-          />
-        ) : null}
+        <button
+          type="button"
+          className={`${slotCardClassName} md:col-span-2`}
+          onClick={() => setBackgroundStudioOpen(true)}
+        >
+          <p className="text-xs uppercase tracking-[0.13em] text-white/60">Background</p>
+          <div className="mt-2 flex items-center gap-3">
+            <span className="h-10 w-10 rounded-lg border border-white/30" style={(() => {
+              const resolved = resolveOutfitBackgroundForRender(outfitBackgroundConfig);
+              if (resolved.background_mode === 'solid') {
+                return { background: resolved.solid_color || '#111827' };
+              }
+              if (resolved.background_mode === 'gradient') {
+                const stops = resolved.gradient?.stops?.map((stop) => `${stop.color} ${stop.position}%`).join(', ') || '#111827, #1f2937';
+                return { backgroundImage: `linear-gradient(${resolved.gradient?.angle ?? 130}deg, ${stops})` };
+              }
+              return { backgroundImage: `url(${resolved.ai_artwork?.image_url || '/models/model-default.jpeg'})`, backgroundSize: 'cover' };
+            })()} />
+            <div className="text-left">
+              <p className="text-sm font-semibold text-white">Open Studio</p>
+              <p className="text-xs text-white/70">
+                Current mode: {outfitBackgroundConfig.background_mode.replace('_', ' ')}
+              </p>
+            </div>
+          </div>
+        </button>
 
         <label className={`${inputClassName} block cursor-pointer`}>
           <span className="block text-[11px] uppercase tracking-[0.12em] text-white/60">Hero image upload</span>
@@ -820,6 +818,25 @@ export default function CreateMySchemeView() {
 
       {alertMessage ? (
         <SaiModalAlert message={alertMessage} onConfirm={() => setAlertMessage(null)} />
+      ) : null}
+
+      {backgroundStudioOpen ? (
+        <OutfitBackgroundStudioModal
+          value={outfitBackgroundConfig}
+          onClose={() => setBackgroundStudioOpen(false)}
+          onApply={(nextBackgroundConfig) => {
+            setOutfitBackgroundConfig(nextBackgroundConfig);
+            setBackgroundStudioOpen(false);
+          }}
+          outfitMetadata={{
+            style,
+            occasion,
+            palette,
+            mood,
+            brands: selectedBrand?.name ? [selectedBrand.name] : undefined,
+          }}
+          previewCardData={buildGeneratedOutfitCardData()}
+        />
       ) : null}
     </>
   );
