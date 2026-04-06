@@ -9,7 +9,7 @@ import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
 
-type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
+type SchemeWardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
 const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
   upper: ['upper', 'upper piece', 'top', 'tops'],
@@ -18,7 +18,7 @@ const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', strin
   accessory: ['accessory', 'accessories'],
 };
 
-const normalizePieceType = (value: string) => value.trim().toLowerCase();
+const normalizeSchemePieceType = (value: string) => value.trim().toLowerCase();
 
 const DEFAULT_SLOT_SUGGESTIONS: Record<
   'upper' | 'lower' | 'shoes' | 'accessory',
@@ -57,7 +57,7 @@ const SLOT_LAYER_CLASS: Record<'upper' | 'lower' | 'shoes' | 'accessory', string
 };
 
 export default function CreateMySchemeView() {
-  const [items, setItems] = useState<WardrobeItem[]>([]);
+  const [items, setItems] = useState<SchemeWardrobeItem[]>([]);
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
@@ -164,7 +164,7 @@ export default function CreateMySchemeView() {
 
   const optionsByType = (slot: 'upper' | 'lower' | 'shoes' | 'accessory') => {
     const aliases = SLOT_TYPE_ALIASES[slot];
-    return items.filter((item) => aliases.includes(normalizePieceType(item.piece_type)));
+    return items.filter((item) => aliases.includes(normalizeSchemePieceType(item.piece_type)));
   };
 
   return (
