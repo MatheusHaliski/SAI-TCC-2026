@@ -147,7 +147,7 @@ const SLOT_TYPE_ALIASES: Record<SlotKey, string[]> = {
   accessory: ['accessory', 'accessories'],
 };
 
-const normalizePieceType = (value: string) => value.trim().toLowerCase();
+const normalizeSchemePieceType = (value: string) => value.trim().toLowerCase();
 
 const DEFAULT_SLOT_SUGGESTIONS: Record<
   'upper' | 'lower' | 'shoes' | 'accessory',
@@ -403,7 +403,7 @@ export default function CreateMySchemeView() {
 
   const optionsByType = (slot: SlotKey) => {
     const aliases = SLOT_TYPE_ALIASES[slot];
-    return items.filter((item) => aliases.includes(normalizePieceType(item.piece_type)));
+    return items.filter((item) => aliases.includes(normalizeSchemePieceType(item.piece_type)));
   };
 
   const uploadHeroImage = async (file: File) => {
