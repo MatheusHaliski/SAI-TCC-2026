@@ -1,10 +1,29 @@
-import { OutfitPiece, getCategoryFallbackIcon, getPieceTypeFallbackIcon, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
+import { OutfitPiece, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
 import WearstyleChips from '@/app/components/outfit-card/WearstyleChips';
-import { FILTER_GLOW_LINE, GLASS_INPUT, GLOW_LINE, TEXT_GLOW } from '@/app/lib/uiToken';
+import VisualToken from '@/app/components/outfit-card/VisualToken';
+import { FILTER_GLOW_LINE, GLOW_LINE, TEXT_GLOW } from '@/app/lib/uiToken';
 
 interface OutfitPieceCardProps {
   piece: OutfitPiece;
   compact?: boolean;
+}
+
+const PIECE_TYPE_TONES: Record<string, string> = {
+  jacket: 'border-sky-300/45 bg-sky-400/12 text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.22)]',
+  shirt: 'border-cyan-300/45 bg-cyan-400/12 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.22)]',
+  top: 'border-cyan-300/45 bg-cyan-400/12 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.22)]',
+  pants: 'border-indigo-300/45 bg-indigo-400/12 text-indigo-100 shadow-[0_0_18px_rgba(129,140,248,0.24)]',
+  trouser: 'border-indigo-300/45 bg-indigo-400/12 text-indigo-100 shadow-[0_0_18px_rgba(129,140,248,0.24)]',
+  footwear: 'border-fuchsia-300/45 bg-fuchsia-400/12 text-fuchsia-100 shadow-[0_0_18px_rgba(217,70,239,0.24)]',
+  shoes: 'border-fuchsia-300/45 bg-fuchsia-400/12 text-fuchsia-100 shadow-[0_0_18px_rgba(217,70,239,0.24)]',
+  accessory: 'border-amber-300/45 bg-amber-400/12 text-amber-100 shadow-[0_0_18px_rgba(251,191,36,0.24)]',
+};
+
+function getPieceTypeTone(pieceType?: string) {
+  if (!pieceType?.trim()) return 'border-white/25 bg-white/10 text-white/90 shadow-[0_0_14px_rgba(148,163,184,0.2)]';
+  const normalized = pieceType.trim().toLowerCase();
+  const matched = Object.keys(PIECE_TYPE_TONES).find((key) => normalized.includes(key));
+  return matched ? PIECE_TYPE_TONES[matched] : 'border-white/25 bg-white/10 text-white/90 shadow-[0_0_14px_rgba(148,163,184,0.2)]';
 }
 
 export default function OutfitPieceCard({ piece, compact = false }: OutfitPieceCardProps) {
@@ -13,14 +32,7 @@ export default function OutfitPieceCard({ piece, compact = false }: OutfitPieceC
   const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
   const categoryLabel = piece.category ?? 'Standard';
   const pieceTypeLabel = piece.pieceType || 'Garment';
-  const glassInputSurface = GLASS_INPUT.replace('h-12 w-full', '').trim();
-
-  const rarityBadgeStyles: Record<typeof categoryLabel, string> = {
-    Premium: 'border-amber-300/40 bg-amber-400/15 text-amber-100 shadow-[0_0_20px_rgba(251,191,36,0.22)]',
-    Standard: 'border-slate-200/35 bg-white/10 text-white/90 shadow-[0_0_15px_rgba(148,163,184,0.20)]',
-    'Limited Edition': 'border-violet-300/45 bg-violet-400/15 text-violet-100 shadow-[0_0_20px_rgba(167,139,250,0.24)]',
-    Rare: 'border-cyan-300/45 bg-cyan-400/15 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.24)]',
-  };
+  const pieceTypeMonogram = pieceTypeLabel.slice(0, 2).toUpperCase();
 
   return (
     <article
@@ -31,11 +43,18 @@ export default function OutfitPieceCard({ piece, compact = false }: OutfitPieceC
 
       <div className="relative z-[1] space-y-3">
         <div className="flex items-start justify-between gap-3">
-          <p className={`truncate pr-1 text-sm font-semibold ${TEXT_GLOW}`}>
-            <span aria-hidden>{getPieceTypeFallbackIcon(piece.pieceType)} </span>
-            {pieceName}
-          </p>
-          <span className={`relative inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-100 ${FILTER_GLOW_LINE}`}>
+          <div className="min-w-0 flex items-center gap-2">
+            <span
+              className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-[10px] font-bold tracking-[0.1em] ${getPieceTypeTone(
+                piece.pieceType,
+              )}`}
+              aria-hidden
+            >
+              {pieceTypeMonogram}
+            </span>
+            <p className={`truncate pr-1 text-sm font-semibold ${TEXT_GLOW}`}>{pieceName}</p>
+          </div>
+          <span className={`relative inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${getPieceTypeTone(piece.pieceType)} ${FILTER_GLOW_LINE}`}>
             {pieceTypeLabel}
           </span>
         </div>
@@ -48,18 +67,12 @@ export default function OutfitPieceCard({ piece, compact = false }: OutfitPieceC
             ) : null}
             <p className="truncate text-xs text-white/70">{brandName}</p>
           </div>
-          <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide ${rarityBadgeStyles[categoryLabel]}`}>
-            {categoryLabel}
-          </span>
+          <VisualToken type="rarity" value={categoryLabel} compact />
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <span className={`inline-flex items-center gap-1 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/85 ${glassInputSurface}`}>
-            <span aria-hidden>{getCategoryFallbackIcon(piece.category)}</span>
-            Rarity
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/85">
-            <span aria-hidden>{getPieceTypeFallbackIcon(piece.pieceType)}</span>
+          <VisualToken type="category" value="Piece Type" compact />
+          <span className={`inline-flex items-center rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${getPieceTypeTone(piece.pieceType)}`}>
             {pieceTypeLabel}
           </span>
         </div>
