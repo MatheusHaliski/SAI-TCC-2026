@@ -2,6 +2,9 @@ export const DRESS_TESTER_CATEGORIES = ['top', 'bottom', 'dress', 'shoes', 'bag'
 
 export type DressTesterCategory = (typeof DRESS_TESTER_CATEGORIES)[number];
 
+export const DRESS_TESTER_GENDERS = ['female', 'male'] as const;
+export type DressTesterGender = (typeof DRESS_TESTER_GENDERS)[number];
+
 export type PieceAssetStatus = 'draft' | 'asset_pending' | 'asset_review' | 'ready_for_tester' | 'published';
 
 export interface PieceAnchor2D {
@@ -34,6 +37,7 @@ export interface WardrobePiece2D {
   piece_id: string;
   name: string;
   brand_id: string;
+  brand?: string;
   market_id: string;
   piece_type: DressTesterCategory;
   category_tier: string;
@@ -46,7 +50,10 @@ export interface WardrobePiece2D {
   hides_piece_types: DressTesterCategory[];
   conflicts_with: string[];
   compatible_piece_types: DressTesterCategory[];
+  compatible_gender?: DressTesterGender[];
   anchor: PieceAnchor2D;
+  anchor_points?: Record<string, PieceAnchor2D>;
+  scale_adjustment?: number;
   wearstyles: string[];
   colors: string[];
   materials: string[];

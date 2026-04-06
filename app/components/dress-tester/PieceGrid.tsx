@@ -31,7 +31,11 @@ export default function PieceGrid({ pieces, selectedPieceId, onSelect }: PieceGr
               <Image src={piece.thumbnail_url || piece.image_url} alt={piece.name} fill className="object-cover" />
             </div>
             <p className="text-sm font-semibold text-white">{piece.name}</p>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/60">Layer {piece.render_layer}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/60">{piece.brand ?? piece.brand_id}</p>
+            <div className="mt-1 flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/50">{piece.piece_type}</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/50">Layer {piece.render_layer}</p>
+            </div>
           </button>
         );
       })}

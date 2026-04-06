@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
       piece_id: ref.id,
       name: String(body.name),
       brand_id: String(body.brand_id ?? 'brand_1'),
+      brand: String(body.brand ?? body.brand_id ?? 'brand_1'),
       market_id: String(body.market_id ?? 'market_1'),
       piece_type: pieceType,
       category_tier: String(body.category_tier ?? 'premium'),
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
       hides_piece_types: Array.isArray(body.hides_piece_types) ? body.hides_piece_types.map((item: unknown) => String(item)) : [],
       conflicts_with: Array.isArray(body.conflicts_with) ? body.conflicts_with.map((item: unknown) => String(item)) : [],
       compatible_piece_types: Array.isArray(body.compatible_piece_types) ? body.compatible_piece_types.map((item: unknown) => String(item)) : [],
+      compatible_gender: Array.isArray(body.compatible_gender) ? body.compatible_gender.map((item: unknown) => String(item)) : [],
       anchor: body.anchor && typeof body.anchor === 'object'
         ? {
             x: Number((body.anchor as { x?: number }).x ?? 0),
@@ -37,6 +39,7 @@ export async function POST(request: NextRequest) {
             scale: Number((body.anchor as { scale?: number }).scale ?? 1),
           }
         : { x: 0, y: 0, scale: 1 },
+      scale_adjustment: Number(body.scale_adjustment ?? 1),
       wearstyles: Array.isArray(body.wearstyles) ? body.wearstyles.map((item: unknown) => String(item)) : [],
       colors: Array.isArray(body.colors) ? body.colors.map((item: unknown) => String(item)) : [],
       materials: Array.isArray(body.materials) ? body.materials.map((item: unknown) => String(item)) : [],
