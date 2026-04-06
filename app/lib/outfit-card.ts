@@ -16,12 +16,40 @@ export type OutfitMetaBadge = {
   icon?: string;
 };
 
+export type OutfitBackgroundMode = 'solid' | 'gradient' | 'ai_artwork';
+export type OutfitGradientType = 'linear' | 'radial' | 'conic';
+
+export type OutfitBackgroundConfig = {
+  background_mode: OutfitBackgroundMode;
+  solid_color?: string;
+  opacity?: number;
+  gradient?: {
+    type: OutfitGradientType;
+    angle?: number;
+    intensity?: number;
+    stops: Array<{
+      color: string;
+      position: number;
+    }>;
+  };
+  ai_artwork?: {
+    prompt: string;
+    style?: string;
+    mood?: string;
+    palette?: string;
+    image_url?: string;
+    generation_status?: 'idle' | 'loading' | 'done' | 'failed';
+  };
+  texture_overlay?: boolean;
+  shape?: 'none' | 'orb' | 'diamond' | 'mesh';
+};
+
 export type OutfitCardData = {
   outfitName: string;
   outfitStyleLine: string;
   outfitDescription?: string;
   heroImageUrl: string;
-  outfitBackground?: {
+  outfitBackground?: OutfitBackgroundConfig | {
     type: 'solid' | 'gradient' | 'image';
     value: string;
     shape?: 'none' | 'orb' | 'diamond' | 'mesh';
@@ -30,6 +58,94 @@ export type OutfitCardData = {
   brands?: string[];
   pieces: OutfitPiece[];
 };
+
+const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {
+  background_mode: 'gradient',
+  gradient: {
+    type: 'linear',
+    angle: 180,
+    intensity: 100,
+    stops: [
+      { color: '#f8fafc', position: 0 },
+      { color: '#ffffff', position: 100 },
+    ],
+  },
+  shape: 'none',
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+export function resolveOutfitBackgroundForRender(input?: OutfitCardData['outfitBackground']) {
+  if (!input) return FALLBACK_BACKGROUND;
+  if ('background_mode' in input) return input;
+
+  if (input.type === 'solid') {
+    return { background_mode: 'solid', solid_color: input.value, shape: input.shape };
+  }
+
+  if (input.type === 'gradient') {
+    return {
+      background_mode: 'gradient',
+      gradient: {
+        type: 'linear',
+        angle: 140,
+        intensity: 100,
+        stops: [
+          { color: '#0f172a', position: 0 },
+          { color: '#334155', position: 100 },
+        ],
+      },
+      shape: input.shape,
+    } as OutfitBackgroundConfig;
+  }
+
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: 'Legacy imported background',
+      image_url: input.value,
+      generation_status: 'done',
+    },
+    shape: input.shape,
+  };
+}
+
+export function buildBackgroundCssStyle(background: OutfitBackgroundConfig) {
+  if (background.background_mode === 'solid') {
+    return { background: background.solid_color || '#111827' };
+  }
+
+  if (background.background_mode === 'gradient' && background.gradient?.stops?.length) {
+    const stops = background.gradient.stops
+      .slice(0, 3)
+      .map((stop) => `${stop.color} ${clamp(stop.position, 0, 100)}%`)
+      .join(', ');
+    const gradientType = background.gradient.type || 'linear';
+    const intensity = clamp(background.gradient.intensity ?? 100, 20, 120) / 100;
+
+    const gradientValue =
+      gradientType === 'radial'
+        ? `radial-gradient(circle at center, ${stops})`
+        : gradientType === 'conic'
+          ? `conic-gradient(from ${background.gradient.angle ?? 180}deg at 50% 50%, ${stops})`
+          : `linear-gradient(${background.gradient.angle ?? 135}deg, ${stops})`;
+
+    return {
+      backgroundImage: gradientValue,
+      filter: `saturate(${intensity})`,
+    };
+  }
+
+  if (background.background_mode === 'ai_artwork' && background.ai_artwork?.image_url) {
+    return {
+      backgroundImage: `url(${background.ai_artwork.image_url})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    };
+  }
+
+  return { background: '#111827' };
+}
 
 const CATEGORY_STYLES: Record<PieceCategory, string> = {
   Premium: 'border-amber-300/40 bg-amber-100 text-amber-900',
