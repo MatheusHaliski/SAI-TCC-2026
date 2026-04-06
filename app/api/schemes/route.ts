@@ -25,6 +25,19 @@ export async function POST(request: NextRequest) {
     const normalized = {
       ...body,
       user_id: resolvedUserId,
+      pieces: Array.isArray(body.pieces)
+        ? body.pieces.map((piece: Record<string, unknown>) => ({
+            ...piece,
+            id: String(piece.id),
+            sourceId: String(piece.sourceId),
+            name: String(piece.name),
+            brand: String(piece.brand),
+            pieceType: String(piece.pieceType),
+            wearstyles: Array.isArray(piece.wearstyles)
+              ? piece.wearstyles.map((wearstyle) => String(wearstyle))
+              : [],
+          }))
+        : [],
       items: Array.isArray(body.items)
         ? body.items.map((item: Record<string, unknown>) => ({
             ...item,

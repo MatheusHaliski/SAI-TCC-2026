@@ -1,0 +1,166 @@
+export type PieceCategory = 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
+
+export type OutfitPiece = {
+  id: string;
+  name: string;
+  brand: string;
+  brandLogoUrl?: string;
+  pieceType: string;
+  pieceTypeIconUrl?: string;
+  category?: PieceCategory;
+  wearstyles?: string[];
+};
+
+export type OutfitCardData = {
+  outfitName: string;
+  outfitStyleLine: string;
+  outfitDescription?: string;
+  heroImageUrl: string;
+  outfitBackground?: {
+    type: 'solid' | 'gradient' | 'image';
+    value: string;
+    shape?: 'none' | 'orb' | 'diamond' | 'mesh';
+  };
+  pieces: OutfitPiece[];
+};
+
+const CATEGORY_STYLES: Record<PieceCategory, string> = {
+  Premium: 'border-amber-300/40 bg-amber-100 text-amber-900',
+  Standard: 'border-slate-300/40 bg-slate-200 text-slate-800',
+  'Limited Edition': 'border-violet-300/40 bg-violet-100 text-violet-900',
+  Rare: 'border-cyan-300/40 bg-cyan-100 text-cyan-900',
+};
+
+const PIECE_TYPE_FALLBACK_ICON: Record<string, string> = {
+  jacket: '🧥',
+  shirt: '👕',
+  top: '👕',
+  pants: '👖',
+  trouser: '👖',
+  bottoms: '👖',
+  shoes: '👟',
+  footwear: '👟',
+  accessory: '👜',
+  bag: '👜',
+  watch: '⌚',
+};
+
+const BRAND_LOGO_BY_NAME: Record<string, string> = {
+  adidas: '/adidas.png',
+  nike: '/nike.png',
+  zara: '/zara.jpg',
+  puma: '/puma.jpg',
+  lacoste: '/lacoste.jpg',
+  levis: '/levis.jpg',
+  'c&a': '/cea.jpg',
+  cea: '/cea.jpg',
+};
+
+const DESCRIPTION_FALLBACKS = [
+  'Balanced outfit with clean visual composition.',
+  'Strong style identity with curated piece selection.',
+  'Clean structure with a clear visual anchor.',
+];
+
+const CATEGORY_FALLBACK_ICON: Record<PieceCategory, string> = {
+  Premium: '💎',
+  Standard: '✨',
+  'Limited Edition': '🪄',
+  Rare: '⭐',
+};
+
+export function getCategoryBadgeStyle(category?: PieceCategory) {
+  return CATEGORY_STYLES[category ?? 'Standard'];
+}
+
+export function normalizeWearstyles(wearstyles?: string[]) {
+  if (!wearstyles?.length) return [];
+  return wearstyles.filter(Boolean).slice(0, 3);
+}
+
+const PIECE_TYPE_WEARSTYLE_FALLBACKS: Array<{ matchers: string[]; wearstyles: string[] }> = [
+  { matchers: ['jacket', 'coat', 'blazer'], wearstyles: ['Statement Piece', 'Visual Anchor'] },
+  { matchers: ['hoodie', 'sweatshirt', 'sweater'], wearstyles: ['Street Core', 'Balanced Fit'] },
+  { matchers: ['shirt', 'tee', 'top', 'blouse'], wearstyles: ['Visual Anchor', 'Balanced Fit'] },
+  { matchers: ['dress'], wearstyles: ['Visual Highlight', 'Statement Piece'] },
+  { matchers: ['pants', 'trouser', 'jeans', 'skirt', 'shorts', 'lower', 'bottom'], wearstyles: ['Base Structure', 'Balanced Fit'] },
+  { matchers: ['shoes', 'shoe', 'footwear', 'boots', 'sneakers', 'heels', 'loafers'], wearstyles: ['Trend Driver', 'Street Energy'] },
+  { matchers: ['accessory', 'bag', 'watch', 'belt', 'hat', 'jewelry', 'jewellery'], wearstyles: ['Style Accent', 'Attention Grabber'] },
+];
+
+export function inferWearstylesByPieceType(pieceType?: string) {
+  const normalizedType = pieceType?.trim().toLowerCase() ?? '';
+  if (!normalizedType) return ['Style Accent'];
+
+  const matchedFallback = PIECE_TYPE_WEARSTYLE_FALLBACKS.find(({ matchers }) =>
+    matchers.some((matcher) => normalizedType.includes(matcher)),
+  );
+
+  return matchedFallback?.wearstyles ?? ['Style Accent'];
+}
+
+const WEARSTYLE_ICON_FILE_MAP: Record<string, string> = {
+  'statement piece': '/statementpiece.png',
+  'street core': '/streetcore.png',
+  'visual anchor': '/visualanchor.png',
+  'base structure': '/basestructure.png',
+  'balanced fit': '/balancedfit.png',
+  'trend driver': '/trenddriver.png',
+  'street energy': '/streetenergy.png',
+  'visual highlight': '/visualhighlight.png',
+  'style accent': '/styleaccent.png',
+  'attention grabber': '/attentiongrabber.png',
+};
+
+export function getWearstyleIconPath(wearstyle: string) {
+  const mapped = WEARSTYLE_ICON_FILE_MAP[wearstyle.trim().toLowerCase()];
+  if (mapped) return mapped;
+
+  const normalizedFileName = wearstyle
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+
+  return `/${normalizedFileName}.png`;
+}
+
+export function getDefaultWearstyleIconDataUri() {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'><rect x='1.5' y='1.5' width='15' height='15' rx='4' fill='#EEF2FF' stroke='#CBD5E1'/><circle cx='9' cy='9' r='3.25' fill='#6366F1'/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+export function getPieceTypeFallbackIcon(pieceType?: string) {
+  if (!pieceType) return '👗';
+  const normalized = pieceType.trim().toLowerCase();
+  const matchedKey = Object.keys(PIECE_TYPE_FALLBACK_ICON).find((key) => normalized.includes(key));
+  return matchedKey ? PIECE_TYPE_FALLBACK_ICON[matchedKey] : '👗';
+}
+
+export function getCategoryFallbackIcon(category?: PieceCategory) {
+  return CATEGORY_FALLBACK_ICON[category ?? 'Standard'];
+}
+
+export function resolveBrandLogoUrlByName(brandName?: string) {
+  if (!brandName?.trim()) return null;
+  const normalizedName = brandName.trim().toLowerCase();
+  const compactName = normalizedName.replace(/[^a-z0-9&]/g, '');
+  return BRAND_LOGO_BY_NAME[normalizedName] ?? BRAND_LOGO_BY_NAME[compactName] ?? null;
+}
+
+export function buildOutfitDescriptionFallback(input: {
+  pieces: OutfitPiece[];
+  outfitStyleLine?: string;
+}) {
+  const firstPiece = input.pieces[0];
+  const dominantWearstyle = normalizeWearstyles(firstPiece?.wearstyles)[0];
+
+  if (dominantWearstyle && firstPiece?.name) {
+    return `${firstPiece.name} leads this composition with ${dominantWearstyle.toLowerCase()} influence.`;
+  }
+
+  if (input.outfitStyleLine) {
+    return `Curated ${input.outfitStyleLine.toLowerCase()} direction with cohesive piece harmony.`;
+  }
+
+  return DESCRIPTION_FALLBACKS[0];
+}
