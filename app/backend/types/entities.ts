@@ -288,3 +288,43 @@ export interface OutfitSelection2D {
   created_at: string;
   updated_at: string;
 }
+
+export type UserPostStatus = 'draft' | 'ready' | 'exported' | 'published' | 'failed';
+export type OutfitExportStatus = 'queued' | 'ready' | 'downloaded' | 'published' | 'failed';
+export type SocialPlatform = 'instagram' | 'facebook' | 'x' | 'internal';
+
+export interface UserPost {
+  post_id: EntityId;
+  user_id: EntityId;
+  outfit_id: EntityId;
+  scheme_id?: EntityId;
+  title: string;
+  caption: string;
+  platforms: SocialPlatform[];
+  primary_platform: SocialPlatform;
+  status: UserPostStatus;
+  preview_image_url: string;
+  export_image_url?: string;
+  visibility: 'public' | 'private';
+  platform_metadata?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  published_at?: string;
+}
+
+export interface OutfitExport {
+  export_id: EntityId;
+  user_id: EntityId;
+  outfit_id: EntityId;
+  scheme_id?: EntityId;
+  platform: SocialPlatform;
+  format: 'square' | 'portrait' | 'story';
+  export_mode: 'image_only' | 'image_with_caption';
+  caption: string;
+  asset_url: string;
+  thumbnail_url: string;
+  status: OutfitExportStatus;
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+}

@@ -1,13 +1,20 @@
 import OutfitHeroImage from '@/app/components/outfit-card/OutfitHeroImage';
 import OutfitHeader from '@/app/components/outfit-card/OutfitHeader';
 import OutfitPieceList from '@/app/components/outfit-card/OutfitPieceList';
+import CompactCardActionBar from '@/app/components/profile/CompactCardActionBar';
 import { OutfitCardData, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
 
 interface GeneratedOutfitCardProps {
   data: OutfitCardData;
+  variant?: 'default' | 'compact';
+  actions?: Array<{
+    label: string;
+    onClick?: () => void;
+    tone?: 'default' | 'danger' | 'accent';
+  }>;
 }
 
-export default function OutfitCard({ data }: GeneratedOutfitCardProps) {
+export default function OutfitCard({ data, variant = 'default', actions = [] }: GeneratedOutfitCardProps) {
   const description =
     data.outfitDescription === undefined
       ? buildOutfitDescriptionFallback({
@@ -44,21 +51,23 @@ export default function OutfitCard({ data }: GeneratedOutfitCardProps) {
 
   return (
     <section
-      className="relative space-y-4 overflow-hidden rounded-3xl border border-slate-200/70 p-4 shadow-[0_12px_45px_rgba(15,23,42,0.08)] sm:p-6"
+      className={`relative overflow-hidden rounded-3xl border border-slate-200/70 shadow-[0_12px_45px_rgba(15,23,42,0.08)] ${variant === 'compact' ? 'space-y-3 p-3' : 'space-y-4 p-4 sm:p-6'}`}
       style={backgroundStyle}
     >
       {shapeOverlayClassName ? (
         <div aria-hidden className={`pointer-events-none absolute inset-0 opacity-95 ${shapeOverlayClassName}`} />
       ) : null}
-      <div className="relative z-[1] space-y-4">
-        <OutfitHeroImage src={data.heroImageUrl} alt={`${data.outfitName} hero preview`} />
+      <div className={`relative z-[1] ${variant === 'compact' ? 'space-y-3' : 'space-y-4'}`}>
+        <OutfitHeroImage src={data.heroImageUrl} alt={`${data.outfitName} hero preview`} className={variant === 'compact' ? 'h-32 rounded-2xl' : ''} />
         <OutfitHeader
           outfitName={data.outfitName}
           outfitStyleLine={data.outfitStyleLine}
           description={description}
           badges={data.metaBadges}
+          compact={variant === 'compact'}
         />
-        <OutfitPieceList pieces={data.pieces} />
+        <OutfitPieceList pieces={data.pieces} compact={variant === 'compact'} />
+        {actions.length ? <CompactCardActionBar actions={actions} /> : null}
       </div>
     </section>
   );

@@ -9,6 +9,9 @@
 - `sai-wardrobeItems`
 - `sai-schemes`
 
+- `sai-userPosts`
+- `sai-outfitExports`
+
 ## Subcollection
 - `sai-schemes/{schemeId}/items`
 
@@ -48,3 +51,9 @@ All relationship integrity is validated in the Service layer before writes.
 - `wardrobe_piece_2d.render_layer` controls ordering (ascending).
 - `wardrobe_piece_2d.hides_piece_types` applies category-level hiding (e.g. dress hides top + bottom).
 - `wardrobe_piece_2d.conflicts_with` blocks incompatible piece IDs.
+
+
+## Social publishing / export collections
+- `sai-userPosts` stores publication lifecycle per outfit card (draft, ready, exported, published, failed).
+- `sai-outfitExports` stores each export operation with platform + format metadata and generated asset URL.
+- Recommended scheme extension fields: `is_published`, `published_platforms`, `export_count`, `last_exported_at`, `social_ready_asset_url`.

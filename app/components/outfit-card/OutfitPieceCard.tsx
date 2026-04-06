@@ -4,9 +4,10 @@ import { FILTER_GLOW_LINE, GLASS_INPUT, GLOW_LINE, TEXT_GLOW } from '@/app/lib/u
 
 interface OutfitPieceCardProps {
   piece: OutfitPiece;
+  compact?: boolean;
 }
 
-export default function OutfitPieceCard({ piece }: OutfitPieceCardProps) {
+export default function OutfitPieceCard({ piece, compact = false }: OutfitPieceCardProps) {
   const pieceName = piece.name?.trim() || 'Unnamed Piece';
   const brandName = piece.brand?.trim() || 'Brand not specified';
   const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
@@ -23,7 +24,7 @@ export default function OutfitPieceCard({ piece }: OutfitPieceCardProps) {
 
   return (
     <article
-      className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-[12px] shadow-[0_8px_28px_rgba(2,6,23,0.32)] transition duration-300 hover:scale-[1.02] hover:border-white/25 hover:shadow-[0_14px_40px_rgba(34,211,238,0.18)] ${FILTER_GLOW_LINE} ${GLOW_LINE}`}
+      className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] ${compact ? 'p-3' : 'p-4'} backdrop-blur-[12px] shadow-[0_8px_28px_rgba(2,6,23,0.32)] transition duration-300 hover:scale-[1.02] hover:border-white/25 hover:shadow-[0_14px_40px_rgba(34,211,238,0.18)] ${FILTER_GLOW_LINE} ${GLOW_LINE}`}
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(130deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0)_45%,rgba(56,189,248,0.08)_100%)] opacity-70" />
       <div aria-hidden className="pointer-events-none absolute inset-[1px] rounded-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_0_35px_rgba(59,130,246,0.06)]" />
@@ -63,7 +64,7 @@ export default function OutfitPieceCard({ piece }: OutfitPieceCardProps) {
           </span>
         </div>
 
-        <WearstyleChips wearstyles={piece.wearstyles} pieceType={piece.pieceType} />
+        {!compact ? <WearstyleChips wearstyles={piece.wearstyles} pieceType={piece.pieceType} /> : null}
       </div>
     </article>
   );
