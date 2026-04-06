@@ -7,7 +7,16 @@ import CategorySelector from '@/app/components/dress-tester/CategorySelector';
 import MannequinStage from '@/app/components/dress-tester/MannequinStage';
 import PieceGrid from '@/app/components/dress-tester/PieceGrid';
 import AdminAssetStudio from '@/app/components/dress-tester/AdminAssetStudio';
-import { createEmptySelection, DRESS_TESTER_CATEGORIES, Mannequin2D, WardrobePiece2D } from '@/app/lib/dress-tester-models';
+import MannequinSelector from '@/app/components/dress-tester/MannequinSelector';
+import CurrentLookPanel from '@/app/components/dress-tester/CurrentLookPanel';
+import {
+  createEmptySelection,
+  DRESS_TESTER_CATEGORIES,
+  DressTesterCategory,
+  DressTesterGender,
+  Mannequin2D,
+  WardrobePiece2D,
+} from '@/app/lib/dress-tester-models';
 import { useOutfitStateManager } from '@/app/hooks/useOutfitStateManager';
 
 interface BootstrapPayload {
@@ -21,8 +30,15 @@ export default function DressTesterView() {
   const [pieces, setPieces] = useState<WardrobePiece2D[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [selectedGender, setSelectedGender] = useState<DressTesterGender>('female');
+  const [selectedMannequinId, setSelectedMannequinId] = useState<string | null>(null);
+  const [resetOnSwitch, setResetOnSwitch] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
 
-  const mannequin = useMemo(() => mannequins.find((item) => item.active) ?? mannequins[0] ?? null, [mannequins]);
+  const mannequin = useMemo(
+    () => mannequins.find((item) => item.mannequin_id === selectedMannequinId) ?? mannequins.find((item) => item.gender === selectedGender) ?? mannequins[0] ?? null,
+    [mannequins, selectedGender, selectedMannequinId],
+  );
 
   const refreshData = useCallback(async () => {
     setLoading(true);
@@ -73,17 +89,47 @@ export default function DressTesterView() {
     setMessage(response.ok ? 'Outfit saved.' : 'Unable to save outfit.');
   };
 
+  const selectedPiecesByCategory = useMemo(
+    () =>
+      DRESS_TESTER_CATEGORIES.reduce<Partial<Record<DressTesterCategory, WardrobePiece2D>>>((acc, category) => {
+        const selectedId = selection[category];
+        if (!selectedId) return acc;
+        const piece = selectedPieces.find((item) => item.piece_id === selectedId);
+        if (piece) acc[category] = piece;
+        return acc;
+      }, {}),
+    [selection, selectedPieces],
+  );
+
   if (loading) {
     return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Loading dress tester...</div>;
   }
 
   if (!mannequin) {
-    return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">No mannequin configured yet.</div>;
+    return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Select a mannequin to start.</div>;
   }
 
   return (
     <div className="space-y-4 pb-72 xl:pb-0">
       <PageHeader title="Dress Tester" subtitle="Premium 2D mannequin layering studio" />
+
+      <SectionBlock title="Mannequin Selector" subtitle="Choose your base model and pose before styling">
+        <MannequinSelector
+          mannequins={mannequins}
+          selectedMannequinId={mannequin.mannequin_id}
+          selectedGender={selectedGender}
+          resetOnSwitch={resetOnSwitch}
+          onGenderChange={setSelectedGender}
+          onSelectMannequin={(item) => {
+            setSelectedGender(item.gender as DressTesterGender);
+            setSelectedMannequinId(item.mannequin_id);
+            if (resetOnSwitch) {
+              resetLook(item);
+            }
+          }}
+          onToggleReset={() => setResetOnSwitch((prev) => !prev)}
+        />
+      </SectionBlock>
 
       <div className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)_360px]">
         <SectionBlock title="Categories" subtitle="Tap to style instantly" className="h-fit">
@@ -98,30 +144,28 @@ export default function DressTesterView() {
             <button onClick={saveOutfit} disabled={saving} className="rounded-xl border border-white bg-white px-3 py-2 text-xs uppercase tracking-[0.2em] text-black disabled:opacity-60">
               {saving ? 'Saving...' : 'Save outfit'}
             </button>
+            <button onClick={() => setMessage('Layers already arranged from render_layer metadata.')} className="rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white">
+              Auto arrange layers
+            </button>
+            <button onClick={() => setShowGrid((prev) => !prev)} className="rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white">
+              Toggle fit preview grid
+            </button>
           </div>
           {message ? <p className="mt-3 text-xs text-white/70">{message}</p> : null}
         </SectionBlock>
 
-        <SectionBlock title="Editorial Mannequin" subtitle="Layered transparent PNG renderer">
-          <MannequinStage mannequin={mannequin} layers={resolvedLayers} />
+        <SectionBlock title={mannequin.name} subtitle="Layered transparent PNG renderer">
+          <MannequinStage mannequin={mannequin} layers={resolvedLayers} showGrid={showGrid} highlightedType={activeCategory} />
         </SectionBlock>
 
-        <SectionBlock title="Pieces" subtitle={`Category: ${activeCategory}`} className="hidden xl:block">
-          <PieceGrid pieces={availablePieces} selectedPieceId={selection[activeCategory]} onSelect={wearPiece} />
-          <div className="mt-4 rounded-xl border border-white/20 bg-black/25 p-3">
-            <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/60">Current look summary</p>
-            <ul className="space-y-1 text-sm text-white/85">
-              {DRESS_TESTER_CATEGORIES.map((category) => {
-                const pieceId = selection[category];
-                const selectedPiece = selectedPieces.find((piece) => piece.piece_id === pieceId);
-                return <li key={category}>{category}: {selectedPiece?.name ?? '—'}</li>;
-              })}
-            </ul>
-          </div>
+        <SectionBlock title="Current Look" subtitle="Interactive slot management" className="hidden xl:block">
+          <CurrentLookPanel selectedPiecesByCategory={selectedPiecesByCategory} onRemove={removeFromCategory} />
         </SectionBlock>
       </div>
 
-
+      <SectionBlock title="Your Wardrobe" subtitle={`Category: ${activeCategory}`}>
+        <PieceGrid pieces={availablePieces} selectedPieceId={selection[activeCategory]} onSelect={wearPiece} />
+      </SectionBlock>
 
       <div className="fixed inset-x-2 bottom-2 z-40 rounded-2xl border border-white/25 bg-black/85 p-3 shadow-2xl xl:hidden">
         <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/60">{activeCategory} pieces</p>

@@ -19,6 +19,11 @@ interface UseOutfitStateManagerArgs {
 const hasConflict = (piece: WardrobePiece2D, selectedIds: Set<string>) =>
   piece.conflicts_with.some((conflictingId) => selectedIds.has(conflictingId));
 
+const getPieceCategoryForRemoval = (category: DressTesterCategory): DressTesterCategory[] => {
+  if (category === 'bag' || category === 'accessory') return ['bag', 'accessory'];
+  return [category];
+};
+
 export function useOutfitStateManager({ mannequin, pieces }: UseOutfitStateManagerArgs) {
   const [selection, setSelection] = useState<OutfitSelection>(() =>
     createEmptySelection(mannequin?.mannequin_id ?? '', mannequin?.pose_code ?? ''),
@@ -28,12 +33,24 @@ export function useOutfitStateManager({ mannequin, pieces }: UseOutfitStateManag
 
   const piecesById = useMemo(() => new Map(pieces.map((piece) => [piece.piece_id, piece])), [pieces]);
 
-  const resetLook = () => {
-    setSelection(createEmptySelection(mannequin?.mannequin_id ?? '', mannequin?.pose_code ?? ''));
+  const resetLook = (mannequinOverride?: Pick<Mannequin2D, 'mannequin_id' | 'pose_code'> | null) => {
+    setSelection(
+      createEmptySelection(
+        mannequinOverride?.mannequin_id ?? mannequin?.mannequin_id ?? '',
+        mannequinOverride?.pose_code ?? mannequin?.pose_code ?? '',
+      ),
+    );
   };
 
   const removeFromCategory = (category: DressTesterCategory) => {
-    setSelection((prev) => ({ ...prev, [category]: null }));
+    const categoriesToClear = getPieceCategoryForRemoval(category);
+    setSelection((prev) => {
+      const next = { ...prev };
+      categoriesToClear.forEach((item) => {
+        next[item] = null;
+      });
+      return next;
+    });
   };
 
   const wearPiece = (piece: WardrobePiece2D) => {
@@ -52,6 +69,14 @@ export function useOutfitStateManager({ mannequin, pieces }: UseOutfitStateManag
 
       if (piece.piece_type === 'top' || piece.piece_type === 'bottom') {
         next.dress = null;
+      }
+
+      if (piece.piece_type === 'bag') {
+        next.accessory = null;
+      }
+
+      if (piece.piece_type === 'accessory') {
+        next.bag = null;
       }
 
       for (const hiddenCategory of piece.hides_piece_types) {
@@ -104,20 +129,31 @@ export function useOutfitStateManager({ mannequin, pieces }: UseOutfitStateManag
         piece_type: piece.piece_type,
         image_url: piece.image_url,
         render_layer: piece.render_layer,
-        anchor: piece.anchor,
+        anchor: {
+          ...piece.anchor,
+          scale: piece.scale_adjustment ?? piece.anchor.scale,
+        },
         name: piece.name,
       }));
   }, [selectedPieces]);
 
   const availablePieces = useMemo(
     () =>
-      pieces.filter(
-        (piece) =>
+      pieces.filter((piece) => {
+        const genderCompatible =
+          !piece.compatible_gender?.length || !mannequin?.gender || piece.compatible_gender.includes(mannequin.gender as 'female' | 'male');
+
+        const mannequinCompatible = !piece.mannequin_type || piece.mannequin_type === mannequin?.body_type || piece.gender === mannequin?.gender;
+
+        return (
           piece.piece_type === activeCategory &&
           piece.active &&
-          (piece.asset_status === 'ready_for_tester' || piece.asset_status === 'published'),
-      ),
-    [activeCategory, pieces],
+          genderCompatible &&
+          mannequinCompatible &&
+          (piece.asset_status === 'ready_for_tester' || piece.asset_status === 'published')
+        );
+      }),
+    [activeCategory, mannequin, pieces],
   );
 
   return {

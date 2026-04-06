@@ -6,12 +6,24 @@ import { Mannequin2D, ResolvedLayer } from '@/app/lib/dress-tester-models';
 interface MannequinStageProps {
   mannequin: Mannequin2D;
   layers: ResolvedLayer[];
+  showGrid?: boolean;
+  highlightedType?: string;
 }
 
-export default function MannequinStage({ mannequin, layers }: MannequinStageProps) {
+export default function MannequinStage({ mannequin, layers, showGrid = false, highlightedType }: MannequinStageProps) {
   return (
     <div className="rounded-3xl border border-white/20 bg-gradient-to-b from-white/10 to-black/30 p-4 shadow-[0_30px_90px_rgba(0,0,0,0.45)]">
       <div className="relative mx-auto w-full max-w-[580px] overflow-hidden rounded-2xl bg-black/40" style={{ aspectRatio: `${mannequin.canvas_width}/${mannequin.canvas_height}` }}>
+        {showGrid ? (
+          <div
+            className="pointer-events-none absolute inset-0 z-[2] opacity-20"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.6) 1px, transparent 1px)',
+              backgroundSize: '48px 48px',
+            }}
+          />
+        ) : null}
         {mannequin.shadow_image_url ? (
           <Image src={mannequin.shadow_image_url} alt="mannequin shadow" fill className="pointer-events-none absolute inset-0 object-contain opacity-90" />
         ) : null}
@@ -26,7 +38,9 @@ export default function MannequinStage({ mannequin, layers }: MannequinStageProp
             src={layer.image_url}
             alt={layer.name}
             fill
-            className="absolute inset-0 object-contain opacity-100 transition-opacity duration-300"
+            className={`absolute inset-0 object-contain opacity-100 transition duration-300 ${
+              highlightedType && layer.piece_type === highlightedType ? 'drop-shadow-[0_0_18px_rgba(255,255,255,0.65)]' : ''
+            }`}
             style={{
               transform: `translate(${layer.anchor.x}px, ${layer.anchor.y}px) scale(${layer.anchor.scale})`,
               zIndex: layer.render_layer,
