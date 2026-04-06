@@ -48,13 +48,28 @@ function resolveRunpodBaseUrl(): string {
 
 function normalizeRunpodApiUrl(rawUrl: string): string {
   const trimmed = rawUrl.trim().replace(/\/+$/, '');
-  const lower = trimmed.toLowerCase();
-  const isApiV2Url = lower.includes('api.runpod.ai/v2/');
-  const looksLikeLoadBalancer = lower.includes('.proxy.runpod.net') || lower.includes('/lb/');
 
-  if (looksLikeLoadBalancer && !isApiV2Url) {
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.toLowerCase();
+    const path = parsed.pathname.replace(/\/+$/, '');
+    const segments = path.split('/').filter(Boolean);
+    const isLoadBalancerHost = host.endsWith('.proxy.runpod.net');
+    const usesLoadBalancerPath = segments[0] === 'v2' && segments[1] === 'lb';
+    const looksLikeServerlessApiBase = host === 'api.runpod.ai' && segments[0] === 'v2' && segments.length === 2;
+
+    if (isLoadBalancerHost || usesLoadBalancerPath || !looksLikeServerlessApiBase) {
+      throw new Error(
+        'RunPod API URL must be a serverless endpoint base URL like https://api.runpod.ai/v2/<endpoint-id>. Load-balancer URLs (including /v2/lb/<id> and *.proxy.runpod.net) are not supported.',
+      );
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+
     throw new Error(
-      'RunPod API URL is a load balancer endpoint. Use a serverless API base URL like https://api.runpod.ai/v2/<endpoint-id> or set RUNPOD_ENDPOINT_ID.',
+      'RunPod API URL must be a serverless endpoint base URL like https://api.runpod.ai/v2/<endpoint-id>.',
     );
   }
 
