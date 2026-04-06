@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import os
 import struct
 import threading
@@ -15,10 +16,20 @@ from typing import Any, Literal
 import numpy as np
 import requests
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
 from PIL import Image
+from pydantic import BaseModel, Field
 
-app = FastAPI(title="StylistAI 3D Worker", version="1.0.0")
+# Option A (MVP): this FastAPI mock-3D worker is the only active runtime.
+# Blender-backed files (app.py, worker_entry.py, blender-scripts/uv_unwrap.py)
+# remain in the repository for a future phase and are intentionally not used here.
+
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger("stylistai.worker")
+
+app = FastAPI(title="StylistAI MVP Mock 3D Worker", version="1.1.0")
 
 OUTPUT_DIR = Path(os.getenv("WORKER_OUTPUT_DIR", "/tmp/stylistai-3d-output"))
 OUTPUT_PUBLIC_BASE_URL = os.getenv("OUTPUT_PUBLIC_BASE_URL", "").strip()
@@ -40,6 +51,11 @@ class JobRequest(BaseModel):
     options: dict[str, Any] = Field(default_factory=dict)
 
 
+class JobResponse(BaseModel):
+    jobId: str
+    status: JobState
+
+
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -53,6 +69,7 @@ def register_job(job_id: str, payload: JobRequest) -> None:
             "updatedAt": now_iso(),
             "request": payload.model_dump(),
             "artifacts": {},
+            "metrics": {},
             "error": None,
         }
 
@@ -108,7 +125,7 @@ def write_dummy_glb(output_path: Path, metadata: dict[str, Any]) -> None:
     total_length = 12 + 8 + len(padded_json)
 
     with output_path.open("wb") as glb:
-        glb.write(struct.pack("<III", 0x46546C67, 2, total_length))  # glTF magic, version, length
+        glb.write(struct.pack("<III", 0x46546C67, 2, total_length))
         glb.write(struct.pack("<I4s", len(padded_json), b"JSON"))
         glb.write(padded_json)
 
@@ -121,6 +138,7 @@ def build_artifact_url(output_path: Path, job_id: str) -> str:
 
 
 def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
+    logger.info("job_started jobId=%s jobType=%s", job_id, payload.jobType)
     update_job(job_id, status="in_progress")
     started = time.perf_counter()
     output_path = OUTPUT_DIR / f"{job_id}.glb"
@@ -130,7 +148,9 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
         processed = preprocess_image(original)
         features = image_features(processed)
 
-        time.sleep(1.5)  # Simulate external generation latency (Meshy/Blender/Tripo plug-in point).
+        # Simulate cloud 3D generation latency for MVP integration.
+        time.sleep(1.5)
+
         metadata = {
             "jobType": payload.jobType,
             "sourceImageUrl": payload.imageUrl,
@@ -151,11 +171,17 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
             metrics={"durationMs": duration_ms},
             error=None,
         )
+        logger.info("job_completed jobId=%s durationMs=%s", job_id, duration_ms)
     except Exception as exc:
+        logger.exception("job_failed jobId=%s", job_id)
         update_job(
             job_id,
             status="failed",
-            error={"message": str(exc), "type": exc.__class__.__name__},
+            error={
+                "code": "PROCESSING_ERROR",
+                "message": str(exc),
+                "type": exc.__class__.__name__,
+            },
         )
 
 
@@ -164,25 +190,26 @@ def ping() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/jobs")
+@app.post("/jobs", response_model=JobResponse)
 def create_job(payload: JobRequest) -> dict[str, str]:
     if not payload.imageUrl.strip():
-        raise HTTPException(status_code=400, detail="imageUrl is required")
+        raise HTTPException(status_code=400, detail={"code": "VALIDATION_ERROR", "message": "imageUrl is required"})
 
     job_id = str(uuid.uuid4())
     register_job(job_id, payload)
+    logger.info("job_created jobId=%s jobType=%s", job_id, payload.jobType)
     executor.submit(run_3d_pipeline, job_id, payload)
     return {"jobId": job_id, "status": "queued"}
 
 
-@app.get("/jobs/{job_id}")
-def job_status(job_id: str) -> dict[str, Any]:
-    record = get_job(job_id)
+@app.get("/jobs/{jobId}")
+def job_status(jobId: str) -> dict[str, Any]:
+    record = get_job(jobId)
     if not record:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": "Job not found"})
 
     response: dict[str, Any] = {
-        "jobId": job_id,
+        "jobId": jobId,
         "status": record["status"],
     }
     if record.get("artifacts"):
