@@ -30,3 +30,21 @@
 - `sai-brandLogoCatalog.detection_aliases` is required for image-first brand matching
 
 All relationship integrity is validated in the Service layer before writes.
+
+## Dress tester 2D collections
+- `mannequin_2d`
+- `wardrobe_piece_2d`
+- `outfit_selection_2d`
+
+### 2D asset pipeline lifecycle
+`wardrobe_piece_2d.asset_status`
+- `draft`
+- `asset_pending`
+- `asset_review`
+- `ready_for_tester`
+- `published`
+
+### 2D composition rules
+- `wardrobe_piece_2d.render_layer` controls ordering (ascending).
+- `wardrobe_piece_2d.hides_piece_types` applies category-level hiding (e.g. dress hides top + bottom).
+- `wardrobe_piece_2d.conflicts_with` blocks incompatible piece IDs.
