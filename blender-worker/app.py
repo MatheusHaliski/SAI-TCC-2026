@@ -1,3 +1,8 @@
+"""
+Future Blender worker entrypoint (inactive in MVP Option A).
+Active runtime uses handler.py via uvicorn in Dockerfile.
+"""
+
 from __future__ import annotations
 
 import json
