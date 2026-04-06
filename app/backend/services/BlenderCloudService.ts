@@ -108,7 +108,15 @@ function hasRunpodConfiguration(): boolean {
 }
 
 function isLegacyQueueModeEnabled(): boolean {
-  return process.env.BLENDER_CLOUD_LEGACY_QUEUE_MODE?.trim().toLowerCase() === 'true';
+  const explicit = process.env.BLENDER_CLOUD_LEGACY_QUEUE_MODE?.trim().toLowerCase();
+  if (explicit === 'true') return true;
+  if (explicit === 'false') return false;
+
+  // Auto-detect mode when env is omitted:
+  // - RunPod public API (`https://api.runpod.ai/v2/<endpoint-id>`) requires `/run` + `/status/:id`.
+  // - Custom Load Balancer URLs usually expose worker routes directly (e.g. `/jobs`).
+  const baseUrl = resolveApiBaseUrl().toLowerCase();
+  return baseUrl.includes('api.runpod.ai/v2/');
 }
 
 function validateBlenderCloudConfiguration(config: BlenderCloudConfig): void {
