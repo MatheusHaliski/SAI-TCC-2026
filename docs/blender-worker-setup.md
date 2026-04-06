@@ -26,6 +26,9 @@ BLENDER_CLOUD_API_URL="https://api.runpod.ai/v2/<endpoint-id>" # optional
 BLENDER_CLOUD_API_TOKEN="..."                                  # optional
 ```
 
+> Use only the Serverless API base URL (`https://api.runpod.ai/v2/<endpoint-id>`).  
+> Do not set a load-balancer/proxy URL (`*.proxy.runpod.net`) here, or `/run` requests will fail.
+
 ## Validation
 
 1. Trigger `POST /api/wardrobe-items/generate-uv` with remote `modelUrl`.
