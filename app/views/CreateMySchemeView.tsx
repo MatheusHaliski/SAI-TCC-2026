@@ -9,10 +9,15 @@ import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
+import DescriptionModeSelector from '@/app/components/create-scheme/DescriptionModeSelector';
+import GenerationModePanel from '@/app/components/create-scheme/GenerationModePanel';
+import SaveSummaryPanel from '@/app/components/create-scheme/SaveSummaryPanel';
+import SchemeStepCard from '@/app/components/create-scheme/SchemeStepCard';
+import SlotReviewCard from '@/app/components/create-scheme/SlotReviewCard';
 import {
   OutfitCardData,
   OutfitPiece,
-  buildOutfitDescriptionFallback,
+  buildOutfitDescriptionRich,
   resolveBrandLogoUrlByName,
 } from '@/app/lib/outfit-card';
 
@@ -31,6 +36,10 @@ type SchemePieceSnapshot = {
 };
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
+type DescriptionMode = 'ai' | 'manual' | 'none';
+type GenerationMode = 'manual' | 'ai';
+
+type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
 const SLOT_TYPE_ALIASES: Record<SlotKey, string[]> = {
   upper: ['upper', 'upper piece', 'top', 'tops'],
@@ -69,15 +78,9 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
   ],
 };
 
-const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
+const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots Review', 'Save & Generate'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
-const SLOT_LAYER_CLASS: Record<SlotKey, string> = {
-  upper: 'relative z-30',
-  lower: 'relative z-30',
-  shoes: 'relative z-20',
-  accessory: 'relative z-20',
-};
 const SLOT_AUTO_WEARSTYLE: Record<SlotKey, string[]> = {
   upper: ['Statement Piece'],
   lower: ['Visual Anchor'],
@@ -95,6 +98,12 @@ const SLOT_DEFAULT_CATEGORIES: Record<SlotKey, NonNullable<OutfitPiece['category
   lower: 'Standard',
   shoes: 'Rare',
   accessory: 'Limited Edition',
+};
+const SLOT_ICONS: Record<SlotKey, string> = {
+  upper: '🧥',
+  lower: '👖',
+  shoes: '👟',
+  accessory: '👜',
 };
 
 const DEFAULT_BRAND_ID = 'default';
@@ -119,13 +128,6 @@ const OUTFIT_BACKGROUND_SHAPES: Array<{ value: 'none' | 'orb' | 'diamond' | 'mes
   { value: 'mesh', label: 'Mesh' },
 ];
 
-const normalizePieceType = (value?: string) =>
-  String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ');
-
 const formatDisplayName = (value?: string) =>
   String(value || '')
     .trim()
@@ -135,7 +137,7 @@ const formatDisplayName = (value?: string) =>
     .join(' ');
 
 export default function CreateMySchemeView() {
-  const [items, setItems] = useState<Array<{ wardrobe_item_id: string; name: string; piece_type: string }>>([]);
+  const [items, setItems] = useState<WardrobeItem[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
@@ -153,6 +155,13 @@ export default function CreateMySchemeView() {
   const [outfitBackgroundPreset, setOutfitBackgroundPreset] = useState(OUTFIT_BACKGROUND_PRESETS[0].value);
   const [outfitBackgroundShape, setOutfitBackgroundShape] = useState<'none' | 'orb' | 'diamond' | 'mesh'>('orb');
   const [aiBackgroundImageUrl, setAiBackgroundImageUrl] = useState('');
+  const [descriptionMode, setDescriptionMode] = useState<DescriptionMode>('ai');
+  const [manualDescription, setManualDescription] = useState('');
+  const [palette, setPalette] = useState('Neutral');
+  const [mood, setMood] = useState('Urban Premium');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [generationMode, setGenerationMode] = useState<GenerationMode>('manual');
+  const [selectedSection, setSelectedSection] = useState(sections[0]);
   const [slots, setSlots] = useState<Record<SlotKey, string | null>>({
     upper: null,
     lower: null,
@@ -165,13 +174,10 @@ export default function CreateMySchemeView() {
 
   const inputClassName =
     'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
-
   const slotCardClassName =
     'rounded-xl border border-white/20 bg-white/10 p-3 text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md';
-
   const primaryButtonClassName =
     'rounded-xl border border-white/20 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition hover:scale-[1.01] hover:brightness-110';
-
   const secondaryButtonClassName =
     'rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:scale-[1.01] hover:bg-white/15';
 
@@ -220,10 +226,6 @@ export default function CreateMySchemeView() {
     });
   }, []);
 
-  useEffect(() => {
-    console.log('ITEMS FROM DB:', items);
-  }, [items]);
-
   const selectedBrand = useMemo(
     () => brands.find((brand) => brand.brand_id === selectedBrandId) ?? null,
     [brands, selectedBrandId],
@@ -233,6 +235,9 @@ export default function CreateMySchemeView() {
     defaultBrand: selectedBrand,
     byId: new Map(brands.map((brand) => [brand.brand_id, brand])),
   }), [brands, selectedBrand]);
+
+  const filledSlotsCount = useMemo(() => Object.values(slots).filter(Boolean).length, [slots]);
+
   const isFormValid = useMemo(
     () =>
       Boolean(title.trim()) &&
@@ -269,6 +274,22 @@ export default function CreateMySchemeView() {
     return resolvedBrands.byId.get(configuredBrandId) ?? resolvedBrands.defaultBrand;
   };
 
+  const buildOutfitBackgroundConfig = () => {
+    const [backgroundType, presetValue] = outfitBackgroundPreset.split('|', 2) as [
+      'solid' | 'gradient' | 'image',
+      string,
+    ];
+
+    const resolvedBackgroundValue =
+      backgroundType === 'image' ? aiBackgroundImageUrl.trim() || presetValue : presetValue;
+
+    return {
+      type: backgroundType,
+      value: resolvedBackgroundValue,
+      shape: outfitBackgroundShape,
+    } as const;
+  };
+
   const buildGeneratedOutfitCardData = (): OutfitCardData => {
     const defaultBrandName = selectedBrand?.name || 'SELECTION';
 
@@ -296,16 +317,35 @@ export default function CreateMySchemeView() {
       })
       .filter(Boolean) as OutfitPiece[];
 
+    const description =
+      descriptionMode === 'manual'
+        ? manualDescription.trim() || undefined
+        : descriptionMode === 'none'
+          ? ''
+          : buildOutfitDescriptionRich({
+              outfitName: title.trim() || 'My New Scheme',
+              style,
+              occasion,
+              visibility,
+              brand: selectedBrand?.name || 'Selection',
+              palette,
+              mood,
+              pieces,
+            });
+
     return {
       outfitName: title.trim() || 'My New Scheme',
       outfitStyleLine: `${style.trim() || 'Minimal'} · ${occasion.trim() || 'Daily'}`,
-      outfitDescription: buildOutfitDescriptionFallback({
-        pieces,
-        outfitStyleLine: `${style.trim() || 'Minimal'} ${occasion.trim() || 'Daily'}`,
-        outfitName: title.trim() || 'My New Scheme',
-      }),
+      outfitDescription: description,
       heroImageUrl: heroImageUrl.trim() || '/models/model-default.jpeg',
       outfitBackground: buildOutfitBackgroundConfig(),
+      metaBadges: [
+        { icon: '👕', label: style.trim() || 'Casual' },
+        { icon: '📆', label: occasion.trim() || 'Daily' },
+        { icon: visibility === 'public' ? '🌐' : '🔒', label: visibility === 'public' ? 'Public' : 'Private' },
+        { icon: generationMode === 'manual' ? '✍️' : '✨', label: generationMode === 'manual' ? 'Manual' : 'AI' },
+        palette.trim() ? { icon: '🎨', label: palette.trim() } : null,
+      ].filter(Boolean) as NonNullable<OutfitCardData['metaBadges']>,
       pieces,
     };
   };
@@ -322,7 +362,7 @@ export default function CreateMySchemeView() {
         name: piece.name,
         brand: piece.brand,
         brandLogoUrl: piece.brandLogoUrl,
-        pieceType: normalizePieceType(piece.pieceType) || piece.pieceType,
+        pieceType: piece.pieceType,
         category: piece.category || 'Standard',
         wearstyles: piece.wearstyles || [],
       };
@@ -343,24 +383,8 @@ export default function CreateMySchemeView() {
     reader.readAsDataURL(file);
   };
 
-  const buildOutfitBackgroundConfig = () => {
-    const [backgroundType, presetValue] = outfitBackgroundPreset.split('|', 2) as [
-      'solid' | 'gradient' | 'image',
-      string,
-    ];
-
-    const resolvedBackgroundValue =
-      backgroundType === 'image' ? aiBackgroundImageUrl.trim() || presetValue : presetValue;
-
-    return {
-      type: backgroundType,
-      value: resolvedBackgroundValue,
-      shape: outfitBackgroundShape,
-    } as const;
-  };
-
   const saveScheme = async (
-    creation_mode: 'manual' | 'ai',
+    creationMode: GenerationMode,
     pieceSnapshots: SchemePieceSnapshot[],
   ) => {
     if (!userId) {
@@ -382,12 +406,18 @@ export default function CreateMySchemeView() {
         body: JSON.stringify({
           user_id: userId,
           title: title.trim() || 'My New Scheme',
-          description: JSON.stringify({ outfitBackground: selectedBackground }),
+          description: JSON.stringify({
+            outfitBackground: selectedBackground,
+            descriptionMode,
+            descriptionText: descriptionMode === 'manual' ? manualDescription.trim() : null,
+            mood,
+            palette,
+          }),
           style: style.trim() || 'Minimal',
           occasion: occasion.trim() || 'Daily',
           cover_image_url: heroImageUrl.trim() || null,
           visibility,
-          creation_mode,
+          creation_mode: creationMode,
           pieces: pieceSnapshots,
           items: schemeItems,
         }),
@@ -413,260 +443,373 @@ export default function CreateMySchemeView() {
     return items.filter((item) => aliases.includes(normalizeSchemePieceType(item.piece_type)));
   };
 
+  const generateFromAiPrompt = () => {
+    const normalizedPrompt = aiPrompt.toLowerCase();
+    if (!normalizedPrompt.trim()) {
+      setAlertMessage('Write a prompt before running AI generation.');
+      return;
+    }
+
+    const matchingBrand = brands.find((brand) => normalizedPrompt.includes(brand.name.toLowerCase()));
+    if (matchingBrand) {
+      setSelectedBrandId(matchingBrand.brand_id);
+    }
+
+    const nextSlots: Record<SlotKey, string | null> = { upper: null, lower: null, shoes: null, accessory: null };
+
+    (Object.keys(nextSlots) as SlotKey[]).forEach((slot) => {
+      const wardrobeOptions = optionsByType(slot);
+      const matched = wardrobeOptions.find((item) => normalizedPrompt.includes(item.name.toLowerCase()));
+      nextSlots[slot] = matched?.wardrobe_item_id || wardrobeOptions[0]?.wardrobe_item_id || null;
+    });
+
+    setSlots(nextSlots);
+    setGenerationMode('ai');
+
+    if (!title.trim()) {
+      setTitle(`AI ${style} ${occasion} Outfit`);
+    }
+  };
+
+  const handleFinalSave = async () => {
+    if (!isFormValid) {
+      setAlertMessage('Fill title, style, occasion, and assign at least one slot before saving.');
+      return;
+    }
+
+    const nextGeneratedCardData = buildGeneratedOutfitCardData();
+    const pieceSnapshots = buildSchemePieceSnapshots(nextGeneratedCardData.pieces);
+    const isSaved = await saveScheme(generationMode, pieceSnapshots);
+    if (!isSaved) return;
+    setGeneratedCardData(nextGeneratedCardData);
+    setSelectedSection('Save & Generate');
+  };
+
+  const renderManualBuilder = () => (
+    <SectionBlock
+      title="Manual Builder"
+      subtitle="Define metadata, description behavior, and slot assignment manually."
+      className="sa-surface-header h-auto border-white/20"
+    >
+      <form className="mt-4 grid gap-3 rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md md:grid-cols-2">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+          className={inputClassName}
+        />
+
+        <FancySelect
+          value={style}
+          onChange={setStyle}
+          placeholder="Style"
+          options={STYLE_OPTIONS.map((option) => ({
+            value: option,
+            label: option,
+            group: 'Style',
+          }))}
+        />
+
+        <FancySelect
+          value={occasion}
+          onChange={setOccasion}
+          placeholder="Occasion"
+          options={OCCASION_OPTIONS.map((option) => ({
+            value: option,
+            label: option,
+            group: 'Occasion',
+          }))}
+        />
+
+        <FancySelect
+          value={visibility}
+          onChange={(selectedVisibility) => setVisibility(selectedVisibility as 'private' | 'public')}
+          options={[
+            { value: 'public', label: 'Public' },
+            { value: 'private', label: 'Private' },
+          ]}
+        />
+
+        <input value={palette} onChange={(e) => setPalette(e.target.value)} placeholder="Palette (e.g. Blue / Neutral)" className={inputClassName} />
+        <input value={mood} onChange={(e) => setMood(e.target.value)} placeholder="Mood / aesthetic" className={inputClassName} />
+
+        <FancySelect
+          value={selectedBrandId}
+          onChange={setSelectedBrandId}
+          placeholder="SELECTION Default Brand"
+          options={[
+            {
+              value: DEFAULT_BRAND_ID,
+              label: 'SELECTION Default Brand',
+              icon: { type: 'emoji', value: '🏷️', alt: 'Default brand' },
+            },
+            ...brands.map((brand) => {
+              const logoUrl = resolveBrandLogoUrlByName(brand.name) || brand.logo_url || null;
+
+              return {
+                value: brand.brand_id,
+                label: brand.name,
+                icon: logoUrl
+                  ? { type: 'image' as const, value: logoUrl, alt: `${brand.name} logo` }
+                  : { type: 'emoji' as const, value: '🏷️', alt: `${brand.name} brand` },
+              };
+            }),
+          ]}
+        />
+
+        <FancySelect
+          value={outfitBackgroundPreset}
+          onChange={setOutfitBackgroundPreset}
+          placeholder="Outfit card background"
+          options={OUTFIT_BACKGROUND_PRESETS.map((option) => ({
+            value: option.value,
+            label: option.label,
+            group: 'Card Background',
+          }))}
+        />
+
+        <FancySelect
+          value={outfitBackgroundShape}
+          onChange={(value) => setOutfitBackgroundShape(value as 'none' | 'orb' | 'diamond' | 'mesh')}
+          placeholder="Background shape"
+          options={OUTFIT_BACKGROUND_SHAPES.map((option) => ({
+            value: option.value,
+            label: option.label,
+            group: 'Shape',
+          }))}
+        />
+
+        {outfitBackgroundPreset.startsWith('image|') ? (
+          <input
+            value={aiBackgroundImageUrl}
+            onChange={(e) => setAiBackgroundImageUrl(e.target.value)}
+            placeholder="AI background image URL (optional)"
+            className={inputClassName}
+          />
+        ) : null}
+
+        <label className={`${inputClassName} block cursor-pointer`}>
+          <span className="block text-[11px] uppercase tracking-[0.12em] text-white/60">Hero image upload</span>
+          <input
+            type="file"
+            accept="image/*"
+            className="mt-2 block w-full text-xs text-white file:mr-3 file:rounded-lg file:border-0 file:bg-white/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-white/30"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              uploadHeroImage(file);
+            }}
+          />
+          <span className="mt-1 block text-xs text-white/65">
+            {heroImageUploading
+              ? 'Uploading image...'
+              : heroImageUrl
+                ? 'Hero image uploaded successfully.'
+                : 'Upload a photo of the person wearing the outfit.'}
+          </span>
+        </label>
+
+        <DescriptionModeSelector value={descriptionMode} onChange={setDescriptionMode} />
+
+        {descriptionMode === 'manual' ? (
+          <textarea
+            value={manualDescription}
+            onChange={(e) => setManualDescription(e.target.value)}
+            placeholder="Write the description for this outfit card..."
+            className={`${inputClassName} min-h-24 md:col-span-2`}
+          />
+        ) : null}
+
+        {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
+          <div key={slot} className={`${slotCardClassName} relative overflow-visible`}>
+            <p className="text-sm font-semibold capitalize text-white">{slot} piece</p>
+
+            <div className="mt-2">
+              <FancySelect
+                value={slots[slot] ?? ''}
+                onChange={(selectedValue) =>
+                  setSlots((prev) => ({
+                    ...prev,
+                    [slot]: selectedValue || null,
+                  }))
+                }
+                placeholder="Select item"
+                options={[
+                  { value: '', label: 'Select item' },
+                  ...DEFAULT_SLOT_SUGGESTIONS[slot].map((suggestion) => ({
+                    value: suggestion.value,
+                    label: suggestion.label,
+                    hint: 'Suggested',
+                  })),
+                  ...optionsByType(slot).map((item) => ({
+                    value: item.wardrobe_item_id,
+                    label: item.name,
+                  })),
+                ]}
+              />
+            </div>
+
+            <div className="mt-2">
+              <FancySelect
+                value={slotBrandIds[slot] ?? DEFAULT_BRAND_ID}
+                onChange={(selectedSlotBrandId) =>
+                  setSlotBrandIds((prev) => ({
+                    ...prev,
+                    [slot]: selectedSlotBrandId || DEFAULT_BRAND_ID,
+                  }))
+                }
+                placeholder="Brand for this piece"
+                options={[
+                  {
+                    value: DEFAULT_BRAND_ID,
+                    label: 'Use default outfit brand',
+                    hint: selectedBrand?.name || 'SELECTION',
+                  },
+                  ...brands.map((brand) => ({
+                    value: brand.brand_id,
+                    label: brand.name,
+                  })),
+                ]}
+              />
+            </div>
+
+            <div className="mt-3 rounded-lg border border-white/20 bg-white/5 px-3 py-2">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-white/60">Selected</p>
+              <p className="mt-1 text-sm font-semibold text-white">{resolveSlotSelectionLabel(slot)}</p>
+            </div>
+          </div>
+        ))}
+      </form>
+    </SectionBlock>
+  );
+
+  const renderSchemeData = () => (
+    <SectionBlock
+      title="Scheme Data Overview"
+      subtitle="Understand the full fashion-tech flow before creating your outfit card."
+      className="sa-surface-header h-auto border-white/20"
+    >
+      <div className="mt-4 space-y-4">
+        <GenerationModePanel mode={generationMode} onChange={setGenerationMode} />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <SchemeStepCard step="Step 1" icon="🧬" title="Define outfit identity" description="Set title, style, occasion, visibility, palette, and mood for the card." />
+          <SchemeStepCard step="Step 2" icon="🎛️" title="Choose generation method" description="Use Manual Builder for precise control or AI Generation for prompt-driven composition." />
+          <SchemeStepCard step="Step 3" icon="📝" title="Provide metadata or prompt" description="Write manual data or a natural-language prompt tied to wardrobe inventory." />
+          <SchemeStepCard step="Step 4" icon="🧩" title="Review slots" description="Validate upper, lower, shoes, and accessories in a tactical lineup screen." />
+          <SchemeStepCard step="Step 5" icon="🚀" title="Save & generate" description="Run final checks and save the premium outfit card with consistent structure." />
+        </div>
+      </div>
+    </SectionBlock>
+  );
+
+  const renderAiGeneration = () => (
+    <SectionBlock
+      title="AI Generation"
+      subtitle="Prompt-based outfit composition using wardrobe pieces already in your database."
+      className="sa-surface-header h-auto border-white/20"
+    >
+      <div className="mt-4 space-y-3">
+        <textarea
+          value={aiPrompt}
+          onChange={(e) => setAiPrompt(e.target.value)}
+          placeholder="Create a premium casual daily outfit with a visual anchor in blue tones."
+          className={`${inputClassName} min-h-28`}
+        />
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            className={primaryButtonClassName}
+            onClick={() => {
+              generateFromAiPrompt();
+              setSelectedSection('Slots Review');
+            }}
+          >
+            Generate from Prompt
+          </button>
+          <button type="button" className={secondaryButtonClassName} onClick={() => setGenerationMode('ai')}>
+            Set as AI Mode
+          </button>
+        </div>
+      </div>
+    </SectionBlock>
+  );
+
+  const renderSlotsReview = () => (
+    <SectionBlock
+      title="Slots Review"
+      subtitle="Loadout-style review for each slot with completeness feedback."
+      className="sa-surface-header h-auto border-white/20"
+    >
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {(Object.keys(slots) as SlotKey[]).map((slot) => (
+          <SlotReviewCard
+            key={slot}
+            slot={slot}
+            icon={SLOT_ICONS[slot]}
+            selected={resolveSlotSelectionLabel(slot)}
+            status={slots[slot] ? 'filled' : 'empty'}
+          />
+        ))}
+      </div>
+      <p className="mt-4 text-sm text-white/75">
+        Composition status: <span className="font-semibold text-white">{filledSlotsCount} of 4 slots filled</span>.
+      </p>
+    </SectionBlock>
+  );
+
+  const renderSaveGenerate = () => (
+    <SectionBlock
+      title="Save & Generate"
+      subtitle="Final preview, validation, and generation confirmation."
+      className="sa-surface-header h-auto border-white/20"
+    >
+      <div className="mt-4 space-y-4">
+        <SaveSummaryPanel
+          mode={generationMode}
+          descriptionMode={descriptionMode}
+          filledSlots={filledSlotsCount}
+          totalSlots={4}
+        />
+        {!isFormValid ? (
+          <div className="rounded-xl border border-amber-300/40 bg-amber-500/10 p-3 text-sm text-amber-100">
+            Quality check warning: title, style, occasion, and at least one slot are required before saving.
+          </div>
+        ) : null}
+        <button type="button" className={primaryButtonClassName} disabled={heroImageUploading} onClick={handleFinalSave}>
+          {generationMode === 'manual' ? 'Save Outfit Card' : 'Generate Outfit Card'}
+        </button>
+      </div>
+    </SectionBlock>
+  );
+
   return (
     <>
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <ContextSectionMenu title="Create My Scheme" sections={sections} />
+        <ContextSectionMenu
+          title="Create My Scheme"
+          sections={sections}
+          selectedSection={selectedSection}
+          onSelectSection={setSelectedSection}
+        />
 
         <div className="space-y-6">
           <PageHeader
             title="Create My Scheme"
-            subtitle="Manual composition and AI-assisted generation."
+            subtitle="Premium manual and AI generation paths for outfit cards."
           />
 
-          <SectionBlock
-            title="Scheme Metadata + Visual Slot Editor"
-            subtitle="Define metadata and assign wardrobe pieces in one compact form."
-            className="sa-surface-header h-auto border-white/20"
-          >
-            <form
-              className="mt-4 grid gap-3 rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md md:grid-cols-2"
-              onSubmit={async (e) => {
-                e.preventDefault();
+          <GenerationModePanel mode={generationMode} onChange={setGenerationMode} />
 
-                const previewData = buildGeneratedOutfitCardData();
-                console.log('SLOTS BEFORE SAVE:', slots);
-                console.log('SCHEME ITEMS:', schemeItems);
-                console.log('GENERATED PIECES:', previewData.pieces);
-
-                if (!isFormValid) {
-                  setAlertMessage(
-                    'Fill title, style, occasion, and select at least one piece before generating the outfit card.',
-                  );
-                  return;
-                }
-
-                const nextGeneratedCardData = buildGeneratedOutfitCardData();
-                const pieceSnapshots = buildSchemePieceSnapshots(nextGeneratedCardData.pieces);
-                const isSaved = await saveScheme('manual', pieceSnapshots);
-                if (!isSaved) return;
-                console.log('[CreateMySchemeView] Submit snapshot', {
-                  slots,
-                  schemeItems,
-                  'generatedCardData.pieces': nextGeneratedCardData.pieces,
-                });
-                setGeneratedCardData(nextGeneratedCardData);
-              }}
-            >
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Title"
-                className={inputClassName}
-              />
-
-              <FancySelect
-                value={style}
-                onChange={setStyle}
-                placeholder="Style"
-                options={STYLE_OPTIONS.map((option) => ({
-                  value: option,
-                  label: option,
-                  group: 'Style',
-                }))}
-              />
-
-              <FancySelect
-                value={occasion}
-                onChange={setOccasion}
-                placeholder="Occasion"
-                options={OCCASION_OPTIONS.map((option) => ({
-                  value: option,
-                  label: option,
-                  group: 'Occasion',
-                }))}
-              />
-
-              <FancySelect
-                value={visibility}
-                onChange={(selectedVisibility) =>
-                  setVisibility(selectedVisibility as 'private' | 'public')
-                }
-                options={[
-                  { value: 'public', label: 'Public' },
-                  { value: 'private', label: 'Private' },
-                ]}
-              />
-
-              <FancySelect
-                value={selectedBrandId}
-                onChange={setSelectedBrandId}
-                placeholder="SELECTION Default Brand"
-                options={[
-                  {
-                    value: DEFAULT_BRAND_ID,
-                    label: 'SELECTION Default Brand',
-                    icon: { type: 'emoji', value: '🏷️', alt: 'Default brand' },
-                  },
-                  ...brands.map((brand) => {
-                    const logoUrl = resolveBrandLogoUrlByName(brand.name) || brand.logo_url || null;
-
-                    return {
-                      value: brand.brand_id,
-                      label: brand.name,
-                      icon: logoUrl
-                        ? { type: 'image' as const, value: logoUrl, alt: `${brand.name} logo` }
-                        : { type: 'emoji' as const, value: '🏷️', alt: `${brand.name} brand` },
-                    };
-                  }),
-                ]}
-              />
-
-              <FancySelect
-                value={outfitBackgroundPreset}
-                onChange={setOutfitBackgroundPreset}
-                placeholder="Outfit card background"
-                options={OUTFIT_BACKGROUND_PRESETS.map((option) => ({
-                  value: option.value,
-                  label: option.label,
-                  group: 'Card Background',
-                }))}
-              />
-
-              <FancySelect
-                value={outfitBackgroundShape}
-                onChange={(value) =>
-                  setOutfitBackgroundShape(value as 'none' | 'orb' | 'diamond' | 'mesh')
-                }
-                placeholder="Background shape"
-                options={OUTFIT_BACKGROUND_SHAPES.map((option) => ({
-                  value: option.value,
-                  label: option.label,
-                  group: 'Shape',
-                }))}
-              />
-
-              {outfitBackgroundPreset.startsWith('image|') ? (
-                <input
-                  value={aiBackgroundImageUrl}
-                  onChange={(e) => setAiBackgroundImageUrl(e.target.value)}
-                  placeholder="AI background image URL (optional)"
-                  className={inputClassName}
-                />
-              ) : null}
-
-              <label className={`${inputClassName} block cursor-pointer`}>
-                <span className="block text-[11px] uppercase tracking-[0.12em] text-white/60">
-                  Hero image upload
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="mt-2 block w-full text-xs text-white file:mr-3 file:rounded-lg file:border-0 file:bg-white/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-white/30"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) return;
-                    uploadHeroImage(file);
-                  }}
-                />
-                <span className="mt-1 block text-xs text-white/65">
-                  {heroImageUploading
-                    ? 'Uploading image...'
-                    : heroImageUrl
-                      ? 'Hero image uploaded successfully.'
-                      : 'Upload a photo of the person wearing the outfit.'}
-                </span>
-              </label>
-
-              {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
-                <div key={slot} className={`${slotCardClassName} relative overflow-visible`}>
-                  <p className="text-sm font-semibold capitalize text-white">{slot} piece</p>
-
-                  <div className="mt-2">
-                    <FancySelect
-                      value={slots[slot] ?? ''}
-                      onChange={(selectedValue) =>
-                        setSlots((prev) => ({
-                          ...prev,
-                          [slot]: selectedValue || null,
-                        }))
-                      }
-                      placeholder="Select item"
-                      options={[
-                        { value: '', label: 'Select item' },
-                        ...DEFAULT_SLOT_SUGGESTIONS[slot].map((suggestion) => ({
-                          value: suggestion.value,
-                          label: suggestion.label,
-                          hint: 'Suggested',
-                        })),
-                        ...optionsByType(slot).map((item) => ({
-                          value: item.wardrobe_item_id,
-                          label: item.name,
-                        })),
-                      ]}
-                    />
-                  </div>
-
-                  <div className="mt-2">
-                    <FancySelect
-                      value={slotBrandIds[slot] ?? DEFAULT_BRAND_ID}
-                      onChange={(selectedSlotBrandId) =>
-                        setSlotBrandIds((prev) => ({
-                          ...prev,
-                          [slot]: selectedSlotBrandId || DEFAULT_BRAND_ID,
-                        }))
-                      }
-                      placeholder="Brand for this piece"
-                      options={[
-                        {
-                          value: DEFAULT_BRAND_ID,
-                          label: 'Use default outfit brand',
-                          hint: selectedBrand?.name || 'SELECTION',
-                        },
-                        ...brands.map((brand) => ({
-                          value: brand.brand_id,
-                          label: brand.name,
-                        })),
-                      ]}
-                    />
-                  </div>
-
-                  <div className="mt-3 rounded-lg border border-white/20 bg-white/5 px-3 py-2">
-                    <p className="text-[11px] uppercase tracking-[0.12em] text-white/60">
-                      Selected
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-white">
-                      {resolveSlotSelectionLabel(slot)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-
-              <div className="mt-1 flex flex-wrap gap-3 md:col-span-2">
-                <button type="submit" disabled={heroImageUploading} className={primaryButtonClassName}>
-                  Save Scheme
-                </button>
-
-                <button
-                  type="button"
-                  disabled={heroImageUploading}
-                  onClick={() => {
-                    const nextGeneratedCardData = buildGeneratedOutfitCardData();
-                    const pieceSnapshots = buildSchemePieceSnapshots(nextGeneratedCardData.pieces);
-                    saveScheme('ai', pieceSnapshots);
-                  }}
-                  className={secondaryButtonClassName}
-                >
-                  Generate with AI + Save
-                </button>
-              </div>
-            </form>
-          </SectionBlock>
+          {selectedSection === 'Scheme Data' ? renderSchemeData() : null}
+          {selectedSection === 'Manual Builder' ? renderManualBuilder() : null}
+          {selectedSection === 'AI Generation' ? renderAiGeneration() : null}
+          {selectedSection === 'Slots Review' ? renderSlotsReview() : null}
+          {selectedSection === 'Save & Generate' ? renderSaveGenerate() : null}
 
           {generatedCardData ? (
             <SectionBlock
               title="Generated Outfit Card"
-              subtitle="Rendered automatically after a successful form submit."
+              subtitle="Rendered after the final save & generate action."
               className="sa-surface-header h-auto border-white/20"
             >
               <OutfitCard data={generatedCardData} />
