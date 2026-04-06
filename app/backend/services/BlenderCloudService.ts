@@ -47,6 +47,14 @@ function resolveToken(): string {
   return process.env.BLENDER_CLOUD_API_TOKEN?.trim() || process.env.RUNPOD_API_KEY?.trim() || '';
 }
 
+function hasRunpodConfiguration(): boolean {
+  return Boolean(
+    process.env.BLENDER_CLOUD_API_URL?.trim()
+      || process.env.RUNPOD_ENDPOINT_URL?.trim()
+      || process.env.RUNPOD_ENDPOINT_ID?.trim(),
+  );
+}
+
 function toInternalStatus(status: string): BlenderCloudJobStatus['status'] {
   const normalized = status.toUpperCase();
   if (["COMPLETED"].includes(normalized)) return 'completed';
@@ -56,6 +64,10 @@ function toInternalStatus(status: string): BlenderCloudJobStatus['status'] {
 }
 
 export class BlenderCloudService {
+  isConfigured(): boolean {
+    return hasRunpodConfiguration();
+  }
+
   async submitBlenderCloudJob(input: SubmitBlenderCloudJobInput): Promise<{ cloudJobId: string; raw: Record<string, unknown> }> {
     const baseUrl = resolveRunpodBaseUrl();
     const token = resolveToken();

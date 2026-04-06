@@ -4,6 +4,7 @@ import { BrandDetectionService } from './BrandDetectionService';
 import { BrandPlacementService } from './BrandPlacementService';
 import { PieceIsolationService } from './PieceIsolationService';
 import { GeometryScopeService } from './GeometryScopeService';
+import { MeshyService } from './MeshyService';
 import { BrandsRepository } from '@/app/backend/repositories/BrandsRepository';
 import { PipelineJobsRepository } from '@/app/backend/repositories/PipelineJobsRepository';
 import { BlenderPipelineService } from './BlenderPipelineService';
@@ -26,6 +27,7 @@ export class WardrobeService {
   constructor(
     private readonly wardrobeRepo = new WardrobeItemsRepository(),
     private readonly blenderCloudService = new BlenderCloudService(),
+    private readonly meshyService = new MeshyService(),
     private readonly brandDetectionService = new BrandDetectionService(),
     private readonly brandPlacementService = new BrandPlacementService(),
     private readonly pieceIsolationService = new PieceIsolationService(),
@@ -340,6 +342,15 @@ export class WardrobeService {
     imageUrl: string,
     options: { prompt: string; pieceType: string; wardrobeItemId: string; status: ModelGenerationStatus; stageLabel: string },
   ): Promise<BlenderGenerationResult> {
+    if (!this.blenderCloudService.isConfigured()) {
+      await this.wardrobeRepo.updatePipelineStatus(options.wardrobeItemId, options.status, null, {
+        stage: `${options.stageLabel}_fallback_meshy`,
+        provider: 'meshy',
+        reason: 'runpod_not_configured',
+      });
+      return this.meshyService.generate3DModelFromImage(imageUrl, { prompt: options.prompt });
+    }
+
     const submitted = await this.blenderCloudService.submitBlenderCloudJob({
       modelUrl: imageUrl,
       imageUrl,
