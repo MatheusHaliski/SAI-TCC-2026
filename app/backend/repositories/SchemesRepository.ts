@@ -6,6 +6,16 @@ const SCHEMES_COLLECTION = 'sai-usersavedschemes';
 const SCHEME_ITEMS_COLLECTION = 'sai-schemeitem';
 const WARDROBE_ITEMS_COLLECTION = 'sai-wardrobeItems';
 
+const toReadableSuggestedName = (input: string) => {
+  const [, , slug = 'selected-piece'] = input.split(':');
+  return slug
+    .replaceAll('-', ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((token) => `${token[0]?.toUpperCase() ?? ''}${token.slice(1)}`)
+    .join(' ');
+};
+
 export class SchemesRepository extends BaseRepository {
   constructor(private readonly usersRepository = new UsersRepository()) {
     super();
@@ -23,6 +33,7 @@ export class SchemesRepository extends BaseRepository {
       visibility: input.visibility,
       community_indexed: input.community_indexed ?? false,
       cover_image_url: input.cover_image_url ?? null,
+      pieces: input.pieces ?? [],
       created_at: now,
       updated_at: now,
     };
@@ -71,15 +82,17 @@ export class SchemesRepository extends BaseRepository {
     );
 
     const items = itemDocs.map((itemDoc, index) => {
+      const wardrobeItemId = String(itemDoc.data().wardrobe_item_id);
+      const isSuggested = wardrobeItemId.startsWith('suggested:');
       const wardrobe = wardrobeRefs[index].data() as Record<string, string> | undefined;
       return {
         scheme_item_id: itemDoc.id,
         scheme_id: schemeId,
-        wardrobe_item_id: String(itemDoc.data().wardrobe_item_id),
+        wardrobe_item_id: wardrobeItemId,
         slot: itemDoc.data().slot,
         sort_order: itemDoc.data().sort_order,
         created_at: itemDoc.data().created_at,
-        wardrobe_name: wardrobe?.name ?? 'Unknown',
+        wardrobe_name: wardrobe?.name ?? (isSuggested ? toReadableSuggestedName(wardrobeItemId) : 'Selected piece'),
         image_url: wardrobe?.image_url ?? '',
       };
     });

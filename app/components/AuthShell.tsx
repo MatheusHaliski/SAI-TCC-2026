@@ -60,8 +60,8 @@ export default function AuthShell({
         >
           <div className="flex h-full w-full items-center justify-center">
             <img
-              src="/F4D37961-8CCF-4B15-8F4F-122C32FFF90F.jpeg"
-              alt="SAI"
+              src="/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg"
+              alt="FAI"
               className="h-full w-full object-contain"
             />
           </div>
@@ -101,14 +101,14 @@ export default function AuthShell({
               <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-2">
                 <div className="flex flex-col items-center justify-center gap-3">
                   <img
-                    src="/F4D37961-8CCF-4B15-8F4F-122C32FFF90F.jpeg"
-                    alt="SAI"
+                    src="/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg"
+                    alt="FAI"
                     className="h-64 w-full max-w-[720px] object-contain sm:h-62 md:h-66 lg:h-68"
                   />
 
                   <div className="hidden font-sharetech leading-tight sm:block">
                     <div className="text-center font-sharetech text-2xl font-bold uppercase tracking-[0.22em] text-orange-500 sm:text-5xl md:text-6xl">
-                      Stylist AI 
+                      Fashion AI 
                     </div>
                   </div>
                 </div>
@@ -116,8 +116,8 @@ export default function AuthShell({
                 <div className="w-full">
                   <div className="overflow-hidden rounded-2xl border-8 border-orange-500 shadow-[0_18px_60px_rgba(0,0,0,0.25)]">
                     <img
-                      src="/A24AE234-1A0D-44E2-B7E6-AFE6282C832A.png"
-                      alt="SAI featured visual"
+                      src="/Firefly_Gemini Flash_Crie arte visual para um site chamado Fashion AI (uma AI de moda), tente combinar cam 425577 (3).png"
+                      alt="FAI featured visual"
                       className="h-full w-full object-cover"
                     />
                   </div>
