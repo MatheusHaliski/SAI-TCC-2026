@@ -9,31 +9,10 @@ import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
-import {
-  OutfitCardData,
-  OutfitPiece,
-  PieceCategory,
-  buildOutfitDescriptionFallback,
-  resolveBrandLogoUrlByName,
-} from '@/app/lib/outfit-card';
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
-type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
-type SchemePieceSnapshot = {
-  piece_id: string;
-  piece_name: string;
-  brand_name: string;
-  piece_type: string;
-  category: PieceCategory;
-  wearstyles: string[];
-};
-type Brand = { brand_id: string; name: string; logo_url?: string | null };
 
-type SchemeWardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
-const DEFAULT_BRAND_ID = 'default-brand';
-const FALLBACK_BRANDS: Brand[] = [{ brand_id: DEFAULT_BRAND_ID, name: 'SELECTION' }];
-
-const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+const SLOT_TYPE_ALIASES: Record<SlotKey, string[]> = {
   upper: ['upper', 'upper piece', 'top', 'tops'],
   lower: ['lower', 'lower piece', 'bottom', 'bottoms'],
   shoes: ['shoes', 'shoes piece', 'shoe', 'footwear'],
@@ -43,7 +22,7 @@ const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', strin
 const normalizeSchemePieceType = (value: string) => value.trim().toLowerCase();
 
 const DEFAULT_SLOT_SUGGESTIONS: Record<
-  'upper' | 'lower' | 'shoes' | 'accessory',
+  SlotKey,
   Array<{ value: string; label: string }>
 > = {
   upper: [
@@ -73,32 +52,11 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
 const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots', 'Save'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
-
-const OUTFIT_BACKGROUND_PRESETS = [
-  { value: 'solid|#f8fafc', label: 'Solid · Soft Silver' },
-  { value: 'solid|#e2e8f0', label: 'Solid · Cool Gray' },
-  {
-    value: 'gradient|linear-gradient(135deg, #f8fafc 0%, #dbeafe 42%, #e9d5ff 100%)',
-    label: 'Gradient · Aurora Soft',
-  },
-  {
-    value: 'gradient|linear-gradient(135deg, #cffafe 0%, #dbeafe 45%, #fce7f3 100%)',
-    label: 'Gradient · Sky Rose',
-  },
-  { value: 'image|/ai-special-bg.png', label: 'AI Image · Dreamscape' },
-];
-
-const OUTFIT_BACKGROUND_SHAPES = [
-  { value: 'none', label: 'No shape' },
-  { value: 'orb', label: 'Orb glow' },
-  { value: 'diamond', label: 'Diamond light' },
-  { value: 'mesh', label: 'Mesh pattern' },
-];
-const SLOT_DEFAULT_CATEGORIES: Record<SlotKey, PieceCategory> = {
-  upper: 'Premium',
-  lower: 'Premium',
-  shoes: 'Rare',
-  accessory: 'Limited Edition',
+const SLOT_LAYER_CLASS: Record<SlotKey, string> = {
+  upper: 'relative z-30',
+  lower: 'relative z-30',
+  shoes: 'relative z-20',
+  accessory: 'relative z-20',
 };
 const SLOT_AUTO_WEARSTYLE: Record<SlotKey, string[]> = {
   upper: ['Statement Piece'],
@@ -129,19 +87,12 @@ const formatDisplayName = (value?: string) =>
     .join(' ');
 
 export default function CreateMySchemeView() {
-  const [items, setItems] = useState<WardrobeItem[]>([]);
-  const [brands, setBrands] = useState<Brand[]>(FALLBACK_BRANDS);
-  const [selectedBrandId, setSelectedBrandId] = useState(DEFAULT_BRAND_ID);
+  const [items, setItems] = useState<Array<{ wardrobe_item_id: string; name: string; piece_type: string }>>([]);
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
   const [visibility, setVisibility] = useState<'private' | 'public'>('public');
-  const [heroImageUrl, setHeroImageUrl] = useState('');
-  const [heroImageUploading, setHeroImageUploading] = useState(false);
-  const [outfitBackgroundPreset, setOutfitBackgroundPreset] = useState(OUTFIT_BACKGROUND_PRESETS[2].value);
-  const [outfitBackgroundShape, setOutfitBackgroundShape] = useState<'none' | 'orb' | 'diamond' | 'mesh'>('orb');
-  const [aiBackgroundImageUrl, setAiBackgroundImageUrl] = useState('');
-  const [slots, setSlots] = useState<Record<'upper' | 'lower' | 'shoes' | 'accessory', string | null>>({
+  const [slots, setSlots] = useState<Record<SlotKey, string | null>>({
     upper: null,
     lower: null,
     shoes: null,
