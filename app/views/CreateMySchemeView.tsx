@@ -23,23 +23,7 @@ type WardrobeItem = {
   piece_type: string;
 };
 
-type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
-type Brand = { brand_id: string; name: string; logo_url?: string | null };
-type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
-type SchemePieceSnapshot = {
-  id: string;
-  slot: SlotKey;
-  sourceType: 'wardrobe' | 'suggested';
-  sourceId: string;
-  name: string;
-  brand: string;
-  brandLogoUrl?: string;
-  category: PieceCategory;
-  pieceType: string;
-  wearstyles: string[];
-};
-
-const DEFAULT_BRAND_ID = 'default';
+type SchemeWardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
 const FALLBACK_BRANDS: Brand[] = [
   {
@@ -236,9 +220,7 @@ const formatDisplayName = (value?: string) =>
     .join(' ');
 
 export default function CreateMySchemeView() {
-  const [items, setItems] = useState<WardrobeItem[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [selectedBrandId, setSelectedBrandId] = useState(DEFAULT_BRAND_ID);
+  const [items, setItems] = useState<SchemeWardrobeItem[]>([]);
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
@@ -404,137 +386,6 @@ export default function CreateMySchemeView() {
   const optionsByType = (slot: SlotKey) => {
     const aliases = SLOT_TYPE_ALIASES[slot];
     return items.filter((item) => aliases.includes(normalizeSchemePieceType(item.piece_type)));
-  };
-
-  const uploadHeroImage = async (file: File) => {
-    setHeroImageUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const response = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const payload = (await response.json().catch(() => null)) as
-        | { image_url?: string; error?: string }
-        | null;
-
-      if (!response.ok || !payload?.image_url) {
-        setAlertMessage(payload?.error || 'Unable to upload hero image.');
-        return;
-      }
-
-      setHeroImageUrl(payload.image_url);
-    } catch {
-      setAlertMessage('Unable to upload hero image.');
-    } finally {
-      setHeroImageUploading(false);
-    }
-  };
-
-  const isFormValid = useMemo(() => {
-    return Boolean(title.trim()) && Boolean(style.trim()) && Boolean(occasion.trim()) && schemeItems.length > 0;
-  }, [occasion, schemeItems.length, style, title]);
-
-  const getPieceById = (wardrobeItemId: string | null) =>
-    items.find((item) => item.wardrobe_item_id === wardrobeItemId);
-
-  const resolveSlotSelectionLabel = (slot: SlotKey) => {
-    const selectedValue = slots[slot];
-    if (!selectedValue) return 'No piece selected';
-
-    const suggestedOption = DEFAULT_SLOT_SUGGESTIONS[slot].find((suggestion) => suggestion.value === selectedValue);
-    if (suggestedOption) return suggestedOption.label;
-
-    const wardrobeOption = items.find((item) => item.wardrobe_item_id === selectedValue);
-    return wardrobeOption?.name?.trim() || 'Selected piece';
-  };
-
-  const toReadablePieceName = (value: string) =>
-    value
-      .split(' ')
-      .filter(Boolean)
-      .map((chunk) => `${chunk[0]?.toUpperCase() ?? ''}${chunk.slice(1)}`)
-      .join(' ')
-      .trim();
-
-  const resolveSlotPieceName = (slot: SlotKey, selectedId: string) => {
-    const selectedItem = getPieceById(selectedId);
-    if (selectedItem?.name?.trim()) {
-      return toReadablePieceName(selectedItem.name.trim());
-    }
-
-    const suggestedOption = DEFAULT_SLOT_SUGGESTIONS[slot].find((suggestion) => suggestion.value === selectedId);
-    if (suggestedOption?.label?.trim()) {
-      return suggestedOption.label.trim();
-    }
-
-    if (selectedId.startsWith('suggested:')) {
-      const [, , slug = ''] = selectedId.split(':');
-      return toReadablePieceName(slug.replaceAll('-', ' ')) || `${slot[0].toUpperCase()}${slot.slice(1)} Piece`;
-    }
-
-    return `${slot[0].toUpperCase()}${slot.slice(1)} Piece`;
-  };
-
-  const buildOutfitPiece = (slot: SlotKey, selectedId: string): OutfitPiece => {
-    const selectedItem = getPieceById(selectedId);
-    const resolvedPieceType = selectedItem?.piece_type?.trim() || SLOT_DEFAULT_PIECE_TYPES[slot];
-    const resolvedBrandName = selectedBrand?.name?.trim() || 'Selection Default Brand';
-    const resolvedBrandLogoUrl = selectedBrand
-      ? resolveBrandLogoUrlByName(selectedBrand.name) || selectedBrand.logo_url || undefined
-      : undefined;
-
-    return {
-      id: `${slot}:${selectedId}`,
-      name: resolveSlotPieceName(slot, selectedId),
-      brand: resolvedBrandName,
-      brandLogoUrl: resolvedBrandLogoUrl,
-      pieceType: resolvedPieceType,
-      category: SLOT_DEFAULT_CATEGORIES[slot],
-      wearstyles: SLOT_AUTO_WEARSTYLE[slot],
-    };
-  };
-
-  const buildSchemePieceSnapshots = (pieces: OutfitPiece[]): SchemePieceSnapshot[] =>
-    pieces.map((piece) => {
-      const [slot, ...sourceParts] = piece.id.split(':');
-      const sourceId = sourceParts.join(':');
-      const normalizedSlot = (slot as SlotKey) || 'upper';
-      const sourceType = sourceId.startsWith('suggested:') ? 'suggested' : 'wardrobe';
-
-      return {
-        id: piece.id,
-        slot: normalizedSlot,
-        sourceType,
-        sourceId,
-        name: piece.name,
-        brand: piece.brand,
-        brandLogoUrl: piece.brandLogoUrl,
-        category: piece.category ?? SLOT_DEFAULT_CATEGORIES[normalizedSlot],
-        pieceType: piece.pieceType,
-        wearstyles: piece.wearstyles ?? SLOT_AUTO_WEARSTYLE[normalizedSlot],
-      };
-    });
-
-  const buildGeneratedOutfitCardData = () => {
-    const pieces = (Object.entries(slots) as Array<[SlotKey, string | null]>)
-      .filter((entry): entry is [SlotKey, string] => Boolean(entry[1]))
-      .map(([slot, selectedId]) => buildOutfitPiece(slot, selectedId));
-    const selectedBackground = buildOutfitBackgroundConfig();
-
-    const outfitStyleLine = `${style || 'Streetwear'} • ${occasion || 'Daily'}`;
-    return {
-      outfitName: title.trim() || 'Untitled Outfit',
-      outfitStyleLine,
-      outfitDescription: buildOutfitDescriptionFallback({ pieces, outfitStyleLine }),
-      heroImageUrl: heroImageUrl.trim() || '/welcome-newcomers.png',
-      outfitBackground: selectedBackground,
-      pieces,
-    } satisfies OutfitCardData;
   };
 
   return (
