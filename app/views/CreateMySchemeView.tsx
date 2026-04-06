@@ -17,13 +17,21 @@ import {
   resolveBrandLogoUrlByName,
 } from '@/app/lib/outfit-card';
 
-type WardrobeItem = {
-  wardrobe_item_id: string;
-  name: string;
+type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
+type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
+type SchemePieceSnapshot = {
+  piece_id: string;
+  piece_name: string;
+  brand_name: string;
   piece_type: string;
+  category: PieceCategory;
+  wearstyles: string[];
 };
+type Brand = { brand_id: string; name: string; logo_url?: string | null };
 
 type SchemeWardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
+const DEFAULT_BRAND_ID = 'default-brand';
+const FALLBACK_BRANDS: Brand[] = [{ brand_id: DEFAULT_BRAND_ID, name: 'SELECTION' }];
 
 const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
   upper: ['upper', 'upper piece', 'top', 'tops'],
@@ -121,7 +129,9 @@ const formatDisplayName = (value?: string) =>
     .join(' ');
 
 export default function CreateMySchemeView() {
-  const [items, setItems] = useState<Array<{ wardrobe_item_id: string; name: string; piece_type: string }>>([]);
+  const [items, setItems] = useState<WardrobeItem[]>([]);
+  const [brands, setBrands] = useState<Brand[]>(FALLBACK_BRANDS);
+  const [selectedBrandId, setSelectedBrandId] = useState(DEFAULT_BRAND_ID);
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
@@ -206,6 +216,14 @@ export default function CreateMySchemeView() {
     () => brands.find((brand) => brand.brand_id === selectedBrandId) ?? null,
     [brands, selectedBrandId],
   );
+  const isFormValid = useMemo(
+    () =>
+      Boolean(title.trim()) &&
+      Boolean(style.trim()) &&
+      Boolean(occasion.trim()) &&
+      Object.values(slots).some(Boolean),
+    [title, style, occasion, slots],
+  );
 
   const schemeItems = useMemo(
     () =>
@@ -218,6 +236,78 @@ export default function CreateMySchemeView() {
         })),
     [slots],
   );
+
+  const resolveSlotSelectionLabel = (slot: SlotKey) => {
+    const selectedValue = slots[slot];
+    if (!selectedValue) return 'No piece selected';
+    const suggested = DEFAULT_SLOT_SUGGESTIONS[slot].find((option) => option.value === selectedValue);
+    if (suggested) return suggested.label;
+    const selectedItem = items.find((item) => item.wardrobe_item_id === selectedValue);
+    return selectedItem?.name || 'Custom selection';
+  };
+
+  const buildGeneratedOutfitCardData = (): OutfitCardData => {
+    const selectedBrandName = selectedBrand?.name || 'SELECTION';
+
+    const pieces = (Object.keys(slots) as SlotKey[])
+      .map((slot) => {
+        const selectedValue = slots[slot];
+        if (!selectedValue) return null;
+
+        const inventoryItem = items.find((item) => item.wardrobe_item_id === selectedValue);
+        const suggestedItem = DEFAULT_SLOT_SUGGESTIONS[slot].find((suggestion) => suggestion.value === selectedValue);
+        const derivedName = inventoryItem?.name || suggestedItem?.label || `${formatDisplayName(slot)} Piece`;
+        const pieceType = formatDisplayName(inventoryItem?.piece_type || SLOT_DEFAULT_PIECE_TYPES[slot]);
+
+        return {
+          id: selectedValue,
+          name: derivedName,
+          brand: selectedBrandName,
+          brandLogoUrl: resolveBrandLogoUrlByName(selectedBrandName) || selectedBrand?.logo_url || undefined,
+          pieceType,
+          category: SLOT_DEFAULT_CATEGORIES[slot],
+          wearstyles: SLOT_AUTO_WEARSTYLE[slot],
+        } as OutfitPiece;
+      })
+      .filter(Boolean) as OutfitPiece[];
+
+    return {
+      outfitName: title.trim() || 'My New Scheme',
+      outfitStyleLine: `${style.trim() || 'Minimal'} · ${occasion.trim() || 'Daily'}`,
+      outfitDescription: buildOutfitDescriptionFallback({
+        pieces,
+        outfitStyleLine: `${style.trim() || 'Minimal'} ${occasion.trim() || 'Daily'}`,
+      }),
+      heroImageUrl: heroImageUrl.trim() || '/models/model-default.jpeg',
+      outfitBackground: buildOutfitBackgroundConfig(),
+      pieces,
+    };
+  };
+
+  const buildSchemePieceSnapshots = (pieces: OutfitPiece[]): SchemePieceSnapshot[] =>
+    pieces.map((piece) => ({
+      piece_id: piece.id,
+      piece_name: piece.name,
+      brand_name: piece.brand,
+      piece_type: normalizePieceType(piece.pieceType) || piece.pieceType,
+      category: piece.category || 'Standard',
+      wearstyles: piece.wearstyles || [],
+    }));
+
+  const uploadHeroImage = (file: File) => {
+    setHeroImageUploading(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      setHeroImageUrl(result);
+      setHeroImageUploading(false);
+    };
+    reader.onerror = () => {
+      setAlertMessage('Unable to process image. Please try another file.');
+      setHeroImageUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const buildOutfitBackgroundConfig = () => {
     const [backgroundType, presetValue] = outfitBackgroundPreset.split('|', 2) as [
