@@ -25,102 +25,9 @@ type WardrobeItem = {
 
 type SchemeWardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
-type SchemeWardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
-
-const SLOT_TYPE_ALIASES: Record<SlotKey, string[]> = {
-  upper: [
-    'upper',
-    'upper piece',
-    'top',
-    'tops',
-    'upper_body',
-    'upper body',
-    'shirt',
-    't-shirt',
-    'tee',
-    'blouse',
-    'sweater',
-    'sweatshirt',
-    'hoodie',
-    'jacket',
-    'coat',
-    'blazer',
-    'dress',
-    'mini dress',
-    'midi dress',
-    'maxi dress',
-    'crop top',
-    'tank top',
-    'polo',
-    'cardigan',
-  ],
-  lower: [
-    'lower',
-    'lower piece',
-    'bottom',
-    'bottoms',
-    'pants',
-    'trousers',
-    'jeans',
-    'shorts',
-    'skirt',
-    'mini skirt',
-    'midi skirt',
-    'maxi skirt',
-    'leggings',
-    'cargo',
-    'jogger',
-  ],
-  shoes: [
-    'shoes',
-    'shoes piece',
-    'shoe',
-    'footwear',
-    'sneaker',
-    'sneakers',
-    'boot',
-    'boots',
-    'loafer',
-    'loafers',
-    'heel',
-    'heels',
-    'sandals',
-    'trainer',
-    'trainers',
-  ],
-  accessory: [
-    'accessory',
-    'accessories',
-    'bag',
-    'watch',
-    'chain',
-    'necklace',
-    'bracelet',
-    'belt',
-    'cap',
-    'hat',
-    'glasses',
-    'sunglasses',
-    'earring',
-    'earrings',
-    'ring',
-    'rings',
-  ],
-  lower: [
-    'lower',
-    'lower piece',
-    'bottom',
-    'bottoms',
-    'pants',
-    'trousers',
-    'jeans',
-    'shorts',
-    'skirt',
-    'mini skirt',
-    'midi skirt',
-    'maxi skirt',
-    'leggings',
-  ],
+const SLOT_TYPE_ALIASES: Record<'upper' | 'lower' | 'shoes' | 'accessory', string[]> = {
+  upper: ['upper', 'upper piece', 'top', 'tops'],
+  lower: ['lower', 'lower piece', 'bottom', 'bottoms'],
   shoes: ['shoes', 'shoes piece', 'shoe', 'footwear'],
   accessory: ['accessory', 'accessories'],
 };
@@ -214,7 +121,7 @@ const formatDisplayName = (value?: string) =>
     .join(' ');
 
 export default function CreateMySchemeView() {
-  const [items, setItems] = useState<SchemeWardrobeItem[]>([]);
+  const [items, setItems] = useState<Array<{ wardrobe_item_id: string; name: string; piece_type: string }>>([]);
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
