@@ -29,18 +29,36 @@ export interface BlenderCloudJobStatus {
 
 function resolveRunpodBaseUrl(): string {
   const explicit = process.env.BLENDER_CLOUD_API_URL?.trim();
-  if (explicit) return explicit;
-
-  const endpointUrl = process.env.RUNPOD_ENDPOINT_URL?.trim();
-  if (endpointUrl) return endpointUrl;
+  if (explicit) return normalizeRunpodApiUrl(explicit);
 
   const endpointId = process.env.RUNPOD_ENDPOINT_ID?.trim();
-  if (!endpointId) {
+  if (endpointId) {
+    return `https://api.runpod.ai/v2/${endpointId}`;
+  }
+
+  const endpointUrl = process.env.RUNPOD_ENDPOINT_URL?.trim();
+  if (endpointUrl) {
+    return normalizeRunpodApiUrl(endpointUrl);
+  }
+
+  throw new Error(
+    'RunPod is not configured. Set BLENDER_CLOUD_API_URL or RUNPOD_ENDPOINT_ID.',
+  );
+}
+
+function normalizeRunpodApiUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim().replace(/\/+$/, '');
+  const lower = trimmed.toLowerCase();
+  const isApiV2Url = lower.includes('api.runpod.ai/v2/');
+  const looksLikeLoadBalancer = lower.includes('.proxy.runpod.net') || lower.includes('/lb/');
+
+  if (looksLikeLoadBalancer && !isApiV2Url) {
     throw new Error(
-      'RunPod is not configured. Set BLENDER_CLOUD_API_URL or RUNPOD_ENDPOINT_URL or RUNPOD_ENDPOINT_ID.',
+      'RunPod API URL is a load balancer endpoint. Use a serverless API base URL like https://api.runpod.ai/v2/<endpoint-id> or set RUNPOD_ENDPOINT_ID.',
     );
   }
-  return `https://api.runpod.ai/v2/${endpointId}`;
+
+  return trimmed;
 }
 
 function resolveToken(): string {
@@ -48,11 +66,7 @@ function resolveToken(): string {
 }
 
 function hasRunpodConfiguration(): boolean {
-  return Boolean(
-    process.env.BLENDER_CLOUD_API_URL?.trim()
-      || process.env.RUNPOD_ENDPOINT_URL?.trim()
-      || process.env.RUNPOD_ENDPOINT_ID?.trim(),
-  );
+  return Boolean(process.env.BLENDER_CLOUD_API_URL?.trim() || process.env.RUNPOD_ENDPOINT_ID?.trim());
 }
 
 function toInternalStatus(status: string): BlenderCloudJobStatus['status'] {

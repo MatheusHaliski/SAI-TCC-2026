@@ -32,6 +32,7 @@ BLENDER_CLOUD_API_TOKEN="..."                                 # optional overrid
 Resolution rules:
 - API URL = `BLENDER_CLOUD_API_URL` or derived from `RUNPOD_ENDPOINT_ID`
 - API token = `BLENDER_CLOUD_API_TOKEN` fallback to `RUNPOD_API_KEY`
+- Do **not** use a RunPod load balancer URL (for example `*.proxy.runpod.net`) as `BLENDER_CLOUD_API_URL`; this backend uses the Serverless `/run` + `/status/{id}` API.
 
 ## RunPod Worker Files
 
