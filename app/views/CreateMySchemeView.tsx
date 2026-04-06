@@ -25,13 +25,7 @@ type WardrobeItem = {
 
 type SchemeWardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
-const FALLBACK_BRANDS: Brand[] = [
-  {
-    brand_id: 'lacoste',
-    name: 'Lacoste',
-    logo_url: '/lacoste.jpg',
-  },
-];
+type SchemeWardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
 const SLOT_TYPE_ALIASES: Record<SlotKey, string[]> = {
   upper: [
