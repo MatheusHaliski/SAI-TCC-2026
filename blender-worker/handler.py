@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import io
 import json
 import logging
 import os
@@ -13,10 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-import numpy as np
-import requests
-from fastapi import FastAPI, HTTPException
-from PIL import Image
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 # Option A (MVP): this FastAPI mock-3D worker is the only active runtime.
@@ -33,7 +30,6 @@ app = FastAPI(title="StylistAI MVP Mock 3D Worker", version="1.1.0")
 
 OUTPUT_DIR = Path(os.getenv("WORKER_OUTPUT_DIR", "/tmp/stylistai-3d-output"))
 OUTPUT_PUBLIC_BASE_URL = os.getenv("OUTPUT_PUBLIC_BASE_URL", "").strip()
-REQUEST_TIMEOUT_SECONDS = int(os.getenv("REQUEST_TIMEOUT_SECONDS", "60"))
 MAX_WORKERS = int(os.getenv("WORKER_MAX_THREADS", "4"))
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -54,6 +50,10 @@ class JobRequest(BaseModel):
 class JobResponse(BaseModel):
     jobId: str
     status: JobState
+
+
+class LbRequest(BaseModel):
+    input: JobRequest
 
 
 def now_iso() -> str:
@@ -89,29 +89,6 @@ def get_job(job_id: str) -> dict[str, Any] | None:
         return dict(record) if record else None
 
 
-def download_image(image_url: str) -> Image.Image:
-    with requests.get(image_url, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-        response.raise_for_status()
-        image = Image.open(io.BytesIO(response.content)).convert("RGBA")
-    return image
-
-
-def preprocess_image(image: Image.Image, size: int = 1024) -> Image.Image:
-    processed = image.copy()
-    processed.thumbnail((size, size), Image.Resampling.LANCZOS)
-    return processed
-
-
-def image_features(image: Image.Image) -> dict[str, Any]:
-    rgb = np.array(image.convert("RGB"), dtype=np.float32)
-    avg_color = rgb.mean(axis=(0, 1)).round(2).tolist()
-    return {
-        "width": int(rgb.shape[1]),
-        "height": int(rgb.shape[0]),
-        "mean_rgb": avg_color,
-    }
-
-
 def write_dummy_glb(output_path: Path, metadata: dict[str, Any]) -> None:
     gltf_json = {
         "asset": {"version": "2.0", "generator": "StylistAI-Worker-MVP"},
@@ -144,12 +121,12 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
     output_path = OUTPUT_DIR / f"{job_id}.glb"
 
     try:
-        original = download_image(payload.imageUrl)
-        processed = preprocess_image(original)
-        features = image_features(processed)
-
-        # Simulate cloud 3D generation latency for MVP integration.
-        time.sleep(1.5)
+        # Lightweight metadata-only processing to keep LB response and startup fast.
+        features = {
+            "imageUrlLength": len(payload.imageUrl),
+            "hasModelUrl": bool(payload.modelUrl),
+            "optionKeys": sorted(payload.options.keys()),
+        }
 
         metadata = {
             "jobType": payload.jobType,
@@ -190,6 +167,28 @@ def ping() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.middleware("http")
+async def auth_and_logging_middleware(request: Request, call_next):
+    print("Incoming request:", request.url.path)
+    if request.url.path in {"/ping", "/"}:
+        return await call_next(request)
+
+    expected_token = os.getenv("BLENDER_WORKER_TOKEN", "").strip()
+    if not expected_token:
+        return await call_next(request)
+
+    authorization = request.headers.get("authorization", "")
+    if authorization != f"Bearer {expected_token}":
+        return JSONResponse(status_code=401, content={"detail": "Unauthorized", "message": "no token provided"})
+
+    return await call_next(request)
+
+
+@app.get("/")
+def root() -> dict[str, str]:
+    return {"message": "RunPod server running"}
+
+
 @app.post("/jobs", response_model=JobResponse)
 def create_job(payload: JobRequest) -> dict[str, str]:
     if not payload.imageUrl.strip():
@@ -200,6 +199,16 @@ def create_job(payload: JobRequest) -> dict[str, str]:
     logger.info("job_created jobId=%s jobType=%s", job_id, payload.jobType)
     executor.submit(run_3d_pipeline, job_id, payload)
     return {"jobId": job_id, "status": "queued"}
+
+
+@app.post("/")
+def create_job_lb(payload: LbRequest) -> dict[str, str]:
+    created = create_job(payload.input)
+    return {
+        "id": created["jobId"],
+        "jobId": created["jobId"],
+        "status": "QUEUED",
+    }
 
 
 @app.get("/jobs/{jobId}")
@@ -219,3 +228,11 @@ def job_status(jobId: str) -> dict[str, Any]:
     if record.get("error"):
         response["error"] = record["error"]
     return response
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.environ.get("PORT", "80"))
+    print("Server started on port", port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
