@@ -211,6 +211,35 @@ body {
     linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
   background-size: 44px 44px;
 }
+
+.sa-home-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.35;
+}
+
+:root[data-home-shape='orb'] .sa-home-shell::before {
+  background:
+    radial-gradient(circle at 18% 30%, rgba(134, 239, 172, 0.55), transparent 44%),
+    radial-gradient(circle at 80% 70%, rgba(110, 231, 183, 0.45), transparent 38%);
+}
+
+:root[data-home-shape='diamond'] .sa-home-shell::before {
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.16) 12%, transparent 12%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.16) 12%, transparent 12%);
+  background-size: 130px 130px;
+}
+
+:root[data-home-shape='mesh'] .sa-home-shell::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
 .sa-home-shell p,
 .sa-home-shell h1,
 .sa-home-shell h2,
