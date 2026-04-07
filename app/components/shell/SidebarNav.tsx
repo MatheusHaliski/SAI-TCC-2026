@@ -46,7 +46,7 @@ export default function SidebarNav({
   return mobileOpen ? (
     <div className="fixed inset-0 z-40 bg-black/60" onClick={onCloseMobile}>
       <aside
-        className="sa-premium-gradient-surface h-full w-72 border-r border-white/25 backdrop-blur"
+        className="sa-premium-gradient-surface sa-surface-sidebar h-full w-72 border-r border-white/25 backdrop-blur"
         onClick={(event) => event.stopPropagation()}
       >
         <NavContent
