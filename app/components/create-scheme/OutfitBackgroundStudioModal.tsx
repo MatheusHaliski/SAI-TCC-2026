@@ -113,37 +113,6 @@ const DEFAULT_BACKGROUND: OutfitBackgroundConfig = {
   shape: 'orb',
 };
 
-function createMockAiImage(seed: string, palette: string) {
-  const encodedSeed = encodeURIComponent(seed.slice(0, 140));
-  const [start, end] = palette.includes('emerald')
-    ? ['#022c22', '#22d3ee']
-    : palette.includes('black')
-      ? ['#09090b', '#d1d5db']
-      : palette.includes('warm')
-        ? ['#78350f', '#fde68a']
-        : ['#0f172a', '#8b5cf6'];
-
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'>
-  <defs>
-    <linearGradient id='g' x1='0' x2='1' y1='0' y2='1'>
-      <stop offset='0%' stop-color='${start}' />
-      <stop offset='100%' stop-color='${end}' />
-    </linearGradient>
-    <radialGradient id='glow' cx='0.7' cy='0.2' r='0.65'>
-      <stop offset='0%' stop-color='rgba(255,255,255,0.26)' />
-      <stop offset='100%' stop-color='rgba(255,255,255,0)' />
-    </radialGradient>
-  </defs>
-  <rect width='1200' height='800' fill='url(#g)'/>
-  <rect width='1200' height='800' fill='url(#glow)'/>
-  <ellipse cx='220' cy='650' rx='360' ry='130' fill='rgba(255,255,255,0.08)'/>
-  <ellipse cx='980' cy='220' rx='300' ry='130' fill='rgba(255,255,255,0.05)'/>
-  <text x='70' y='730' fill='rgba(255,255,255,0.42)' font-size='28' font-family='Arial, sans-serif'>${encodedSeed}</text>
-</svg>`;
-
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
 function getRelativeLuminance(hexColor: string) {
   const safeColor = /^#([0-9A-F]{6})$/i.test(hexColor) ? hexColor : '#111827';
   const rgb = [
@@ -192,6 +161,8 @@ export default function OutfitBackgroundStudioModal({
   const [useMetadataBoost, setUseMetadataBoost] = useState(true);
   const [aiResults, setAiResults] = useState<string[]>([]);
   const [selectedAiResult, setSelectedAiResult] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const recommendedPresets = useMemo(() => getRecommendedPresets(outfitMetadata), [outfitMetadata]);
 
@@ -236,7 +207,7 @@ export default function OutfitBackgroundStudioModal({
     setRecentColors((prev) => [color, ...prev.filter((item) => item !== color)].slice(0, 6));
   };
 
-  const generateAiBackground = () => {
+  const generateAiBackground = async () => {
     const basePrompt = aiPrompt.trim() || 'luxury editorial abstract background';
     const metadataAddition = useMetadataBoost
       ? [outfitMetadata?.style, outfitMetadata?.occasion, outfitMetadata?.palette, outfitMetadata?.mood, outfitMetadata?.brands?.join(', ')]
@@ -246,12 +217,22 @@ export default function OutfitBackgroundStudioModal({
 
     const mergedPrompt = `${basePrompt}, ${aiStyle}, ${aiMood}, ${aiPalette}${metadataAddition ? `, ${metadataAddition}` : ''}, supportive backdrop, avoid faces, low visual noise`;
 
-    const generated = [
-      createMockAiImage(mergedPrompt, aiPalette),
-      createMockAiImage(`${mergedPrompt} variation one`, aiPalette),
-      createMockAiImage(`${mergedPrompt} variation two`, aiPalette),
-    ];
+    setAiLoading(true);
+    setAiError(null);
+    const response = await fetch('/api/ai/background-artwork', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: mergedPrompt, style: aiStyle, mood: aiMood, palette: aiPalette, metadata: outfitMetadata }),
+    });
+    const payload = await response.json().catch(() => ({ images: [] }));
+    setAiLoading(false);
 
+    if (!response.ok || !Array.isArray(payload.images) || !payload.images.length) {
+      setAiError('AI artwork failed. You can keep the previous preview or choose a gradient preset.');
+      return;
+    }
+
+    const generated = payload.images as string[];
     setAiResults(generated);
     setSelectedAiResult(generated[0]);
     setDraft((prev) => ({
@@ -362,6 +343,7 @@ export default function OutfitBackgroundStudioModal({
 
             {activeTab === 'gradient' ? (
               <div className="space-y-3">
+                {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
                 <div className="grid grid-cols-3 gap-2">
                   {(['linear', 'radial', 'conic'] as const).map((type) => (
                     <button
@@ -496,8 +478,8 @@ export default function OutfitBackgroundStudioModal({
                   Use my outfit metadata to improve prompt
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" className="rounded-lg border border-violet-300/60 bg-violet-500/40 px-3 py-2 text-xs font-semibold" onClick={generateAiBackground}>Generate Background</button>
-                  <button type="button" className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs" onClick={generateAiBackground}>Regenerate</button>
+                  <button type="button" className="rounded-lg border border-violet-300/60 bg-violet-500/40 px-3 py-2 text-xs font-semibold" onClick={() => void generateAiBackground()}>{aiLoading ? 'Generating...' : 'Generate Background'}</button>
+                  <button type="button" className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs" onClick={() => void generateAiBackground()}>Regenerate</button>
                   <button
                     type="button"
                     className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs"
@@ -518,6 +500,7 @@ export default function OutfitBackgroundStudioModal({
                   </button>
                 </div>
 
+                {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
                 <div className="grid grid-cols-3 gap-2">
                   {aiResults.map((result) => (
                     <button
@@ -559,9 +542,10 @@ export default function OutfitBackgroundStudioModal({
         </div>
 
         <footer className="mt-4 flex flex-wrap justify-end gap-2 border-t border-white/15 pt-4">
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancel</button>
+          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancel / Close</button>
           <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Reset</button>
-          <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={() => onApply(draft)}>Apply Background</button>
+          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => onApply(draft)}>Save Background</button>
+          <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={() => onApply(draft)}>Apply to Card</button>
         </footer>
       </div>
     </div>

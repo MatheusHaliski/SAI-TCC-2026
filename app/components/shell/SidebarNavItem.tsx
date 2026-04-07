@@ -66,7 +66,7 @@ export default function SidebarNavItem({ route, label, helperText, active, compa
       onClick={() => onSelect(route)}
       className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
         active
-          ? 'border-white/40 bg-white text-black shadow'
+          ? 'border-emerald-100/70 bg-[linear-gradient(120deg,rgba(34,197,94,0.7),rgba(250,204,21,0.7))] text-slate-900 shadow-[0_0_28px_rgba(250,204,21,0.35)]'
           : 'sa-premium-gradient-surface-soft border-transparent text-white/85 hover:border-white/30 hover:text-white'
       }`}
     >

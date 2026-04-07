@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getAuthSessionProfile } from '@/app/lib/authSession';
 import { getServerSession } from '@/app/lib/clientSession';
-import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import PageHeader from '@/app/components/shell/PageHeader';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
@@ -14,6 +13,7 @@ import GenerationModePanel from '@/app/components/create-scheme/GenerationModePa
 import SaveSummaryPanel from '@/app/components/create-scheme/SaveSummaryPanel';
 import SchemeStepCard from '@/app/components/create-scheme/SchemeStepCard';
 import SlotReviewCard from '@/app/components/create-scheme/SlotReviewCard';
+import SchemeStepSidebar from '@/app/components/create-scheme/SchemeStepSidebar';
 import OutfitBackgroundStudioModal from '@/app/components/create-scheme/OutfitBackgroundStudioModal';
 import {
   OutfitBackgroundConfig,
@@ -81,7 +81,7 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
   ],
 };
 
-const sections = ['Scheme Data', 'Manual Builder', 'AI Generation', 'Slots Review', 'Save & Generate'];
+const sections = ['Scheme Basics', 'Build Outfit', 'AI Assist', 'Slots Review', 'Card Background', 'Save & Generate'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
 const SLOT_AUTO_WEARSTYLE: Record<SlotKey, string[]> = {
@@ -185,6 +185,18 @@ export default function CreateMySchemeView() {
     'rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:scale-[1.01] hover:bg-white/15';
 
   useEffect(() => {
+    const draftRaw = typeof window !== 'undefined' ? sessionStorage.getItem('sai_scheme_inspiration') : null;
+    if (draftRaw) {
+      window.setTimeout(() => {
+        try {
+          const draft = JSON.parse(draftRaw) as OutfitCardData;
+          if (draft.outfitName) setTitle(`${draft.outfitName} · Inspired`);
+          if (draft.outfitStyleLine) setStyle(draft.outfitStyleLine.split('•')[0]?.trim() || 'Minimal');
+        } catch {}
+        sessionStorage.removeItem('sai_scheme_inspiration');
+      }, 0);
+    }
+
     const loadSessionAndItems = async () => {
       const localProfile = getAuthSessionProfile();
       let resolvedUserId = localProfile.user_id?.trim() || '';
@@ -240,6 +252,16 @@ export default function CreateMySchemeView() {
   }), [brands, selectedBrand]);
 
   const filledSlotsCount = useMemo(() => Object.values(slots).filter(Boolean).length, [slots]);
+
+
+  const completedSections = useMemo(() => sections.filter((section) => {
+    if (section === 'Scheme Basics') return Boolean(title.trim()) && Boolean(style.trim()) && Boolean(occasion.trim());
+    if (section === 'Build Outfit') return Object.values(slots).some(Boolean);
+    if (section === 'AI Assist') return Boolean(aiPrompt.trim()) || generationMode === 'ai';
+    if (section === 'Slots Review') return filledSlotsCount > 0;
+    if (section === 'Card Background') return Boolean(outfitBackgroundConfig.background_mode);
+    return Boolean(generatedCardData);
+  }), [title, style, occasion, slots, aiPrompt, generationMode, filledSlotsCount, outfitBackgroundConfig.background_mode, generatedCardData]);
 
   const isFormValid = useMemo(
     () =>
@@ -478,7 +500,7 @@ export default function CreateMySchemeView() {
 
   const renderManualBuilder = () => (
     <SectionBlock
-      title="Manual Builder"
+      title="Build Outfit"
       subtitle="Define metadata, description behavior, and slot assignment manually."
       className="sa-surface-header h-auto border-white/20"
     >
@@ -683,18 +705,18 @@ export default function CreateMySchemeView() {
 
   const renderSchemeData = () => (
     <SectionBlock
-      title="Scheme Data Overview"
-      subtitle="Understand the full fashion-tech flow before creating your outfit card."
+      title="Scheme Basics"
+      subtitle="Defina claramente os dados que orientam a geração do card final."
       className="sa-surface-header h-auto border-white/20"
     >
       <div className="mt-4 space-y-4">
         <GenerationModePanel mode={generationMode} onChange={setGenerationMode} />
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <SchemeStepCard step="Step 1" icon="🧬" title="Define outfit identity" description="Set title, style, occasion, visibility, palette, and mood for the card." />
-          <SchemeStepCard step="Step 2" icon="🎛️" title="Choose generation method" description="Use Manual Builder for precise control or AI Generation for prompt-driven composition." />
-          <SchemeStepCard step="Step 3" icon="📝" title="Provide metadata or prompt" description="Write manual data or a natural-language prompt tied to wardrobe inventory." />
-          <SchemeStepCard step="Step 4" icon="🧩" title="Review slots" description="Validate upper, lower, shoes, and accessories in a tactical lineup screen." />
-          <SchemeStepCard step="Step 5" icon="🚀" title="Save & generate" description="Run final checks and save the premium outfit card with consistent structure." />
+          <SchemeStepCard step="Title" icon="🧬" title="Scheme title" description="Nome principal do card final. Ex: Night Luxe Capsule." />
+          <SchemeStepCard step="Description" icon="🧾" title="Description" description="Explica o conceito da composição e aumenta contexto do card." />
+          <SchemeStepCard step="Style direction" icon="🎯" title="Style + mood + audience" description="Define estilo, mood, visibilidade e caso de uso." />
+          <SchemeStepCard step="Visibility" icon="🌐" title="Visibility" description="Public abre descoberta; private mantém rascunho reservado." />
+          <SchemeStepCard step="Impact" icon="🚀" title="Impacto no card" description="Esses dados influenciam descrição, badges e background recomendado." />
         </div>
       </div>
     </SectionBlock>
@@ -702,8 +724,8 @@ export default function CreateMySchemeView() {
 
   const renderAiGeneration = () => (
     <SectionBlock
-      title="AI Generation"
-      subtitle="Prompt-based outfit composition using wardrobe pieces already in your database."
+      title="AI Assist"
+      subtitle="A IA sugere combinações com base nos seus itens e metadata."
       className="sa-surface-header h-auto border-white/20"
     >
       <div className="mt-4 space-y-3">
@@ -755,6 +777,21 @@ export default function CreateMySchemeView() {
     </SectionBlock>
   );
 
+
+  const renderCardBackground = () => (
+    <SectionBlock
+      title="Card Background"
+      subtitle="Ajuste cor, gradiente ou IA e persista no draft atual."
+      className="sa-surface-header h-auto border-white/20"
+    >
+      <div className="mt-4">
+        <button type="button" className={primaryButtonClassName} onClick={() => setBackgroundStudioOpen(true)}>
+          Open Background Studio
+        </button>
+      </div>
+    </SectionBlock>
+  );
+
   const renderSaveGenerate = () => (
     <SectionBlock
       title="Save & Generate"
@@ -783,12 +820,7 @@ export default function CreateMySchemeView() {
   return (
     <>
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <ContextSectionMenu
-          title="Create My Scheme"
-          sections={sections}
-          selectedSection={selectedSection}
-          onSelectSection={setSelectedSection}
-        />
+        <SchemeStepSidebar steps={sections} currentStep={selectedSection} completedSteps={completedSections} onSelect={setSelectedSection} />
 
         <div className="space-y-6">
           <PageHeader
@@ -798,10 +830,11 @@ export default function CreateMySchemeView() {
 
           <GenerationModePanel mode={generationMode} onChange={setGenerationMode} />
 
-          {selectedSection === 'Scheme Data' ? renderSchemeData() : null}
-          {selectedSection === 'Manual Builder' ? renderManualBuilder() : null}
-          {selectedSection === 'AI Generation' ? renderAiGeneration() : null}
+          {selectedSection === 'Scheme Basics' ? renderSchemeData() : null}
+          {selectedSection === 'Build Outfit' ? renderManualBuilder() : null}
+          {selectedSection === 'AI Assist' ? renderAiGeneration() : null}
           {selectedSection === 'Slots Review' ? renderSlotsReview() : null}
+          {selectedSection === 'Card Background' ? renderCardBackground() : null}
           {selectedSection === 'Save & Generate' ? renderSaveGenerate() : null}
 
           {generatedCardData ? (
