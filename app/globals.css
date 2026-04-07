@@ -251,3 +251,50 @@ body {
 .sa-surface-context {
   @apply bg-gradient-to-br from-[#1320a0] via-[#168b7c] to-[#2ec27e] shadow-xl shadow-emerald-500/15;
 }
+
+html.dark-mode body {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+html.dark-mode body :where(div, section, article, aside, main, nav, header, footer, form, label, fieldset, legend, span, p, h1, h2, h3, h4, h5, h6, ul, ol, li, a, button, input, textarea, select) {
+  background: #000 !important;
+  background-image: none !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+html.dark-mode body input::placeholder,
+html.dark-mode body textarea::placeholder {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+:root[data-theme='dark'] .sa-right-drawer {
+  border-color: rgba(148, 163, 184, 0.35);
+  background-image: linear-gradient(160deg, rgba(55, 65, 81, 0.96), rgba(31, 41, 55, 0.96), rgba(17, 24, 39, 0.98));
+  color: #fff;
+}
+
+:root[data-theme='dark'] .sa-right-drawer p,
+:root[data-theme='dark'] .sa-right-drawer span,
+:root[data-theme='dark'] .sa-right-drawer h1,
+:root[data-theme='dark'] .sa-right-drawer h2,
+:root[data-theme='dark'] .sa-right-drawer h3,
+:root[data-theme='dark'] .sa-right-drawer a,
+:root[data-theme='dark'] .sa-right-drawer button,
+:root[data-theme='dark'] .sa-right-drawer label,
+:root[data-theme='dark'] .sa-right-drawer li,
+:root[data-theme='dark'] .sa-right-drawer article,
+:root[data-theme='dark'] .sa-right-drawer div {
+  color: #fff;
+}
+
+:root[data-theme='dark'] .sa-right-drawer button,
+:root[data-theme='dark'] .sa-right-drawer .sa-drawer-card,
+:root[data-theme='dark'] .sa-right-drawer .sa-drawer-action,
+:root[data-theme='dark'] .sa-right-drawer .sa-page-studio,
+:root[data-theme='dark'] .sa-right-drawer .sa-shape-chip,
+:root[data-theme='dark'] .sa-right-drawer .sa-apply-background {
+  border-color: rgba(148, 163, 184, 0.45);
+  background-image: linear-gradient(145deg, rgba(75, 85, 99, 0.76), rgba(55, 65, 81, 0.72), rgba(31, 41, 55, 0.74));
+}

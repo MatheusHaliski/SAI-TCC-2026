@@ -22,10 +22,7 @@ function RightDrawer({ title, onClose, children }: { title: string; onClose: () 
   return (
     <>
       <Overlay onClose={onClose} />
-      <aside
-        className="fixed right-0 top-0 z-[80] h-full w-full max-w-sm border-l border-white/30 bg-emerald-950/92 p-4 text-white shadow-2xl"
-        style={{ backgroundImage: 'var(--sidebar-gradient)' }}
-      >
+      <aside className="sa-right-drawer fixed right-0 top-0 z-[80] h-full w-full max-w-sm border-l border-emerald-100/30 bg-gradient-to-b from-emerald-700/95 via-emerald-800/95 to-emerald-950/95 p-4 text-white shadow-2xl">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold uppercase tracking-[0.15em] text-white/70">{title}</p>
           <button type="button" onClick={onClose} className="rounded-lg border border-white/30 px-2 py-1 text-xs">✕</button>
@@ -55,7 +52,7 @@ function PageBackgroundStudio({
   ];
   const shapes: PageBackgroundShape[] = ['none', 'orb', 'diamond', 'mesh'];
   return (
-    <div className="space-y-3 rounded-xl border border-emerald-100/30 bg-emerald-950/40 p-3">
+    <div className="sa-page-studio space-y-3 rounded-xl border border-emerald-100/30 bg-emerald-950/40 p-3">
       <p className="text-xs uppercase tracking-[0.12em] text-emerald-100/80">Page Background Studio</p>
       <div className="grid grid-cols-3 gap-2">
         {gradients.map((gradient) => (
@@ -74,13 +71,13 @@ function PageBackgroundStudio({
             key={shape}
             type="button"
             onClick={() => onChange({ ...draft, shape })}
-            className={`rounded-lg border px-2 py-1 text-xs uppercase ${draft.shape === shape ? 'border-emerald-200 bg-emerald-500/30' : 'border-white/20 bg-white/10'}`}
+            className={`sa-shape-chip rounded-lg border px-2 py-1 text-xs uppercase ${draft.shape === shape ? 'border-emerald-200 bg-emerald-500/30' : 'border-white/20 bg-white/10'}`}
           >
             {shape}
           </button>
         ))}
       </div>
-      <button type="button" className="w-full rounded-lg border border-emerald-200/70 bg-emerald-400/20 px-3 py-2 text-sm font-semibold" onClick={onApply}>
+      <button type="button" className="sa-apply-background w-full rounded-lg border border-emerald-200/70 bg-emerald-400/20 px-3 py-2 text-sm font-semibold" onClick={onApply}>
         Apply website background
       </button>
     </div>
@@ -183,13 +180,13 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
 
   return (
     <RightDrawer title="Account" onClose={onClose}>
-      <article className="rounded-xl border border-emerald-100/30 bg-white/10 p-3">
+      <article className="sa-drawer-card rounded-xl border border-emerald-100/30 bg-white/10 p-3">
         <p className="text-sm font-semibold">{username}</p>
         <p className="text-xs text-emerald-50/80">@{email.split('@')[0]} · {email}</p>
       </article>
       <div className="space-y-2">
         {actionItems.map((action) => (
-          <button key={action.label} type="button" onClick={action.onClick} className="w-full rounded-xl border border-emerald-100/30 bg-white/10 px-3 py-2 text-left text-sm">
+          <button key={action.label} type="button" onClick={action.onClick} className="sa-drawer-action w-full rounded-xl border border-emerald-100/30 bg-white/10 px-3 py-2 text-left text-sm">
             <span className="flex items-center gap-2">
               <span>{action.icon}</span>
               <span>{action.label}</span>
