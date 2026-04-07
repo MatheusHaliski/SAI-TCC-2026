@@ -211,11 +211,19 @@ export default function OutfitBackgroundStudioModal({
   const shouldShowContrastWarning =
     draft.background_mode === 'solid' && getRelativeLuminance(draft.solid_color || '#111827') > 0.55;
 
+  const toGradientConfig = (gradient?: OutfitBackgroundConfig['gradient']): NonNullable<OutfitBackgroundConfig['gradient']> => ({
+    ...(DEFAULT_BACKGROUND.gradient as NonNullable<OutfitBackgroundConfig['gradient']>),
+    ...gradient,
+    stops: gradient?.stops || (DEFAULT_BACKGROUND.gradient as NonNullable<OutfitBackgroundConfig['gradient']>).stops,
+  });
+
   const switchTab = (nextTab: StudioTab) => {
+    const nextMode: OutfitBackgroundConfig['background_mode'] = nextTab === 'color' ? 'solid' : nextTab;
+
     setActiveTab(nextTab);
     setDraft((prev) => ({
       ...prev,
-      background_mode: nextTab,
+      background_mode: nextMode,
       solid_color: nextTab === 'color' ? prev.solid_color || '#111827' : prev.solid_color,
       gradient: nextTab === 'gradient' ? prev.gradient || DEFAULT_BACKGROUND.gradient : prev.gradient,
       ai_artwork: nextTab === 'ai_artwork'
@@ -364,7 +372,7 @@ export default function OutfitBackgroundStudioModal({
                         ...prev,
                         background_mode: 'gradient',
                         gradient: {
-                          ...(prev.gradient || DEFAULT_BACKGROUND.gradient),
+                          ...toGradientConfig(prev.gradient),
                           type,
                         },
                       }))}
@@ -386,7 +394,7 @@ export default function OutfitBackgroundStudioModal({
                         setDraft((prev) => ({
                           ...prev,
                           background_mode: 'gradient',
-                          gradient: { ...(prev.gradient || DEFAULT_BACKGROUND.gradient), stops: nextStops.slice(0, 3) },
+                          gradient: { ...toGradientConfig(prev.gradient), stops: nextStops.slice(0, 3) },
                         }));
                       }}
                     />
@@ -398,7 +406,7 @@ export default function OutfitBackgroundStudioModal({
                       onChange={(event) => {
                         const nextStops = [...(draft.gradient?.stops || DEFAULT_BACKGROUND.gradient!.stops)];
                         nextStops[index] = { color: nextStops[index]?.color || '#ffffff', position: Number(event.target.value) };
-                        setDraft((prev) => ({ ...prev, background_mode: 'gradient', gradient: { ...(prev.gradient || DEFAULT_BACKGROUND.gradient), stops: nextStops.slice(0, 3) } }));
+                        setDraft((prev) => ({ ...prev, background_mode: 'gradient', gradient: { ...toGradientConfig(prev.gradient), stops: nextStops.slice(0, 3) } }));
                       }}
                     />
                   </label>
@@ -414,7 +422,7 @@ export default function OutfitBackgroundStudioModal({
                   onChange={(event) => setDraft((prev) => ({
                     ...prev,
                     background_mode: 'gradient',
-                    gradient: { ...(prev.gradient || DEFAULT_BACKGROUND.gradient), angle: Number(event.target.value) },
+                    gradient: { ...toGradientConfig(prev.gradient), angle: Number(event.target.value) },
                   }))}
                 />
 
@@ -428,7 +436,7 @@ export default function OutfitBackgroundStudioModal({
                   onChange={(event) => setDraft((prev) => ({
                     ...prev,
                     background_mode: 'gradient',
-                    gradient: { ...(prev.gradient || DEFAULT_BACKGROUND.gradient), intensity: Number(event.target.value) },
+                    gradient: { ...toGradientConfig(prev.gradient), intensity: Number(event.target.value) },
                   }))}
                 />
 
@@ -447,7 +455,7 @@ export default function OutfitBackgroundStudioModal({
                     className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs"
                     onClick={() => {
                       const stops = [...(draft.gradient?.stops || DEFAULT_BACKGROUND.gradient!.stops)].reverse();
-                      setDraft((prev) => ({ ...prev, background_mode: 'gradient', gradient: { ...(prev.gradient || DEFAULT_BACKGROUND.gradient), stops } }));
+                      setDraft((prev) => ({ ...prev, background_mode: 'gradient', gradient: { ...toGradientConfig(prev.gradient), stops } }));
                     }}
                   >
                     Reverse

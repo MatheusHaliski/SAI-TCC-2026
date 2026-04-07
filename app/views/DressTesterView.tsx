@@ -138,7 +138,7 @@ export default function DressTesterView() {
             <button onClick={() => removeFromCategory(activeCategory)} className="rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white">
               Remove from category
             </button>
-            <button onClick={resetLook} className="rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white">
+            <button onClick={() => resetLook()} className="rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white">
               Reset look
             </button>
             <button onClick={saveOutfit} disabled={saving} className="rounded-xl border border-white bg-white px-3 py-2 text-xs uppercase tracking-[0.2em] text-black disabled:opacity-60">
