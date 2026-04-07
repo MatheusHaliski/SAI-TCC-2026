@@ -100,6 +100,8 @@ export default function SearchItemsView() {
         heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
         pieces,
         brands,
+        schemeId: scheme.scheme_id,
+        creatorId: scheme.user_id,
         metaBadges: [
           { label: scheme.style || 'Style', icon: '🎯' },
           { label: scheme.occasion || 'Occasion', icon: '📍' },
