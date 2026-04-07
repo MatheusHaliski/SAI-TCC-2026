@@ -6,7 +6,7 @@ interface SearchInputProps {
 
 export default function SearchInput({ placeholder, value = '', onChange }: SearchInputProps) {
   return (
-    <div className="bg-white flex w-full items-center gap-2 rounded-xl border border-white/25 px-3 py-2 text-sm text-white/80 shadow-inner">
+    <div className="sa-topbar-search bg-white flex w-full items-center gap-2 rounded-xl border border-white/25 px-3 py-2 text-sm text-white/80 shadow-inner">
       <span aria-hidden className="text-black">
         ⌕
       </span>

@@ -298,3 +298,36 @@ html.dark-mode body textarea::placeholder {
   border-color: rgba(148, 163, 184, 0.45);
   background-image: linear-gradient(145deg, rgba(75, 85, 99, 0.76), rgba(55, 65, 81, 0.72), rgba(31, 41, 55, 0.74));
 }
+
+:root[data-theme='dark'] .sa-home-shell {
+  background-color: #030712;
+  background-image: linear-gradient(145deg, #111827 0%, #1f2937 55%, #374151 100%);
+  color: #fff;
+}
+
+:root[data-theme='dark'] .sa-home-shell :where(h1, h2, h3, h4, h5, h6, p, span, a, li, label, button) {
+  color: #fff;
+}
+
+:root[data-theme='dark'] .sa-surface-topbar,
+:root[data-theme='dark'] .sa-surface-header,
+:root[data-theme='dark'] .sa-surface-sidebar,
+:root[data-theme='dark'] .sa-surface-context,
+:root[data-theme='dark'] .sa-topbar-shell,
+:root[data-theme='dark'] .sa-topbar-action,
+:root[data-theme='dark'] .sa-home-logo-tile,
+:root[data-theme='dark'] .sa-topbar-search {
+  border-color: rgba(148, 163, 184, 0.55) !important;
+  background-image: linear-gradient(150deg, rgba(75, 85, 99, 0.9), rgba(55, 65, 81, 0.88), rgba(31, 41, 55, 0.92));
+  color: #fff !important;
+}
+
+:root[data-theme='dark'] .sa-topbar-search {
+  background-color: rgba(17, 24, 39, 0.85);
+}
+
+:root[data-theme='dark'] .sa-topbar-search span,
+:root[data-theme='dark'] .sa-topbar-search input,
+:root[data-theme='dark'] .sa-topbar-search input::placeholder {
+  color: #fff !important;
+}
