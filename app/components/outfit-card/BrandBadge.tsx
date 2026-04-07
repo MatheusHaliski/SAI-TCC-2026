@@ -10,11 +10,23 @@ const BRAND_GRADIENTS: Record<string, string> = {
   puma: 'linear-gradient(120deg, rgba(251,146,60,0.35), rgba(249,115,22,0.24), rgba(217,70,239,0.2))',
 };
 
+const BRAND_BORDER_COLORS: Record<string, string> = {
+  adidas: 'rgba(125, 211, 252, 0.8)',
+  nike: 'rgba(251, 113, 133, 0.8)',
+  lacoste: 'rgba(52, 211, 153, 0.78)',
+  puma: 'rgba(251, 146, 60, 0.8)',
+};
+
 function fallbackGradient(name: string) {
   const hash = name.toLowerCase().split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
   const hueA = hash % 360;
   const hueB = (hash + 70) % 360;
   return `linear-gradient(120deg, hsla(${hueA}, 72%, 65%, 0.35), hsla(${hueB}, 72%, 55%, 0.24))`;
+}
+
+function fallbackBorderColor(name: string) {
+  const hash = name.toLowerCase().split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return `hsla(${hash % 360}, 82%, 70%, 0.8)`;
 }
 
 interface BrandBadgeProps {
@@ -36,9 +48,13 @@ export default function BrandBadge({ brandName, brandLogoUrl, variant = 'default
   const imageClass = variant === 'compact' ? 'h-5 w-5' : 'h-6 w-6';
 
   const gradient = BRAND_GRADIENTS[brandName.toLowerCase()] || fallbackGradient(brandName);
+  const borderColor = BRAND_BORDER_COLORS[brandName.toLowerCase()] || fallbackBorderColor(brandName);
 
   return (
-    <span className={`inline-flex items-center gap-2 rounded-full border border-white/30 ${pillClass} text-white shadow-[0_0_24px_rgba(139,92,246,0.28)]`} style={{ backgroundImage: gradient }}>
+    <span
+      className={`inline-flex items-center gap-2 rounded-full border-2 ${pillClass} text-white shadow-[0_0_24px_rgba(139,92,246,0.28)]`}
+      style={{ backgroundImage: gradient, borderColor }}
+    >
       {brandLogoUrl && !logoFailed ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={brandLogoUrl} alt={`${brandName} logo`} className={`${imageClass} rounded-full object-contain`} onError={() => setLogoFailed(true)} />
