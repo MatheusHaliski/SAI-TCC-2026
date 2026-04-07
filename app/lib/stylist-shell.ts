@@ -1,4 +1,4 @@
-export type AppRoute = 'my-wardrobe' | 'create-my-scheme' | 'explore-scheme' | 'profile' | 'search-items' | 'add-wardrobe-item' | 'dress-tester';
+export type AppRoute = 'my-wardrobe' | 'create-my-scheme' | 'explore-scheme' | 'profile' | 'search-items' | 'search-pieces' | 'dress-tester';
 
 export interface NavItem {
   route: AppRoute;
@@ -14,7 +14,7 @@ export const NAV_ITEMS: NavItem[] = [
   { route: 'explore-scheme', label: 'Saved Outfits', helperText: 'Manage outfits by occasion and preferences', icon: '◍', path: '/explore-scheme' },
   { route: 'profile', label: 'Profile', helperText: 'Manage your account details', icon: '◉', path: '/profile' },
   { route: 'search-items', label: 'Search', helperText: 'Find users and outfits', icon: '⌕', path: '/search-items' },
-  { route: 'add-wardrobe-item', label: 'Add Piece', helperText: 'Register a new wardrobe piece', icon: '+', path: '/add-wardrobe-item' },
+  { route: 'search-pieces', label: 'Search Pieces', helperText: 'Discover public pieces from creators', icon: '◈', path: '/search-pieces' },
   { route: 'dress-tester', label: 'Dress Tester', helperText: '2D premium mannequin studio', icon: '◌', path: '/dress-tester' },
 ];
 
@@ -24,7 +24,7 @@ export const ROUTE_TITLES: Record<AppRoute, string> = {
   'explore-scheme': 'Saved Outfits',
   profile: 'Profile',
   'search-items': 'Search',
-  'add-wardrobe-item': 'Add Piece',
+  'search-pieces': 'Search Pieces',
   'dress-tester': 'Dress Tester',
 };
 
@@ -36,6 +36,7 @@ export const PATH_TO_ROUTE: Record<string, AppRoute> = {
   '/explore-scheme': 'explore-scheme',
   '/profile': 'profile',
   '/search-items': 'search-items',
-  '/add-wardrobe-item': 'add-wardrobe-item',
+  '/search-pieces': 'search-pieces',
+  '/add-wardrobe-item': 'search-pieces',
   '/dress-tester': 'dress-tester',
 };

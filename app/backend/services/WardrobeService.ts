@@ -55,6 +55,19 @@ export class WardrobeService {
     return this.wardrobeRepo.getAnalysisByUser(userId);
   }
 
+  async listDiscoverablePieces(filters?: {
+    query?: string;
+    brand?: string;
+    piece_type?: string;
+    gender?: string;
+    season?: string;
+    material?: string;
+    creator?: string;
+    rarity?: string;
+  }) {
+    return this.wardrobeRepo.findDiscoverable(filters);
+  }
+
   async createWardrobeItem(input: Record<string, unknown>) {
     const user_id = String(input.user_id ?? '').trim();
     const name = String(input.name ?? '').trim();

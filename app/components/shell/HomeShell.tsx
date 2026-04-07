@@ -10,6 +10,7 @@ import { ensureSharedAccessToken } from '@/app/lib/accessTokenShare';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { getAuthSessionToken } from '@/app/lib/authSession';
+import AddPieceModal from '@/app/components/pieces/AddPieceModal';
 
 export default function HomeShell() {
   const pathname = usePathname();
@@ -17,6 +18,7 @@ export default function HomeShell() {
   const [activeRoute, setActiveRoute] = useState<AppRoute>(currentRoute);
   const [mobileOpen, setMobileOpen] = useState(false);
   const router = useRouter();
+  const [addPieceModalOpen, setAddPieceModalOpen] = useState(false);
   const hasAccess = Boolean(ensureSharedAccessToken());
 
   useEffect(() => {
@@ -56,7 +58,7 @@ export default function HomeShell() {
             </div>
 
             <div className="min-w-0 flex-1">
-              <TopBar pageTitle={ROUTE_TITLES[activeRoute]} />
+              <TopBar pageTitle={ROUTE_TITLES[activeRoute]} onOpenAddPiece={() => setAddPieceModalOpen(true)} />
             </div>
           </div>
 
@@ -64,6 +66,7 @@ export default function HomeShell() {
             <ContentRouter route={activeRoute} />
           </section>
         </main>
+        <AddPieceModal open={addPieceModalOpen} onClose={() => setAddPieceModalOpen(false)} />
       </DiscoverySearchProvider>
     </div>
   );

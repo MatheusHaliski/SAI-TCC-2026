@@ -14,4 +14,17 @@ export class WardrobeController {
   async create(input: Record<string, unknown>) {
     return this.wardrobeService.createWardrobeItem(input);
   }
+
+  async listDiscoverable(filters?: {
+    query?: string;
+    brand?: string;
+    piece_type?: string;
+    gender?: string;
+    season?: string;
+    material?: string;
+    creator?: string;
+    rarity?: string;
+  }) {
+    return this.wardrobeService.listDiscoverablePieces(filters);
+  }
 }
