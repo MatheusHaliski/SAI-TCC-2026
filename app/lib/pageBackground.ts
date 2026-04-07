@@ -31,6 +31,8 @@ export const readPageBackgroundConfig = (): PageBackgroundConfig => {
 export const applyPageBackgroundConfig = (config: PageBackgroundConfig): void => {
   if (typeof document === 'undefined') return;
   document.documentElement.style.setProperty('--home-shell-bg', config.gradient);
+  document.documentElement.style.setProperty('--sidebar-gradient', config.gradient);
+  document.documentElement.style.setProperty('--sidebar-gradient-soft', config.gradient);
   document.documentElement.setAttribute('data-home-shape', config.shape);
 };
 
