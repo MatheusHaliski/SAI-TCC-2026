@@ -22,13 +22,11 @@ docker push <registry>/<repo>:<tag>
 ```bash
 RUNPOD_API_KEY="..."
 RUNPOD_ENDPOINT_URL="https://<endpoint-id>.api.runpod.ai"
-BLENDER_CLOUD_API_URL="https://<endpoint-id>.api.runpod.ai"    # optional
 BLENDER_CLOUD_API_TOKEN="..."                                  # optional
-BLENDER_CLOUD_SUBMIT_PATH="/"                                  # optional
 BLENDER_CLOUD_STATUS_PATH_TEMPLATE="/jobs/:jobId"              # optional when async job IDs exist
 ```
 
-> This project uses **RunPod Load Balancer mode** and sends direct requests to your worker HTTP routes (no `/run`).
+> This project uses **RunPod Load Balancer mode** and sends direct requests to your worker HTTP routes.
 
 ## Validation
 

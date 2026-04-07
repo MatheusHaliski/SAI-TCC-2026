@@ -33,8 +33,7 @@ export interface BlenderCloudJobStatus {
 }
 
 interface BlenderCloudConfig {
-  baseUrl: string;
-  submitPath: string;
+  endpointUrl: string;
   statusPathTemplate: string;
   authToken: string;
   authSource: 'BLENDER_CLOUD_API_TOKEN' | 'RUNPOD_API_KEY' | 'none';
@@ -56,18 +55,13 @@ function buildUrl(baseUrl: string, path: string): string {
   return `${normalizedBase}${normalizedPath}`;
 }
 
-function resolveApiBaseUrl(): string {
-  const explicit = process.env.BLENDER_CLOUD_API_URL?.trim();
-  if (explicit) return normalizeApiBaseUrl(explicit);
-
+function resolveEndpointUrl(): string {
   const endpointUrl = process.env.RUNPOD_ENDPOINT_URL?.trim();
   if (endpointUrl) {
     return normalizeApiBaseUrl(endpointUrl);
   }
 
-  throw new Error(
-    'RunPod is not configured. Set BLENDER_CLOUD_API_URL or RUNPOD_ENDPOINT_URL.',
-  );
+  throw new Error('Missing RUNPOD_ENDPOINT_URL for load balancer endpoint');
 }
 
 function resolveAuth(): Pick<BlenderCloudConfig, 'authToken' | 'authSource'> {
@@ -94,21 +88,14 @@ function resolveAuth(): Pick<BlenderCloudConfig, 'authToken' | 'authSource'> {
 }
 
 function hasRunpodConfiguration(): boolean {
-  return Boolean(
-    process.env.BLENDER_CLOUD_API_URL?.trim()
-    || process.env.RUNPOD_ENDPOINT_URL?.trim(),
-  );
+  return Boolean(process.env.RUNPOD_ENDPOINT_URL?.trim());
 }
 
 function validateBlenderCloudConfiguration(config: BlenderCloudConfig): void {
   try {
-    new URL(config.baseUrl);
+    new URL(config.endpointUrl);
   } catch {
-    throw new Error(`Invalid BLENDER_CLOUD_API_URL / RUNPOD_ENDPOINT_URL value: "${config.baseUrl}"`);
-  }
-
-  if (!config.submitPath.startsWith('/')) {
-    throw new Error(`BLENDER_CLOUD_SUBMIT_PATH must start with "/". Received "${config.submitPath}".`);
+    throw new Error(`Invalid RUNPOD_ENDPOINT_URL value: "${config.endpointUrl}"`);
   }
 
   if (!config.statusPathTemplate.startsWith('/')) {
@@ -127,8 +114,7 @@ function validateBlenderCloudConfiguration(config: BlenderCloudConfig): void {
 function resolveBlenderCloudConfiguration(): BlenderCloudConfig {
   const auth = resolveAuth();
   const config: BlenderCloudConfig = {
-    baseUrl: resolveApiBaseUrl(),
-    submitPath: normalizeApiPath(process.env.BLENDER_CLOUD_SUBMIT_PATH?.trim() || '/'),
+    endpointUrl: resolveEndpointUrl(),
     statusPathTemplate: normalizeApiPath(process.env.BLENDER_CLOUD_STATUS_PATH_TEMPLATE?.trim() || '/jobs/:jobId'),
     authToken: auth.authToken,
     authSource: auth.authSource,
@@ -161,16 +147,16 @@ export class BlenderCloudService {
       jobType: input.jobType,
       options: input.options ?? {},
     };
-    const submitUrl = buildUrl(config.baseUrl, config.submitPath);
+    const endpointUrl = config.endpointUrl;
 
     console.info('[blender-cloud] submit request', {
-      baseUrl: config.baseUrl,
-      submitUrl,
+      endpointUrl,
       authSource: config.authSource,
       payload,
     });
+    console.log('RUNPOD FINAL URL =', endpointUrl);
 
-    const response = await fetch(submitUrl, {
+    const response = await fetch(endpointUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -187,7 +173,7 @@ export class BlenderCloudService {
         : '';
 
     console.info('[blender-cloud] submit response', {
-      submitUrl,
+      endpointUrl,
       status: response.status,
       body,
     });
@@ -200,7 +186,7 @@ export class BlenderCloudService {
       return { cloudJobId: 'inline-response', raw: body };
     }
 
-    throw new Error(`RunPod submit failed. url=${submitUrl} status=${response.status} body=${JSON.stringify(body)}`);
+    throw new Error(`RunPod submit failed. url=${endpointUrl} status=${response.status} body=${JSON.stringify(body)}`);
   }
 
   async getBlenderCloudJobStatus(cloudJobId: string): Promise<BlenderCloudJobStatus> {
@@ -217,10 +203,10 @@ export class BlenderCloudService {
 
     const config = resolveBlenderCloudConfiguration();
     const statusPath = config.statusPathTemplate.replace(':jobId', encodeURIComponent(cloudJobId));
-    const statusUrl = buildUrl(config.baseUrl, statusPath);
+    const statusUrl = buildUrl(config.endpointUrl, statusPath);
 
     console.info('[blender-cloud] status request', {
-      baseUrl: config.baseUrl,
+      endpointUrl: config.endpointUrl,
       statusUrl,
       authSource: config.authSource,
       cloudJobId,
