@@ -8,6 +8,7 @@ import {
   buildBackgroundCssStyle,
   resolveOutfitBackgroundForRender,
 } from '@/app/lib/outfit-card';
+import { BackgroundGenerationMode } from '@/app/lib/background-ai';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
 
@@ -20,6 +21,9 @@ type RecommendedPreset = {
 type OutfitMetadata = {
   style?: string;
   occasion?: string;
+  visibility?: string;
+  title?: string;
+  brandIdentity?: string;
   palette?: string;
   mood?: string;
   wearstyles?: string[];
@@ -98,6 +102,11 @@ const GRADIENT_PRESETS: Array<{ label: string; config: OutfitBackgroundConfig }>
 const AI_STYLES = ['editorial fashion', 'luxury minimal', 'futuristic', 'streetwear energy', 'soft abstract', 'glossy premium', 'magazine backdrop', 'runway lighting', 'artistic studio'];
 const AI_MOODS = ['elegant', 'bold', 'dreamy', 'sporty', 'urban', 'experimental', 'premium', 'romantic'];
 const AI_PALETTES = ['monochrome', 'warm neutral', 'cool luxury', 'vibrant neon', 'soft pastel', 'gold accent', 'black + silver', 'emerald + cyan'];
+const AI_GENERATION_MODES: Array<{ value: BackgroundGenerationMode; label: string }> = [
+  { value: 'preset_assisted', label: 'Preset Assisted' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'text_prompt_pure', label: 'Text Prompt (Pure AI Mode)' },
+];
 
 const DEFAULT_BACKGROUND: OutfitBackgroundConfig = {
   background_mode: 'gradient',
@@ -158,12 +167,14 @@ export default function OutfitBackgroundStudioModal({
   const [aiStyle, setAiStyle] = useState(AI_STYLES[0]);
   const [aiMood, setAiMood] = useState(AI_MOODS[0]);
   const [aiPalette, setAiPalette] = useState(AI_PALETTES[0]);
+  const [aiGenerationMode, setAiGenerationMode] = useState<BackgroundGenerationMode>('hybrid');
   const [useMetadataBoost, setUseMetadataBoost] = useState(true);
   const [aiResults, setAiResults] = useState<string[]>([]);
   const [aiGradientResults, setAiGradientResults] = useState<OutfitBackgroundConfig[]>([]);
   const [selectedAiResult, setSelectedAiResult] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiGenerationPlan, setAiGenerationPlan] = useState<Record<string, unknown> | null>(null);
 
   const recommendedPresets = useMemo(() => getRecommendedPresets(outfitMetadata), [outfitMetadata]);
 
@@ -211,7 +222,17 @@ export default function OutfitBackgroundStudioModal({
   const generateAiBackground = async () => {
     const basePrompt = aiPrompt.trim() || 'luxury editorial abstract background';
     const metadataAddition = useMetadataBoost
-      ? [outfitMetadata?.style, outfitMetadata?.occasion, outfitMetadata?.palette, outfitMetadata?.mood, outfitMetadata?.brands?.join(', ')]
+      ? [
+          outfitMetadata?.style,
+          outfitMetadata?.occasion,
+          outfitMetadata?.palette,
+          outfitMetadata?.mood,
+          outfitMetadata?.visibility,
+          outfitMetadata?.title,
+          outfitMetadata?.brandIdentity,
+          outfitMetadata?.brands?.join(', '),
+          outfitMetadata?.wearstyles?.join(', '),
+        ]
           .filter(Boolean)
           .join(', ')
       : '';
@@ -223,13 +244,14 @@ export default function OutfitBackgroundStudioModal({
     const response = await fetch('/api/ai/background-artwork', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: mergedPrompt, rawPrompt: basePrompt, style: aiStyle, mood: aiMood, palette: aiPalette, metadata: outfitMetadata }),
+      body: JSON.stringify({ prompt: mergedPrompt, rawPrompt: basePrompt, style: aiStyle, mood: aiMood, palette: aiPalette, generationMode: aiGenerationMode, metadata: outfitMetadata }),
     });
     const payload = await response.json().catch(() => ({ images: [], gradients: [] }));
     setAiLoading(false);
 
     const gradients = Array.isArray(payload.gradients) ? (payload.gradients as OutfitBackgroundConfig[]) : [];
     const generated = Array.isArray(payload.images) ? (payload.images as string[]) : [];
+    setAiGenerationPlan(payload.generationPlan && typeof payload.generationPlan === 'object' ? payload.generationPlan as Record<string, unknown> : null);
 
     if (!response.ok || (!generated.length && !gradients.length)) {
       setAiError('AI artwork failed. You can keep the previous preview or choose a gradient preset.');
@@ -496,6 +518,9 @@ export default function OutfitBackgroundStudioModal({
                     {AI_PALETTES.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </div>
+                <select className="w-full rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiGenerationMode} onChange={(event) => setAiGenerationMode(event.target.value as BackgroundGenerationMode)}>
+                  {AI_GENERATION_MODES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
                 <label className="flex items-center gap-2 text-xs">
                   <input type="checkbox" checked={useMetadataBoost} onChange={(event) => setUseMetadataBoost(event.target.checked)} />
                   Use my outfit metadata to improve prompt
@@ -523,6 +548,12 @@ export default function OutfitBackgroundStudioModal({
                   </button>
                 </div>
                 {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
+                {aiGenerationPlan ? (
+                  <details className="rounded-lg border border-white/20 bg-black/20 p-2 text-[11px] text-white/80">
+                    <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100">Interpreted generation plan</summary>
+                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap">{JSON.stringify(aiGenerationPlan, null, 2)}</pre>
+                  </details>
+                ) : null}
 
                 {aiGradientResults.length ? (
                   <div>
