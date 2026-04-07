@@ -11,6 +11,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { getAuthSessionToken } from '@/app/lib/authSession';
 import AddPieceModal from '@/app/components/pieces/AddPieceModal';
+import { applyPageBackgroundConfig, readPageBackgroundConfig } from '@/app/lib/pageBackground';
 
 export default function HomeShell() {
   const pathname = usePathname();
@@ -31,6 +32,12 @@ export default function HomeShell() {
       router.replace('/authview');
     }
   }, [hasAccess, router]);
+
+  useEffect(() => {
+    applyPageBackgroundConfig(readPageBackgroundConfig());
+    const storedTheme = localStorage.getItem('sai_theme');
+    document.documentElement.setAttribute('data-theme', storedTheme === 'light' ? 'light' : 'dark');
+  }, []);
 
   const token1 = getAuthSessionToken();
   if (!token1) {
