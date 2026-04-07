@@ -1,42 +1,45 @@
+export type BackgroundGenerationMode = 'preset_assisted' | 'hybrid' | 'text_prompt_pure';
+
 export type BackgroundCompositionType =
-  | 'radial_cluster'
-  | 'floating_shapes'
-  | 'editorial_overlay'
-  | 'soft_blobs'
-  | 'geometric_runway'
-  | 'light_beams'
-  | 'mesh_gradient'
-  | 'orbital_fields';
+  | 'radial_floral_cluster'
+  | 'geometric_scatter'
+  | 'layered_fog'
+  | 'orbital_field'
+  | 'wave_motion'
+  | 'beam_directional'
+  | 'structured_grid'
+  | 'abstract_soft_gradient';
 
 export type BackgroundShapeLanguage =
-  | 'circles'
-  | 'diamonds'
+  | 'organic_floral'
+  | 'triangular'
+  | 'circles_orbs'
+  | 'strokes_stripes'
   | 'stars'
-  | 'soft_blobs'
-  | 'panels'
+  | 'diamonds'
   | 'waves'
   | 'beams'
-  | 'mixed';
+  | 'abstract_blobs';
 
 export type BackgroundDensity = 'minimal' | 'balanced' | 'rich';
 export type BackgroundContrast = 'low' | 'medium' | 'high';
 export type BackgroundMotion = 'horizontal' | 'vertical' | 'radial' | 'diagonal' | 'scattered';
 export type BackgroundTexture = 'clean' | 'mist' | 'grain' | 'editorial_soft' | 'glossy';
-export type BackgroundHighlight = 'center_focus' | 'edge_focus' | 'distributed' | 'hero-safe';
 
 export type BackgroundGenerationPlan = {
+  generation_mode: BackgroundGenerationMode;
   detected_keywords: string[];
+  detected_colors: string[];
   composition_type: BackgroundCompositionType;
+  shape_language: BackgroundShapeLanguage;
   palette: [string, string, string];
   contrast_level: BackgroundContrast;
-  shape_language: BackgroundShapeLanguage;
   density: BackgroundDensity;
   glow_intensity: number;
   blur_strength: number;
   layering_depth: number;
   motion_direction: BackgroundMotion;
   texture_mode: BackgroundTexture;
-  highlight_strategy: BackgroundHighlight;
 };
 
 export type BackgroundGenerationInput = {
@@ -44,6 +47,7 @@ export type BackgroundGenerationInput = {
   style?: string;
   mood?: string;
   palette?: string;
+  generationMode?: BackgroundGenerationMode;
   metadata?: {
     style?: string;
     occasion?: string;
@@ -57,59 +61,75 @@ export type BackgroundGenerationInput = {
   };
 };
 
-const KEYWORD_MAP: Array<{ words: string[]; updates: Partial<BackgroundGenerationPlan>; palette?: [string, string, string] }> = [
-  { words: ['orange', 'amber', 'gold', 'sunset'], updates: { shape_language: 'circles', composition_type: 'orbital_fields' }, palette: ['#7c2d12', '#fb923c', '#ffedd5'] },
-  { words: ['silver', 'smoke', 'mist', 'fog'], updates: { composition_type: 'soft_blobs', texture_mode: 'mist', shape_language: 'soft_blobs', density: 'minimal' }, palette: ['#05070f', '#6b7280', '#f3f4f6'] },
-  { words: ['emerald', 'cyan', 'aqua', 'teal'], updates: { composition_type: 'geometric_runway', shape_language: 'diamonds' }, palette: ['#022c22', '#10b981', '#99f6e4'] },
-  { words: ['beige', 'cream', 'studio', 'soft'], updates: { composition_type: 'editorial_overlay', texture_mode: 'editorial_soft', density: 'minimal' }, palette: ['#f5efe2', '#e7d9bf', '#b08968'] },
-  { words: ['neon', 'streetwear', 'energy', 'electric'], updates: { contrast_level: 'high', glow_intensity: 0.9, composition_type: 'light_beams', shape_language: 'beams', density: 'rich' }, palette: ['#0b1020', '#22d3ee', '#d946ef'] },
-  { words: ['diamond', 'geometric', 'runway'], updates: { shape_language: 'diamonds', composition_type: 'geometric_runway' } },
-  { words: ['star', 'cosmic', 'galaxy'], updates: { shape_language: 'stars', composition_type: 'radial_cluster' }, palette: ['#111827', '#7c3aed', '#e0e7ff'] },
-  { words: ['wave', 'flow', 'fluid'], updates: { shape_language: 'waves', composition_type: 'floating_shapes' } },
-  { words: ['panel', 'editorial', 'magazine'], updates: { shape_language: 'panels', composition_type: 'editorial_overlay' } },
-];
-
-const PALETTES: Record<string, [string, string, string]> = {
-  monochrome: ['#0b1120', '#4b5563', '#e5e7eb'],
-  warm: ['#7c2d12', '#f59e0b', '#fef3c7'],
-  sunset: ['#7c2d12', '#fb923c', '#fde68a'],
-  cool: ['#082f49', '#0ea5e9', '#bae6fd'],
+const COLOR_MAP: Record<string, [string, string, string]> = {
+  orange: ['#7c2d12', '#f97316', '#fed7aa'],
+  amber: ['#78350f', '#f59e0b', '#fde68a'],
+  gold: ['#713f12', '#fbbf24', '#fef3c7'],
+  silver: ['#030712', '#9ca3af', '#f3f4f6'],
+  black: ['#020617', '#1f2937', '#9ca3af'],
+  white: ['#111827', '#d1d5db', '#ffffff'],
+  beige: ['#f5efe2', '#ddc7a1', '#8b6b4a'],
+  cream: ['#fff7e6', '#f5deb3', '#c49a6c'],
   emerald: ['#022c22', '#10b981', '#99f6e4'],
-  violet: ['#2e1065', '#7c3aed', '#ddd6fe'],
-  pastel: ['#fde68a', '#bfdbfe', '#fbcfe8'],
-  luxury: ['#020617', '#6b7280', '#f8fafc'],
+  cyan: ['#083344', '#06b6d4', '#a5f3fc'],
+  blue: ['#1e3a8a', '#3b82f6', '#bfdbfe'],
+  violet: ['#3b0764', '#8b5cf6', '#ddd6fe'],
+  magenta: ['#500724', '#db2777', '#fbcfe8'],
+  neon: ['#09090b', '#22d3ee', '#e879f9'],
 };
 
 const STYLE_HINTS: Record<string, Partial<BackgroundGenerationPlan>> = {
-  editorial: { composition_type: 'editorial_overlay', texture_mode: 'editorial_soft', shape_language: 'panels' },
-  runway: { composition_type: 'light_beams', shape_language: 'beams', motion_direction: 'vertical' },
-  abstract: { composition_type: 'floating_shapes', shape_language: 'mixed' },
-  geometric: { composition_type: 'geometric_runway', shape_language: 'diamonds' },
-  minimal: { density: 'minimal', contrast_level: 'low', highlight_strategy: 'hero-safe' },
+  editorial: { texture_mode: 'editorial_soft', contrast_level: 'medium' },
+  minimal: { density: 'minimal', contrast_level: 'low', blur_strength: 0.35 },
+  geometric: { composition_type: 'structured_grid', shape_language: 'triangular' },
+  runway: { composition_type: 'beam_directional', shape_language: 'beams', motion_direction: 'vertical' },
 };
 
 const MOOD_HINTS: Record<string, Partial<BackgroundGenerationPlan>> = {
-  calm: { glow_intensity: 0.25, density: 'minimal', contrast_level: 'low' },
-  dreamy: { blur_strength: 0.8, texture_mode: 'mist', glow_intensity: 0.7 },
-  energetic: { glow_intensity: 0.92, density: 'rich', contrast_level: 'high', motion_direction: 'diagonal' },
-  dramatic: { contrast_level: 'high', texture_mode: 'glossy' },
-  elegant: { density: 'minimal', texture_mode: 'clean', highlight_strategy: 'edge_focus' },
+  calm: { density: 'minimal', glow_intensity: 0.28, blur_strength: 0.55 },
+  dreamy: { texture_mode: 'mist', blur_strength: 0.85, glow_intensity: 0.76 },
+  energetic: { density: 'rich', contrast_level: 'high', glow_intensity: 0.92, motion_direction: 'diagonal' },
+  bold: { contrast_level: 'high', glow_intensity: 0.8 },
+  elegant: { density: 'minimal', texture_mode: 'glossy', glow_intensity: 0.35 },
+};
+
+const PALETTE_HINTS: Record<string, [string, string, string]> = {
+  monochrome: ['#030712', '#4b5563', '#e5e7eb'],
+  'warm neutral': ['#5b3a29', '#c8a27c', '#f5e7d1'],
+  'cool luxury': ['#0b1020', '#1d4ed8', '#93c5fd'],
+  'vibrant neon': ['#09090b', '#22d3ee', '#d946ef'],
+  'soft pastel': ['#fbcfe8', '#bfdbfe', '#fde68a'],
+  'gold accent': ['#3f2a12', '#f59e0b', '#fef3c7'],
+  'black + silver': ['#020617', '#6b7280', '#f3f4f6'],
+  'emerald + cyan': ['#022c22', '#06b6d4', '#99f6e4'],
 };
 
 const DEFAULT_PLAN: BackgroundGenerationPlan = {
+  generation_mode: 'hybrid',
   detected_keywords: [],
-  composition_type: 'mesh_gradient',
-  palette: ['#0f172a', '#6366f1', '#a855f7'],
+  detected_colors: [],
+  composition_type: 'abstract_soft_gradient',
+  shape_language: 'abstract_blobs',
+  palette: ['#111827', '#4f46e5', '#a78bfa'],
   contrast_level: 'medium',
-  shape_language: 'mixed',
   density: 'balanced',
   glow_intensity: 0.55,
   blur_strength: 0.45,
   layering_depth: 4,
   motion_direction: 'scattered',
   texture_mode: 'clean',
-  highlight_strategy: 'hero-safe',
 };
+
+const SHAPE_KEYWORDS: Array<{ words: string[]; shape: BackgroundShapeLanguage }> = [
+  { words: ['flower', 'flowers', 'floral', 'petal', 'nature', 'leaf'], shape: 'organic_floral' },
+  { words: ['triangle', 'triangles'], shape: 'triangular' },
+  { words: ['fruit', 'fruits', 'orb', 'sphere', 'circle', 'circles', 'dots', 'points'], shape: 'circles_orbs' },
+  { words: ['line', 'lines', 'stroke', 'stripes'], shape: 'strokes_stripes' },
+  { words: ['star', 'stars', 'cosmic', 'galaxy'], shape: 'stars' },
+  { words: ['diamond', 'diamonds', 'gem'], shape: 'diamonds' },
+  { words: ['wave', 'waves', 'flow', 'fluid'], shape: 'waves' },
+  { words: ['beam', 'beams', 'light', 'streak'], shape: 'beams' },
+];
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -132,67 +152,132 @@ function hashText(input: string) {
   return h >>> 0;
 }
 
-function detectKeywords(prompt: string): string[] {
-  const normalized = prompt.toLowerCase();
-  const keywords = new Set<string>();
-  KEYWORD_MAP.forEach((entry) => {
-    entry.words.forEach((word) => {
-      if (normalized.includes(word)) keywords.add(word);
-    });
-  });
-  return Array.from(keywords);
+function normalize(prompt: string) {
+  return prompt.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+}
+
+function detectColors(words: string[]) {
+  return Array.from(new Set(words.filter((word) => word in COLOR_MAP)));
+}
+
+export function inferCompositionFromPrompt(keywords: string[], shape: BackgroundShapeLanguage): BackgroundCompositionType {
+  if (keywords.some((word) => ['flower', 'flowers', 'floral', 'petal', 'nature'].includes(word))) return 'radial_floral_cluster';
+  if (keywords.some((word) => ['smoke', 'fog', 'mist', 'haze'].includes(word))) return 'layered_fog';
+  if (keywords.some((word) => ['triangle', 'triangles', 'geometric', 'grid', 'structured'].includes(word))) return 'geometric_scatter';
+  if (keywords.some((word) => ['wave', 'waves', 'flow', 'fluid', 'motion'].includes(word))) return 'wave_motion';
+  if (keywords.some((word) => ['beam', 'beams', 'light', 'streak'].includes(word))) return 'beam_directional';
+  if (keywords.some((word) => ['dense', 'packed', 'layered'].includes(word))) return 'structured_grid';
+  if (shape === 'circles_orbs') return 'orbital_field';
+  return 'abstract_soft_gradient';
+}
+
+function inferShapeFromPrompt(keywords: string[]): BackgroundShapeLanguage {
+  const match = SHAPE_KEYWORDS.find((entry) => entry.words.some((word) => keywords.includes(word)));
+  return match?.shape || 'abstract_blobs';
+}
+
+function inferDensityFromPrompt(keywords: string[]): BackgroundDensity {
+  if (keywords.some((word) => ['minimal', 'clean', 'sparse', 'soft'].includes(word))) return 'minimal';
+  if (keywords.some((word) => ['dense', 'rich', 'layered', 'busy'].includes(word))) return 'rich';
+  return 'balanced';
+}
+
+function inferPaletteFromPrompt(words: string[], paletteSelector?: string): [string, string, string] {
+  const colorHits = detectColors(words);
+  if (colorHits.length) return COLOR_MAP[colorHits[0]];
+  if (paletteSelector) {
+    const key = Object.keys(PALETTE_HINTS).find((candidate) => paletteSelector.toLowerCase().includes(candidate));
+    if (key) return PALETTE_HINTS[key];
+  }
+  return DEFAULT_PLAN.palette;
 }
 
 export function parseBackgroundPrompt(prompt: string) {
-  const normalized = prompt.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+  const normalized = normalize(prompt);
   const words = normalized.split(/\s+/).filter(Boolean);
+  const keywords = Array.from(new Set(words));
   return {
     normalized,
     words,
-    keywords: detectKeywords(prompt),
+    keywords,
+    colors: detectColors(words),
   };
 }
 
 export function buildBackgroundGenerationPlan(input: BackgroundGenerationInput): BackgroundGenerationPlan {
-  const parsed = parseBackgroundPrompt(input.prompt);
-  const mergedText = [input.prompt, input.style, input.mood, input.palette, input.metadata?.style, input.metadata?.occasion, input.metadata?.title, input.metadata?.brandIdentity, input.metadata?.mood, input.metadata?.palette, input.metadata?.wearstyles?.join(' '), input.metadata?.brands?.join(' ')].filter(Boolean).join(' ').toLowerCase();
+  const generationMode = input.generationMode || 'hybrid';
+  const parsedPrompt = parseBackgroundPrompt(input.prompt);
+  const metadataText = [
+    input.metadata?.style,
+    input.metadata?.occasion,
+    input.metadata?.title,
+    input.metadata?.brandIdentity,
+    input.metadata?.wearstyles?.join(' '),
+    input.metadata?.brands?.join(' '),
+    input.metadata?.mood,
+    input.metadata?.palette,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const parsedMetadata = parseBackgroundPrompt(metadataText);
+  const promptKeywords = parsedPrompt.keywords;
+  const styleKeywords = parseBackgroundPrompt(input.style || '').keywords;
+  const moodKeywords = parseBackgroundPrompt(input.mood || '').keywords;
+  const paletteKeywords = parseBackgroundPrompt(input.palette || '').keywords;
+
+  const combinedKeywords = generationMode === 'text_prompt_pure'
+    ? [...promptKeywords, ...styleKeywords, ...moodKeywords, ...paletteKeywords, ...parsedMetadata.keywords]
+    : [...promptKeywords, ...parsedMetadata.keywords, ...styleKeywords, ...moodKeywords, ...paletteKeywords];
+
+  const shapeLanguage = inferShapeFromPrompt(combinedKeywords);
+  const compositionType = inferCompositionFromPrompt(combinedKeywords, shapeLanguage);
 
   const plan: BackgroundGenerationPlan = {
     ...DEFAULT_PLAN,
-    detected_keywords: parsed.keywords,
+    generation_mode: generationMode,
+    detected_keywords: Array.from(new Set(combinedKeywords)).slice(0, 40),
+    detected_colors: parsedPrompt.colors,
+    composition_type: compositionType,
+    shape_language: shapeLanguage,
+    density: inferDensityFromPrompt(combinedKeywords),
+    palette: inferPaletteFromPrompt(parsedPrompt.words, input.palette),
   };
 
-  KEYWORD_MAP.forEach((entry) => {
-    const hit = entry.words.some((word) => mergedText.includes(word));
-    if (hit) {
-      Object.assign(plan, entry.updates);
-      if (entry.palette) plan.palette = entry.palette;
-    }
-  });
+  if (generationMode !== 'text_prompt_pure') {
+    const styleMatch = input.style ? Object.keys(STYLE_HINTS).find((key) => input.style?.toLowerCase().includes(key)) : null;
+    const moodMatch = input.mood ? Object.keys(MOOD_HINTS).find((key) => input.mood?.toLowerCase().includes(key)) : null;
+    if (styleMatch) Object.assign(plan, STYLE_HINTS[styleMatch]);
+    if (moodMatch) Object.assign(plan, MOOD_HINTS[moodMatch]);
+  } else {
+    const styleMatch = input.style ? Object.keys(STYLE_HINTS).find((key) => input.style?.toLowerCase().includes(key)) : null;
+    const moodMatch = input.mood ? Object.keys(MOOD_HINTS).find((key) => input.mood?.toLowerCase().includes(key)) : null;
+    const paletteMatch = input.palette ? Object.keys(PALETTE_HINTS).find((key) => input.palette?.toLowerCase().includes(key)) : null;
 
-  if (input.palette) {
-    const paletteKey = input.palette.toLowerCase();
-    const match = Object.keys(PALETTES).find((key) => paletteKey.includes(key));
-    if (match) plan.palette = PALETTES[match];
+    if (styleMatch) Object.assign(plan, { ...STYLE_HINTS[styleMatch], composition_type: plan.composition_type, shape_language: plan.shape_language });
+    if (moodMatch) Object.assign(plan, MOOD_HINTS[moodMatch]);
+    if (!plan.detected_colors.length && paletteMatch) plan.palette = PALETTE_HINTS[paletteMatch];
   }
 
-  if (input.style) {
-    const styleKey = input.style.toLowerCase();
-    const match = Object.keys(STYLE_HINTS).find((key) => styleKey.includes(key));
-    if (match) Object.assign(plan, STYLE_HINTS[match]);
-  }
+  if (combinedKeywords.some((word) => ['horizontal'].includes(word))) plan.motion_direction = 'horizontal';
+  if (combinedKeywords.some((word) => ['vertical'].includes(word))) plan.motion_direction = 'vertical';
+  if (combinedKeywords.some((word) => ['radial', 'cluster'].includes(word))) plan.motion_direction = 'radial';
+  if (combinedKeywords.some((word) => ['diagonal', 'dynamic'].includes(word))) plan.motion_direction = 'diagonal';
+  if (combinedKeywords.some((word) => ['smoke', 'mist', 'fog'].includes(word))) plan.texture_mode = 'mist';
 
-  if (input.mood) {
-    const moodKey = input.mood.toLowerCase();
-    const match = Object.keys(MOOD_HINTS).find((key) => moodKey.includes(key));
-    if (match) Object.assign(plan, MOOD_HINTS[match]);
-  }
-
-  plan.layering_depth = clamp(plan.layering_depth + Math.floor(parsed.words.length / 5), 3, 8);
   if (plan.density === 'minimal') {
-    plan.layering_depth = clamp(plan.layering_depth - 2, 2, 5);
+    plan.layering_depth = 3;
+    plan.glow_intensity = clamp(plan.glow_intensity - 0.2, 0.18, 0.95);
   } else if (plan.density === 'rich') {
-    plan.layering_depth = clamp(plan.layering_depth + 1, 4, 9);
+    plan.layering_depth = 7;
+    plan.glow_intensity = clamp(plan.glow_intensity + 0.2, 0.18, 0.95);
+  } else {
+    plan.layering_depth = 5;
+  }
+
+  if (!input.prompt.trim()) {
+    plan.composition_type = 'abstract_soft_gradient';
+    plan.shape_language = 'abstract_blobs';
   }
 
   return plan;
@@ -207,39 +292,43 @@ function gradientFromPlan(plan: BackgroundGenerationPlan, angle: number, type: '
       intensity: Math.round((0.7 + plan.glow_intensity * 0.6) * 100),
       stops: [
         { color: plan.palette[0], position: 0 },
-        { color: plan.palette[1], position: 52 },
+        { color: plan.palette[1], position: 54 },
         { color: plan.palette[2], position: 100 },
       ],
     },
-    shape: plan.shape_language === 'diamonds' ? 'diamond' as const : plan.shape_language === 'circles' ? 'orb' as const : 'mesh' as const,
+    shape: ['triangular', 'diamonds'].includes(plan.shape_language) ? 'diamond' as const : plan.shape_language === 'circles_orbs' ? 'orb' as const : 'mesh' as const,
     label: `AI ${plan.shape_language} ${type}`,
   };
 }
 
 function buildShapeLayer(plan: BackgroundGenerationPlan, random: () => number) {
-  const baseCount = plan.density === 'minimal' ? 6 : plan.density === 'rich' ? 24 : 14;
+  const baseCount = plan.density === 'minimal' ? 6 : plan.density === 'rich' ? 26 : 14;
   const count = baseCount + Math.floor(random() * 6);
   let out = '';
 
   for (let i = 0; i < count; i += 1) {
     const x = Math.round(random() * 1200);
     const y = Math.round(random() * 800);
-    const size = Math.round(16 + random() * 220);
-    const opacity = (0.08 + random() * 0.28).toFixed(2);
+    const size = Math.round(18 + random() * (plan.density === 'minimal' ? 140 : 240));
+    const opacity = (0.1 + random() * 0.3).toFixed(2);
     const fill = plan.palette[Math.floor(random() * plan.palette.length)];
 
-    if (plan.shape_language === 'circles' || (plan.shape_language === 'mixed' && i % 3 === 0)) {
+    if (plan.shape_language === 'organic_floral') {
+      out += `<g opacity='${opacity}' transform='translate(${x} ${y})'><circle r='${Math.round(size / 8)}' fill='${fill}'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(0)'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(72)'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(144)'/></g>`;
+    } else if (plan.shape_language === 'triangular') {
+      out += `<polygon points='${x},${y - size / 2} ${x + size / 2},${y + size / 2} ${x - size / 2},${y + size / 2}' fill='${fill}' opacity='${opacity}'/>`;
+    } else if (plan.shape_language === 'circles_orbs') {
       out += `<circle cx='${x}' cy='${y}' r='${Math.round(size / 3)}' fill='${fill}' opacity='${opacity}'/>`;
-    } else if (plan.shape_language === 'diamonds') {
-      out += `<rect x='${x}' y='${y}' width='${Math.round(size / 2)}' height='${Math.round(size / 2)}' transform='rotate(45 ${x} ${y})' fill='${fill}' opacity='${opacity}' rx='8'/>`;
+    } else if (plan.shape_language === 'strokes_stripes') {
+      out += `<line x1='${x}' y1='${y}' x2='${x + size}' y2='${y + (random() - 0.5) * 80}' stroke='${fill}' stroke-width='${Math.round(size / 18)}' stroke-linecap='round' opacity='${opacity}'/>`;
     } else if (plan.shape_language === 'stars') {
       out += `<polygon points='${x},${y - size / 3} ${x + size / 10},${y - size / 10} ${x + size / 3},${y - size / 10} ${x + size / 6},${y + size / 10} ${x + size / 5},${y + size / 3} ${x},${y + size / 6} ${x - size / 5},${y + size / 3} ${x - size / 6},${y + size / 10} ${x - size / 3},${y - size / 10} ${x - size / 10},${y - size / 10}' fill='${fill}' opacity='${opacity}'/>`;
-    } else if (plan.shape_language === 'panels') {
-      out += `<rect x='${x}' y='${y}' width='${Math.round(size)}' height='${Math.round(size / 2)}' fill='${fill}' opacity='${opacity}' rx='18'/>`;
+    } else if (plan.shape_language === 'diamonds') {
+      out += `<rect x='${x}' y='${y}' width='${Math.round(size / 2)}' height='${Math.round(size / 2)}' transform='rotate(45 ${x} ${y})' fill='${fill}' opacity='${opacity}' rx='8'/>`;
     } else if (plan.shape_language === 'waves') {
-      out += `<path d='M ${x} ${y} C ${x + size / 2} ${y - size / 2}, ${x + size} ${y + size / 2}, ${x + size * 1.4} ${y}' stroke='${fill}' stroke-width='${Math.round(size / 18)}' fill='none' opacity='${opacity}'/>`;
+      out += `<path d='M ${x} ${y} C ${x + size / 2} ${y - size / 2}, ${x + size} ${y + size / 2}, ${x + size * 1.4} ${y}' stroke='${fill}' stroke-width='${Math.round(size / 16)}' fill='none' opacity='${opacity}'/>`;
     } else if (plan.shape_language === 'beams') {
-      out += `<rect x='${x}' y='${y}' width='${Math.round(size / 5)}' height='${Math.round(size * 2)}' fill='${fill}' opacity='${opacity}' rx='12'/>`;
+      out += `<rect x='${x}' y='${y}' width='${Math.round(size / 6)}' height='${Math.round(size * 2)}' fill='${fill}' opacity='${opacity}' rx='10'/>`;
     } else {
       out += `<ellipse cx='${x}' cy='${y}' rx='${Math.round(size / 2)}' ry='${Math.round(size / 3)}' fill='${fill}' opacity='${opacity}'/>`;
     }
@@ -252,7 +341,7 @@ export function generateProceduralBackground(plan: BackgroundGenerationPlan, see
   const random = createSeededRng(seed);
   const angle = Math.floor(random() * 360);
   const shapeLayer = buildShapeLayer(plan, random);
-  const textureOpacity = plan.texture_mode === 'grain' ? 0.2 : plan.texture_mode === 'mist' ? 0.34 : 0.12;
+  const textureOpacity = plan.texture_mode === 'grain' ? 0.23 : plan.texture_mode === 'mist' ? 0.34 : 0.12;
   const safePrompt = prompt.slice(0, 100).replace(/[<>]/g, '');
 
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
@@ -262,37 +351,31 @@ export function generateProceduralBackground(plan: BackgroundGenerationPlan, see
         <stop offset='55%' stop-color='${plan.palette[1]}'/>
         <stop offset='100%' stop-color='${plan.palette[2]}'/>
       </linearGradient>
-      <filter id='softBlur'>
-        <feGaussianBlur stdDeviation='${Math.round(plan.blur_strength * 18)}'/>
-      </filter>
-      <radialGradient id='heroSafe' cx='0.72' cy='0.4' r='0.72'>
-        <stop offset='0%' stop-color='rgba(0,0,0,0)'/>
-        <stop offset='100%' stop-color='rgba(0,0,0,0.28)'/>
-      </radialGradient>
+      <filter id='softBlur'><feGaussianBlur stdDeviation='${Math.round(plan.blur_strength * 18)}'/></filter>
       <pattern id='grain' width='40' height='40' patternUnits='userSpaceOnUse'>
         <circle cx='10' cy='8' r='1' fill='rgba(255,255,255,0.35)'/>
         <circle cx='24' cy='18' r='1' fill='rgba(0,0,0,0.25)'/>
-        <circle cx='35' cy='30' r='1' fill='rgba(255,255,255,0.26)'/>
       </pattern>
     </defs>
     <rect width='1200' height='800' fill='url(#base)'/>
-    <g filter='url(#softBlur)' opacity='${clamp(plan.glow_intensity, 0.2, 1)}'>${shapeLayer}</g>
+    <g filter='url(#softBlur)' opacity='${clamp(plan.glow_intensity, 0.15, 0.95)}'>${shapeLayer}</g>
     <rect width='1200' height='800' fill='url(#grain)' opacity='${textureOpacity}'/>
-    <rect x='0' y='0' width='500' height='800' fill='rgba(15,23,42,0.20)'/>
-    <rect width='1200' height='800' fill='url(#heroSafe)' transform='rotate(${angle} 600 400)'/>
-    <text x='48' y='742' fill='rgba(255,255,255,0.38)' font-size='22' font-family='Arial'>${safePrompt}</text>
+    <rect x='0' y='0' width='500' height='800' fill='rgba(15,23,42,0.2)'/>
+    <rect width='1200' height='800' fill='rgba(255,255,255,0.06)' transform='rotate(${angle} 600 400)'/>
+    <text x='48' y='742' fill='rgba(255,255,255,0.35)' font-size='22' font-family='Arial'>${safePrompt}</text>
   </svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 export function generateBackgroundVariations(plan: BackgroundGenerationPlan, prompt: string, count = 4) {
-  const baseSeed = hashText(`${prompt}-${plan.shape_language}-${plan.palette.join('-')}`);
+  const baseSeed = hashText(`${prompt}-${plan.shape_language}-${plan.composition_type}-${plan.palette.join('-')}`);
   return Array.from({ length: count }).map((_, idx) => {
     const seed = baseSeed + idx * 7919;
+    const gradientType = idx % 3 === 0 ? 'linear' : idx % 3 === 1 ? 'radial' : 'conic';
     return {
       image: generateProceduralBackground(plan, seed, prompt),
-      gradient: gradientFromPlan(plan, (seed % 360) + idx * 24, idx % 3 === 0 ? 'linear' : idx % 3 === 1 ? 'radial' : 'conic'),
+      gradient: gradientFromPlan(plan, (seed % 360) + idx * 17, gradientType),
       seed,
     };
   });
