@@ -33,8 +33,8 @@ export const RARITY_TONE_MAP: Record<string, SemanticTone> = {
 };
 
 export const PIECE_TYPE_TONE_MAP: Record<string, SemanticTone> = {
-  jacket: tone('linear-gradient(120deg, rgba(30,64,175,0.45), rgba(109,40,217,0.25))', 'shadow-[0_0_18px_rgba(99,102,241,0.3)]'),
-  pants: tone('linear-gradient(120deg, rgba(49,46,129,0.45), rgba(51,65,85,0.25))', 'shadow-[0_0_18px_rgba(99,102,241,0.28)]'),
+  jacket: tone('linear-gradient(120deg, rgba(180,83,9,0.5), rgba(251,191,36,0.28))', 'shadow-[0_0_22px_rgba(251,191,36,0.36)]'),
+  pants: tone('linear-gradient(120deg, rgba(185,28,28,0.5), rgba(244,63,94,0.28))', 'shadow-[0_0_22px_rgba(244,63,94,0.34)]'),
   footwear: tone('linear-gradient(120deg, rgba(190,24,93,0.45), rgba(167,139,250,0.22))', 'shadow-[0_0_18px_rgba(236,72,153,0.3)]'),
   accessory: tone('linear-gradient(120deg, rgba(180,83,9,0.45), rgba(234,179,8,0.25))', 'shadow-[0_0_18px_rgba(251,191,36,0.3)]'),
   top: tone('linear-gradient(120deg, rgba(13,148,136,0.45), rgba(8,145,178,0.25))', 'shadow-[0_0_18px_rgba(34,211,238,0.3)]'),

@@ -12,8 +12,8 @@ interface VisualTokenProps {
 
 const TOKEN_ICON: Record<VisualTokenType, string> = {
   wearstyle: '✦',
-  rarity: '◆',
-  category: '◉',
+  rarity: '▲',
+  category: '■',
 };
 
 export default function VisualToken({ type, value, compact = false, showLabel = true }: VisualTokenProps) {

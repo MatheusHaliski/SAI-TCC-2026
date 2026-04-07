@@ -38,10 +38,6 @@ export default function OutfitPieceCard({ piece, compact = false }: OutfitPieceC
           <VisualToken type="rarity" value={categoryLabel} compact />
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <VisualToken type="category" value={pieceTypeLabel} compact />
-        </div>
-
         {!compact ? <WearstyleChips wearstyles={piece.wearstyles} pieceType={piece.pieceType} /> : null}
       </div>
     </article>
