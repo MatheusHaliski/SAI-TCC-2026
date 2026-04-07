@@ -67,6 +67,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
           badges={data.metaBadges}
           compact={variant === 'compact'}
           brandBadges={brandBadges}
+          titleFontFamily={data.titleFontFamily}
         />
         <OutfitPieceList pieces={data.pieces} compact={variant === 'compact'} />
         {actions.length ? <CompactCardActionBar actions={actions} /> : null}
