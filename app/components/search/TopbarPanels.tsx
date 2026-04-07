@@ -1,5 +1,18 @@
-import { ReactNode } from 'react';
+'use client';
+
+import { ReactNode, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  applyPageBackgroundConfig,
+  PageBackgroundConfig,
+  PageBackgroundShape,
+  readPageBackgroundConfig,
+  savePageBackgroundConfig,
+} from '@/app/lib/pageBackground';
+import { clearAuthSessionProfile, clearAuthSessionToken, getAuthSessionProfile } from '@/app/lib/authSession';
+import { clearSharedAccessToken } from '@/app/lib/accessTokenShare';
+import { applyTheme, readSavedTheme } from '@/app/lib/theme';
 
 function Overlay({ onClose }: { onClose: () => void }) {
   return <button type="button" aria-label="Close panel" className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm" onClick={onClose} />;
@@ -9,7 +22,10 @@ function RightDrawer({ title, onClose, children }: { title: string; onClose: () 
   return (
     <>
       <Overlay onClose={onClose} />
-      <aside className="fixed right-0 top-0 z-[80] h-full w-full max-w-sm border-l border-white/20 bg-slate-950/90 p-4 text-white shadow-2xl">
+      <aside
+        className="fixed right-0 top-0 z-[80] h-full w-full max-w-sm border-l border-white/30 bg-emerald-950/92 p-4 text-white shadow-2xl"
+        style={{ backgroundImage: 'var(--sidebar-gradient)' }}
+      >
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold uppercase tracking-[0.15em] text-white/70">{title}</p>
           <button type="button" onClick={onClose} className="rounded-lg border border-white/30 px-2 py-1 text-xs">✕</button>
@@ -17,6 +33,57 @@ function RightDrawer({ title, onClose, children }: { title: string; onClose: () 
         <div className="space-y-2">{children}</div>
       </aside>
     </>
+  );
+}
+
+function PageBackgroundStudio({
+  draft,
+  onChange,
+  onApply,
+}: {
+  draft: PageBackgroundConfig;
+  onChange: (next: PageBackgroundConfig) => void;
+  onApply: () => void;
+}) {
+  const gradients = [
+    'linear-gradient(135deg, #0b7a4a 0%, #075e39 45%, #05311f 100%)',
+    'linear-gradient(145deg, #0f9f67 0%, #0b6147 55%, #022c22 100%)',
+    'linear-gradient(130deg, #1d976c 0%, #0f7a52 50%, #023326 100%)',
+    'linear-gradient(135deg, #4338ca 0%, #1d4ed8 48%, #0891b2 100%)',
+    'linear-gradient(140deg, #be185d 0%, #9333ea 45%, #4f46e5 100%)',
+    'linear-gradient(130deg, #ea580c 0%, #f59e0b 42%, #facc15 100%)',
+  ];
+  const shapes: PageBackgroundShape[] = ['none', 'orb', 'diamond', 'mesh'];
+  return (
+    <div className="space-y-3 rounded-xl border border-emerald-100/30 bg-emerald-950/40 p-3">
+      <p className="text-xs uppercase tracking-[0.12em] text-emerald-100/80">Page Background Studio</p>
+      <div className="grid grid-cols-3 gap-2">
+        {gradients.map((gradient) => (
+          <button
+            key={gradient}
+            type="button"
+            onClick={() => onChange({ ...draft, gradient })}
+            className={`h-14 rounded-lg border ${draft.gradient === gradient ? 'border-emerald-200' : 'border-white/20'}`}
+            style={{ background: gradient }}
+          />
+        ))}
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {shapes.map((shape) => (
+          <button
+            key={shape}
+            type="button"
+            onClick={() => onChange({ ...draft, shape })}
+            className={`rounded-lg border px-2 py-1 text-xs uppercase ${draft.shape === shape ? 'border-emerald-200 bg-emerald-500/30' : 'border-white/20 bg-white/10'}`}
+          >
+            {shape}
+          </button>
+        ))}
+      </div>
+      <button type="button" className="w-full rounded-lg border border-emerald-200/70 bg-emerald-400/20 px-3 py-2 text-sm font-semibold" onClick={onApply}>
+        Apply website background
+      </button>
+    </div>
   );
 }
 
@@ -85,17 +152,59 @@ export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; a
 }
 
 export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  const [darkMode, setDarkMode] = useState<boolean>(readSavedTheme() === 'dark');
+  const [backgroundDraft, setBackgroundDraft] = useState<PageBackgroundConfig>(() => readPageBackgroundConfig());
+
+  const profile = useMemo(() => getAuthSessionProfile(), []);
+  const userId = profile.user_id?.trim() || '';
+  const username = profile.name?.trim() || 'SAI User';
+  const email = profile.email?.trim() || 'user@sai.app';
+
+  const setTheme = (isDark: boolean) => {
+    setDarkMode(isDark);
+    applyTheme(isDark ? 'dark' : 'light');
+  };
+
+  const handleLogout = () => {
+    clearSharedAccessToken();
+    clearAuthSessionToken();
+    clearAuthSessionProfile();
+    onClose();
+    router.replace('/authview');
+  };
+
+  const actionItems = [
+    { label: 'View Profile', icon: '👤', onClick: () => { onClose(); router.push(userId ? `/profile/${userId}` : '/profile'); } },
+    { label: darkMode ? 'Dark Mode: On' : 'Dark Mode: Off', icon: '🌗', onClick: () => setTheme(!darkMode) },
+    { label: 'Account Settings', icon: '⚙️', onClick: () => { onClose(); router.push('/profile?section=settings'); } },
+    { label: 'Logout', icon: '🚪', onClick: handleLogout },
+  ];
+
   return (
     <RightDrawer title="Account" onClose={onClose}>
-      <article className="rounded-xl border border-white/20 bg-white/10 p-3">
-        <p className="text-sm font-semibold">SAI User</p>
-        <p className="text-xs text-white/70">@sai.user · user@sai.app</p>
+      <article className="rounded-xl border border-emerald-100/30 bg-white/10 p-3">
+        <p className="text-sm font-semibold">{username}</p>
+        <p className="text-xs text-emerald-50/80">@{email.split('@')[0]} · {email}</p>
       </article>
-      {['View Profile', 'Dark Mode Toggle', 'Change Password', 'Account Settings', 'Logout'].map((action) => (
-        <button key={action} type="button" className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-left text-sm">
-          {action}
-        </button>
-      ))}
+      <div className="space-y-2">
+        {actionItems.map((action) => (
+          <button key={action.label} type="button" onClick={action.onClick} className="w-full rounded-xl border border-emerald-100/30 bg-white/10 px-3 py-2 text-left text-sm">
+            <span className="flex items-center gap-2">
+              <span>{action.icon}</span>
+              <span>{action.label}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+      <PageBackgroundStudio
+        draft={backgroundDraft}
+        onChange={(next) => {
+          setBackgroundDraft(next);
+          applyPageBackgroundConfig(next);
+        }}
+        onApply={() => savePageBackgroundConfig(backgroundDraft)}
+      />
     </RightDrawer>
   );
 }
