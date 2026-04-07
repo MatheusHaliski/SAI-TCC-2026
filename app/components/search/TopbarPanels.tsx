@@ -22,7 +22,10 @@ function RightDrawer({ title, onClose, children }: { title: string; onClose: () 
   return (
     <>
       <Overlay onClose={onClose} />
-      <aside className="fixed right-0 top-0 z-[80] h-full w-full max-w-sm border-l border-emerald-100/30 bg-gradient-to-b from-emerald-700/95 via-emerald-800/95 to-emerald-950/95 p-4 text-white shadow-2xl">
+      <aside
+        className="fixed right-0 top-0 z-[80] h-full w-full max-w-sm border-l border-white/30 bg-emerald-950/92 p-4 text-white shadow-2xl"
+        style={{ backgroundImage: 'var(--sidebar-gradient)' }}
+      >
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold uppercase tracking-[0.15em] text-white/70">{title}</p>
           <button type="button" onClick={onClose} className="rounded-lg border border-white/30 px-2 py-1 text-xs">✕</button>
