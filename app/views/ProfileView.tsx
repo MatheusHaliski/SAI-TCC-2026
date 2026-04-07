@@ -49,7 +49,7 @@ export default function ProfileView() {
   const [schemes, setSchemes] = useState<SchemeItem[]>([]);
   const [posts, setPosts] = useState<UserPostRecord[]>([]);
 
-  const selectedSection = parseSectionFromQuery(searchParams.get('section'));
+  const selectedSection = pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section'));
 
   useEffect(() => {
     const loadProfileHubData = async () => {
