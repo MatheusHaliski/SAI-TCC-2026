@@ -20,6 +20,9 @@ type RecommendedPreset = {
 type OutfitMetadata = {
   style?: string;
   occasion?: string;
+  visibility?: string;
+  title?: string;
+  brandIdentity?: string;
   palette?: string;
   mood?: string;
   wearstyles?: string[];
@@ -164,6 +167,7 @@ export default function OutfitBackgroundStudioModal({
   const [selectedAiResult, setSelectedAiResult] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiGenerationPlan, setAiGenerationPlan] = useState<Record<string, unknown> | null>(null);
 
   const recommendedPresets = useMemo(() => getRecommendedPresets(outfitMetadata), [outfitMetadata]);
 
@@ -211,7 +215,17 @@ export default function OutfitBackgroundStudioModal({
   const generateAiBackground = async () => {
     const basePrompt = aiPrompt.trim() || 'luxury editorial abstract background';
     const metadataAddition = useMetadataBoost
-      ? [outfitMetadata?.style, outfitMetadata?.occasion, outfitMetadata?.palette, outfitMetadata?.mood, outfitMetadata?.brands?.join(', ')]
+      ? [
+          outfitMetadata?.style,
+          outfitMetadata?.occasion,
+          outfitMetadata?.palette,
+          outfitMetadata?.mood,
+          outfitMetadata?.visibility,
+          outfitMetadata?.title,
+          outfitMetadata?.brandIdentity,
+          outfitMetadata?.brands?.join(', '),
+          outfitMetadata?.wearstyles?.join(', '),
+        ]
           .filter(Boolean)
           .join(', ')
       : '';
@@ -230,6 +244,7 @@ export default function OutfitBackgroundStudioModal({
 
     const gradients = Array.isArray(payload.gradients) ? (payload.gradients as OutfitBackgroundConfig[]) : [];
     const generated = Array.isArray(payload.images) ? (payload.images as string[]) : [];
+    setAiGenerationPlan(payload.generationPlan && typeof payload.generationPlan === 'object' ? payload.generationPlan as Record<string, unknown> : null);
 
     if (!response.ok || (!generated.length && !gradients.length)) {
       setAiError('AI artwork failed. You can keep the previous preview or choose a gradient preset.');
@@ -523,6 +538,12 @@ export default function OutfitBackgroundStudioModal({
                   </button>
                 </div>
                 {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
+                {aiGenerationPlan ? (
+                  <details className="rounded-lg border border-white/20 bg-black/20 p-2 text-[11px] text-white/80">
+                    <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100">Interpreted generation plan</summary>
+                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap">{JSON.stringify(aiGenerationPlan, null, 2)}</pre>
+                  </details>
+                ) : null}
 
                 {aiGradientResults.length ? (
                   <div>
