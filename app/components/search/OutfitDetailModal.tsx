@@ -18,7 +18,7 @@ export default function OutfitDetailModal({ open, data, onClose }: OutfitDetailM
             Close ✕
           </button>
         </div>
-        <OutfitCard data={data} variant="full" />
+        <OutfitCard data={data} variant="default" />
         <div className="mt-3 grid gap-2 rounded-2xl border border-white/20 bg-white/10 p-3 text-xs text-white/90 sm:grid-cols-2">
           <button type="button" className="rounded-xl border border-white/30 bg-white/10 px-3 py-2">Save to favorites</button>
           <button type="button" className="rounded-xl border border-white/30 bg-white/10 px-3 py-2">View creator profile</button>

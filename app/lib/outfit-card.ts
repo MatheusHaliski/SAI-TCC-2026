@@ -75,7 +75,7 @@ const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-export function resolveOutfitBackgroundForRender(input?: OutfitCardData['outfitBackground']) {
+export function resolveOutfitBackgroundForRender(input?: OutfitCardData['outfitBackground']): OutfitBackgroundConfig {
   if (!input) return FALLBACK_BACKGROUND;
   if ('background_mode' in input) return input;
 
@@ -195,18 +195,28 @@ const CATEGORY_FALLBACK_ICON: Record<PieceCategory, string> = {
   Rare: '⭐',
 };
 
+type DescriptionTemplateInput = Omit<DescriptionGeneratorInput, 'mood' | 'palette' | 'occasion'> & {
+  mood: string;
+  palette: string;
+  occasion: string;
+  styleLine: string;
+  heroPiece: string;
+  piecesSummary: string;
+  slotCount: number;
+};
+
 const DESCRIPTION_TEMPLATES = [
-  ({ mood, styleLine, heroPiece, slotCount }: DescriptionGeneratorInput) =>
+  ({ mood, styleLine, heroPiece, slotCount }: DescriptionTemplateInput) =>
     `This composition explores a ${mood} mood with ${styleLine.toLowerCase()} direction, anchored by ${heroPiece} and balanced across ${slotCount} curated slots.`,
-  ({ occasion, palette, styleLine, heroPiece }: DescriptionGeneratorInput) =>
+  ({ occasion, palette, styleLine, heroPiece }: DescriptionTemplateInput) =>
     `Built for ${occasion.toLowerCase()} use, this ${styleLine.toLowerCase()} look pairs ${palette} tones with ${heroPiece} as the visual lead.`,
-  ({ styleLine, piecesSummary, mood }: DescriptionGeneratorInput) =>
+  ({ styleLine, piecesSummary, mood }: DescriptionTemplateInput) =>
     `A ${styleLine.toLowerCase()} outfit with ${piecesSummary}, delivering a ${mood} aesthetic and a polished premium feel.`,
-  ({ heroPiece, palette, occasion }: DescriptionGeneratorInput) =>
+  ({ heroPiece, palette, occasion }: DescriptionTemplateInput) =>
     `${heroPiece} drives the statement while ${palette} accents keep the silhouette cohesive for ${occasion.toLowerCase()} moments.`,
-  ({ styleLine, piecesSummary, mood, occasion }: DescriptionGeneratorInput) =>
+  ({ styleLine, piecesSummary, mood, occasion }: DescriptionTemplateInput) =>
     `Curated for ${occasion.toLowerCase()}, this ${styleLine.toLowerCase()} composition combines ${piecesSummary} to create a ${mood} identity.`,
-  ({ styleLine, heroPiece, palette }: DescriptionGeneratorInput) =>
+  ({ styleLine, heroPiece, palette }: DescriptionTemplateInput) =>
     `Editorial-inspired and ${styleLine.toLowerCase()}, this outfit positions ${heroPiece} against ${palette} accents for refined visual rhythm.`,
 ];
 
@@ -326,12 +336,7 @@ export function buildOutfitDescriptionRich(input: DescriptionGeneratorInput) {
     styleLine,
     piecesSummary,
     slotCount: input.pieces.length || 1,
-  } as DescriptionGeneratorInput & {
-    heroPiece: string;
-    styleLine: string;
-    piecesSummary: string;
-    slotCount: number;
-  });
+  } as DescriptionTemplateInput);
 }
 
 export function buildOutfitDescriptionFallback(input: {

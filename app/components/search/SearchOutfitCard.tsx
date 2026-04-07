@@ -7,5 +7,9 @@ interface SearchOutfitCardProps {
 }
 
 export default function SearchOutfitCard({ data, onOpenDetail }: SearchOutfitCardProps) {
-  return <OutfitCard data={data} variant="compact" onClick={onOpenDetail} />;
+  return (
+    <button type="button" className="w-full text-left" onClick={onOpenDetail}>
+      <OutfitCard data={data} variant="compact" />
+    </button>
+  );
 }
