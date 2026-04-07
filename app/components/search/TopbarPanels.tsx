@@ -12,6 +12,7 @@ import {
 } from '@/app/lib/pageBackground';
 import { clearAuthSessionProfile, clearAuthSessionToken, getAuthSessionProfile } from '@/app/lib/authSession';
 import { clearSharedAccessToken } from '@/app/lib/accessTokenShare';
+import { applyTheme, readSavedTheme } from '@/app/lib/theme';
 
 function Overlay({ onClose }: { onClose: () => void }) {
   return <button type="button" aria-label="Close panel" className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm" onClick={onClose} />;
@@ -45,6 +46,9 @@ function PageBackgroundStudio({
     'linear-gradient(135deg, #0b7a4a 0%, #075e39 45%, #05311f 100%)',
     'linear-gradient(145deg, #0f9f67 0%, #0b6147 55%, #022c22 100%)',
     'linear-gradient(130deg, #1d976c 0%, #0f7a52 50%, #023326 100%)',
+    'linear-gradient(135deg, #4338ca 0%, #1d4ed8 48%, #0891b2 100%)',
+    'linear-gradient(140deg, #be185d 0%, #9333ea 45%, #4f46e5 100%)',
+    'linear-gradient(130deg, #ea580c 0%, #f59e0b 42%, #facc15 100%)',
   ];
   const shapes: PageBackgroundShape[] = ['none', 'orb', 'diamond', 'mesh'];
   return (
@@ -146,7 +150,7 @@ export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; a
 
 export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   const router = useRouter();
-  const [darkMode, setDarkMode] = useState<boolean>(typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') !== 'light' : true);
+  const [darkMode, setDarkMode] = useState<boolean>(readSavedTheme() === 'dark');
   const [backgroundDraft, setBackgroundDraft] = useState<PageBackgroundConfig>(() => readPageBackgroundConfig());
 
   const profile = useMemo(() => getAuthSessionProfile(), []);
@@ -156,13 +160,7 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
 
   const setTheme = (isDark: boolean) => {
     setDarkMode(isDark);
-    if (isDark) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('sai_theme', 'dark');
-    } else {
-      document.documentElement.setAttribute('data-theme', 'light');
-      localStorage.setItem('sai_theme', 'light');
-    }
+    applyTheme(isDark ? 'dark' : 'light');
   };
 
   const handleLogout = () => {
@@ -190,7 +188,6 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
         {actionItems.map((action) => (
           <button key={action.label} type="button" onClick={action.onClick} className="w-full rounded-xl border border-emerald-100/30 bg-white/10 px-3 py-2 text-left text-sm">
             <span className="flex items-center gap-2">
-              <span className="rounded-md border border-emerald-200/70 bg-emerald-300/15 px-1.5 py-0.5 text-[10px] font-bold tracking-[0.08em] text-emerald-100 shadow-[0_0_14px_rgba(16,185,129,0.65)]">JS</span>
               <span>{action.icon}</span>
               <span>{action.label}</span>
             </span>

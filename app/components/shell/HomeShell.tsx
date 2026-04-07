@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { getAuthSessionToken } from '@/app/lib/authSession';
 import AddPieceModal from '@/app/components/pieces/AddPieceModal';
 import { applyPageBackgroundConfig, readPageBackgroundConfig } from '@/app/lib/pageBackground';
+import { applyTheme, readSavedTheme } from '@/app/lib/theme';
 
 export default function HomeShell() {
   const pathname = usePathname();
@@ -35,8 +36,7 @@ export default function HomeShell() {
 
   useEffect(() => {
     applyPageBackgroundConfig(readPageBackgroundConfig());
-    const storedTheme = localStorage.getItem('sai_theme');
-    document.documentElement.setAttribute('data-theme', storedTheme === 'light' ? 'light' : 'dark');
+    applyTheme(readSavedTheme());
   }, []);
 
   const token1 = getAuthSessionToken();
