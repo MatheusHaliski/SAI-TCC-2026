@@ -84,6 +84,7 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
 const sections = ['Scheme Basics', 'Build Outfit', 'AI Assist', 'Slots Review', 'Card Background', 'Save & Generate'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
+const TITLE_FONT_OPTIONS = ['Inter, Segoe UI, sans-serif', 'Georgia, serif', 'Trebuchet MS, sans-serif', 'monospace'];
 const SLOT_AUTO_WEARSTYLE: Record<SlotKey, string[]> = {
   upper: ['Statement Piece'],
   lower: ['Visual Anchor'],
@@ -160,6 +161,8 @@ export default function CreateMySchemeView() {
   const [backgroundStudioOpen, setBackgroundStudioOpen] = useState(false);
   const [descriptionMode, setDescriptionMode] = useState<DescriptionMode>('ai');
   const [manualDescription, setManualDescription] = useState('');
+  const [descriptionOverride, setDescriptionOverride] = useState('');
+  const [titleFontFamily, setTitleFontFamily] = useState('Inter, Segoe UI, sans-serif');
   const [palette, setPalette] = useState('Neutral');
   const [mood, setMood] = useState('Urban Premium');
   const [aiPrompt, setAiPrompt] = useState('');
@@ -331,20 +334,23 @@ export default function CreateMySchemeView() {
       .filter(Boolean) as OutfitPiece[];
 
     const description =
-      descriptionMode === 'manual'
-        ? manualDescription.trim() || undefined
-        : descriptionMode === 'none'
-          ? ''
-          : buildOutfitDescriptionRich({
-              outfitName: title.trim() || 'My New Scheme',
-              style,
-              occasion,
-              visibility,
-              brand: selectedBrand?.name || 'Selection',
-              palette,
-              mood,
-              pieces,
-            });
+      descriptionOverride.trim()
+        ? descriptionOverride.trim()
+        : descriptionMode === 'manual'
+          ? manualDescription.trim() || undefined
+          : descriptionMode === 'none'
+            ? ''
+            : buildOutfitDescriptionRich({
+                outfitName: title.trim() || 'My New Scheme',
+                style,
+                occasion,
+                visibility,
+                brand: selectedBrand?.name || 'Selection',
+                palette,
+                mood,
+                pieces,
+      titleFontFamily,
+              });
 
     return {
       outfitName: title.trim() || 'My New Scheme',
@@ -360,6 +366,7 @@ export default function CreateMySchemeView() {
         palette.trim() ? { icon: '🎨', label: palette.trim() } : null,
       ].filter(Boolean) as NonNullable<OutfitCardData['metaBadges']>,
       pieces,
+      titleFontFamily,
     };
   };
 
@@ -425,6 +432,8 @@ export default function CreateMySchemeView() {
             descriptionText: descriptionMode === 'manual' ? manualDescription.trim() : null,
             mood,
             palette,
+            titleFontFamily,
+            descriptionOverride: descriptionOverride.trim() || null,
           }),
           style: style.trim() || 'Minimal',
           occasion: occasion.trim() || 'Daily',
@@ -511,6 +520,16 @@ export default function CreateMySchemeView() {
           placeholder="Title"
           className={inputClassName}
         />
+
+
+        <FancySelect
+          value={titleFontFamily}
+          onChange={setTitleFontFamily}
+          placeholder="Title Font"
+          options={TITLE_FONT_OPTIONS.map((font) => ({ value: font, label: font }))}
+        />
+
+        <input value={descriptionOverride} onChange={(e) => setDescriptionOverride(e.target.value)} placeholder="Card description override (optional)" className={`${inputClassName} md:col-span-2`} />
 
         <FancySelect
           value={style}
@@ -859,6 +878,7 @@ export default function CreateMySchemeView() {
           onClose={() => setBackgroundStudioOpen(false)}
           onApply={(nextBackgroundConfig) => {
             setOutfitBackgroundConfig(nextBackgroundConfig);
+            setAlertMessage(`Background applied: ${nextBackgroundConfig.background_mode} · shape ${nextBackgroundConfig.shape || 'none'}`);
             setBackgroundStudioOpen(false);
           }}
           outfitMetadata={{

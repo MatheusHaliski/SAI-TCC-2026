@@ -1,11 +1,5 @@
 import { SemanticTone } from '@/app/components/outfit-card/SemanticGlowBadge';
 
-const fallbackTone: SemanticTone = {
-  gradient: 'linear-gradient(120deg, rgba(100,116,139,0.35), rgba(148,163,184,0.2))',
-  border: 'border-white/30',
-  glow: 'shadow-[0_0_24px_rgba(148,163,184,0.28)]',
-  text: 'text-white',
-};
 
 const tone = (gradient: string, glow: string): SemanticTone => ({
   gradient,
@@ -50,5 +44,16 @@ export const resolveSemanticTone = (value: string, map: Record<string, SemanticT
   const exact = map[normalized];
   if (exact) return exact;
   const matchedKey = Object.keys(map).find((key) => normalized.includes(key));
-  return matchedKey ? map[matchedKey] : fallbackTone;
+  if (matchedKey) return map[matchedKey];
+
+  const hash = normalized.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  const hueA = hash % 360;
+  const hueB = (hash + 80) % 360;
+
+  return {
+    gradient: `linear-gradient(120deg, hsla(${hueA}, 70%, 60%, 0.35), hsla(${hueB}, 70%, 52%, 0.24))`,
+    border: 'border-white/30',
+    glow: `shadow-[0_0_24px_hsla(${hueA},70%,60%,0.35)]`,
+    text: 'text-white',
+  };
 };
