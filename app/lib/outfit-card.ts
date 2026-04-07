@@ -57,6 +57,8 @@ export type OutfitCardData = {
   metaBadges?: OutfitMetaBadge[];
   brands?: string[];
   pieces: OutfitPiece[];
+  schemeId?: string;
+  creatorId?: string;
 };
 
 const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {
@@ -229,6 +231,8 @@ type DescriptionGeneratorInput = {
   palette?: string;
   mood?: string;
   pieces: OutfitPiece[];
+  schemeId?: string;
+  creatorId?: string;
 };
 
 export function getCategoryBadgeStyle(category?: PieceCategory) {
