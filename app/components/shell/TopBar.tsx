@@ -5,10 +5,12 @@ import { usePathname } from 'next/navigation';
 import SearchInput from '../shared/SearchInput';
 import TopbarActionIcon from '@/app/components/search/TopbarActionIcon';
 import { NotificationsPanel, QuickNavDrawer, SystemInboxPanel, UserAccountDrawer } from '@/app/components/search/TopbarPanels';
+import OpenAddPieceButton from '@/app/components/pieces/OpenAddPieceButton';
 import { useDiscoverySearch } from '@/app/components/shell/DiscoverySearchContext';
 
 interface TopBarProps {
   pageTitle: string;
+  onOpenAddPiece: () => void;
 }
 
 const BellIcon = () => (
@@ -38,7 +40,7 @@ const MenuIcon = () => (
   </svg>
 );
 
-export default function TopBar({ pageTitle }: TopBarProps) {
+export default function TopBar({ pageTitle, onOpenAddPiece }: TopBarProps) {
   const pathname = usePathname();
   const { query, setQuery } = useDiscoverySearch();
   const [panel, setPanel] = useState<'notifications' | 'inbox' | 'menu' | 'account' | null>(null);
@@ -69,6 +71,7 @@ export default function TopBar({ pageTitle }: TopBarProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            <OpenAddPieceButton onClick={onOpenAddPiece} />
             <TopbarActionIcon label="Notifications" icon={<BellIcon />} onClick={() => setPanel('notifications')} />
             <TopbarActionIcon label="System Inbox" icon={<MailIcon />} onClick={() => setPanel('inbox')} />
             <TopbarActionIcon label="Quick Navigation" icon={<MenuIcon />} onClick={() => setPanel('menu')} />

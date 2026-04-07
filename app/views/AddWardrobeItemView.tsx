@@ -78,7 +78,12 @@ function resolveBrandLogoUrl(brand: Brand): string | null {
   );
 }
 
-export default function AddWardrobeItemView() {
+interface AddWardrobeItemViewProps {
+  mode?: 'page' | 'modal';
+  onPieceCreated?: () => void;
+}
+
+export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: AddWardrobeItemViewProps) {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -266,6 +271,7 @@ export default function AddWardrobeItemView() {
 
       setSubmitProgress(100);
       setAlertMessage('Piece added to your wardrobe successfully.');
+      onPieceCreated?.();
       setForm((prev) => ({
         ...prev,
         name: '',
@@ -374,10 +380,12 @@ export default function AddWardrobeItemView() {
   return (
     <>
       <div className="space-y-6">
-        <PageHeader
-          title="Add Piece"
-          subtitle="Add new items to your wardrobe. Brand can be left as default."
-        />
+        {mode === 'page' ? (
+          <PageHeader
+            title="Add Piece"
+            subtitle="Add new items to your wardrobe. Brand can be left as default."
+          />
+        ) : null}
 
         <SectionBlock
           title="Wardrobe Piece Form"

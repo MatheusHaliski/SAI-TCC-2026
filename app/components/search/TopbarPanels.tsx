@@ -63,8 +63,8 @@ export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; a
     { href: '/create-my-scheme', label: 'Create My Scheme' },
     { href: '/dress-tester', label: 'Dress Tester' },
     { href: '/search-items', label: 'Search' },
+    { href: '/search-pieces', label: 'Search Pieces' },
     { href: '/my-wardrobe', label: 'My Wardrobe' },
-    { href: '/explore-scheme', label: 'Explore Scheme' },
     { href: '/profile', label: 'Settings' },
   ];
 

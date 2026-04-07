@@ -3,6 +3,7 @@ import { resolveWardrobeModelUrl } from '@/app/lib/wardrobeModelUrl';
 import { BaseRepository } from './BaseRepository';
 import { BrandsRepository } from './BrandsRepository';
 import { MarketsRepository } from './MarketsRepository';
+import { UsersRepository } from './UsersRepository';
 
 const WARDROBE_ITEMS_COLLECTION = 'sai-wardrobeItems';
 
@@ -17,6 +18,7 @@ export class WardrobeItemsRepository extends BaseRepository {
   constructor(
     private readonly brandsRepository = new BrandsRepository(),
     private readonly marketsRepository = new MarketsRepository(),
+    private readonly usersRepository = new UsersRepository(),
   ) {
     super();
   }
@@ -75,6 +77,85 @@ export class WardrobeItemsRepository extends BaseRepository {
     });
   }
 
+
+  async findDiscoverable(filters?: {
+    query?: string;
+    brand?: string;
+    piece_type?: string;
+    gender?: string;
+    season?: string;
+    material?: string;
+    creator?: string;
+    rarity?: string;
+  }) {
+    const brandMap = await this.brandsRepository.getNameMap();
+    const marketsMap = await this.marketsRepository.getByIdMap();
+    const snapshot = await this.db.collection(WARDROBE_ITEMS_COLLECTION).get();
+    const normalizedQuery = (filters?.query ?? '').trim().toLowerCase();
+
+    const items = await Promise.all(snapshot.docs.map(async (doc) => {
+      const item = doc.data() as Record<string, unknown>;
+      const market = marketsMap.get(String(item.market_id ?? ''));
+      const creator = await this.usersRepository.getById(String(item.user_id ?? ''));
+      const brand = brandMap.get(String(item.brand_id ?? '')) ?? (item.brand_id === 'default' ? 'Default brand' : 'Unknown');
+
+      return {
+        wardrobe_item_id: doc.id,
+        user_id: String(item.user_id ?? ''),
+        creator_name: creator?.name || 'Creator',
+        name: String(item.name ?? ''),
+        image_url: String(item.image_url ?? ''),
+        piece_type: String(item.piece_type ?? ''),
+        brand,
+        color: String(item.color ?? ''),
+        material: String(item.material ?? ''),
+        rarity: String(item.rarity ?? 'Standard'),
+        wearstyles: Array.isArray(item.style_tags) ? item.style_tags.map((tag) => String(tag)) : [],
+        style_tags: Array.isArray(item.style_tags) ? item.style_tags.map((tag) => String(tag)) : [],
+        occasion_tags: Array.isArray(item.occasion_tags) ? item.occasion_tags.map((tag) => String(tag)) : [],
+        season: market?.season ?? 'Unknown',
+        gender: market?.gender ?? 'Unknown',
+        model_3d_url: (item.model_3d_url as string | null) ?? null,
+        model_preview_url: (item.model_preview_url as string | null) ?? null,
+        model_base_3d_url: (item.model_base_3d_url as string | null) ?? null,
+        model_branded_3d_url: (item.model_branded_3d_url as string | null) ?? null,
+        description: String(item.description ?? ''),
+        is_public: Boolean(item.is_public ?? true),
+        is_discoverable: Boolean(item.is_discoverable ?? true),
+        published_in_search: Boolean(item.published_in_search ?? true),
+      };
+    }));
+
+    return items
+      .filter((item) => {
+        if (!item.is_public || !item.is_discoverable || !item.published_in_search) return false;
+        if (filters?.brand && item.brand.toLowerCase() !== filters.brand.toLowerCase()) return false;
+        if (filters?.piece_type && item.piece_type.toLowerCase() !== filters.piece_type.toLowerCase()) return false;
+        if (filters?.gender && item.gender.toLowerCase() !== filters.gender.toLowerCase()) return false;
+        if (filters?.season && item.season.toLowerCase() !== filters.season.toLowerCase()) return false;
+        if (filters?.material && item.material.toLowerCase() !== filters.material.toLowerCase()) return false;
+        if (filters?.creator && !item.creator_name.toLowerCase().includes(filters.creator.toLowerCase())) return false;
+        if (filters?.rarity && item.rarity.toLowerCase() !== filters.rarity.toLowerCase()) return false;
+        if (!normalizedQuery) return true;
+
+        const blob = [
+          item.name,
+          item.brand,
+          item.piece_type,
+          item.color,
+          item.material,
+          item.creator_name,
+          item.description,
+          ...item.wearstyles,
+          ...item.style_tags,
+          ...item.occasion_tags,
+        ].join(' ').toLowerCase();
+
+        return blob.includes(normalizedQuery);
+      })
+      .sort((a, b) => b.wardrobe_item_id.localeCompare(a.wardrobe_item_id));
+  }
+
   async create(input: {
     user_id: string;
     brand_id: string;
@@ -111,6 +192,9 @@ export class WardrobeItemsRepository extends BaseRepository {
     const payload = {
       ...input,
       is_favorite: false,
+      is_public: true,
+      is_discoverable: true,
+      published_in_search: true,
       created_at: now,
       updated_at: now,
     };
