@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildBackgroundGenerationPlan, generateBackgroundVariations } from '@/app/lib/background-ai';
+import { BackgroundGenerationMode, buildBackgroundGenerationPlan, generateBackgroundVariations } from '@/app/lib/background-ai';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
       palette?: string;
       style?: string;
       mood?: string;
+      generationMode?: BackgroundGenerationMode;
       metadata?: {
         style?: string;
         occasion?: string;
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
       style: body.style,
       mood: body.mood,
       palette: body.palette,
+      generationMode: body.generationMode,
       metadata: body.metadata,
     });
 

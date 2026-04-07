@@ -25,14 +25,13 @@ Set these in your server environment:
 ```bash
 RUNPOD_API_KEY="..."
 RUNPOD_ENDPOINT_URL="https://<endpoint-id>.api.runpod.ai"
-BLENDER_CLOUD_API_URL="https://<endpoint-id>.api.runpod.ai" # optional override
 BLENDER_CLOUD_API_TOKEN="..."                                 # optional override token
 ```
 
 Resolution rules:
-- API URL = `BLENDER_CLOUD_API_URL` fallback to `RUNPOD_ENDPOINT_URL`
+- API URL = `RUNPOD_ENDPOINT_URL` (required)
 - API token = `BLENDER_CLOUD_API_TOKEN` fallback to `RUNPOD_API_KEY`
-- Calls go directly to the LB URL (no `/run` / `/runsync`).
+- Calls go directly to the LB URL root.
 
 ## RunPod Worker Files
 

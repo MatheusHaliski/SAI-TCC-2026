@@ -1,24 +1,25 @@
 # StylistAI RunPod Worker (MVP / Option A)
 
-This directory currently runs a **FastAPI mock-3D worker** for the Add Piece / Virtual Wardrobe flow.
+This directory currently runs a **FastAPI RunPod Load Balancer worker** for the Add Piece / Virtual Wardrobe flow.
 
 ## Current active runtime
 - Active app entrypoint: `handler.py`
-- Active container command: `uvicorn handler:app --host 0.0.0.0 --port 8000`
+- Active container command: `uvicorn handler:app --host 0.0.0.0 --port ${PORT:-80}`
 - Load Balancer endpoints:
+  - `GET /`
   - `GET /ping`
+  - `POST /`
   - `POST /jobs`
   - `GET /jobs/{jobId}`
 
 ## MVP behavior
 For MVP, the worker:
-1. Downloads the uploaded clothing image from `imageUrl`.
-2. Preprocesses it and computes simple image features.
-3. Simulates 3D generation.
-4. Writes a placeholder `.glb` artifact.
-5. Returns job state/artifacts for backend polling.
+1. Accepts LB-compatible payloads on `POST /` (`{ "input": ... }`).
+2. Queues a lightweight metadata-only processing step.
+3. Writes a deterministic `.glb` artifact.
+4. Exposes status polling on `GET /jobs/{jobId}`.
 
-This preserves the existing frontend/backend job contract while enabling wardrobe asset flow integration.
+`/ping` is intentionally public for RunPod health checks and bypasses auth middleware.
 
 ## Not active yet (future phase)
 The Blender runtime is intentionally deferred:
