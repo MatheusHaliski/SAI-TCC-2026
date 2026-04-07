@@ -859,6 +859,7 @@ export default function CreateMySchemeView() {
           onClose={() => setBackgroundStudioOpen(false)}
           onApply={(nextBackgroundConfig) => {
             setOutfitBackgroundConfig(nextBackgroundConfig);
+            setAlertMessage(`Background applied: ${nextBackgroundConfig.background_mode} · shape ${nextBackgroundConfig.shape || 'none'}`);
             setBackgroundStudioOpen(false);
           }}
           outfitMetadata={{

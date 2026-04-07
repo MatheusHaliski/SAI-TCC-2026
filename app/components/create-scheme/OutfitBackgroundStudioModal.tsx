@@ -160,6 +160,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiPalette, setAiPalette] = useState(AI_PALETTES[0]);
   const [useMetadataBoost, setUseMetadataBoost] = useState(true);
   const [aiResults, setAiResults] = useState<string[]>([]);
+  const [aiGradientResults, setAiGradientResults] = useState<OutfitBackgroundConfig[]>([]);
   const [selectedAiResult, setSelectedAiResult] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -224,17 +225,39 @@ export default function OutfitBackgroundStudioModal({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: mergedPrompt, style: aiStyle, mood: aiMood, palette: aiPalette, metadata: outfitMetadata }),
     });
-    const payload = await response.json().catch(() => ({ images: [] }));
+    const payload = await response.json().catch(() => ({ images: [], gradients: [] }));
     setAiLoading(false);
 
-    if (!response.ok || !Array.isArray(payload.images) || !payload.images.length) {
+    const gradients = Array.isArray(payload.gradients) ? (payload.gradients as OutfitBackgroundConfig[]) : [];
+    const generated = Array.isArray(payload.images) ? (payload.images as string[]) : [];
+
+    if (!response.ok || (!generated.length && !gradients.length)) {
       setAiError('AI artwork failed. You can keep the previous preview or choose a gradient preset.');
       return;
     }
 
-    const generated = payload.images as string[];
     setAiResults(generated);
-    setSelectedAiResult(generated[0]);
+    setAiGradientResults(gradients);
+    if (generated.length) setSelectedAiResult(generated[0]);
+
+    if (gradients.length) {
+      const firstGradient = resolveOutfitBackgroundForRender(gradients[0]);
+      setDraft((prev) => ({
+        ...prev,
+        ...firstGradient,
+        background_mode: 'gradient',
+        ai_artwork: {
+          prompt: mergedPrompt,
+          style: aiStyle,
+          mood: aiMood,
+          palette: aiPalette,
+          image_url: generated[0],
+          generation_status: 'done',
+        },
+      }));
+      return;
+    }
+
     setDraft((prev) => ({
       ...prev,
       background_mode: 'ai_artwork',
@@ -499,6 +522,24 @@ export default function OutfitBackgroundStudioModal({
                     Use This Result
                   </button>
                 </div>
+                {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
+
+                {aiGradientResults.length ? (
+                  <div>
+                    <p className="mb-2 text-xs uppercase tracking-[0.12em] text-cyan-100">AI Gradient Options</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {aiGradientResults.map((result, index) => (
+                        <button
+                          key={`ai-gradient-${index}`}
+                          type="button"
+                          className={`h-20 rounded-xl border ${draft.background_mode === 'gradient' && JSON.stringify(draft.gradient) === JSON.stringify(result.gradient) ? 'border-violet-300 shadow-[0_0_0_1px_rgba(196,181,253,0.5)]' : 'border-white/20'}`}
+                          style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(result))}
+                          onClick={() => setDraft((prev) => ({ ...prev, ...resolveOutfitBackgroundForRender(result), background_mode: 'gradient' }))}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
                 <div className="grid grid-cols-3 gap-2">
@@ -541,11 +582,25 @@ export default function OutfitBackgroundStudioModal({
           </section>
         </div>
 
-        <footer className="mt-4 flex flex-wrap justify-end gap-2 border-t border-white/15 pt-4">
+        <div className="mt-4 flex items-center gap-2 border-t border-white/15 pt-4">
+          <p className="text-xs uppercase tracking-[0.12em] text-white/70">Selected shape</p>
+          {(['none', 'orb', 'diamond', 'mesh'] as const).map((shape) => (
+            <button
+              key={shape}
+              type="button"
+              className={`rounded-lg border px-2 py-1 text-[11px] ${draft.shape === shape ? 'border-violet-300 bg-violet-500/35' : 'border-white/25 bg-white/10'}`}
+              onClick={() => setDraft((prev) => ({ ...prev, shape }))}
+            >
+              {shape}
+            </button>
+          ))}
+        </div>
+
+        <footer className="mt-2 flex flex-wrap justify-end gap-2 border-t border-white/15 pt-4">
           <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancel / Close</button>
           <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Reset</button>
           <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => onApply(draft)}>Save Background</button>
-          <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={() => onApply(draft)}>Apply to Card</button>
+          <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={() => onApply(draft)}>Apply to Card · {draft.shape || 'none'}</button>
         </footer>
       </div>
     </div>
