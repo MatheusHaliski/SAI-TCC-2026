@@ -1,4 +1,4 @@
-# SAI Cloud Blender Pipeline (RunPod Serverless)
+# SAI Cloud Blender Pipeline (RunPod Load Balancer)
 
 This project now uses a **cloud-first Blender pipeline**. Blender runs headless in a RunPod Serverless worker image, and the Next.js backend tracks + syncs RunPod job state into internal pipeline records.
 
@@ -24,15 +24,14 @@ Set these in your server environment:
 
 ```bash
 RUNPOD_API_KEY="..."
-RUNPOD_ENDPOINT_ID="..."
-BLENDER_CLOUD_API_URL="https://api.runpod.ai/v2/<endpoint-id>" # optional override
+RUNPOD_ENDPOINT_URL="https://<endpoint-id>.api.runpod.ai"
 BLENDER_CLOUD_API_TOKEN="..."                                 # optional override token
 ```
 
 Resolution rules:
-- API URL = `BLENDER_CLOUD_API_URL` or derived from `RUNPOD_ENDPOINT_ID`
+- API URL = `RUNPOD_ENDPOINT_URL` (required)
 - API token = `BLENDER_CLOUD_API_TOKEN` fallback to `RUNPOD_API_KEY`
-- Do **not** use a RunPod load balancer URL (for example `*.proxy.runpod.net`) as `BLENDER_CLOUD_API_URL`; this backend uses the Serverless `/run` + `/status/{id}` API.
+- Calls go directly to the LB URL root.
 
 ## RunPod Worker Files
 
@@ -50,7 +49,7 @@ Resolution rules:
    ```
 2. In RunPod Serverless, create/update endpoint with your custom image.
 3. Configure worker env vars as needed (example: `BLENDER_OUTPUT_UPLOAD_URL` for artifact upload).
-4. Set backend env vars (`RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`) and deploy app.
+4. Set backend env vars (`RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_URL`) and deploy app.
 
 ## Example RunPod Job Payload (submit)
 

@@ -1,5 +1,2 @@
 fastapi
 uvicorn
-pillow
-numpy
-requests

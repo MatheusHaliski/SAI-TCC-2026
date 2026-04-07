@@ -1,4 +1,4 @@
-# Blender Worker Setup (RunPod Serverless)
+# Blender Worker Setup (RunPod Load Balancer)
 
 ## Build and Push the Worker Image
 
@@ -21,17 +21,12 @@ docker push <registry>/<repo>:<tag>
 
 ```bash
 RUNPOD_API_KEY="..."
-RUNPOD_ENDPOINT_ID="..."
-BLENDER_CLOUD_API_URL="https://api.runpod.ai/v2/<endpoint-id>" # optional
-RUNPOD_ENDPOINT_URL="https://<your-load-balancer-base-url>"    # optional
+RUNPOD_ENDPOINT_URL="https://<endpoint-id>.api.runpod.ai"
 BLENDER_CLOUD_API_TOKEN="..."                                  # optional
-BLENDER_CLOUD_SUBMIT_PATH="/jobs"                              # optional (LB mode default)
-BLENDER_CLOUD_STATUS_PATH_TEMPLATE="/jobs/:jobId"              # optional (LB mode default)
-BLENDER_CLOUD_LEGACY_QUEUE_MODE="false"                        # optional
+BLENDER_CLOUD_STATUS_PATH_TEMPLATE="/jobs/:jobId"              # optional when async job IDs exist
 ```
 
-> This project now defaults to **RunPod Load Balancer mode** and sends direct requests to your worker HTTP API routes.
-> Queue mode is still available behind `BLENDER_CLOUD_LEGACY_QUEUE_MODE=true`, which uses fixed `/run` + `/status/:id`.
+> This project uses **RunPod Load Balancer mode** and sends direct requests to your worker HTTP routes.
 
 ## Validation
 
