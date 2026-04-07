@@ -216,14 +216,14 @@ export default function OutfitBackgroundStudioModal({
           .join(', ')
       : '';
 
-    const mergedPrompt = `${basePrompt}, ${aiStyle}, ${aiMood}, ${aiPalette}${metadataAddition ? `, ${metadataAddition}` : ''}, supportive backdrop, avoid faces, low visual noise`;
+    const mergedPrompt = `${basePrompt}${metadataAddition ? `, ${metadataAddition}` : ''}, ${aiStyle}, ${aiMood}, ${aiPalette}, supportive backdrop, avoid faces, low visual noise`;
 
     setAiLoading(true);
     setAiError(null);
     const response = await fetch('/api/ai/background-artwork', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: mergedPrompt, style: aiStyle, mood: aiMood, palette: aiPalette, metadata: outfitMetadata }),
+      body: JSON.stringify({ prompt: mergedPrompt, rawPrompt: basePrompt, style: aiStyle, mood: aiMood, palette: aiPalette, metadata: outfitMetadata }),
     });
     const payload = await response.json().catch(() => ({ images: [], gradients: [] }));
     setAiLoading(false);
