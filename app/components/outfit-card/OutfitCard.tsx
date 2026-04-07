@@ -6,6 +6,7 @@ import {
   OutfitCardData,
   buildBackgroundCssStyle,
   buildOutfitDescriptionFallback,
+  resolveBrandLogoUrlByName,
   resolveOutfitBackgroundForRender,
 } from '@/app/lib/outfit-card';
 
@@ -30,6 +31,15 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
 
   const resolvedBackground = resolveOutfitBackgroundForRender(data.outfitBackground);
   const backgroundStyle = buildBackgroundCssStyle(resolvedBackground);
+
+  const brandBadges = data.pieces
+    .map((piece) => ({
+      name: piece.brand,
+      logoUrl: piece.brandLogoUrl || resolveBrandLogoUrlByName(piece.brand) || undefined,
+    }))
+    .filter((brand) => Boolean(brand.name?.trim()))
+    .filter((brand, index, arr) => arr.findIndex((item) => item.name.toLowerCase() === brand.name.toLowerCase()) === index)
+    .slice(0, 4);
 
   const shapeOverlayClassName =
     (resolvedBackground.shape ?? 'none') === 'orb'
@@ -56,6 +66,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
           description={description}
           badges={data.metaBadges}
           compact={variant === 'compact'}
+          brandBadges={brandBadges}
         />
         <OutfitPieceList pieces={data.pieces} compact={variant === 'compact'} />
         {actions.length ? <CompactCardActionBar actions={actions} /> : null}
