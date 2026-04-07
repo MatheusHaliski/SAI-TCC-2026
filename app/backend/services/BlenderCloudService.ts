@@ -36,8 +36,6 @@ interface BlenderCloudConfig {
   baseUrl: string;
   submitPath: string;
   statusPathTemplate: string;
-  legacyQueueMode: boolean;
-  legacyQueueModeExplicit: boolean;
   authToken: string;
   authSource: 'BLENDER_CLOUD_API_TOKEN' | 'RUNPOD_API_KEY' | 'none';
 }
@@ -67,13 +65,8 @@ function resolveApiBaseUrl(): string {
     return normalizeApiBaseUrl(endpointUrl);
   }
 
-  const endpointId = process.env.RUNPOD_ENDPOINT_ID?.trim();
-  if (endpointId) {
-    return `https://api.runpod.ai/v2/${endpointId}`;
-  }
-
   throw new Error(
-    'RunPod is not configured. Set BLENDER_CLOUD_API_URL, RUNPOD_ENDPOINT_URL, or RUNPOD_ENDPOINT_ID.',
+    'RunPod is not configured. Set BLENDER_CLOUD_API_URL or RUNPOD_ENDPOINT_URL.',
   );
 }
 
@@ -103,27 +96,8 @@ function resolveAuth(): Pick<BlenderCloudConfig, 'authToken' | 'authSource'> {
 function hasRunpodConfiguration(): boolean {
   return Boolean(
     process.env.BLENDER_CLOUD_API_URL?.trim()
-    || process.env.RUNPOD_ENDPOINT_URL?.trim()
-    || process.env.RUNPOD_ENDPOINT_ID?.trim(),
+    || process.env.RUNPOD_ENDPOINT_URL?.trim(),
   );
-}
-
-function resolveLegacyQueueModeExplicit(): boolean | null {
-  const explicit = process.env.BLENDER_CLOUD_LEGACY_QUEUE_MODE?.trim().toLowerCase();
-  if (explicit === 'true') return true;
-  if (explicit === 'false') return false;
-  return null;
-}
-
-function isLegacyQueueModeEnabled(): boolean {
-  const explicit = resolveLegacyQueueModeExplicit();
-  if (explicit !== null) return explicit;
-
-  // Auto-detect mode when env is omitted:
-  // - RunPod public API (`https://api.runpod.ai/v2/<endpoint-id>`) requires `/run` + `/status/:id`.
-  // - Custom Load Balancer URLs usually expose worker routes directly (e.g. `/jobs`).
-  const baseUrl = resolveApiBaseUrl().toLowerCase();
-  return baseUrl.includes('api.runpod.ai/v2/');
 }
 
 function validateBlenderCloudConfiguration(config: BlenderCloudConfig): void {
@@ -131,10 +105,6 @@ function validateBlenderCloudConfiguration(config: BlenderCloudConfig): void {
     new URL(config.baseUrl);
   } catch {
     throw new Error(`Invalid BLENDER_CLOUD_API_URL / RUNPOD_ENDPOINT_URL value: "${config.baseUrl}"`);
-  }
-
-  if (config.legacyQueueMode) {
-    return;
   }
 
   if (!config.submitPath.startsWith('/')) {
@@ -158,10 +128,8 @@ function resolveBlenderCloudConfiguration(): BlenderCloudConfig {
   const auth = resolveAuth();
   const config: BlenderCloudConfig = {
     baseUrl: resolveApiBaseUrl(),
-    submitPath: normalizeApiPath(process.env.BLENDER_CLOUD_SUBMIT_PATH?.trim() || '/jobs'),
+    submitPath: normalizeApiPath(process.env.BLENDER_CLOUD_SUBMIT_PATH?.trim() || '/'),
     statusPathTemplate: normalizeApiPath(process.env.BLENDER_CLOUD_STATUS_PATH_TEMPLATE?.trim() || '/jobs/:jobId'),
-    legacyQueueMode: isLegacyQueueModeEnabled(),
-    legacyQueueModeExplicit: resolveLegacyQueueModeExplicit() !== null,
     authToken: auth.authToken,
     authSource: auth.authSource,
   };
@@ -193,118 +161,104 @@ export class BlenderCloudService {
       jobType: input.jobType,
       options: input.options ?? {},
     };
-    const modeAttempts = config.legacyQueueModeExplicit
-      ? [config.legacyQueueMode]
-      : [config.legacyQueueMode, !config.legacyQueueMode];
+    const submitUrl = buildUrl(config.baseUrl, config.submitPath);
 
-    let lastError = '';
-    for (let index = 0; index < modeAttempts.length; index += 1) {
-      const legacyQueueMode = modeAttempts[index];
-      const submitUrl = legacyQueueMode
-        ? buildUrl(config.baseUrl, '/run')
-        : buildUrl(config.baseUrl, config.submitPath);
+    console.info('[blender-cloud] submit request', {
+      baseUrl: config.baseUrl,
+      submitUrl,
+      authSource: config.authSource,
+      payload,
+    });
 
-      console.info('[blender-cloud] submit request', {
-        mode: legacyQueueMode ? 'legacy_queue' : 'lb_custom_routes',
-        baseUrl: config.baseUrl,
-        submitUrl,
-        authSource: config.authSource,
-        attempt: index + 1,
-      });
+    const response = await fetch(submitUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(config.authToken ? { Authorization: `Bearer ${config.authToken}` } : {}),
+      },
+      body: JSON.stringify({ input: payload }),
+    });
 
-      const requestPayload = legacyQueueMode ? { input: payload } : payload;
-      const response = await fetch(submitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(config.authToken ? { Authorization: `Bearer ${config.authToken}` } : {}),
-        },
-        body: JSON.stringify(requestPayload),
-      });
+    const body = (await response.json().catch(() => ({}))) as RunpodSubmitResponse & Record<string, unknown>;
+    const cloudJobId = typeof body.jobId === 'string'
+      ? body.jobId
+      : typeof body.id === 'string'
+        ? body.id
+        : '';
 
-      const body = (await response.json().catch(() => ({}))) as RunpodSubmitResponse & Record<string, unknown>;
-      const cloudJobId = typeof body.jobId === 'string'
-        ? body.jobId
-        : typeof body.id === 'string'
-          ? body.id
-          : '';
+    console.info('[blender-cloud] submit response', {
+      submitUrl,
+      status: response.status,
+      body,
+    });
 
-      if (response.ok && cloudJobId) {
-        return { cloudJobId, raw: body };
-      }
-
-      lastError = `RunPod submit failed. url=${submitUrl} status=${response.status} body=${JSON.stringify(body)}`;
-      if (index < modeAttempts.length - 1) {
-        console.warn('[blender-cloud] submit failed, retrying with alternate mode', { error: lastError });
-      }
+    if (response.ok && cloudJobId) {
+      return { cloudJobId, raw: body };
     }
 
-    throw new Error(lastError);
+    if (response.ok) {
+      return { cloudJobId: 'inline-response', raw: body };
+    }
+
+    throw new Error(`RunPod submit failed. url=${submitUrl} status=${response.status} body=${JSON.stringify(body)}`);
   }
 
   async getBlenderCloudJobStatus(cloudJobId: string): Promise<BlenderCloudJobStatus> {
-    const config = resolveBlenderCloudConfiguration();
-    const modeAttempts = config.legacyQueueModeExplicit
-      ? [config.legacyQueueMode]
-      : [config.legacyQueueMode, !config.legacyQueueMode];
-
-    let lastError = '';
-    for (let index = 0; index < modeAttempts.length; index += 1) {
-      const legacyQueueMode = modeAttempts[index];
-      const statusPath = legacyQueueMode
-        ? `/status/${cloudJobId}`
-        : config.statusPathTemplate.replace(':jobId', encodeURIComponent(cloudJobId));
-      const statusUrl = buildUrl(config.baseUrl, statusPath);
-
-      console.info('[blender-cloud] status request', {
-        mode: legacyQueueMode ? 'legacy_queue' : 'lb_custom_routes',
-        baseUrl: config.baseUrl,
-        statusUrl,
-        authSource: config.authSource,
-        cloudJobId,
-        attempt: index + 1,
-      });
-
-      const response = await fetch(statusUrl, {
-        method: 'GET',
-        headers: config.authToken ? { Authorization: `Bearer ${config.authToken}` } : {},
-      });
-
-      const body = (await response.json().catch(() => ({}))) as RunpodStatusResponse & Record<string, unknown>;
-      if (!response.ok) {
-        lastError = `RunPod status failed. url=${statusUrl} status=${response.status} body=${JSON.stringify(body)}`;
-        if (index < modeAttempts.length - 1) {
-          console.warn('[blender-cloud] status failed, retrying with alternate mode', { error: lastError });
-        }
-        continue;
-      }
-
-      const output = (body.output ?? {}) as Record<string, unknown>;
-      const topLevelArtifacts = body.artifacts as Record<string, unknown> | undefined;
-      const topLevelMetrics = body.metrics as Record<string, unknown> | undefined;
-      const topLevelLogs = body.logs as Record<string, unknown> | undefined;
-      const outputArtifacts = output.artifacts as Record<string, unknown> | undefined;
-      const outputMetrics = output.metrics as Record<string, unknown> | undefined;
-      const outputLogs = output.logs as Record<string, unknown> | undefined;
-      const artifacts = topLevelArtifacts ?? outputArtifacts ?? null;
-      const metrics = topLevelMetrics ?? outputMetrics ?? null;
-      const logs = topLevelLogs ?? outputLogs ?? null;
-      const status = typeof body.status === 'string'
-        ? body.status
-        : typeof output.status === 'string'
-          ? output.status
-          : 'QUEUED';
-
+    if (cloudJobId === 'inline-response') {
       return {
         cloudJobId,
-        status: toInternalStatus(status),
-        artifacts,
-        metrics,
-        logs,
-        raw: body,
+        status: 'completed',
+        artifacts: null,
+        metrics: null,
+        logs: null,
+        raw: { status: 'COMPLETED' },
       };
     }
 
-    throw new Error(lastError);
+    const config = resolveBlenderCloudConfiguration();
+    const statusPath = config.statusPathTemplate.replace(':jobId', encodeURIComponent(cloudJobId));
+    const statusUrl = buildUrl(config.baseUrl, statusPath);
+
+    console.info('[blender-cloud] status request', {
+      baseUrl: config.baseUrl,
+      statusUrl,
+      authSource: config.authSource,
+      cloudJobId,
+    });
+
+    const response = await fetch(statusUrl, {
+      method: 'GET',
+      headers: config.authToken ? { Authorization: `Bearer ${config.authToken}` } : {},
+    });
+
+    const body = (await response.json().catch(() => ({}))) as RunpodStatusResponse & Record<string, unknown>;
+    if (!response.ok) {
+      throw new Error(`RunPod status failed. url=${statusUrl} status=${response.status} body=${JSON.stringify(body)}`);
+    }
+
+    const output = (body.output ?? {}) as Record<string, unknown>;
+    const topLevelArtifacts = body.artifacts as Record<string, unknown> | undefined;
+    const topLevelMetrics = body.metrics as Record<string, unknown> | undefined;
+    const topLevelLogs = body.logs as Record<string, unknown> | undefined;
+    const outputArtifacts = output.artifacts as Record<string, unknown> | undefined;
+    const outputMetrics = output.metrics as Record<string, unknown> | undefined;
+    const outputLogs = output.logs as Record<string, unknown> | undefined;
+    const artifacts = topLevelArtifacts ?? outputArtifacts ?? null;
+    const metrics = topLevelMetrics ?? outputMetrics ?? null;
+    const logs = topLevelLogs ?? outputLogs ?? null;
+    const status = typeof body.status === 'string'
+      ? body.status
+      : typeof output.status === 'string'
+        ? output.status
+        : 'QUEUED';
+
+    return {
+      cloudJobId,
+      status: toInternalStatus(status),
+      artifacts,
+      metrics,
+      logs,
+      raw: body,
+    };
   }
 }

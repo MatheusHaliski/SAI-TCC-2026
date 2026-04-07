@@ -366,6 +366,7 @@ export default function OutfitBackgroundStudioModal({
 
             {activeTab === 'gradient' ? (
               <div className="space-y-3">
+                {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
                 <div className="grid grid-cols-3 gap-2">
                   {(['linear', 'radial', 'conic'] as const).map((type) => (
                     <button
@@ -540,6 +541,7 @@ export default function OutfitBackgroundStudioModal({
                   </div>
                 ) : null}
 
+                {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
                 <div className="grid grid-cols-3 gap-2">
                   {aiResults.map((result) => (
                     <button
