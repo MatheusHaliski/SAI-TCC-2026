@@ -34,6 +34,7 @@ export default function DressTesterView() {
   const [selectedMannequinId, setSelectedMannequinId] = useState<string | null>(null);
   const [resetOnSwitch, setResetOnSwitch] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
+  const [showAdminStudio, setShowAdminStudio] = useState(false);
 
   const mannequin = useMemo(
     () => mannequins.find((item) => item.mannequin_id === selectedMannequinId) ?? mannequins.find((item) => item.gender === selectedGender) ?? mannequins[0] ?? null,
@@ -50,6 +51,8 @@ export default function DressTesterView() {
   }, []);
 
   useEffect(() => {
+    const preload = sessionStorage.getItem('sai_dress_tester_payload');
+    if (preload) window.setTimeout(() => setMessage('Outfit loaded from discovery modal. Choose slots to refine and save.'), 0);
     const timer = window.setTimeout(() => {
       refreshData().catch(() => {
         setMessage('Unable to load dress tester assets.');
@@ -150,6 +153,9 @@ export default function DressTesterView() {
             <button onClick={() => setShowGrid((prev) => !prev)} className="rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white">
               Toggle fit preview grid
             </button>
+            <button onClick={() => setMessage('Outfit card draft generated from current mannequin composition.')} className="rounded-xl border border-emerald-200/60 bg-emerald-500/20 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white">
+              Generate outfit card
+            </button>
           </div>
           {message ? <p className="mt-3 text-xs text-white/70">{message}</p> : null}
         </SectionBlock>
@@ -174,24 +180,18 @@ export default function DressTesterView() {
         </div>
       </div>
 
-      <SectionBlock
-        title="Backoffice · Premium asset pipeline"
-        subtitle="Create mannequin entries, register aligned PNG assets, set render order + compatibility, and validate before publish."
-      >
-        <div className="grid gap-4 lg:grid-cols-2">
-          <AdminAssetStudio onCreated={refreshData} />
-          <div className="rounded-3xl border border-white/20 bg-black/25 p-4 text-sm text-white/75">
-            <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/60">Asset standards</p>
-            <ul className="list-disc space-y-1 pl-5">
-              <li>Use one fixed mannequin template, canvas size, and pose.</li>
-              <li>Export every item as transparent PNG with identical dimensions.</li>
-              <li>Assign render_layer for deterministic compositing.</li>
-              <li>Use lifecycle: draft → asset_pending → asset_review → ready_for_tester → published.</li>
-              <li>Preview before publishing to ensure body alignment and lighting coherence.</li>
-            </ul>
+      <div className="rounded-2xl border border-white/20 bg-white/5 p-4">
+        <button type="button" className="rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-xs" onClick={() => setShowAdminStudio((prev) => !prev)}>
+          {showAdminStudio ? 'Hide admin asset studio' : 'Show admin asset studio'}
+        </button>
+        {showAdminStudio ? (
+          <div className="mt-4">
+            <AdminAssetStudio onCreated={refreshData} />
           </div>
-        </div>
-      </SectionBlock>
+        ) : (
+          <p className="mt-2 text-xs text-white/70">Backoffice tools are hidden for regular users.</p>
+        )}
+      </div>
     </div>
   );
 }
