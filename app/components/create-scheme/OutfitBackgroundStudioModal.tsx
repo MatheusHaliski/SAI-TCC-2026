@@ -216,6 +216,62 @@ function getRecommendedPresets(metadata?: OutfitMetadata): RecommendedPreset[] {
   ];
 }
 
+function buildUploadedImagePresets(imageUrl: string): RecommendedPreset[] {
+  const tiledSvg = `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <rect width='1200' height='800' fill='#e5e7eb'/>
+      ${Array.from({ length: 6 }).map((_, row) =>
+        Array.from({ length: 8 }).map((__, col) => {
+          const x = col * 160 + (row % 2 === 0 ? 0 : 20);
+          const y = row * 130 + 8;
+          return `<image href='${imageUrl}' x='${x}' y='${y}' width='140' height='110' preserveAspectRatio='xMidYMid slice' opacity='0.95'/>`;
+        }).join('')
+      ).join('')}
+    </svg>`,
+  )}`;
+
+  const popSvg = `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <defs>
+        <radialGradient id='dot' cx='50%' cy='50%' r='50%'>
+          <stop offset='0%' stop-color='rgba(30,64,175,0.8)'/>
+          <stop offset='100%' stop-color='rgba(30,64,175,0.0)'/>
+        </radialGradient>
+      </defs>
+      <rect width='1200' height='800' fill='#facc15'/>
+      <path d='M0,0 H1200 V360 C920,240 720,420 460,340 C260,280 120,120 0,180 Z' fill='#2563eb'/>
+      ${Array.from({ length: 26 }).map((_, idx) => {
+        const x = (idx % 13) * 92 + 30;
+        const y = Math.floor(idx / 13) * 88 + 260;
+        const size = 38 + (idx % 5) * 6;
+        return `<circle cx='${x}' cy='${y}' r='${size}' fill='url(#dot)'/>`;
+      }).join('')}
+      <image href='${imageUrl}' x='850' y='430' width='300' height='240' preserveAspectRatio='xMidYMid slice' opacity='0.92'/>
+    </svg>`,
+  )}`;
+
+  return [
+    {
+      label: 'Uploaded Grid',
+      description: 'Rows/columns using your uploaded image.',
+      config: {
+        background_mode: 'ai_artwork',
+        ai_artwork: { prompt: 'uploaded image tiled grid', image_url: tiledSvg, generation_status: 'done' },
+        shape: 'none',
+      },
+    },
+    {
+      label: 'Yellow Blue Pop',
+      description: 'Yellow-blue pop style with uploaded image accent.',
+      config: {
+        background_mode: 'ai_artwork',
+        ai_artwork: { prompt: 'yellow blue pop uploaded variation', image_url: popSvg, generation_status: 'done' },
+        shape: 'none',
+      },
+    },
+  ];
+}
+
 export default function OutfitBackgroundStudioModal({
   value,
   previewCardData,
@@ -252,6 +308,14 @@ export default function OutfitBackgroundStudioModal({
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
 
   const recommendedPresets = useMemo(() => getRecommendedPresets(outfitMetadata), [outfitMetadata]);
+  const uploadedImagePresets = useMemo(
+    () => (aiReferenceImageUrl.startsWith('data:image/') ? buildUploadedImagePresets(aiReferenceImageUrl) : []),
+    [aiReferenceImageUrl],
+  );
+  const displayedPresets = useMemo(
+    () => [...uploadedImagePresets, ...recommendedPresets].slice(0, 6),
+    [uploadedImagePresets, recommendedPresets],
+  );
 
   const previewData: OutfitCardData = {
     ...previewCardData,
@@ -773,7 +837,7 @@ export default function OutfitBackgroundStudioModal({
             <section className="rounded-xl border border-white/20 bg-white/10 p-3">
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Recommended presets based on current outfit</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                {recommendedPresets.map((preset) => (
+                {displayedPresets.map((preset) => (
                   <button key={preset.label} type="button" className="rounded-lg border border-white/20 bg-white/10 p-2 text-left" onClick={() => setDraft(preset.config)}>
                     <p className="text-xs font-semibold">{preset.label}</p>
                     <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
