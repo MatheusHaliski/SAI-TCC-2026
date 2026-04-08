@@ -41,7 +41,7 @@ export type OutfitBackgroundConfig = {
     generation_status?: 'idle' | 'loading' | 'done' | 'failed';
   };
   texture_overlay?: boolean;
-  shape?: 'none' | 'orb' | 'diamond' | 'mesh';
+  shape?: 'none' | 'orb' | 'diamond' | 'mesh' | 'stars' | 'circles' | 'triangles' | 'waves' | 'beams';
 };
 
 export type OutfitCardData = {
@@ -52,7 +52,7 @@ export type OutfitCardData = {
   outfitBackground?: OutfitBackgroundConfig | {
     type: 'solid' | 'gradient' | 'image';
     value: string;
-    shape?: 'none' | 'orb' | 'diamond' | 'mesh';
+    shape?: 'none' | 'orb' | 'diamond' | 'mesh' | 'stars' | 'circles' | 'triangles' | 'waves' | 'beams';
   };
   metaBadges?: OutfitMetaBadge[];
   brands?: string[];
