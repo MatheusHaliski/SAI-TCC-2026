@@ -6,6 +6,7 @@ import {
   OutfitBackgroundConfig,
   OutfitCardData,
   buildBackgroundCssStyle,
+  resolveBrandLogoUrlByName,
   resolveOutfitBackgroundForRender,
 } from '@/app/lib/outfit-card';
 import { BackgroundGenerationMode } from '@/app/lib/background-ai';
@@ -21,13 +22,15 @@ import type {
   ArtworkVariation,
 } from '@/app/backend/types/artwork-studio';
 import { applyArtworkToOutfitCard } from '@/app/lib/artwork-studio';
+import FancySelect from '@/app/components/ui/fancy-select';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
 
 type RecommendedPreset = {
+  id: string;
   label: string;
   description: string;
-  config: OutfitBackgroundConfig;
+  recipe: (context: PresetContext) => OutfitBackgroundConfig;
 };
 
 type RecommendedPresetId = 'editorial-dark' | 'emerald-luxury' | 'soft-runway' | 'silver-mist' | 'monochrome-editorial' | 'black-luxury-fade';
@@ -46,6 +49,12 @@ type OutfitMetadata = {
   mood?: string;
   wearstyles?: string[];
   brands?: string[];
+};
+
+type PresetContext = {
+  brandName: string;
+  brandLogoUrl: string | null;
+  heroColor: string;
 };
 
 interface OutfitBackgroundStudioModalProps {
@@ -258,22 +267,25 @@ function buildUploadedImagePresets(imageUrl: string): RecommendedPreset[] {
 
   return [
     {
+      id: 'uploaded_grid',
       label: 'Uploaded Grid',
       description: 'Rows/columns using your uploaded image.',
-      config: {
+      recipe: () => ({
         background_mode: 'ai_artwork',
         ai_artwork: { prompt: 'uploaded image tiled grid', image_url: tiledSvg, generation_status: 'done' },
         shape: 'none',
-      },
+      }),
     },
     {
+      id: 'uploaded_pop',
       label: 'Yellow Blue Pop',
       description: 'Yellow-blue pop style with uploaded image accent.',
-      config: {
+      recipe: () => ({
         background_mode: 'ai_artwork',
         ai_artwork: { prompt: 'yellow blue pop uploaded variation', image_url: popSvg, generation_status: 'done' },
-        shape: 'none',
-      },
+        gradient: GRADIENT_PRESETS[5].config.gradient,
+        shape: 'beams',
+      }),
     },
   ];
 }
@@ -361,7 +373,6 @@ export default function OutfitBackgroundStudioModal({
   const [aiPaletteMode, setAiPaletteMode] = useState<ArtworkPaletteMode>('cool_luxury');
   const [aiShapeLanguage, setAiShapeLanguage] = useState<ArtworkShapeLanguage>('mesh');
   const [aiCompositionType, setAiCompositionType] = useState<ArtworkStudioInput['compositionType']>('background');
-  const [aiNegativePrompt, setAiNegativePrompt] = useState('');
   const [aiDensity, setAiDensity] = useState(50);
   const [aiContrast, setAiContrast] = useState<ArtworkContrastLevel>('medium');
   const [aiColorIntent, setAiColorIntent] = useState<ArtworkColorIntent>('prompt_driven');
@@ -378,10 +389,18 @@ export default function OutfitBackgroundStudioModal({
   const [selectedAiResult, setSelectedAiResult] = useState<ArtworkVariation | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [aiGenerationPlan, setAiGenerationPlan] = useState<Record<string, unknown> | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
 
-  const recommendedPresets = useMemo(() => getRecommendedPresets(outfitMetadata), [outfitMetadata]);
+  const presetContext = useMemo<PresetContext>(() => {
+    const metadataBrand = outfitMetadata?.brandIdentity || outfitMetadata?.brands?.[0] || previewCardData.pieces?.[0]?.brand || 'SELECTION';
+    const brandName = metadataBrand.trim() || 'SELECTION';
+    const brandLogoUrl = resolveBrandLogoUrlByName(brandName) || null;
+    const heroColor = previewCardData.outfitBackground && 'background_mode' in previewCardData.outfitBackground && previewCardData.outfitBackground.background_mode === 'solid'
+      ? previewCardData.outfitBackground.solid_color || '#1d4ed8'
+      : '#1d4ed8';
+    return { brandName, brandLogoUrl, heroColor };
+  }, [outfitMetadata, previewCardData]);
+  const recommendedPresets = useMemo(() => getRecommendedPresets(presetContext), [presetContext]);
   const uploadedImagePresets = useMemo(
     () => (aiReferenceImageUrl.startsWith('data:image/') ? buildUploadedImagePresets(aiReferenceImageUrl) : []),
     [aiReferenceImageUrl],
@@ -390,6 +409,15 @@ export default function OutfitBackgroundStudioModal({
     () => [...uploadedImagePresets, ...recommendedPresets].slice(0, 6),
     [uploadedImagePresets, recommendedPresets],
   );
+  const applyRecommendedBackgroundPreset = (presetId: string, context: PresetContext) => {
+    const preset = displayedPresets.find((item) => item.id === presetId);
+    if (!preset) return;
+    const config = preset.recipe(context);
+    setDraft((prev) => ({
+      ...prev,
+      ...config,
+    }));
+  };
 
   const applyRecommendedPreset = async (preset: RecommendedPreset) => {
     const isEmeraldLuxury = 'id' in preset && preset.id === 'emerald-luxury';
@@ -459,7 +487,6 @@ export default function OutfitBackgroundStudioModal({
     const studioInput: ArtworkStudioInput = {
       user_id: previewCardData.creatorId || 'anonymous',
       prompt: aiPrompt.trim() || 'premium editorial fashion artwork',
-      negativePrompt: aiNegativePrompt,
       compositionType: aiCompositionType,
       stylePreset: aiStylePreset,
       paletteMode: aiPaletteMode,
@@ -507,17 +534,6 @@ export default function OutfitBackgroundStudioModal({
     setAiResults(mergedVariations);
     if (payload.data.warnings?.length) setBackendWarning(payload.data.warnings[0]);
     if (mergedVariations.length) setSelectedAiResult(mergedVariations[0]);
-    setAiGenerationPlan({
-      generationMode: aiGenerationMode,
-      compositionType: aiCompositionType,
-      stylePreset: aiStylePreset,
-      paletteMode: aiPaletteMode,
-      shapeLanguage: aiShapeLanguage,
-      colorIntent: aiColorIntent,
-      safeAreaMode: aiSafeArea,
-      provider: payload.data.provider,
-      fallbackUsed: payload.data.fallbackUsed ?? false,
-    });
     setAiGradientResults([]);
   };
 
@@ -766,26 +782,13 @@ export default function OutfitBackgroundStudioModal({
             {activeTab === 'ai_artwork' ? (
               <div className="space-y-3">
                 <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder="Premium editorial fashion background with geometric layers and elegant negative space." className="min-h-24 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm" />
-                <textarea value={aiNegativePrompt} onChange={(event) => setAiNegativePrompt(event.target.value)} placeholder="Optional negative prompt..." className="min-h-16 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs" />
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiCompositionType} onChange={(event) => setAiCompositionType(event.target.value as ArtworkStudioInput['compositionType'])}>
-                    {COMPOSITION_TYPES.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </select>
-                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiStylePreset} onChange={(event) => setAiStylePreset(event.target.value as ArtworkStylePreset)}>
-                    {STYLE_PRESETS.map((option) => <option key={option} value={option}>{option.replaceAll('_', ' ')}</option>)}
-                  </select>
-                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiPaletteMode} onChange={(event) => setAiPaletteMode(event.target.value as ArtworkPaletteMode)}>
-                    {PALETTE_MODES.map((option) => <option key={option} value={option}>{option.replaceAll('_', ' ')}</option>)}
-                  </select>
-                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiShapeLanguage} onChange={(event) => setAiShapeLanguage(event.target.value as ArtworkShapeLanguage)}>
-                    {SHAPE_LANGUAGES.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </select>
-                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiContrast} onChange={(event) => setAiContrast(event.target.value as ArtworkContrastLevel)}>
-                    {CONTRAST_LEVELS.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </select>
-                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiColorIntent} onChange={(event) => setAiColorIntent(event.target.value as ArtworkColorIntent)}>
-                    {COLOR_INTENTS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
+                  <FancySelect value={aiCompositionType} onChange={(value) => setAiCompositionType(value as ArtworkStudioInput['compositionType'])} placeholder="Composition type" options={COMPOSITION_TYPES.map((option) => ({ value: option, label: option.replaceAll('_', ' ') }))} />
+                  <FancySelect value={aiStylePreset} onChange={(value) => setAiStylePreset(value as ArtworkStylePreset)} placeholder="Style preset" options={STYLE_PRESETS.map((option) => ({ value: option, label: option.replaceAll('_', ' ') }))} />
+                  <FancySelect value={aiPaletteMode} onChange={(value) => setAiPaletteMode(value as ArtworkPaletteMode)} placeholder="Palette mode" options={PALETTE_MODES.map((option) => ({ value: option, label: option.replaceAll('_', ' ') }))} />
+                  <FancySelect value={aiShapeLanguage} onChange={(value) => setAiShapeLanguage(value as ArtworkShapeLanguage)} placeholder="Shape language" options={SHAPE_LANGUAGES.map((option) => ({ value: option, label: option }))} />
+                  <FancySelect value={aiContrast} onChange={(value) => setAiContrast(value as ArtworkContrastLevel)} placeholder="Contrast" options={CONTRAST_LEVELS.map((option) => ({ value: option, label: option }))} />
+                  <FancySelect value={aiColorIntent} onChange={(value) => setAiColorIntent(value as ArtworkColorIntent)} placeholder="Color intent" options={COLOR_INTENTS.map((option) => ({ value: option.value, label: option.label }))} />
                   <label className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-[11px] text-white/80">
                     <span className="block pb-1 text-[10px] uppercase tracking-[0.08em] text-white/60">Reference image (upload)</span>
                     <input
@@ -819,9 +822,7 @@ export default function OutfitBackgroundStudioModal({
                 <input type="range" min={0} max={100} value={aiGlow} onChange={(event) => setAiGlow(Number(event.target.value))} />
                 <label className="text-xs">Layering depth ({aiLayerDepth})</label>
                 <input type="range" min={1} max={10} value={aiLayerDepth} onChange={(event) => setAiLayerDepth(Number(event.target.value))} />
-                <select className="w-full rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiGenerationMode} onChange={(event) => setAiGenerationMode(event.target.value as BackgroundGenerationMode)}>
-                  {AI_GENERATION_MODES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
+                <FancySelect value={aiGenerationMode} onChange={(value) => setAiGenerationMode(value as BackgroundGenerationMode)} placeholder="Generation mode" options={AI_GENERATION_MODES.map((option) => ({ value: option.value, label: option.label }))} />
                 <label className="flex items-center gap-2 text-xs">
                   <input type="checkbox" checked={aiSafeArea} onChange={(event) => setAiSafeArea(event.target.checked)} />
                   Safe area mode for text and subject
@@ -843,13 +844,6 @@ export default function OutfitBackgroundStudioModal({
                 {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
                 {backendWarning ? <p className="text-xs text-cyan-200">{backendWarning}</p> : null}
                 {aiResults.length ? <p className="text-[11px] text-white/60">Provider: {aiResults[0]?.provider} {aiResults[0]?.provider_model ? `· ${aiResults[0].provider_model}` : ''}</p> : null}
-                {aiGenerationPlan ? (
-                  <details className="rounded-lg border border-white/20 bg-black/20 p-2 text-[11px] text-white/80">
-                    <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100">Interpreted generation plan</summary>
-                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap">{JSON.stringify(aiGenerationPlan, null, 2)}</pre>
-                  </details>
-                ) : null}
-
                 {aiGradientResults.length ? (
                   <div>
                     <p className="mb-2 text-xs uppercase tracking-[0.12em] text-cyan-100">AI Gradient Options</p>
@@ -895,7 +889,6 @@ export default function OutfitBackgroundStudioModal({
                         input: {
                           user_id: previewCardData.creatorId || 'anonymous',
                           prompt: aiPrompt.trim(),
-                          negativePrompt: aiNegativePrompt.trim() || undefined,
                           compositionType: aiCompositionType,
                           stylePreset: aiStylePreset,
                           paletteMode: aiPaletteMode,
@@ -934,6 +927,7 @@ export default function OutfitBackgroundStudioModal({
                   <button key={preset.label} type="button" className="rounded-lg border border-white/20 bg-white/10 p-2 text-left" onClick={() => void applyRecommendedPreset(preset)}>
                     <p className="text-xs font-semibold">{preset.label}</p>
                     <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
+                    <span className="mt-2 block h-7 rounded-lg border border-white/15" style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(preset.recipe(presetContext)))} />
                   </button>
                 ))}
               </div>
@@ -950,57 +944,53 @@ export default function OutfitBackgroundStudioModal({
           </section>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/15 pt-4">
-          <p className="text-xs uppercase tracking-[0.12em] text-white/70">Selected shape</p>
-          {SHAPE_SEGMENT_OPTIONS.map((shape) => (
-            <button
-              key={shape}
-              type="button"
-              className={`rounded-lg border px-2 py-1 text-[11px] ${draft.shape === shape ? 'border-violet-300 bg-violet-500/35' : 'border-white/25 bg-white/10'}`}
-              onClick={() => setDraft((prev) => ({ ...prev, shape }))}
-            >
-              {shape}
-            </button>
-          ))}
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/15 pt-3">
-          <p className="text-xs uppercase tracking-[0.12em] text-white/70">Gradient picker</p>
-          {SEGMENTED_GRADIENT_OPTIONS.map((preset) => (
-            <button
-              key={`seg-${preset.label}`}
-              type="button"
-              className={`rounded-lg border px-2 py-1 text-[11px] ${draft.background_mode === 'gradient' && JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient) ? 'border-cyan-300 bg-cyan-500/30' : 'border-white/25 bg-white/10'}`}
-              onClick={() => setDraft((prev) => {
+        <div className="mt-4 grid gap-3 border-t border-white/15 pt-4 md:grid-cols-2">
+          <FancySelect
+            value={draft.shape ?? 'none'}
+            onChange={(value) => setDraft((prev) => ({ ...prev, shape: value as NonNullable<OutfitBackgroundConfig['shape']> }))}
+            label="Selected shape"
+            options={SHAPE_SEGMENT_OPTIONS.map((shape) => ({
+              value: shape,
+              label: shape === 'none' ? 'None (no overlay)' : shape[0].toUpperCase() + shape.slice(1),
+              hint: 'Updates geometry in preview',
+            }))}
+          />
+          <FancySelect
+            value={SEGMENTED_GRADIENT_OPTIONS.find((preset) => JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient))?.label ?? ''}
+            onChange={(value) => {
+              if (value === 'Flower') {
+                setDraft((prev) => ({
+                  ...prev,
+                  background_mode: 'ai_artwork',
+                  ai_artwork: {
+                    prompt: 'flower grid pattern',
+                    image_url: FLOWER_PICKER_IMAGE,
+                    generation_status: 'done',
+                  },
+                  shape: 'flowers',
+                }));
+                return;
+              }
+              const selectedPreset = SEGMENTED_GRADIENT_OPTIONS.find((preset) => preset.label === value);
+              if (!selectedPreset) return;
+              setDraft((prev) => {
                 if (prev.background_mode === 'ai_artwork' && prev.ai_artwork?.image_url) {
                   return {
                     ...prev,
-                    gradient: preset.config.gradient,
-                    shape: prev.shape || preset.config.shape,
+                    gradient: selectedPreset.config.gradient,
+                    shape: prev.shape || selectedPreset.config.shape,
                     background_mode: 'ai_artwork',
                   };
                 }
-                return { ...prev, ...preset.config, background_mode: 'gradient' };
-              })}
-            >
-              {preset.label}
-            </button>
-          ))}
-          <button
-            type="button"
-            className={`rounded-lg border px-2 py-1 text-[11px] ${draft.background_mode === 'ai_artwork' && draft.ai_artwork?.image_url === FLOWER_PICKER_IMAGE ? 'border-pink-300 bg-pink-500/30' : 'border-white/25 bg-white/10'}`}
-            onClick={() => setDraft((prev) => ({
-              ...prev,
-              background_mode: 'ai_artwork',
-              ai_artwork: {
-                prompt: 'flower grid pattern',
-                image_url: FLOWER_PICKER_IMAGE,
-                generation_status: 'done',
-              },
-              shape: 'flowers',
-            }))}
-          >
-            Flower
-          </button>
+                return { ...prev, ...selectedPreset.config, background_mode: 'gradient' };
+              });
+            }}
+            label="Gradient picker"
+            options={[
+              ...SEGMENTED_GRADIENT_OPTIONS.map((preset) => ({ value: preset.label, label: preset.label, hint: 'Applies gradient + geometry recipe' })),
+              { value: 'Flower', label: 'Flower', hint: 'Applies flower motif artwork surface' },
+            ]}
+          />
         </div>
 
         <footer className="mt-2 flex flex-wrap justify-end gap-2 border-t border-white/15 pt-4">

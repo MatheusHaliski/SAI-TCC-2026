@@ -41,36 +41,71 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
     .filter((brand, index, arr) => arr.findIndex((item) => item.name.toLowerCase() === brand.name.toLowerCase()) === index)
     .slice(0, 4);
 
-  const shapeOverlayClassName =
-    (resolvedBackground.shape ?? 'none') === 'orb'
-      ? 'bg-[radial-gradient(circle_at_80%_12%,rgba(99,102,241,0.38),transparent_58%),radial-gradient(circle_at_15%_78%,rgba(56,189,248,0.28),transparent_52%)]'
-      : (resolvedBackground.shape ?? 'none') === 'diamond'
-        ? 'bg-[linear-gradient(135deg,rgba(59,130,246,0.28)_0%,transparent_45%,rgba(168,85,247,0.24)_100%),repeating-linear-gradient(45deg,rgba(255,255,255,0.13)_0px,rgba(255,255,255,0.13)_2px,transparent_2px,transparent_14px)]'
-        : (resolvedBackground.shape ?? 'none') === 'mesh'
-          ? 'bg-[linear-gradient(120deg,rgba(15,23,42,0.16)_25%,transparent_25%),linear-gradient(240deg,rgba(15,23,42,0.16)_25%,transparent_25%)] bg-[size:20px_20px]'
-          : (resolvedBackground.shape ?? 'none') === 'stars'
-            ? "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpolygon points='42,8 49,29 71,29 53,42 60,64 42,51 24,64 31,42 13,29 35,29' fill='rgba(15,23,42,0.62)'/%3E%3C/svg%3E\"),linear-gradient(145deg,rgba(255,255,255,0.12),rgba(15,23,42,0.12))] bg-[size:40px_40px,100%_100%] opacity-95"
-            : (resolvedBackground.shape ?? 'none') === 'circles'
-              ? 'bg-[radial-gradient(circle,rgba(2,6,23,0.42)_40%,transparent_42%)] bg-[size:24px_24px]'
-              : (resolvedBackground.shape ?? 'none') === 'triangles'
-                ? "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpolygon points='32,8 56,52 8,52' fill='rgba(2,6,23,0.44)'/%3E%3C/svg%3E\")] bg-[size:32px_32px]"
-                : (resolvedBackground.shape ?? 'none') === 'waves'
-                  ? 'bg-[repeating-linear-gradient(165deg,rgba(2,6,23,0.36)_0px,rgba(2,6,23,0.36)_4px,transparent_4px,transparent_12px)]'
-                  : (resolvedBackground.shape ?? 'none') === 'beams'
-                    ? 'bg-[repeating-linear-gradient(90deg,rgba(2,6,23,0.34)_0px,rgba(2,6,23,0.34)_8px,transparent_8px,transparent_26px)]'
-                    : (resolvedBackground.shape ?? 'none') === 'flowers'
-                      ? "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='92' height='92' viewBox='0 0 92 92'%3E%3Cellipse cx='46' cy='23' rx='12' ry='19' fill='rgba(11,12,13,0.72)'/%3E%3Cellipse cx='62' cy='37' rx='12' ry='19' transform='rotate(48 62 37)' fill='rgba(11,12,13,0.72)'/%3E%3Cellipse cx='56' cy='57' rx='12' ry='19' transform='rotate(102 56 57)' fill='rgba(11,12,13,0.72)'/%3E%3Cellipse cx='36' cy='57' rx='12' ry='19' transform='rotate(152 36 57)' fill='rgba(11,12,13,0.72)'/%3E%3Cellipse cx='30' cy='37' rx='12' ry='19' transform='rotate(206 30 37)' fill='rgba(11,12,13,0.72)'/%3E%3Ccircle cx='46' cy='40' r='9' fill='rgba(243,244,246,0.88)'/%3E%3C/svg%3E\")] bg-[size:46px_46px]"
-                      : (resolvedBackground.shape ?? 'none') === 'arrows'
-                        ? 'bg-[repeating-linear-gradient(145deg,rgba(2,6,23,0.58)_0px,rgba(2,6,23,0.58)_6px,transparent_6px,transparent_20px)]'
-          : '';
+  const currentShape = resolvedBackground.shape ?? 'none';
+  const shapeSvg = (svg: string) => `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+  const shapeOverlayStyle =
+    currentShape === 'none'
+      ? null
+      : currentShape === 'orb'
+        ? {
+            backgroundImage:
+              'radial-gradient(circle at 78% 16%, rgba(129,140,248,0.48), transparent 34%), radial-gradient(circle at 18% 82%, rgba(56,189,248,0.38), transparent 36%), radial-gradient(circle at 58% 50%, rgba(244,114,182,0.16), transparent 44%)',
+          }
+        : currentShape === 'diamond'
+          ? {
+              backgroundImage: `${shapeSvg("<svg xmlns='http://www.w3.org/2000/svg' width='72' height='72'><rect x='23' y='23' width='26' height='26' transform='rotate(45 36 36)' fill='rgba(15,23,42,0.48)'/></svg>")},linear-gradient(140deg,rgba(255,255,255,0.08),rgba(15,23,42,0.18))`,
+              backgroundSize: '24px 24px,100% 100%',
+            }
+          : currentShape === 'mesh'
+            ? {
+                backgroundImage:
+                  'linear-gradient(120deg, rgba(15,23,42,0.22) 0%, rgba(15,23,42,0) 42%),linear-gradient(320deg, rgba(15,23,42,0.18) 0%, rgba(15,23,42,0) 42%),repeating-linear-gradient(0deg, rgba(255,255,255,0.14) 0 1px, transparent 1px 24px),repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0 1px, transparent 1px 24px)',
+              backgroundSize: '100% 100%,100% 100%,24px 24px,24px 24px',
+            }
+            : currentShape === 'stars'
+              ? {
+                  backgroundImage: shapeSvg("<svg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'><polygon points='36,8 42,24 59,24 45,35 50,52 36,42 22,52 27,35 13,24 30,24' fill='rgba(15,23,42,0.58)'/></svg>"),
+                  backgroundSize: '36px 36px',
+                }
+              : currentShape === 'circles'
+                ? {
+                    backgroundImage: 'radial-gradient(circle, rgba(2,6,23,0.42) 42%, transparent 44%)',
+                    backgroundSize: '22px 22px',
+                  }
+                : currentShape === 'triangles'
+                  ? {
+                      backgroundImage: shapeSvg("<svg xmlns='http://www.w3.org/2000/svg' width='68' height='68' viewBox='0 0 68 68'><polygon points='34,8 60,56 8,56' fill='rgba(2,6,23,0.44)'/></svg>"),
+                      backgroundSize: '32px 32px',
+                    }
+                  : currentShape === 'waves'
+                    ? {
+                        backgroundImage: shapeSvg("<svg xmlns='http://www.w3.org/2000/svg' width='140' height='80' viewBox='0 0 140 80'><path d='M0 40 C20 12 50 12 70 40 C90 68 120 68 140 40' stroke='rgba(2,6,23,0.45)' stroke-width='6' fill='none'/></svg>"),
+                        backgroundSize: '120px 52px',
+                      }
+                    : currentShape === 'beams'
+                      ? {
+                          backgroundImage: 'repeating-linear-gradient(112deg, rgba(255,255,255,0.15) 0 4px, transparent 4px 28px),linear-gradient(112deg, rgba(2,6,23,0.32), transparent 62%)',
+                          backgroundSize: '100% 100%,100% 100%',
+                        }
+                      : currentShape === 'flowers'
+                        ? {
+                            backgroundImage: shapeSvg("<svg xmlns='http://www.w3.org/2000/svg' width='92' height='92'><ellipse cx='46' cy='25' rx='11' ry='16' fill='rgba(17,24,39,0.72)'/><ellipse cx='60' cy='37' rx='11' ry='16' transform='rotate(50 60 37)' fill='rgba(17,24,39,0.72)'/><ellipse cx='55' cy='55' rx='11' ry='16' transform='rotate(102 55 55)' fill='rgba(17,24,39,0.72)'/><ellipse cx='37' cy='55' rx='11' ry='16' transform='rotate(152 37 55)' fill='rgba(17,24,39,0.72)'/><ellipse cx='32' cy='37' rx='11' ry='16' transform='rotate(206 32 37)' fill='rgba(17,24,39,0.72)'/><circle cx='46' cy='40' r='8.5' fill='rgba(251,191,36,0.9)'/></svg>"),
+                            backgroundSize: '46px 46px',
+                          }
+                        : currentShape === 'arrows'
+                          ? {
+                              backgroundImage: shapeSvg("<svg xmlns='http://www.w3.org/2000/svg' width='88' height='88' viewBox='0 0 88 88'><path d='M12 44 H62' stroke='rgba(2,6,23,0.55)' stroke-width='7' stroke-linecap='round'/><path d='M50 30 L68 44 L50 58' stroke='rgba(2,6,23,0.55)' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>"),
+                              backgroundSize: '44px 44px',
+                            }
+                          : null;
 
   return (
     <section
       className={`relative overflow-hidden rounded-3xl border border-slate-200/70 shadow-[0_12px_45px_rgba(15,23,42,0.08)] ${variant === 'compact' ? 'space-y-3 p-3' : 'space-y-4 p-4 sm:p-6'}`}
       style={backgroundStyle}
     >
-      {shapeOverlayClassName ? (
-        <div aria-hidden className={`pointer-events-none absolute inset-0 opacity-95 ${shapeOverlayClassName}`} />
+      {shapeOverlayStyle ? (
+        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-95" style={shapeOverlayStyle} />
       ) : null}
       <div className={`relative z-[1] ${variant === 'compact' ? 'space-y-3' : 'space-y-4'}`}>
         <OutfitHeroImage src={data.heroImageUrl} alt={`${data.outfitName} hero preview`} className={variant === 'compact' ? 'h-32 rounded-2xl' : ''} />
