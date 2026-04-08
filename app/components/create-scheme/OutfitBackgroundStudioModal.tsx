@@ -11,6 +11,7 @@ import {
 import { BackgroundGenerationMode } from '@/app/lib/background-ai';
 import type {
   ArtworkAsset,
+  ArtworkColorIntent,
   ArtworkContrastLevel,
   ArtworkGenerationResponse,
   ArtworkPaletteMode,
@@ -108,6 +109,28 @@ const GRADIENT_PRESETS: Array<{ label: string; config: OutfitBackgroundConfig }>
       shape: 'diamond',
     },
   },
+  {
+    label: 'Graphite Pulse',
+    config: {
+      background_mode: 'gradient',
+      gradient: { type: 'linear', angle: 110, intensity: 108, stops: [{ color: '#020617', position: 0 }, { color: '#1e293b', position: 52 }, { color: '#334155', position: 100 }] },
+      shape: 'mesh',
+    },
+  },
+];
+const SEGMENTED_GRADIENT_OPTIONS = GRADIENT_PRESETS.slice(0, 8);
+const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
+  'none',
+  'orb',
+  'diamond',
+  'mesh',
+  'stars',
+  'circles',
+  'triangles',
+  'waves',
+  'beams',
+  'flowers',
+  'arrows',
 ];
 
 const STYLE_PRESETS: ArtworkStylePreset[] = ['editorial_fashion', 'luxury_minimal', 'futuristic_sport', 'streetwear', 'monochrome_premium'];
@@ -115,6 +138,14 @@ const PALETTE_MODES: ArtworkPaletteMode[] = ['monochrome', 'cool_luxury', 'warm_
 const SHAPE_LANGUAGES: ArtworkShapeLanguage[] = ['diamond', 'orb', 'mesh', 'panels', 'mixed'];
 const COMPOSITION_TYPES: Array<ArtworkStudioInput['compositionType']> = ['background', 'shape_pack', 'overlay', 'frame'];
 const CONTRAST_LEVELS: ArtworkContrastLevel[] = ['low', 'medium', 'high'];
+const COLOR_INTENTS: Array<{ value: ArtworkColorIntent; label: string }> = [
+  { value: 'prompt_driven', label: 'Prompt driven' },
+  { value: 'cool_blue', label: 'Cool blue' },
+  { value: 'emerald_luxury', label: 'Emerald luxury' },
+  { value: 'sunset_warm', label: 'Sunset warm' },
+  { value: 'mono_chrome', label: 'Monochrome' },
+  { value: 'neon_pop', label: 'Neon pop' },
+];
 const AI_GENERATION_MODES: Array<{ value: BackgroundGenerationMode; label: string }> = [
   { value: 'preset_assisted', label: 'Preset Assisted' },
   { value: 'hybrid', label: 'Hybrid' },
@@ -184,11 +215,13 @@ export default function OutfitBackgroundStudioModal({
   const [aiNegativePrompt, setAiNegativePrompt] = useState('');
   const [aiDensity, setAiDensity] = useState(50);
   const [aiContrast, setAiContrast] = useState<ArtworkContrastLevel>('medium');
+  const [aiColorIntent, setAiColorIntent] = useState<ArtworkColorIntent>('prompt_driven');
   const [aiBlur, setAiBlur] = useState(24);
   const [aiGlow, setAiGlow] = useState(40);
   const [aiLayerDepth, setAiLayerDepth] = useState(5);
   const [aiSafeArea, setAiSafeArea] = useState(true);
   const [aiReferenceImageUrl, setAiReferenceImageUrl] = useState('');
+  const [aiReferenceFileName, setAiReferenceFileName] = useState('');
   const [aiGenerationMode, setAiGenerationMode] = useState<BackgroundGenerationMode>('hybrid');
   const [aiResults, setAiResults] = useState<ArtworkVariation[]>([]);
   const [savedAssets, setSavedAssets] = useState<ArtworkAsset[]>([]);
@@ -257,6 +290,7 @@ export default function OutfitBackgroundStudioModal({
       shapeLanguage: aiShapeLanguage,
       density: aiDensity,
       contrastLevel: aiContrast,
+      colorIntent: aiColorIntent,
       blurStrength: aiBlur,
       glowIntensity: aiGlow,
       layeringDepth: aiLayerDepth,
@@ -281,15 +315,29 @@ export default function OutfitBackgroundStudioModal({
     }
 
     console.debug('artwork_studio.normalized_response', payload.data);
-    setAiResults(payload.data.variations);
+    const uploadedReferenceVariation = aiReferenceImageUrl.startsWith('data:image/')
+      ? [{
+          variation_id: `reference_upload_${Date.now()}`,
+          preview_url: aiReferenceImageUrl,
+          output_url: aiReferenceImageUrl,
+          thumbnail_url: aiReferenceImageUrl,
+          provider: 'procedural' as const,
+          provider_job_id: null,
+          provider_model: 'uploaded-reference',
+          metadata: { source: 'uploaded_reference' },
+        } satisfies ArtworkVariation]
+      : [];
+    const mergedVariations = [...uploadedReferenceVariation, ...payload.data.variations];
+    setAiResults(mergedVariations);
     if (payload.data.warnings?.length) setBackendWarning(payload.data.warnings[0]);
-    if (payload.data.variations.length) setSelectedAiResult(payload.data.variations[0]);
+    if (mergedVariations.length) setSelectedAiResult(mergedVariations[0]);
     setAiGenerationPlan({
       generationMode: aiGenerationMode,
       compositionType: aiCompositionType,
       stylePreset: aiStylePreset,
       paletteMode: aiPaletteMode,
       shapeLanguage: aiShapeLanguage,
+      colorIntent: aiColorIntent,
       safeAreaMode: aiSafeArea,
       provider: payload.data.provider,
       fallbackUsed: payload.data.fallbackUsed ?? false,
@@ -316,6 +364,9 @@ export default function OutfitBackgroundStudioModal({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, aiCompositionType === 'overlay' ? 'overlay' : aiCompositionType === 'frame' ? 'frame' : aiCompositionType === 'shape_pack' ? 'shape_pack' : 'background'),
+      // preserve user-selected decorative controls when replacing the AI source image
+      shape: prev.shape,
+      gradient: prev.gradient,
     }));
   };
 
@@ -556,7 +607,33 @@ export default function OutfitBackgroundStudioModal({
                   <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiContrast} onChange={(event) => setAiContrast(event.target.value as ArtworkContrastLevel)}>
                     {CONTRAST_LEVELS.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
-                  <input value={aiReferenceImageUrl} onChange={(event) => setAiReferenceImageUrl(event.target.value)} placeholder="Reference image URL (optional)" className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-xs" />
+                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiColorIntent} onChange={(event) => setAiColorIntent(event.target.value as ArtworkColorIntent)}>
+                    {COLOR_INTENTS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                  <label className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-[11px] text-white/80">
+                    <span className="block pb-1 text-[10px] uppercase tracking-[0.08em] text-white/60">Reference image (upload)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="w-full text-[11px]"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) {
+                          setAiReferenceImageUrl('');
+                          setAiReferenceFileName('');
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const result = typeof reader.result === 'string' ? reader.result : '';
+                          setAiReferenceImageUrl(result);
+                          setAiReferenceFileName(file.name);
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    {aiReferenceFileName ? <span className="mt-1 block truncate text-[10px] text-cyan-100">{aiReferenceFileName}</span> : null}
+                  </label>
                 </div>
                 <label className="text-xs">Density ({aiDensity})</label>
                 <input type="range" min={0} max={100} value={aiDensity} onChange={(event) => setAiDensity(Number(event.target.value))} />
@@ -649,6 +726,7 @@ export default function OutfitBackgroundStudioModal({
                           shapeLanguage: aiShapeLanguage,
                           density: aiDensity,
                           contrastLevel: aiContrast,
+                          colorIntent: aiColorIntent,
                           blurStrength: aiBlur,
                           glowIntensity: aiGlow,
                           layeringDepth: aiLayerDepth,
@@ -696,9 +774,9 @@ export default function OutfitBackgroundStudioModal({
           </section>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 border-t border-white/15 pt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/15 pt-4">
           <p className="text-xs uppercase tracking-[0.12em] text-white/70">Selected shape</p>
-          {(['none', 'orb', 'diamond', 'mesh'] as const).map((shape) => (
+          {SHAPE_SEGMENT_OPTIONS.map((shape) => (
             <button
               key={shape}
               type="button"
@@ -706,6 +784,29 @@ export default function OutfitBackgroundStudioModal({
               onClick={() => setDraft((prev) => ({ ...prev, shape }))}
             >
               {shape}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/15 pt-3">
+          <p className="text-xs uppercase tracking-[0.12em] text-white/70">Gradient picker</p>
+          {SEGMENTED_GRADIENT_OPTIONS.map((preset) => (
+            <button
+              key={`seg-${preset.label}`}
+              type="button"
+              className={`rounded-lg border px-2 py-1 text-[11px] ${draft.background_mode === 'gradient' && JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient) ? 'border-cyan-300 bg-cyan-500/30' : 'border-white/25 bg-white/10'}`}
+              onClick={() => setDraft((prev) => {
+                if (prev.background_mode === 'ai_artwork' && prev.ai_artwork?.image_url) {
+                  return {
+                    ...prev,
+                    gradient: preset.config.gradient,
+                    shape: prev.shape || preset.config.shape,
+                    background_mode: 'ai_artwork',
+                  };
+                }
+                return { ...prev, ...preset.config, background_mode: 'gradient' };
+              })}
+            >
+              {preset.label}
             </button>
           ))}
         </div>
