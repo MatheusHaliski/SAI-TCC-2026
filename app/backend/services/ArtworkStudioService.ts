@@ -1,4 +1,4 @@
-import { AdobeFireflyClient } from '@/app/backend/integrations/adobe/AdobeFireflyClient';
+import { OpenAIArtworkClient } from '@/app/backend/integrations/openai/OpenAIArtworkClient';
 import { ArtworkAssetsRepository } from '@/app/backend/repositories/ArtworkAssetsRepository';
 import {
   ArtworkAsset,
@@ -6,33 +6,34 @@ import {
   ArtworkPromptBuildResult,
   ArtworkStudioInput,
   ArtworkVariation,
-  FireflyGenerationPayload,
+  OpenAIArtworkGenerationPayload,
   SaveArtworkRequest,
 } from '@/app/backend/types/artwork-studio';
+import { getAdminStorageBucket } from '@/app/lib/firebaseAdmin';
 import { buildBackgroundGenerationPlan, generateBackgroundVariations } from '@/app/lib/background-ai';
 import { ServiceError } from './errors';
 
 const STYLE_DIRECTIONS = {
-  editorial_fashion: 'editorial fashion composition, layered art direction, premium magazine-like background, decorative visual hierarchy',
-  luxury_minimal: 'luxury editorial fashion background, refined premium composition, elegant negative space, subtle gradient transitions, high-end card-ready layout',
-  futuristic_sport: 'futuristic sporty fashion artwork, dynamic motion layers, sleek graphic energy, modern premium composition',
-  streetwear: 'streetwear-inspired fashion graphic background, bold layered shapes, contemporary composition, high visual attitude',
-  monochrome_premium: 'monochrome premium fashion artwork, restrained black-white-silver visual language, elegant contrast and text-safe space',
+  editorial_fashion: 'editorial fashion composition, high-end magazine-inspired visual hierarchy, layered background treatment',
+  luxury_minimal: 'luxury editorial fashion background, refined premium composition, elegant negative space, subtle gradient transitions, polished art direction',
+  futuristic_sport: 'futuristic sporty fashion artwork, dynamic graphic layering, sleek motion-inspired composition',
+  streetwear: 'streetwear-inspired graphic background, layered bold shapes, contemporary fashion attitude',
+  monochrome_premium: 'monochrome premium fashion artwork, black white silver inspired visual language, elegant contrast',
 } as const;
 
 const SHAPE_DIRECTIONS = {
-  diamond: 'geometric diamond accents, crystalline directional shapes',
-  orb: 'soft orb-like volumetric shapes, circular accents',
-  mesh: 'mesh-inspired gradients, fluid layered structures',
-  panels: 'clean panel segmentation, geometric framed sections',
+  diamond: 'geometric diamond accents, crystalline directional forms',
+  orb: 'soft orb-like rounded accents, subtle volumetric shape language',
+  mesh: 'mesh-inspired gradients, fluid layered forms',
+  panels: 'clean panel segmentation, framed graphic sections',
   mixed: 'mixed geometric editorial accents',
 } as const;
 
 const COMPOSITION_DIRECTIONS = {
   background: 'full background composition for outfit card design',
-  shape_pack: 'decorative shape set, modular accent elements suitable for fashion card layering',
-  overlay: 'transparent overlay-like decorative composition suitable for layering',
-  frame: 'decorative premium frame/border composition for outfit card presentation',
+  shape_pack: 'decorative modular shape composition for fashion card layering',
+  overlay: 'overlay-style decorative composition that can layer over a card',
+  frame: 'premium decorative frame or border composition for card presentation',
 } as const;
 
 const PALETTE_DIRECTIONS = {
@@ -42,31 +43,44 @@ const PALETTE_DIRECTIONS = {
   custom: 'custom color palette aligned with prompt direction',
 } as const;
 
-function ensureServerConfig() {
-  const required = [
-    'ADOBE_FIREFLY_CLIENT_ID',
-    'ADOBE_FIREFLY_CLIENT_SECRET',
-    'ADOBE_FIREFLY_ORG_ID',
-    'ADOBE_FIREFLY_SCOPES',
-    'ADOBE_FIREFLY_BASE_URL',
-    'ADOBE_FIREFLY_TIMEOUT_MS',
-    'ADOBE_FIREFLY_ENABLE_REFERENCE_IMAGE',
-  ];
-
-  const missing = required.filter((key) => !process.env[key]?.trim());
-  if (missing.length) {
-    throw new ServiceError(`Adobe Firefly is not configured. Missing: ${missing.join(', ')}`, 503);
-  }
-}
+type ArtworkGenerationProvider = {
+  generate(input: ArtworkStudioInput, prompt: ArtworkPromptBuildResult): Promise<ArtworkGenerationResponse>;
+};
 
 function normalizePrompt(input: string) {
   return input.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+function parseSize(size: string) {
+  const [w, h] = size.split('x').map((v) => Number(v));
+  if (!w || !h) return { width: 1536, height: 1024 };
+  return { width: w, height: h };
+}
+
+function asVariationFromFallback(prompt: string, count: number): ArtworkVariation[] {
+  const plan = buildBackgroundGenerationPlan({
+    prompt,
+    palette: 'cool luxury',
+    style: 'editorial fashion',
+    mood: 'premium',
+  });
+
+  return generateBackgroundVariations(plan, prompt, count).map((item, index) => ({
+    variation_id: `procedural_${index + 1}`,
+    preview_url: item.image,
+    output_url: item.image,
+    provider: 'procedural',
+    provider_job_id: null,
+    provider_model: 'procedural-svg',
+    width: 1200,
+    height: 800,
+    metadata: { seed: item.seed, fallback: true },
+  }));
+}
+
 export function buildArtworkPrompt(input: ArtworkStudioInput): ArtworkPromptBuildResult {
-  const tags = [input.compositionType, input.stylePreset, input.paletteMode, input.shapeLanguage, 'fashion_ai', 'outfit_card'];
   const safeAreaText = input.safeAreaMode
-    ? 'clear text-safe area, controlled visual density, preserved clean negative space for subject and typography'
+    ? 'clear text-safe area, controlled visual density, clean negative space for outfit presentation and typography'
     : 'balanced composition and premium editorial spacing';
 
   const controlText = [
@@ -88,45 +102,123 @@ export function buildArtworkPrompt(input: ArtworkStudioInput): ArtworkPromptBuil
     SHAPE_DIRECTIONS[input.shapeLanguage],
     PALETTE_DIRECTIONS[input.paletteMode],
     safeAreaText,
+    'design asset oriented output, premium fashion/editorial background utility',
     controlText,
     userPrompt,
   ]
     .filter(Boolean)
     .join(', ');
 
-  const baseNegative = 'avoid faces, avoid full people, avoid chaotic clutter, avoid fantasy scene, avoid unreadable typography collisions, avoid noisy composition';
+  const baseNegative = 'avoid faces, avoid people, avoid clutter, avoid chaotic scenery, avoid fantasy character focus, avoid unreadable typography collisions';
   const negativePrompt = [baseNegative, input.negativePrompt?.trim()].filter(Boolean).join(', ');
 
   return {
     normalizedPrompt,
     finalPrompt,
     negativePrompt,
-    tags,
+    tags: [input.compositionType, input.stylePreset, input.paletteMode, input.shapeLanguage, 'fashion_ai', 'outfit_card'],
   };
 }
 
-function asVariationFromFallback(prompt: string, count: number): ArtworkVariation[] {
-  const plan = buildBackgroundGenerationPlan({
-    prompt,
-    palette: 'cool luxury',
-    style: 'editorial fashion',
-    mood: 'premium',
-  });
+class ProceduralArtworkProvider implements ArtworkGenerationProvider {
+  async generate(input: ArtworkStudioInput, prompt: ArtworkPromptBuildResult): Promise<ArtworkGenerationResponse> {
+    const variationCount = Math.min(4, Math.max(3, Number(input.variationCount ?? 4)));
+    return {
+      provider: 'procedural',
+      providerModel: 'procedural-svg',
+      prompt,
+      variations: asVariationFromFallback(prompt.finalPrompt, variationCount),
+      fallbackUsed: true,
+      warnings: ['Using procedural generator fallback.'],
+    };
+  }
+}
 
-  return generateBackgroundVariations(plan, prompt, count).map((item, index) => ({
-    variation_id: `fallback_${index + 1}`,
-    preview_url: item.image,
-    output_url: item.image,
-    provider_job_id: null,
-    width: 1200,
-    height: 800,
-    metadata: { seed: item.seed, fallback: true },
-  }));
+class OpenAIArtworkProvider implements ArtworkGenerationProvider {
+  constructor(private readonly client: OpenAIArtworkClient) {}
+
+  private async persistBase64AsImage(base64: string, variationId: string) {
+    const bucket = getAdminStorageBucket();
+    const path = `artwork-studio/${Date.now()}-${variationId}.png`;
+    const file = bucket.file(path);
+    const token = crypto.randomUUID();
+    const buffer = Buffer.from(base64, 'base64');
+
+    await file.save(buffer, {
+      metadata: {
+        contentType: 'image/png',
+        metadata: { firebaseStorageDownloadTokens: token },
+      },
+      resumable: false,
+      public: false,
+      validation: 'md5',
+    });
+
+    const encodedPath = encodeURIComponent(path);
+    const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${token}`;
+    return { url };
+  }
+
+  async generate(input: ArtworkStudioInput, prompt: ArtworkPromptBuildResult): Promise<ArtworkGenerationResponse> {
+    if (!process.env.OPENAI_API_KEY?.trim()) {
+      throw new ServiceError('OpenAI API key is missing. Please configure OPENAI_API_KEY.', 503);
+    }
+
+    if (input.referenceImageUrl) {
+      console.warn('artwork-studio: reference image provided; prompt-only mode currently active', {
+        user_id: input.user_id,
+      });
+    }
+
+    const sizeValue = process.env.OPENAI_IMAGES_SIZE?.trim() || '1536x1024';
+    const quality = process.env.OPENAI_IMAGES_QUALITY?.trim() || 'high';
+    const { width, height } = parseSize(sizeValue);
+    const variationCount = Math.min(4, Math.max(3, Number(input.variationCount ?? 4)));
+
+    const payload: OpenAIArtworkGenerationPayload = {
+      prompt: prompt.finalPrompt,
+      negativePrompt: prompt.negativePrompt,
+      width,
+      height,
+      quality,
+      referenceImageUrl: input.referenceImageUrl,
+    };
+
+    const results = await Promise.all(
+      Array.from({ length: variationCount }).map(async (_, index) => {
+        const result = await this.client.generate(payload);
+        const variationId = `openai_${index + 1}_${Date.now()}`;
+        const stored = await this.persistBase64AsImage(result.imageBase64, variationId);
+
+        return {
+          variation_id: variationId,
+          preview_url: stored.url,
+          output_url: stored.url,
+          thumbnail_url: stored.url,
+          width,
+          height,
+          provider: 'openai' as const,
+          provider_job_id: null,
+          provider_model: result.model,
+          metadata: {
+            revisedPrompt: result.revisedPrompt,
+          },
+        };
+      }),
+    );
+
+    return {
+      provider: 'openai',
+      providerModel: results[0]?.provider_model ?? null,
+      prompt,
+      variations: results,
+    };
+  }
 }
 
 export class ArtworkStudioService {
   constructor(
-    private readonly fireflyClient = new AdobeFireflyClient(),
+    private readonly openAIClient = new OpenAIArtworkClient(),
     private readonly assetsRepository = new ArtworkAssetsRepository(),
   ) {}
 
@@ -135,53 +227,31 @@ export class ArtworkStudioService {
     if (!input.prompt?.trim()) throw new ServiceError('Prompt is required.', 400);
   }
 
+  private resolveProvider(): ArtworkGenerationProvider {
+    const openAIEnabled = process.env.NEXT_PUBLIC_ENABLE_OPENAI_ARTWORK_STUDIO === 'true';
+    if (!openAIEnabled) return new ProceduralArtworkProvider();
+    return new OpenAIArtworkProvider(this.openAIClient);
+  }
+
   async generate(input: ArtworkStudioInput): Promise<ArtworkGenerationResponse> {
     this.validateInput(input);
-
-    const promptBuild = buildArtworkPrompt(input);
-    const variationCount = Math.min(4, Math.max(3, Number(input.variationCount ?? 4)));
-    const fireflyEnabled = process.env.NEXT_PUBLIC_ENABLE_ADOBE_FIREFLY_STUDIO === 'true';
-
-    if (!fireflyEnabled) {
-      return {
-        provider: 'adobe_firefly',
-        prompt: promptBuild,
-        variations: asVariationFromFallback(promptBuild.finalPrompt, variationCount),
-        fallbackUsed: true,
-        warnings: ['Adobe Firefly studio is disabled. Showing local fallback results.'],
-      };
-    }
-
-    ensureServerConfig();
-
-    const useReferenceImage = process.env.ADOBE_FIREFLY_ENABLE_REFERENCE_IMAGE === 'true' && !!input.referenceImageUrl;
-
-    const payload: FireflyGenerationPayload = {
-      prompt: promptBuild.finalPrompt,
-      negativePrompt: promptBuild.negativePrompt,
-      width: 1200,
-      height: 800,
-      numVariations: variationCount,
-      ...(useReferenceImage ? { referenceImageUrl: input.referenceImageUrl } : {}),
-    };
+    const prompt = buildArtworkPrompt(input);
+    const provider = this.resolveProvider();
 
     try {
-      const result = await this.fireflyClient.generate(payload);
-      if (!result.variations.length) {
-        throw new ServiceError('Adobe Firefly returned no results. Please try a different prompt.', 502);
-      }
-
-      return {
-        provider: 'adobe_firefly',
-        prompt: promptBuild,
-        variations: result.variations,
-        warnings: useReferenceImage ? [] : input.referenceImageUrl ? ['Reference image skipped by configuration.'] : [],
-      };
+      return await provider.generate(input, prompt);
     } catch (error) {
       console.error('artwork-studio.generate error', error);
-      throw error instanceof ServiceError
-        ? error
-        : new ServiceError(error instanceof Error ? error.message : 'Artwork generation failed.', 502);
+      const recoverable = error instanceof Error;
+      if (recoverable) {
+        const fallback = new ProceduralArtworkProvider();
+        const result = await fallback.generate(input, prompt);
+        return {
+          ...result,
+          warnings: [...(result.warnings || []), 'Primary OpenAI provider failed. Fallback generation was used.'],
+        };
+      }
+      throw new ServiceError('Artwork generation failed.', 502);
     }
   }
 
@@ -205,8 +275,9 @@ export class ArtworkStudioService {
       layering_depth: request.input.layeringDepth,
       safe_area_mode: request.input.safeAreaMode,
       reference_image_url: request.input.referenceImageUrl ?? null,
-      provider: 'adobe_firefly',
+      provider: request.variation.provider,
       provider_job_id: request.variation.provider_job_id ?? null,
+      provider_model: request.variation.provider_model ?? null,
       preview_url: request.variation.preview_url,
       output_url: request.variation.output_url,
       thumbnail_url: request.variation.thumbnail_url ?? null,

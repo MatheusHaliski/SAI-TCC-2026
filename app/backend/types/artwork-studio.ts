@@ -35,7 +35,9 @@ export type ArtworkVariation = {
   thumbnail_url?: string | null;
   width?: number | null;
   height?: number | null;
+  provider: 'openai' | 'procedural';
   provider_job_id?: string | null;
+  provider_model?: string | null;
   metadata?: Record<string, unknown>;
 };
 
@@ -56,8 +58,9 @@ export type ArtworkAsset = {
   layering_depth?: number;
   safe_area_mode?: boolean;
   reference_image_url?: string | null;
-  provider: 'adobe_firefly';
+  provider: 'openai' | 'procedural';
   provider_job_id?: string | null;
+  provider_model?: string | null;
   preview_url: string;
   output_url: string;
   thumbnail_url?: string | null;
@@ -75,25 +78,26 @@ export type ArtworkPromptBuildResult = {
   tags: string[];
 };
 
-export type FireflyGenerationPayload = {
+export type OpenAIArtworkGenerationPayload = {
   prompt: string;
   negativePrompt: string;
   width: number;
   height: number;
-  numVariations: number;
+  quality: string;
   referenceImageUrl?: string;
 };
 
-export type FireflyGenerationResult = {
-  jobId?: string | null;
-  variations: ArtworkVariation[];
-  raw?: Record<string, unknown>;
+export type OpenAIArtworkGenerationResult = {
+  imageBase64: string;
+  model: string;
+  revisedPrompt?: string | null;
 };
 
 export type ArtworkGenerationResponse = {
-  provider: 'adobe_firefly';
+  provider: 'openai' | 'procedural';
   prompt: ArtworkPromptBuildResult;
   variations: ArtworkVariation[];
+  providerModel?: string | null;
   warnings?: string[];
   fallbackUsed?: boolean;
 };

@@ -120,31 +120,30 @@ Worker failures return:
 
 Backend mirrors cloud status into internal records and updates wardrobe pipeline details with failure metadata.
 
-## Fashion AI Background Studio (Adobe Firefly)
+## Fashion AI Background Studio (OpenAI Images API)
 
-The Outfit Card Background Studio now supports Adobe Firefly as a server-side artwork provider for premium fashion/editorial assets (backgrounds, overlays, frames, and shape packs).
+The Outfit Card Background Studio now supports OpenAI Images API as a server-side artwork provider for premium fashion/editorial assets (backgrounds, overlays, frames, and shape packs).
 
 ### Environment setup
 
 Add the following variables to your server environment (and mirror in local `.env.local` as needed):
 
 ```bash
-ADOBE_FIREFLY_CLIENT_ID="..."
-ADOBE_FIREFLY_CLIENT_SECRET="..."
-ADOBE_FIREFLY_ORG_ID="..."
-ADOBE_FIREFLY_SCOPES="openid,AdobeID,read_organizations,additional_info.projectedProductContext,firefly_api"
-ADOBE_FIREFLY_BASE_URL="https://firefly-api.adobe.io"
-ADOBE_FIREFLY_TIMEOUT_MS="25000"
-ADOBE_FIREFLY_ENABLE_REFERENCE_IMAGE="false"
-NEXT_PUBLIC_ENABLE_ADOBE_FIREFLY_STUDIO="true"
+OPENAI_API_KEY="..."
+OPENAI_IMAGES_MODEL="gpt-image-1.5"
+OPENAI_IMAGES_FALLBACK_MODEL="gpt-image-1"
+OPENAI_IMAGES_SIZE="1536x1024"
+OPENAI_IMAGES_QUALITY="high"
+OPENAI_IMAGES_TIMEOUT_MS="45000"
+NEXT_PUBLIC_ENABLE_OPENAI_ARTWORK_STUDIO="true"
 ```
 
 ### Security model
 
-- Adobe credentials are used **server-side only** in Next.js API routes/services.
-- The frontend calls internal routes (`/api/artwork-studio/*`) and never receives Adobe secrets.
+- OpenAI credentials are used **server-side only** in Next.js API routes/services.
+- The frontend calls internal routes (`/api/artwork-studio/*`) and never receives provider secrets.
 
 ### Feature flag behavior
 
-- `NEXT_PUBLIC_ENABLE_ADOBE_FIREFLY_STUDIO=true`: uses Adobe Firefly backend integration.
-- `NEXT_PUBLIC_ENABLE_ADOBE_FIREFLY_STUDIO=false`: keeps local fallback generation in Background Studio.
+- `NEXT_PUBLIC_ENABLE_OPENAI_ARTWORK_STUDIO=true`: uses OpenAI Images API backend integration.
+- `NEXT_PUBLIC_ENABLE_OPENAI_ARTWORK_STUDIO=false`: keeps local fallback generation in Background Studio.

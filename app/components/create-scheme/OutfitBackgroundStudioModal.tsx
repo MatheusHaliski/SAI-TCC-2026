@@ -308,7 +308,8 @@ export default function OutfitBackgroundStudioModal({
         style_preset: aiStylePreset,
         palette_mode: aiPaletteMode,
         shape_language: aiShapeLanguage,
-        provider: 'adobe_firefly',
+        provider: variation.provider,
+        provider_model: variation.provider_model ?? null,
         preview_url: variation.preview_url,
         output_url: variation.output_url,
         created_at: new Date().toISOString(),
@@ -578,6 +579,7 @@ export default function OutfitBackgroundStudioModal({
                 </div>
                 {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
                 {backendWarning ? <p className="text-xs text-cyan-200">{backendWarning}</p> : null}
+                {aiResults.length ? <p className="text-[11px] text-white/60">Provider: {aiResults[0]?.provider} {aiResults[0]?.provider_model ? `· ${aiResults[0].provider_model}` : ''}</p> : null}
                 {aiGenerationPlan ? (
                   <details className="rounded-lg border border-white/20 bg-black/20 p-2 text-[11px] text-white/80">
                     <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100">Interpreted generation plan</summary>
