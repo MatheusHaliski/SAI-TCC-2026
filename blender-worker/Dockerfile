@@ -1,14 +1,17 @@
-FROM python:3.10-slim
+FROM pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PORT=8000
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt ./requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . .
 
-ENV PORT=80
+EXPOSE 8000
 
-EXPOSE 80
-
-CMD ["sh", "-c", "uvicorn handler:app --host 0.0.0.0 --port ${PORT:-80}"]
+CMD ["python", "-m", "uvicorn", "handler:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]

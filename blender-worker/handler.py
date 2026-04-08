@@ -162,6 +162,15 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
         )
 
 
+@app.on_event("startup")
+def startup_log() -> None:
+    logger.info(
+        "server_starting app=stylistai-worker host=0.0.0.0 port=%s endpoints=/,/ping,/jobs,/jobs/{jobId}",
+        os.getenv("PORT", "8000"),
+    )
+    logger.info("server_ready output_dir=%s max_workers=%s", OUTPUT_DIR, MAX_WORKERS)
+
+
 @app.get("/ping")
 def ping() -> dict[str, str]:
     return {"status": "ok"}
@@ -233,6 +242,6 @@ def job_status(jobId: str) -> dict[str, Any]:
 if __name__ == "__main__":
     import uvicorn
 
-    port = int(os.environ.get("PORT", "80"))
-    print("Server started on port", port)
+    port = int(os.environ.get("PORT", "8000"))
+    logger.info("server_bootstrap uvicorn host=0.0.0.0 port=%s", port)
     uvicorn.run(app, host="0.0.0.0", port=port)
