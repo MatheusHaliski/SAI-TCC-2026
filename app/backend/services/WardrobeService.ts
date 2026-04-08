@@ -396,6 +396,12 @@ export class WardrobeService {
       return this.meshyService.generate3DModelFromImage(imageUrl, { prompt: options.prompt });
     }
 
+    await this.wardrobeRepo.updatePipelineStatus(options.wardrobeItemId, options.status, null, {
+      stage: `${options.stageLabel}_submitting`,
+      provider: 'runpod',
+      job_type: MODEL_GENERATION_JOB_TYPE,
+    });
+
     const submitted = await this.blenderCloudService.submitBlenderCloudJob({
       modelUrl: imageUrl,
       imageUrl,

@@ -125,7 +125,7 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
       setStatus(nextStatus);
       setProgressPercent((current) => {
         if (nextStatus === 'queued') return Math.max(current, 25);
-        return Math.min(95, Math.max(45, current + 8));
+        return Math.min(90, Math.max(45, current + 2));
       });
     };
 
