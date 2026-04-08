@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   applyPageBackgroundConfig,
+  OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
   PageBackgroundConfig,
   PageBackgroundShape,
   readPageBackgroundConfig,
@@ -40,7 +41,7 @@ function PageBackgroundStudio({
 }: {
   draft: PageBackgroundConfig;
   onChange: (next: PageBackgroundConfig) => void;
-  onApply: () => void;
+  onApply: (next: PageBackgroundConfig) => void;
 }) {
   const gradients = [
     'linear-gradient(135deg, #0b7a4a 0%, #075e39 45%, #05311f 100%)',
@@ -51,6 +52,10 @@ function PageBackgroundStudio({
     'linear-gradient(130deg, #ea580c 0%, #f59e0b 42%, #facc15 100%)',
   ];
   const shapes: PageBackgroundShape[] = ['none', 'orb', 'diamond', 'mesh'];
+  const officialConfig: PageBackgroundConfig = {
+    gradient: OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
+    shape: 'orb',
+  };
   return (
     <div className="sa-page-studio space-y-3 rounded-xl border border-emerald-100/30 bg-emerald-950/40 p-3">
       <p className="text-xs uppercase tracking-[0.12em] text-emerald-100/80">Page Background Studio</p>
@@ -77,7 +82,14 @@ function PageBackgroundStudio({
           </button>
         ))}
       </div>
-      <button type="button" className="sa-apply-background w-full rounded-lg border border-emerald-200/70 bg-emerald-400/20 px-3 py-2 text-sm font-semibold" onClick={onApply}>
+      <button
+        type="button"
+        className="sa-apply-background w-full rounded-lg border border-emerald-200/70 bg-emerald-400/20 px-3 py-2 text-sm font-semibold"
+        onClick={() => {
+          onChange(officialConfig);
+          onApply(officialConfig);
+        }}
+      >
         Apply website background
       </button>
     </div>
@@ -200,7 +212,10 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
           setBackgroundDraft(next);
           applyPageBackgroundConfig(next);
         }}
-        onApply={() => savePageBackgroundConfig(backgroundDraft)}
+        onApply={(next) => {
+          setBackgroundDraft(next);
+          savePageBackgroundConfig(next);
+        }}
       />
     </RightDrawer>
   );
