@@ -143,7 +143,7 @@ type ShapeLayerVariant = {
   pool: BackgroundShapeLanguage[];
 };
 
-type TightPatternKind = 'stars' | 'circles' | 'triangles' | 'arrows' | null;
+type TightPatternKind = 'stars' | 'circles' | 'triangles' | 'arrows' | 'waves' | null;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -177,10 +177,12 @@ function mixHex(base: string, target: string, ratio: number) {
 function detectTightPattern(plan: BackgroundGenerationPlan): TightPatternKind {
   const keywords = plan.detected_keywords;
   const hasArrow = keywords.some((w) => ['arrow', 'arrows', 'chevron', 'chevrons'].includes(w));
+  const hasWave = keywords.some((w) => ['wave', 'waves', 'audio', 'sound', 'frequency'].includes(w));
   const hasStar = keywords.some((w) => ['star', 'stars', 'flower', 'flowers', 'floral'].includes(w));
   const hasCircle = keywords.some((w) => ['circle', 'circles', 'circule', 'circules', 'orb', 'orbs', 'dots', 'points'].includes(w));
   const hasTriangle = keywords.some((w) => ['triangle', 'triangles'].includes(w));
   if (hasArrow) return 'arrows';
+  if (hasWave || plan.shape_language === 'waves') return 'waves';
   if (hasStar || plan.shape_language === 'stars') return 'stars';
   if (hasCircle || plan.shape_language === 'circles_orbs') return 'circles';
   if (hasTriangle || plan.shape_language === 'triangular') return 'triangles';
@@ -433,6 +435,17 @@ function buildTightPatternLayer(
       }
     }
     return arrowLayer;
+  }
+  if (patternKind === 'waves') {
+    let waveLayer = '';
+    for (let row = 0; row < 14; row += 1) {
+      for (let col = 0; col < 18; col += 1) {
+        const x = col * 72 + (row % 2 === 0 ? 0 : 8);
+        const y = row * 58 + 26;
+        waveLayer += `<path d='M ${x} ${y} q 6 -24 12 0 q 6 24 12 0 q 6 -24 12 0 q 6 24 12 0 q 6 -24 12 0 q 6 24 12 0 q 6 -24 12 0' fill='none' stroke='#111827' stroke-width='2.4' stroke-linecap='round' opacity='0.92'/>`;
+      }
+    }
+    return waveLayer;
   }
 
   const layerProgress = totalLayers <= 1 ? 1 : layerIndex / (totalLayers - 1);
@@ -714,6 +727,41 @@ function buildArrowChevronRowsImage() {
   return toSvgDataUrl(svg);
 }
 
+function buildWaveLineGridImage() {
+  const wave = `<path d='M 0 24 q 6 -20 12 0 q 6 20 12 0 q 6 -20 12 0 q 6 20 12 0 q 6 -20 12 0 q 6 20 12 0 q 6 -20 12 0' fill='none' stroke='#1f2937' stroke-width='2.4' stroke-linecap='round'/>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#f3f4f6'/>
+    ${Array.from({ length: 14 }).map((_, row) =>
+      Array.from({ length: 18 }).map((__, col) => {
+        const x = col * 68 + (row % 2 === 0 ? 0 : 7);
+        const y = row * 54 + 10;
+        return `<g transform='translate(${x} ${y})'>${wave}</g>`;
+      }).join('')
+    ).join('')}
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
+function buildWaveBarGridImage() {
+  const barGroup = `${Array.from({ length: 17 }).map((_, idx) => {
+    const h = [8, 13, 18, 24, 30, 36, 42, 48, 52, 48, 42, 36, 30, 24, 18, 13, 8][idx];
+    const x = idx * 6;
+    const y = 28 - h / 2;
+    return `<rect x='${x}' y='${y}' width='3' height='${h}' rx='1.5' fill='#27272a'/>`;
+  }).join('')}`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#f9fafb'/>
+    ${Array.from({ length: 12 }).map((_, row) =>
+      Array.from({ length: 14 }).map((__, col) => {
+        const x = col * 84 + (row % 2 === 0 ? 0 : 8);
+        const y = row * 62 + 10;
+        return `<g transform='translate(${x} ${y})'>${barGroup}</g>`;
+      }).join('')
+    ).join('')}
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
 export function generateBackgroundVariations(plan: BackgroundGenerationPlan, prompt: string, count = 4) {
   const baseSeed = hashText(`${prompt}-${plan.shape_language}-${plan.composition_type}-${plan.palette.join('-')}`);
   const tightPattern = detectTightPattern(plan);
@@ -760,6 +808,18 @@ export function generateBackgroundVariations(plan: BackgroundGenerationPlan, pro
     variations[1] = {
       image: buildArrowChevronRowsImage(),
       gradient: gradientFromPlan(plan, (baseSeed % 360) + 64, 'linear'),
+      seed: baseSeed + 7919,
+    };
+  }
+  if (tightPattern === 'waves' && variations.length >= 2) {
+    variations[0] = {
+      image: buildWaveLineGridImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 18, 'linear'),
+      seed: baseSeed,
+    };
+    variations[1] = {
+      image: buildWaveBarGridImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 72, 'radial'),
       seed: baseSeed + 7919,
     };
   }
