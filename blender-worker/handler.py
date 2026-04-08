@@ -12,9 +12,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+try:
+    from fastapi import FastAPI, HTTPException, Request
+    from fastapi.responses import JSONResponse
+    from pydantic import BaseModel, Field
+except Exception:
+    logging.basicConfig(
+        level=os.getenv("LOG_LEVEL", "INFO").upper(),
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
+    logging.getLogger("stylistai.worker").exception("startup_import_failure missing_or_invalid_runtime_dependency")
+    raise
 
 # Option A (MVP): this FastAPI mock-3D worker is the only active runtime.
 # Blender-backed files (app.py, worker_entry.py, blender-scripts/uv_unwrap.py)
@@ -165,10 +173,12 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
 
 @app.on_event("startup")
 def startup_log() -> None:
+    logger.info("app_loaded title=%s version=%s", app.title, app.version)
     logger.info(
         "server_starting app=stylistai-worker host=0.0.0.0 port=%s endpoints=/,/ping,/jobs,/jobs/{jobId}",
         os.getenv("PORT", "8000"),
     )
+    logger.info("port_binding host=0.0.0.0 port=%s", os.getenv("PORT", "8000"))
     logger.info("server_ready output_dir=%s max_workers=%s", OUTPUT_DIR, MAX_WORKERS)
 
 
