@@ -119,6 +119,25 @@ const GRADIENT_PRESETS: Array<{ label: string; config: OutfitBackgroundConfig }>
   },
 ];
 const SEGMENTED_GRADIENT_OPTIONS = GRADIENT_PRESETS.slice(0, 8);
+const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    ${Array.from({ length: 10 }).map((_, row) =>
+      Array.from({ length: 14 }).map((__, col) => {
+        const x = col * 90 + (row % 2 === 0 ? 0 : 8);
+        const y = row * 82 + 6;
+        return `<g transform='translate(${x} ${y})'>
+          <ellipse cx='40' cy='24' rx='10' ry='17' fill='#b49cf1'/>
+          <ellipse cx='53' cy='35' rx='10' ry='17' transform='rotate(50 53 35)' fill='#b49cf1'/>
+          <ellipse cx='49' cy='53' rx='10' ry='17' transform='rotate(104 49 53)' fill='#b49cf1'/>
+          <ellipse cx='31' cy='53' rx='10' ry='17' transform='rotate(154 31 53)' fill='#b49cf1'/>
+          <ellipse cx='27' cy='35' rx='10' ry='17' transform='rotate(206 27 35)' fill='#b49cf1'/>
+          <circle cx='40' cy='40' r='8.5' fill='#f7d665'/>
+        </g>`;
+      }).join('')
+    ).join('')}
+  </svg>`,
+)}`;
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
   'none',
   'orb',
@@ -809,6 +828,22 @@ export default function OutfitBackgroundStudioModal({
               {preset.label}
             </button>
           ))}
+          <button
+            type="button"
+            className={`rounded-lg border px-2 py-1 text-[11px] ${draft.background_mode === 'ai_artwork' && draft.ai_artwork?.image_url === FLOWER_PICKER_IMAGE ? 'border-pink-300 bg-pink-500/30' : 'border-white/25 bg-white/10'}`}
+            onClick={() => setDraft((prev) => ({
+              ...prev,
+              background_mode: 'ai_artwork',
+              ai_artwork: {
+                prompt: 'flower grid pattern',
+                image_url: FLOWER_PICKER_IMAGE,
+                generation_status: 'done',
+              },
+              shape: 'flowers',
+            }))}
+          >
+            Flower
+          </button>
         </div>
 
         <footer className="mt-2 flex flex-wrap justify-end gap-2 border-t border-white/15 pt-4">
