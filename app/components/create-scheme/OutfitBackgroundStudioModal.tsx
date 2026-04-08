@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import {
   OutfitBackgroundConfig,
@@ -280,6 +280,7 @@ export default function OutfitBackgroundStudioModal({
       return;
     }
 
+    console.debug('artwork_studio.normalized_response', payload.data);
     setAiResults(payload.data.variations);
     if (payload.data.warnings?.length) setBackendWarning(payload.data.warnings[0]);
     if (payload.data.variations.length) setSelectedAiResult(payload.data.variations[0]);
@@ -317,6 +318,15 @@ export default function OutfitBackgroundStudioModal({
       }, aiCompositionType === 'overlay' ? 'overlay' : aiCompositionType === 'frame' ? 'frame' : aiCompositionType === 'shape_pack' ? 'shape_pack' : 'background'),
     }));
   };
+
+  useEffect(() => {
+    if (!aiResults.length) return;
+    console.debug('artwork_studio.slot_grid_props', {
+      slotCount: aiResults.length,
+      firstSlot: aiResults[0],
+      selectedVariationId: selectedAiResult?.variation_id ?? null,
+    });
+  }, [aiResults, selectedAiResult]);
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
@@ -605,18 +615,22 @@ export default function OutfitBackgroundStudioModal({
                 ) : null}
 
                 <div className="grid grid-cols-3 gap-2">
-                  {aiResults.map((result) => (
+                  {aiResults.map((result) => {
+                    const previewSource = result.thumbnail_url || result.preview_url || result.output_url;
+                    return (
                     <button
                       key={result.variation_id}
                       type="button"
                       className={`h-20 rounded-xl border ${selectedAiResult?.variation_id === result.variation_id ? 'border-violet-300 shadow-[0_0_0_1px_rgba(196,181,253,0.5)]' : 'border-white/20'}`}
-                      style={{ backgroundImage: `url(${result.preview_url})`, backgroundSize: 'cover' }}
+                      style={{ backgroundImage: previewSource ? `url(${previewSource})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}
                       onClick={() => {
                         setSelectedAiResult(result);
                         applyVariationToDraft(result);
+                        console.debug('artwork_studio.selected_variation', result);
                       }}
                     />
-                  ))}
+                    );
+                  })}
                 </div>
                 {selectedAiResult ? (
                   <button

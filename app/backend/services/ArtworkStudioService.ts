@@ -243,35 +243,26 @@ export class ArtworkStudioService {
     return new OpenAIArtworkProvider(this.openAIClient);
   }
 
-  private async persistProceduralVariation(variation: ArtworkVariation) {
-    if (!variation.preview_url.startsWith('data:image/svg+xml')) {
-      return variation;
+  private normalizeProceduralVariation(variation: ArtworkVariation): ArtworkVariation {
+    const source = variation.preview_url || variation.output_url || variation.thumbnail_url || '';
+    if (!source.startsWith('data:image/svg+xml;utf8,')) {
+      return {
+        ...variation,
+        preview_url: variation.preview_url || variation.output_url,
+        thumbnail_url: variation.thumbnail_url || variation.preview_url || variation.output_url,
+      };
     }
 
-    const bucket = getAdminStorageBucket();
-    const path = `artwork-studio/procedural-${Date.now()}-${crypto.randomUUID()}.svg`;
-    const file = bucket.file(path);
-    const token = crypto.randomUUID();
-    const encodedSvg = variation.preview_url.split(',', 2)[1] || '';
+    const encodedSvg = source.split(',', 2)[1] || '';
     const svgContent = decodeURIComponent(encodedSvg);
+    const base64Svg = Buffer.from(svgContent, 'utf8').toString('base64');
+    const safeDataUrl = `data:image/svg+xml;base64,${base64Svg}`;
 
-    await file.save(Buffer.from(svgContent, 'utf8'), {
-      metadata: {
-        contentType: 'image/svg+xml',
-        metadata: { firebaseStorageDownloadTokens: token },
-      },
-      resumable: false,
-      public: false,
-      validation: false,
-    });
-
-    const encodedPath = encodeURIComponent(path);
-    const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${token}`;
     return {
       ...variation,
-      preview_url: url,
-      output_url: url,
-      thumbnail_url: url,
+      preview_url: safeDataUrl,
+      output_url: safeDataUrl,
+      thumbnail_url: safeDataUrl,
     };
   }
 
@@ -282,15 +273,22 @@ export class ArtworkStudioService {
 
     try {
       const generated = await provider.generate(input, prompt);
+      console.debug('artwork_studio.raw_provider_response', {
+        provider: generated.provider,
+        variationCount: generated.variations.length,
+        firstVariation: generated.variations[0] ?? null,
+      });
       if (generated.provider !== 'procedural') return generated;
 
-      const persistedProcedural = await Promise.all(
-        generated.variations.map((variation) => this.persistProceduralVariation(variation)),
-      );
+      const normalizedProcedural = generated.variations.map((variation) => this.normalizeProceduralVariation(variation));
+      console.debug('artwork_studio.normalized_procedural_response', {
+        variationCount: normalizedProcedural.length,
+        firstVariation: normalizedProcedural[0] ?? null,
+      });
 
       return {
         ...generated,
-        variations: persistedProcedural,
+        variations: normalizedProcedural,
       };
     } catch (error) {
       console.error('artwork-studio.generate error', error);
@@ -301,8 +299,14 @@ export class ArtworkStudioService {
       if (recoverable) {
         const fallback = new ProceduralArtworkProvider();
         const result = await fallback.generate(input, prompt);
+        const normalizedProcedural = result.variations.map((variation) => this.normalizeProceduralVariation(variation));
+        console.debug('artwork_studio.recoverable_fallback_response', {
+          variationCount: normalizedProcedural.length,
+          firstVariation: normalizedProcedural[0] ?? null,
+        });
         return {
           ...result,
+          variations: normalizedProcedural,
           warnings: [...(result.warnings || []), 'Primary OpenAI provider failed. Fallback generation was used.'],
         };
       }
