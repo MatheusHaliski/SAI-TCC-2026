@@ -62,6 +62,7 @@ export type BackgroundGenerationInput = {
 };
 
 const COLOR_MAP: Record<string, [string, string, string]> = {
+  red: ['#450a0a', '#ef4444', '#fecaca'],
   orange: ['#7c2d12', '#f97316', '#fed7aa'],
   amber: ['#78350f', '#f59e0b', '#fde68a'],
   gold: ['#713f12', '#fbbf24', '#fef3c7'],
@@ -70,10 +71,13 @@ const COLOR_MAP: Record<string, [string, string, string]> = {
   white: ['#111827', '#d1d5db', '#ffffff'],
   beige: ['#f5efe2', '#ddc7a1', '#8b6b4a'],
   cream: ['#fff7e6', '#f5deb3', '#c49a6c'],
+  green: ['#052e16', '#22c55e', '#bbf7d0'],
   emerald: ['#022c22', '#10b981', '#99f6e4'],
   cyan: ['#083344', '#06b6d4', '#a5f3fc'],
   blue: ['#1e3a8a', '#3b82f6', '#bfdbfe'],
+  purple: ['#3b0764', '#9333ea', '#e9d5ff'],
   violet: ['#3b0764', '#8b5cf6', '#ddd6fe'],
+  pink: ['#4a044e', '#ec4899', '#fbcfe8'],
   magenta: ['#500724', '#db2777', '#fbcfe8'],
   neon: ['#09090b', '#22d3ee', '#e879f9'],
 };
@@ -131,8 +135,54 @@ const SHAPE_KEYWORDS: Array<{ words: string[]; shape: BackgroundShapeLanguage }>
   { words: ['beam', 'beams', 'light', 'streak'], shape: 'beams' },
 ];
 
+const INTENSITY_KEYWORDS = ['dense', 'packed', 'layered', 'maximal', 'ultra', 'complex', 'chaotic', 'rich'];
+const ATMOSPHERIC_KEYWORDS = ['cinematic', 'dramatic', 'glow', 'luminous', 'vivid', 'energetic'];
+
+type ShapeLayerVariant = {
+  dominant: BackgroundShapeLanguage;
+  pool: BackgroundShapeLanguage[];
+};
+
+type TightPatternKind = 'stars' | 'circles' | 'triangles' | null;
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function hexToRgb(hex: string) {
+  const value = hex.replace('#', '').trim();
+  const safe = value.length === 6 ? value : '111827';
+  return {
+    r: parseInt(safe.slice(0, 2), 16),
+    g: parseInt(safe.slice(2, 4), 16),
+    b: parseInt(safe.slice(4, 6), 16),
+  };
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+  return `#${[r, g, b].map((channel) => clamp(Math.round(channel), 0, 255).toString(16).padStart(2, '0')).join('')}`;
+}
+
+function mixHex(base: string, target: string, ratio: number) {
+  const a = hexToRgb(base);
+  const b = hexToRgb(target);
+  const t = clamp(ratio, 0, 1);
+  return rgbToHex(
+    a.r + (b.r - a.r) * t,
+    a.g + (b.g - a.g) * t,
+    a.b + (b.b - a.b) * t,
+  );
+}
+
+function detectTightPattern(plan: BackgroundGenerationPlan): TightPatternKind {
+  const keywords = plan.detected_keywords;
+  const hasStar = keywords.some((w) => ['star', 'stars', 'flower', 'flowers', 'floral'].includes(w));
+  const hasCircle = keywords.some((w) => ['circle', 'circles', 'circule', 'circules', 'orb', 'orbs', 'dots', 'points'].includes(w));
+  const hasTriangle = keywords.some((w) => ['triangle', 'triangles'].includes(w));
+  if (hasStar || plan.shape_language === 'stars') return 'stars';
+  if (hasCircle || plan.shape_language === 'circles_orbs') return 'circles';
+  if (hasTriangle || plan.shape_language === 'triangular') return 'triangles';
+  return null;
 }
 
 function createSeededRng(seed: number) {
@@ -232,6 +282,8 @@ export function buildBackgroundGenerationPlan(input: BackgroundGenerationInput):
 
   const shapeLanguage = inferShapeFromPrompt(combinedKeywords);
   const compositionType = inferCompositionFromPrompt(combinedKeywords, shapeLanguage);
+  const intenseDensityRequested = combinedKeywords.some((word) => INTENSITY_KEYWORDS.includes(word));
+  const cinematicMoodRequested = combinedKeywords.some((word) => ATMOSPHERIC_KEYWORDS.includes(word));
 
   const plan: BackgroundGenerationPlan = {
     ...DEFAULT_PLAN,
@@ -266,13 +318,26 @@ export function buildBackgroundGenerationPlan(input: BackgroundGenerationInput):
   if (combinedKeywords.some((word) => ['smoke', 'mist', 'fog'].includes(word))) plan.texture_mode = 'mist';
 
   if (plan.density === 'minimal') {
-    plan.layering_depth = 3;
-    plan.glow_intensity = clamp(plan.glow_intensity - 0.2, 0.18, 0.95);
+    plan.layering_depth = 4;
+    plan.glow_intensity = clamp(plan.glow_intensity - 0.12, 0.18, 0.95);
   } else if (plan.density === 'rich') {
-    plan.layering_depth = 7;
-    plan.glow_intensity = clamp(plan.glow_intensity + 0.2, 0.18, 0.95);
+    plan.layering_depth = 9;
+    plan.glow_intensity = clamp(plan.glow_intensity + 0.24, 0.18, 0.98);
   } else {
-    plan.layering_depth = 5;
+    plan.layering_depth = 6;
+  }
+
+  if (intenseDensityRequested) {
+    plan.density = 'rich';
+    plan.layering_depth = clamp(plan.layering_depth + 3, 7, 12);
+    plan.glow_intensity = clamp(plan.glow_intensity + 0.2, 0.35, 0.98);
+    plan.blur_strength = clamp(plan.blur_strength + 0.15, 0.32, 0.95);
+    plan.contrast_level = plan.contrast_level === 'low' ? 'medium' : 'high';
+  }
+
+  if (cinematicMoodRequested) {
+    plan.glow_intensity = clamp(plan.glow_intensity + 0.12, 0.2, 0.98);
+    plan.blur_strength = clamp(plan.blur_strength + 0.08, 0.18, 0.95);
   }
 
   if (!input.prompt.trim()) {
@@ -301,33 +366,159 @@ function gradientFromPlan(plan: BackgroundGenerationPlan, angle: number, type: '
   };
 }
 
-function buildShapeLayer(plan: BackgroundGenerationPlan, random: () => number) {
-  const baseCount = plan.density === 'minimal' ? 6 : plan.density === 'rich' ? 26 : 14;
-  const count = baseCount + Math.floor(random() * 6);
+function resolveShapeMix(dominant: BackgroundShapeLanguage): ShapeLayerVariant {
+  const fallback: BackgroundShapeLanguage[] = ['abstract_blobs', 'circles_orbs', 'stars', 'strokes_stripes'];
+  const families: Record<BackgroundShapeLanguage, BackgroundShapeLanguage[]> = {
+    organic_floral: ['circles_orbs', 'abstract_blobs', 'waves'],
+    triangular: ['beams', 'diamonds', 'strokes_stripes'],
+    circles_orbs: ['abstract_blobs', 'stars', 'waves'],
+    strokes_stripes: ['beams', 'waves', 'triangular'],
+    stars: ['diamonds', 'circles_orbs', 'beams'],
+    diamonds: ['stars', 'triangular', 'beams'],
+    waves: ['strokes_stripes', 'abstract_blobs', 'circles_orbs'],
+    beams: ['triangular', 'strokes_stripes', 'diamonds'],
+    abstract_blobs: ['circles_orbs', 'waves', 'stars'],
+  };
+
+  return {
+    dominant,
+    pool: [dominant, ...(families[dominant] || fallback)],
+  };
+}
+
+function pickShapeLanguage(pool: BackgroundShapeLanguage[], random: () => number, dominance: number) {
+  if (random() < dominance) return pool[0];
+  const idx = 1 + Math.floor(random() * Math.max(1, pool.length - 1));
+  return pool[idx] || pool[0];
+}
+
+function sampleShapeSize(random: () => number, baseScale: number) {
+  const weighted = Math.pow(random(), 2.4); // muitos pequenos, poucos grandes
+  let multiplier = 0.25 + weighted * 1.4;
+  if (random() < 0.07) multiplier *= 1.6; // alguns grandes
+  if (random() < 0.015) multiplier *= 2.2; // raros gigantes
+  return Math.max(10, Math.round(baseScale * multiplier));
+}
+
+function renderStarShape(x: number, y: number, size: number, fill: string, stroke: string, opacity: string) {
+  return `<polygon points='${x},${y - size / 2} ${x + size * 0.14},${y - size * 0.15} ${x + size / 2},${y - size * 0.14} ${x + size * 0.22},${y + size * 0.08} ${x + size * 0.3},${y + size / 2} ${x},${y + size * 0.22} ${x - size * 0.3},${y + size / 2} ${x - size * 0.22},${y + size * 0.08} ${x - size / 2},${y - size * 0.14} ${x - size * 0.14},${y - size * 0.15}' fill='${fill}' opacity='${opacity}' stroke='${stroke}' stroke-width='2.4'/>`;
+}
+
+function renderCircleShape(x: number, y: number, size: number, fill: string, stroke: string, opacity: string) {
+  return `<circle cx='${x}' cy='${y}' r='${Math.round(size / 2.5)}' fill='${fill}' opacity='${opacity}' stroke='${stroke}' stroke-width='2.2'/>`;
+}
+
+function renderTriangleShape(x: number, y: number, size: number, fill: string, stroke: string, opacity: string) {
+  return `<polygon points='${x},${y - size / 2} ${x + size / 2},${y + size / 2} ${x - size / 2},${y + size / 2}' fill='${fill}' opacity='${opacity}' stroke='${stroke}' stroke-width='2.3'/>`;
+}
+
+function buildTightPatternLayer(
+  plan: BackgroundGenerationPlan,
+  random: () => number,
+  layerIndex: number,
+  totalLayers: number,
+  patternKind: Exclude<TightPatternKind, null>,
+) {
+  const layerProgress = totalLayers <= 1 ? 1 : layerIndex / (totalLayers - 1);
+  const rowHeight = patternKind === 'circles' ? 66 : 62;
+  const colWidth = patternKind === 'circles' ? 72 : 68;
+  const yOffset = -24 + layerIndex * 6;
+  const xOffset = -18 + (layerIndex % 2 === 0 ? 0 : Math.round(colWidth * 0.5));
+  const neutralBase = patternKind === 'circles'
+    ? mixHex('#c9c9cc', plan.palette[1], 0.16)
+    : mixHex('#141414', plan.palette[0], 0.12);
+  const neutralAlt = patternKind === 'circles'
+    ? mixHex('#b8b8bd', plan.palette[2], 0.13)
+    : mixHex('#242424', plan.palette[1], 0.14);
+  const stroke = patternKind === 'circles' ? '#202124' : '#050505';
+  let out = '';
+
+  for (let row = 0; row < 20; row += 1) {
+    for (let col = 0; col < 22; col += 1) {
+      const x = xOffset + col * colWidth + (row % 2 === 0 ? 0 : Math.round(colWidth * 0.26));
+      const y = yOffset + row * rowHeight;
+      if (x < -100 || x > 1300 || y < -100 || y > 920) continue;
+      const size = Math.round((patternKind === 'circles' ? 34 : 38) * (0.9 + layerProgress * 0.12 + random() * 0.03));
+      const fill = random() < 0.24 ? neutralAlt : neutralBase;
+      const opacity = (patternKind === 'circles' ? 0.66 : 0.74 + layerProgress * 0.18) + random() * 0.05;
+
+      if (patternKind === 'stars') out += renderStarShape(x, y, size, fill, stroke, opacity.toFixed(3));
+      else if (patternKind === 'circles') out += renderCircleShape(x, y, size, fill, stroke, opacity.toFixed(3));
+      else out += renderTriangleShape(x, y, size, fill, stroke, opacity.toFixed(3));
+    }
+  }
+
+  return out;
+}
+
+function buildShapeLayer(plan: BackgroundGenerationPlan, random: () => number, layerIndex: number, totalLayers: number) {
+  const tightPattern = detectTightPattern(plan);
+  if (tightPattern) {
+    return buildTightPatternLayer(plan, random, layerIndex, totalLayers, tightPattern);
+  }
+
+  const layerProgress = totalLayers <= 1 ? 1 : layerIndex / (totalLayers - 1);
+  const baseCount = plan.density === 'minimal' ? 20 : plan.density === 'rich' ? 120 : 60;
+  const layerMultiplier = 0.62 + (1 - layerProgress) * 0.95;
+  const count = Math.round(baseCount * layerMultiplier + random() * baseCount * 0.2);
+  const shapeMix = resolveShapeMix(plan.shape_language);
+  const dominance = 0.58 + layerProgress * 0.28;
+  const baseScale = (plan.density === 'rich' ? 220 : plan.density === 'balanced' ? 170 : 135) * (0.7 + layerProgress * 0.55);
+  const clusterCount = 2 + Math.floor(random() * 3);
+  const clusters = Array.from({ length: clusterCount }).map(() => ({
+    x: 120 + random() * 960,
+    y: 90 + random() * 620,
+    radius: 140 + random() * 230,
+  }));
   let out = '';
 
   for (let i = 0; i < count; i += 1) {
-    const x = Math.round(random() * 1200);
-    const y = Math.round(random() * 800);
-    const size = Math.round(18 + random() * (plan.density === 'minimal' ? 140 : 240));
-    const opacity = (0.1 + random() * 0.3).toFixed(2);
-    const fill = plan.palette[Math.floor(random() * plan.palette.length)];
+    const useCluster = random() < 0.42;
+    const cluster = useCluster ? clusters[Math.floor(random() * clusters.length)] : null;
+    const baseX = cluster ? cluster.x + (random() - 0.5) * cluster.radius : random() * 1200;
+    const baseY = cluster ? cluster.y + (random() - 0.5) * cluster.radius : random() * 800;
+    const driftX = (random() - 0.5) * (40 + (1 - layerProgress) * 120);
+    const driftY = (random() - 0.5) * (40 + (1 - layerProgress) * 90);
+    let x = clamp(Math.round(baseX + driftX), -140, 1340);
+    let y = clamp(Math.round(baseY + driftY), -120, 920);
+    if (plan.composition_type === 'structured_grid' && random() < 0.72) {
+      const grid = 64 + Math.round((1 - layerProgress) * 26);
+      x = Math.round(x / grid) * grid + Math.round((random() - 0.5) * 14);
+      y = Math.round(y / grid) * grid + Math.round((random() - 0.5) * 14);
+    }
+    if (plan.composition_type === 'orbital_field' && random() < 0.6) {
+      const radius = 90 + random() * (250 + (1 - layerProgress) * 240);
+      const angle = random() * Math.PI * 2;
+      x = Math.round(600 + Math.cos(angle) * radius + (random() - 0.5) * 40);
+      y = Math.round(400 + Math.sin(angle) * radius * 0.76 + (random() - 0.5) * 40);
+    }
+    if (plan.composition_type === 'beam_directional' && random() < 0.7) {
+      x = Math.round(120 + random() * 960);
+      y = Math.round((random() ** 1.15) * 900) - 60;
+    }
 
-    if (plan.shape_language === 'organic_floral') {
+    const size = sampleShapeSize(random, baseScale);
+    const opacityFloor = 0.05 + (layerProgress * 0.16);
+    const opacityCeil = 0.34 + (layerProgress * 0.45);
+    const opacity = (opacityFloor + random() * (opacityCeil - opacityFloor)).toFixed(3);
+    const fill = plan.palette[Math.floor(random() * plan.palette.length)];
+    const currentShape = pickShapeLanguage(shapeMix.pool, random, dominance);
+
+    if (currentShape === 'organic_floral') {
       out += `<g opacity='${opacity}' transform='translate(${x} ${y})'><circle r='${Math.round(size / 8)}' fill='${fill}'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(0)'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(72)'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(144)'/></g>`;
-    } else if (plan.shape_language === 'triangular') {
-      out += `<polygon points='${x},${y - size / 2} ${x + size / 2},${y + size / 2} ${x - size / 2},${y + size / 2}' fill='${fill}' opacity='${opacity}'/>`;
-    } else if (plan.shape_language === 'circles_orbs') {
-      out += `<circle cx='${x}' cy='${y}' r='${Math.round(size / 3)}' fill='${fill}' opacity='${opacity}'/>`;
-    } else if (plan.shape_language === 'strokes_stripes') {
+    } else if (currentShape === 'triangular') {
+      out += `<polygon points='${x},${y - size / 2} ${x + size / 2},${y + size / 2} ${x - size / 2},${y + size / 2}' fill='${fill}' opacity='${opacity}' stroke='rgba(255,255,255,0.22)' stroke-width='2'/>`;
+    } else if (currentShape === 'circles_orbs') {
+      out += `<circle cx='${x}' cy='${y}' r='${Math.round(size / 2.8)}' fill='${fill}' opacity='${opacity}' stroke='rgba(255,255,255,0.18)' stroke-width='2'/>`;
+    } else if (currentShape === 'strokes_stripes') {
       out += `<line x1='${x}' y1='${y}' x2='${x + size}' y2='${y + (random() - 0.5) * 80}' stroke='${fill}' stroke-width='${Math.round(size / 18)}' stroke-linecap='round' opacity='${opacity}'/>`;
-    } else if (plan.shape_language === 'stars') {
+    } else if (currentShape === 'stars') {
       out += `<polygon points='${x},${y - size / 3} ${x + size / 10},${y - size / 10} ${x + size / 3},${y - size / 10} ${x + size / 6},${y + size / 10} ${x + size / 5},${y + size / 3} ${x},${y + size / 6} ${x - size / 5},${y + size / 3} ${x - size / 6},${y + size / 10} ${x - size / 3},${y - size / 10} ${x - size / 10},${y - size / 10}' fill='${fill}' opacity='${opacity}'/>`;
-    } else if (plan.shape_language === 'diamonds') {
-      out += `<rect x='${x}' y='${y}' width='${Math.round(size / 2)}' height='${Math.round(size / 2)}' transform='rotate(45 ${x} ${y})' fill='${fill}' opacity='${opacity}' rx='8'/>`;
-    } else if (plan.shape_language === 'waves') {
+    } else if (currentShape === 'diamonds') {
+      out += `<rect x='${x}' y='${y}' width='${Math.round(size / 1.8)}' height='${Math.round(size / 1.8)}' transform='rotate(45 ${x} ${y})' fill='${fill}' opacity='${opacity}' rx='10' stroke='rgba(255,255,255,0.2)' stroke-width='2'/>`;
+    } else if (currentShape === 'waves') {
       out += `<path d='M ${x} ${y} C ${x + size / 2} ${y - size / 2}, ${x + size} ${y + size / 2}, ${x + size * 1.4} ${y}' stroke='${fill}' stroke-width='${Math.round(size / 16)}' fill='none' opacity='${opacity}'/>`;
-    } else if (plan.shape_language === 'beams') {
+    } else if (currentShape === 'beams') {
       out += `<rect x='${x}' y='${y}' width='${Math.round(size / 6)}' height='${Math.round(size * 2)}' fill='${fill}' opacity='${opacity}' rx='10'/>`;
     } else {
       out += `<ellipse cx='${x}' cy='${y}' rx='${Math.round(size / 2)}' ry='${Math.round(size / 3)}' fill='${fill}' opacity='${opacity}'/>`;
@@ -340,7 +531,24 @@ function buildShapeLayer(plan: BackgroundGenerationPlan, random: () => number) {
 export function generateProceduralBackground(plan: BackgroundGenerationPlan, seed: number, prompt: string) {
   const random = createSeededRng(seed);
   const angle = Math.floor(random() * 360);
-  const shapeLayer = buildShapeLayer(plan, random);
+  const tightPattern = detectTightPattern(plan);
+  const layerCount = clamp(
+    plan.layering_depth + (plan.density === 'rich' ? 2 : plan.density === 'minimal' ? -1 : 1),
+    tightPattern ? 4 : plan.density === 'minimal' ? 3 : 5,
+    12,
+  );
+  const layerDefinitions = Array.from({ length: layerCount }).map((_, layerIndex) => {
+    const layerProgress = layerCount <= 1 ? 1 : layerIndex / (layerCount - 1);
+    const blurBoost = plan.density === 'rich' ? 1.35 : 1;
+    const blur = tightPattern
+      ? Math.round(0.1 + (1 - layerProgress) * 0.4)
+      : Math.round((plan.blur_strength * (10 + (1 - layerProgress) * 22) + 1.5) * blurBoost);
+    const layerOpacity = tightPattern
+      ? clamp(0.48 + layerProgress * 0.34, 0.42, 0.95)
+      : clamp((0.2 + plan.glow_intensity * 0.72) * (0.62 + layerProgress * 0.58), 0.14, 0.98);
+    const shapes = buildShapeLayer(plan, random, layerIndex, layerCount);
+    return { blur, layerOpacity, layerProgress, shapes, id: `softBlur${layerIndex}` };
+  });
   const textureOpacity = plan.texture_mode === 'grain' ? 0.23 : plan.texture_mode === 'mist' ? 0.34 : 0.12;
   const safePrompt = prompt.slice(0, 100).replace(/[<>]/g, '');
 
@@ -351,26 +559,113 @@ export function generateProceduralBackground(plan: BackgroundGenerationPlan, see
         <stop offset='55%' stop-color='${plan.palette[1]}'/>
         <stop offset='100%' stop-color='${plan.palette[2]}'/>
       </linearGradient>
-      <filter id='softBlur'><feGaussianBlur stdDeviation='${Math.round(plan.blur_strength * 18)}'/></filter>
+      ${layerDefinitions.map((layer) => `<filter id='${layer.id}'><feGaussianBlur stdDeviation='${layer.blur}'/></filter>`).join('')}
       <pattern id='grain' width='40' height='40' patternUnits='userSpaceOnUse'>
         <circle cx='10' cy='8' r='1' fill='rgba(255,255,255,0.35)'/>
         <circle cx='24' cy='18' r='1' fill='rgba(0,0,0,0.25)'/>
       </pattern>
     </defs>
     <rect width='1200' height='800' fill='url(#base)'/>
-    <g filter='url(#softBlur)' opacity='${clamp(plan.glow_intensity, 0.15, 0.95)}'>${shapeLayer}</g>
-    <rect width='1200' height='800' fill='url(#grain)' opacity='${textureOpacity}'/>
-    <rect x='0' y='0' width='500' height='800' fill='rgba(15,23,42,0.2)'/>
-    <rect width='1200' height='800' fill='rgba(255,255,255,0.06)' transform='rotate(${angle} 600 400)'/>
-    <text x='48' y='742' fill='rgba(255,255,255,0.35)' font-size='22' font-family='Arial'>${safePrompt}</text>
+    ${layerDefinitions.map((layer) => `<g filter='url(#${layer.id})' opacity='${layer.layerOpacity.toFixed(3)}'>${layer.shapes}</g>`).join('')}
+    <rect width='1200' height='800' fill='rgba(255,255,255,0.04)' opacity='${tightPattern ? 0.01 : clamp(plan.glow_intensity * 0.55, 0.06, 0.4)}'/>
+    <rect width='1200' height='800' fill='url(#grain)' opacity='${tightPattern ? 0.06 : textureOpacity}'/>
+    <rect x='0' y='0' width='460' height='800' fill='rgba(15,23,42,0.12)'/>
+    <rect width='1200' height='800' fill='rgba(255,255,255,0.06)' opacity='${tightPattern ? 0.008 : 0.06}' transform='rotate(${angle} 600 400)'/>
+    <text x='48' y='742' fill='${tightPattern ? 'rgba(20,20,20,0.46)' : 'rgba(255,255,255,0.35)'}' font-size='22' font-family='Arial'>${safePrompt}</text>
   </svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+function toSvgDataUrl(svg: string) {
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function buildGoldenStarTileImage() {
+  const starShape = '50,8 61,35 90,35 67,52 76,82 50,64 24,82 33,52 10,35 39,35';
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <defs>
+      <linearGradient id='gold' x1='0' y1='0' x2='1' y2='1'>
+        <stop offset='0%' stop-color='#fef08a'/>
+        <stop offset='48%' stop-color='#fbbf24'/>
+        <stop offset='100%' stop-color='#f59e0b'/>
+      </linearGradient>
+    </defs>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    ${Array.from({ length: 10 }).map((_, row) =>
+      Array.from({ length: 13 }).map((__, col) => {
+        const x = 6 + col * 94 + (row % 2 === 0 ? 0 : 10);
+        const y = 8 + row * 82;
+        return `<g transform='translate(${x} ${y})'><polygon points='${starShape}' fill='url(#gold)' stroke='#f59e0b' stroke-width='2.2'/><line x1='50' y1='10' x2='50' y2='80' stroke='rgba(251,191,36,0.35)' stroke-width='3.2'/></g>`;
+      }).join('')
+    ).join('')}
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
+function buildGoldenStarBadgeImage() {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <defs>
+      <linearGradient id='badgeGold' x1='0' y1='0' x2='1' y2='1'>
+        <stop offset='0%' stop-color='#fde68a'/>
+        <stop offset='55%' stop-color='#f59e0b'/>
+        <stop offset='100%' stop-color='#facc15'/>
+      </linearGradient>
+    </defs>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    <g transform='translate(600 400) scale(2.05)'>
+      <polygon points='0,-170 44,-56 164,-40 72,36 102,154 0,94 -102,154 -72,36 -164,-40 -44,-56' fill='url(#badgeGold)' stroke='#020617' stroke-width='18' stroke-linejoin='round'/>
+      <line x1='-142' y1='-132' x2='-195' y2='-190' stroke='#020617' stroke-width='20' stroke-linecap='round'/>
+      <line x1='142' y1='-132' x2='195' y2='-190' stroke='#020617' stroke-width='20' stroke-linecap='round'/>
+      <line x1='-178' y1='26' x2='-250' y2='35' stroke='#020617' stroke-width='20' stroke-linecap='round'/>
+      <line x1='178' y1='26' x2='250' y2='35' stroke='#020617' stroke-width='20' stroke-linecap='round'/>
+      <line x1='0' y1='178' x2='0' y2='258' stroke='#020617' stroke-width='20' stroke-linecap='round'/>
+    </g>
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
+function buildCircleLoopIconImage() {
+  const icon = `<g transform='translate(48 48)'>
+    <path d='M -24 -24 A 38 38 0 0 1 28 -12' fill='none' stroke='#0b0b0c' stroke-width='7' stroke-linecap='square'/>
+    <polygon points='28,-12 16,-14 20,-3' fill='#0b0b0c'/>
+    <path d='M 26 18 A 38 38 0 0 1 -16 30' fill='none' stroke='#0b0b0c' stroke-width='7' stroke-linecap='square'/>
+    <polygon points='-16,30 -5,28 -11,19' fill='#0b0b0c'/>
+    <path d='M -36 8 A 38 38 0 0 1 -26 -18' fill='none' stroke='#0b0b0c' stroke-width='7' stroke-linecap='square'/>
+    <polygon points='-26,-18 -27,-6 -36,-11' fill='#0b0b0c'/>
+  </g>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    ${Array.from({ length: 9 }).map((_, row) =>
+      Array.from({ length: 14 }).map((__, col) => {
+        const x = col * 92 + (row % 2 === 0 ? 0 : 8);
+        const y = row * 88;
+        return `<g transform='translate(${x} ${y})'>${icon}</g>`;
+      }).join('')
+    ).join('')}
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
+function buildCircleTargetIconImage() {
+  const ring = `<circle cx='44' cy='44' r='32' fill='none' stroke='#e81b1f' stroke-width='7'/>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    ${Array.from({ length: 9 }).map((_, row) =>
+      Array.from({ length: 14 }).map((__, col) => {
+        const x = col * 86 + (row % 2 === 0 ? 0 : 6);
+        const y = row * 84;
+        return `<g transform='translate(${x} ${y})'>${ring}</g>`;
+      }).join('')
+    ).join('')}
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
 export function generateBackgroundVariations(plan: BackgroundGenerationPlan, prompt: string, count = 4) {
   const baseSeed = hashText(`${prompt}-${plan.shape_language}-${plan.composition_type}-${plan.palette.join('-')}`);
-  return Array.from({ length: count }).map((_, idx) => {
+  const tightPattern = detectTightPattern(plan);
+  const variations = Array.from({ length: count }).map((_, idx) => {
     const seed = baseSeed + idx * 7919;
     const gradientType = idx % 3 === 0 ? 'linear' : idx % 3 === 1 ? 'radial' : 'conic';
     return {
@@ -379,4 +674,31 @@ export function generateBackgroundVariations(plan: BackgroundGenerationPlan, pro
       seed,
     };
   });
+
+  if (tightPattern === 'stars' && variations.length >= 2) {
+    variations[0] = {
+      image: buildGoldenStarTileImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 12, 'linear'),
+      seed: baseSeed,
+    };
+    variations[1] = {
+      image: buildGoldenStarBadgeImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 44, 'radial'),
+      seed: baseSeed + 7919,
+    };
+  }
+  if (tightPattern === 'circles' && variations.length >= 2) {
+    variations[0] = {
+      image: buildCircleLoopIconImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 22, 'conic'),
+      seed: baseSeed,
+    };
+    variations[1] = {
+      image: buildCircleTargetIconImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 58, 'radial'),
+      seed: baseSeed + 7919,
+    };
+  }
+
+  return variations;
 }
