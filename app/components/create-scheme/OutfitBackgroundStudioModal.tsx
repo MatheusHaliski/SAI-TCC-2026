@@ -129,6 +129,8 @@ const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>>
   'triangles',
   'waves',
   'beams',
+  'flowers',
+  'arrows',
 ];
 
 const STYLE_PRESETS: ArtworkStylePreset[] = ['editorial_fashion', 'luxury_minimal', 'futuristic_sport', 'streetwear', 'monochrome_premium'];
@@ -219,6 +221,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiLayerDepth, setAiLayerDepth] = useState(5);
   const [aiSafeArea, setAiSafeArea] = useState(true);
   const [aiReferenceImageUrl, setAiReferenceImageUrl] = useState('');
+  const [aiReferenceFileName, setAiReferenceFileName] = useState('');
   const [aiGenerationMode, setAiGenerationMode] = useState<BackgroundGenerationMode>('hybrid');
   const [aiResults, setAiResults] = useState<ArtworkVariation[]>([]);
   const [savedAssets, setSavedAssets] = useState<ArtworkAsset[]>([]);
@@ -312,9 +315,22 @@ export default function OutfitBackgroundStudioModal({
     }
 
     console.debug('artwork_studio.normalized_response', payload.data);
-    setAiResults(payload.data.variations);
+    const uploadedReferenceVariation = aiReferenceImageUrl.startsWith('data:image/')
+      ? [{
+          variation_id: `reference_upload_${Date.now()}`,
+          preview_url: aiReferenceImageUrl,
+          output_url: aiReferenceImageUrl,
+          thumbnail_url: aiReferenceImageUrl,
+          provider: 'procedural' as const,
+          provider_job_id: null,
+          provider_model: 'uploaded-reference',
+          metadata: { source: 'uploaded_reference' },
+        } satisfies ArtworkVariation]
+      : [];
+    const mergedVariations = [...uploadedReferenceVariation, ...payload.data.variations];
+    setAiResults(mergedVariations);
     if (payload.data.warnings?.length) setBackendWarning(payload.data.warnings[0]);
-    if (payload.data.variations.length) setSelectedAiResult(payload.data.variations[0]);
+    if (mergedVariations.length) setSelectedAiResult(mergedVariations[0]);
     setAiGenerationPlan({
       generationMode: aiGenerationMode,
       compositionType: aiCompositionType,
@@ -594,7 +610,30 @@ export default function OutfitBackgroundStudioModal({
                   <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiColorIntent} onChange={(event) => setAiColorIntent(event.target.value as ArtworkColorIntent)}>
                     {COLOR_INTENTS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
-                  <input value={aiReferenceImageUrl} onChange={(event) => setAiReferenceImageUrl(event.target.value)} placeholder="Reference image URL (optional)" className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-xs" />
+                  <label className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-[11px] text-white/80">
+                    <span className="block pb-1 text-[10px] uppercase tracking-[0.08em] text-white/60">Reference image (upload)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="w-full text-[11px]"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) {
+                          setAiReferenceImageUrl('');
+                          setAiReferenceFileName('');
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const result = typeof reader.result === 'string' ? reader.result : '';
+                          setAiReferenceImageUrl(result);
+                          setAiReferenceFileName(file.name);
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    {aiReferenceFileName ? <span className="mt-1 block truncate text-[10px] text-cyan-100">{aiReferenceFileName}</span> : null}
+                  </label>
                 </div>
                 <label className="text-xs">Density ({aiDensity})</label>
                 <input type="range" min={0} max={100} value={aiDensity} onChange={(event) => setAiDensity(Number(event.target.value))} />

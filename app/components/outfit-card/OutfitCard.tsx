@@ -58,6 +58,10 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
                   ? 'bg-[repeating-linear-gradient(165deg,rgba(2,6,23,0.36)_0px,rgba(2,6,23,0.36)_4px,transparent_4px,transparent_12px)]'
                   : (resolvedBackground.shape ?? 'none') === 'beams'
                     ? 'bg-[repeating-linear-gradient(90deg,rgba(2,6,23,0.34)_0px,rgba(2,6,23,0.34)_8px,transparent_8px,transparent_26px)]'
+                    : (resolvedBackground.shape ?? 'none') === 'flowers'
+                      ? "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='92' height='92' viewBox='0 0 92 92'%3E%3Cellipse cx='46' cy='23' rx='12' ry='19' fill='rgba(11,12,13,0.72)'/%3E%3Cellipse cx='62' cy='37' rx='12' ry='19' transform='rotate(48 62 37)' fill='rgba(11,12,13,0.72)'/%3E%3Cellipse cx='56' cy='57' rx='12' ry='19' transform='rotate(102 56 57)' fill='rgba(11,12,13,0.72)'/%3E%3Cellipse cx='36' cy='57' rx='12' ry='19' transform='rotate(152 36 57)' fill='rgba(11,12,13,0.72)'/%3E%3Cellipse cx='30' cy='37' rx='12' ry='19' transform='rotate(206 30 37)' fill='rgba(11,12,13,0.72)'/%3E%3Ccircle cx='46' cy='40' r='9' fill='rgba(243,244,246,0.88)'/%3E%3C/svg%3E\")] bg-[size:46px_46px]"
+                      : (resolvedBackground.shape ?? 'none') === 'arrows'
+                        ? 'bg-[repeating-linear-gradient(145deg,rgba(2,6,23,0.58)_0px,rgba(2,6,23,0.58)_6px,transparent_6px,transparent_20px)]'
           : '';
 
   return (
