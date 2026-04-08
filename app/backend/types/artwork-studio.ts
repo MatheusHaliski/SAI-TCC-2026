@@ -93,6 +93,30 @@ export type OpenAIArtworkGenerationResult = {
   revisedPrompt?: string | null;
 };
 
+export type FireflyGenerationPayload = {
+  prompt: string;
+  negativePrompt?: string;
+  numVariations: number;
+  width: number;
+  height: number;
+  referenceImageUrl?: string;
+};
+
+export type FireflyGenerationResult = {
+  jobId: string | null;
+  variations: Array<{
+    variation_id: string;
+    preview_url: string;
+    output_url: string;
+    thumbnail_url?: string | null;
+    width?: number | null;
+    height?: number | null;
+    provider_job_id?: string | null;
+    metadata?: Record<string, unknown>;
+  }>;
+  raw: Record<string, unknown>;
+};
+
 export type ArtworkGenerationResponse = {
   provider: 'openai' | 'procedural';
   prompt: ArtworkPromptBuildResult;
