@@ -143,7 +143,7 @@ type ShapeLayerVariant = {
   pool: BackgroundShapeLanguage[];
 };
 
-type TightPatternKind = 'stars' | 'circles' | 'triangles' | null;
+type TightPatternKind = 'stars' | 'circles' | 'triangles' | 'arrows' | null;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -176,9 +176,11 @@ function mixHex(base: string, target: string, ratio: number) {
 
 function detectTightPattern(plan: BackgroundGenerationPlan): TightPatternKind {
   const keywords = plan.detected_keywords;
+  const hasArrow = keywords.some((w) => ['arrow', 'arrows', 'chevron', 'chevrons'].includes(w));
   const hasStar = keywords.some((w) => ['star', 'stars', 'flower', 'flowers', 'floral'].includes(w));
   const hasCircle = keywords.some((w) => ['circle', 'circles', 'circule', 'circules', 'orb', 'orbs', 'dots', 'points'].includes(w));
   const hasTriangle = keywords.some((w) => ['triangle', 'triangles'].includes(w));
+  if (hasArrow) return 'arrows';
   if (hasStar || plan.shape_language === 'stars') return 'stars';
   if (hasCircle || plan.shape_language === 'circles_orbs') return 'circles';
   if (hasTriangle || plan.shape_language === 'triangular') return 'triangles';
@@ -419,6 +421,20 @@ function buildTightPatternLayer(
   totalLayers: number,
   patternKind: Exclude<TightPatternKind, null>,
 ) {
+  if (patternKind === 'arrows') {
+    const rowHeight = 76;
+    const colWidth = 72;
+    let arrowLayer = '';
+    for (let row = 0; row < 12; row += 1) {
+      for (let col = 0; col < 18; col += 1) {
+        const x = col * colWidth + (row % 2 === 0 ? -4 : 12);
+        const y = row * rowHeight + 22;
+        arrowLayer += `<path d='M ${x} ${y} l 26 24 l -26 24 l 14 0 l 26 -24 l -26 -24 z' fill='#09090b' opacity='0.92'/>`;
+      }
+    }
+    return arrowLayer;
+  }
+
   const layerProgress = totalLayers <= 1 ? 1 : layerIndex / (totalLayers - 1);
   const rowHeight = patternKind === 'circles' ? 66 : 62;
   const colWidth = patternKind === 'circles' ? 72 : 68;
@@ -662,6 +678,42 @@ function buildCircleTargetIconImage() {
   return toSvgDataUrl(svg);
 }
 
+function buildArrowCircleGridImage() {
+  const icon = `<g transform='translate(44 44)'>
+    <circle cx='0' cy='0' r='29' fill='none' stroke='#0b0b0c' stroke-width='4'/>
+    <path d='M -20 -3 A 22 22 0 0 1 4 -20' fill='none' stroke='#38bdf8' stroke-width='5' stroke-linecap='round'/>
+    <path d='M 8 17 A 22 22 0 0 1 -16 14' fill='none' stroke='#0b0b0c' stroke-width='3.5' stroke-linecap='round'/>
+    <path d='M 0 -14 l 9 15 h -18 z' fill='none' stroke='#0b0b0c' stroke-width='3'/>
+    <path d='M 0 18 l 9 -15 h -18 z' fill='none' stroke='#0b0b0c' stroke-width='3'/>
+  </g>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    ${Array.from({ length: 9 }).map((_, row) =>
+      Array.from({ length: 14 }).map((__, col) => {
+        const x = col * 86 + (row % 2 === 0 ? 0 : 6);
+        const y = row * 84;
+        return `<g transform='translate(${x} ${y})'>${icon}</g>`;
+      }).join('')
+    ).join('')}
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
+function buildArrowChevronRowsImage() {
+  const chevron = `<path d='M 0 8 l 22 22 l -22 22 h 18 l 22 -22 l -22 -22 z' fill='#09090b'/>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    ${Array.from({ length: 10 }).map((_, row) =>
+      Array.from({ length: 26 }).map((__, col) => {
+        const x = col * 46 + (row % 2 === 0 ? 0 : 8);
+        const y = row * 78;
+        return `<g transform='translate(${x} ${y})'>${chevron}</g>`;
+      }).join('')
+    ).join('')}
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
 export function generateBackgroundVariations(plan: BackgroundGenerationPlan, prompt: string, count = 4) {
   const baseSeed = hashText(`${prompt}-${plan.shape_language}-${plan.composition_type}-${plan.palette.join('-')}`);
   const tightPattern = detectTightPattern(plan);
@@ -696,6 +748,18 @@ export function generateBackgroundVariations(plan: BackgroundGenerationPlan, pro
     variations[1] = {
       image: buildCircleTargetIconImage(),
       gradient: gradientFromPlan(plan, (baseSeed % 360) + 58, 'radial'),
+      seed: baseSeed + 7919,
+    };
+  }
+  if (tightPattern === 'arrows' && variations.length >= 2) {
+    variations[0] = {
+      image: buildArrowCircleGridImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 30, 'conic'),
+      seed: baseSeed,
+    };
+    variations[1] = {
+      image: buildArrowChevronRowsImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 64, 'linear'),
       seed: baseSeed + 7919,
     };
   }
