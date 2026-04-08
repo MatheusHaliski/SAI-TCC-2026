@@ -33,6 +33,12 @@ type RecommendedPreset = {
   recipe: (context: PresetContext) => OutfitBackgroundConfig;
 };
 
+type RecommendedPresetId = 'editorial-dark' | 'emerald-luxury' | 'soft-runway' | 'silver-mist' | 'monochrome-editorial' | 'black-luxury-fade';
+
+type RecommendedPresetOption = RecommendedPreset & {
+  id: RecommendedPresetId;
+};
+
 type OutfitMetadata = {
   style?: string;
   occasion?: string;
@@ -208,80 +214,20 @@ function getRelativeLuminance(hexColor: string) {
   return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
 }
 
-function getRecommendedPresets(context: PresetContext): RecommendedPreset[] {
-  const safeBrand = context.brandName.replace(/[<>&]/g, '');
-  const logoTag = context.brandLogoUrl
-    ? `<image href='${context.brandLogoUrl}' x='0' y='0' width='56' height='56' opacity='0.9' preserveAspectRatio='xMidYMid meet'/>`
-    : `<text x='28' y='34' text-anchor='middle' font-size='16' font-family='Arial, sans-serif' fill='white'>${context.brandName.slice(0, 1).toUpperCase()}</text>`;
-  const tiledBrandSurface = `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-      <rect width='1200' height='800' fill='#0f172a'/>
-      ${Array.from({ length: 9 }).map((_, row) =>
-        Array.from({ length: 12 }).map((__, col) => {
-          const x = col * 96 + (row % 2 ? 22 : 0);
-          const y = row * 92 + 8;
-          return `<g transform='translate(${x} ${y})'>${logoTag}</g>`;
-        }).join('')
-      ).join('')}
-    </svg>`,
-  )}`;
-  const editorialLogoField = `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-      <defs>
-        <linearGradient id='base' x1='0%' y1='0%' x2='100%' y2='100%'>
-          <stop offset='0%' stop-color='#1d4ed8'/>
-          <stop offset='62%' stop-color='#0ea5e9'/>
-          <stop offset='100%' stop-color='#facc15'/>
-        </linearGradient>
-      </defs>
-      <rect width='1200' height='800' fill='url(#base)'/>
-      <circle cx='920' cy='430' r='250' fill='rgba(15,23,42,0.2)'/>
-      <text x='870' y='460' font-size='140' font-family='Arial Black, Arial, sans-serif' fill='rgba(2,6,23,0.3)'>${safeBrand}</text>
-    </svg>`,
-  )}`;
+function getRecommendedPresets(metadata?: OutfitMetadata): RecommendedPresetOption[] {
+  const palette = metadata?.palette?.toLowerCase() || '';
+  if (palette.includes('black') || palette.includes('silver') || palette.includes('mono')) {
+    return [
+      { id: 'silver-mist', label: 'Silver Mist', description: 'High-fashion monochrome depth', config: GRADIENT_PRESETS[2].config },
+      { id: 'monochrome-editorial', label: 'Monochrome Editorial', description: 'Clean silver-black art direction', config: { ...GRADIENT_PRESETS[2].config, shape: 'none' } },
+      { id: 'black-luxury-fade', label: 'Black Luxury Fade', description: 'Safe contrast for text-heavy cards', config: { background_mode: 'solid', solid_color: '#0f172a', shape: 'none' } },
+    ];
+  }
 
   return [
-    {
-      id: 'brand_tiled_grid',
-      label: `${context.brandName} tiled motif`,
-      description: 'Repeating mini brand motif grid over premium gradient.',
-      recipe: () => ({
-        background_mode: 'ai_artwork',
-        ai_artwork: { prompt: `${context.brandName} motif tiled grid`, image_url: tiledBrandSurface, generation_status: 'done' },
-        gradient: GRADIENT_PRESETS[7].config.gradient,
-        shape: 'diamond',
-      }),
-    },
-    {
-      id: 'brand_editorial_logo',
-      label: `${context.brandName} editorial logo`,
-      description: 'Blue-yellow editorial gradient with a subtle hero logo field.',
-      recipe: () => ({
-        background_mode: 'ai_artwork',
-        ai_artwork: { prompt: `${context.brandName} editorial background`, image_url: editorialLogoField, generation_status: 'done' },
-        gradient: GRADIENT_PRESETS[5].config.gradient,
-        shape: 'orb',
-      }),
-    },
-    {
-      id: 'brand_tonal_geometry',
-      label: `${context.brandName} tonal geometry`,
-      description: 'Tonal premium surface with structured brand-driven geometry.',
-      recipe: () => ({
-        background_mode: 'gradient',
-        gradient: {
-          type: 'linear',
-          angle: 132,
-          intensity: 104,
-          stops: [
-            { color: context.heroColor, position: 0 },
-            { color: '#0f172a', position: 52 },
-            { color: '#1f2937', position: 100 },
-          ],
-        },
-        shape: 'mesh',
-      }),
-    },
+    { id: 'editorial-dark', label: 'Editorial Dark', description: 'Premium dark runway finish', config: GRADIENT_PRESETS[0].config },
+    { id: 'emerald-luxury', label: 'Emerald Luxury', description: 'Fashion-tech pop with depth', config: GRADIENT_PRESETS[1].config },
+    { id: 'soft-runway', label: 'Soft Runway', description: 'Warm-neutral studio background', config: GRADIENT_PRESETS[4].config },
   ];
 }
 
@@ -344,6 +290,74 @@ function buildUploadedImagePresets(imageUrl: string): RecommendedPreset[] {
   ];
 }
 
+const EMERALD_LUXURY_ASSET_CANDIDATES = ['png', 'jpg', 'jpeg', 'webp'].map((ext) => `/${encodeURIComponent(`Sem título (25).${ext}`)}`);
+
+const encodeDataUri = (value: string) => value
+  .replaceAll('%', '%25')
+  .replaceAll('#', '%23')
+  .replaceAll('<', '%3C')
+  .replaceAll('>', '%3E')
+  .replaceAll('"', '\'');
+
+async function resolveEmeraldLuxuryAssetPath(): Promise<string | null> {
+  for (const candidate of EMERALD_LUXURY_ASSET_CANDIDATES) {
+    try {
+      const response = await fetch(candidate, { method: 'HEAD', cache: 'no-store' });
+      if (response.ok) return candidate;
+    } catch {
+      // keep trying remaining candidates
+    }
+  }
+  return null;
+}
+
+function buildEmeraldLuxuryComposition(uploadedReferenceImage: string | null, builtInAssetUrl: string): OutfitBackgroundConfig {
+  const uploadedImageMarkup = uploadedReferenceImage
+    ? `
+      <defs>
+        <radialGradient id='emeraldGlow' cx='18%' cy='22%' r='65%'>
+          <stop offset='0%' stop-color='rgba(16,185,129,0.35)'/>
+          <stop offset='100%' stop-color='rgba(16,185,129,0)'/>
+        </radialGradient>
+      </defs>
+      <image href='${uploadedReferenceImage}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.18'/>
+      <rect width='1200' height='800' fill='url(#emeraldGlow)'/>
+      <g transform='translate(150 120)'>
+        <rect x='0' y='0' width='420' height='560' rx='34' fill='rgba(2,6,23,0.5)'/>
+        <rect x='14' y='14' width='392' height='532' rx='28' fill='rgba(16,185,129,0.16)'/>
+        <image href='${uploadedReferenceImage}' x='28' y='28' width='364' height='504' preserveAspectRatio='xMidYMid slice' opacity='0.86'/>
+      </g>`
+    : '';
+  const composedSvg = `data:image/svg+xml;utf8,${encodeDataUri(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <rect width='1200' height='800' fill='#021712'/>
+      <image href='${builtInAssetUrl}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice'/>
+      <rect width='1200' height='800' fill='rgba(2,44,34,0.44)'/>
+      ${uploadedImageMarkup}
+      <rect width='1200' height='800' fill='url(#vignette)'/>
+      <defs>
+        <radialGradient id='vignette' cx='50%' cy='45%' r='75%'>
+          <stop offset='45%' stop-color='rgba(6,95,70,0)'/>
+          <stop offset='100%' stop-color='rgba(2,6,23,0.64)'/>
+        </radialGradient>
+      </defs>
+    </svg>`,
+  )}`;
+
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: uploadedReferenceImage
+        ? 'emerald luxury layered composition with uploaded reference and premium preset asset'
+        : 'emerald luxury preset asset composition',
+      image_url: composedSvg,
+      generation_status: 'done',
+    },
+    gradient: GRADIENT_PRESETS[1].config.gradient,
+    shape: 'mesh',
+  };
+}
+
 export default function OutfitBackgroundStudioModal({
   value,
   previewCardData,
@@ -403,6 +417,25 @@ export default function OutfitBackgroundStudioModal({
       ...prev,
       ...config,
     }));
+  };
+
+  const applyRecommendedPreset = async (preset: RecommendedPreset) => {
+    const isEmeraldLuxury = 'id' in preset && preset.id === 'emerald-luxury';
+    if (!isEmeraldLuxury) {
+      setDraft(preset.config);
+      return;
+    }
+
+    const uploadedReferenceImage = aiReferenceImageUrl.startsWith('data:image/') ? aiReferenceImageUrl : null;
+    setDraft(buildEmeraldLuxuryComposition(uploadedReferenceImage, EMERALD_LUXURY_ASSET_CANDIDATES[0]));
+
+    const resolvedAssetPath = await resolveEmeraldLuxuryAssetPath();
+    if (!resolvedAssetPath) {
+      console.warn('[BackgroundStudio] Emerald Luxury preset asset missing. Checked:', EMERALD_LUXURY_ASSET_CANDIDATES);
+      return;
+    }
+
+    setDraft(buildEmeraldLuxuryComposition(uploadedReferenceImage, resolvedAssetPath));
   };
 
   const previewData: OutfitCardData = {
@@ -891,12 +924,7 @@ export default function OutfitBackgroundStudioModal({
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Recommended presets based on current outfit</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-3">
                 {displayedPresets.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)]"
-                    onClick={() => applyRecommendedBackgroundPreset(preset.id, presetContext)}
-                  >
+                  <button key={preset.label} type="button" className="rounded-lg border border-white/20 bg-white/10 p-2 text-left" onClick={() => void applyRecommendedPreset(preset)}>
                     <p className="text-xs font-semibold">{preset.label}</p>
                     <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
                     <span className="mt-2 block h-7 rounded-lg border border-white/15" style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(preset.recipe(presetContext)))} />
