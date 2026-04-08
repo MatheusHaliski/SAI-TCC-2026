@@ -243,13 +243,55 @@ export class ArtworkStudioService {
     return new OpenAIArtworkProvider(this.openAIClient);
   }
 
+  private async persistProceduralVariation(variation: ArtworkVariation) {
+    if (!variation.preview_url.startsWith('data:image/svg+xml')) {
+      return variation;
+    }
+
+    const bucket = getAdminStorageBucket();
+    const path = `artwork-studio/procedural-${Date.now()}-${crypto.randomUUID()}.svg`;
+    const file = bucket.file(path);
+    const token = crypto.randomUUID();
+    const encodedSvg = variation.preview_url.split(',', 2)[1] || '';
+    const svgContent = decodeURIComponent(encodedSvg);
+
+    await file.save(Buffer.from(svgContent, 'utf8'), {
+      metadata: {
+        contentType: 'image/svg+xml',
+        metadata: { firebaseStorageDownloadTokens: token },
+      },
+      resumable: false,
+      public: false,
+      validation: false,
+    });
+
+    const encodedPath = encodeURIComponent(path);
+    const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${token}`;
+    return {
+      ...variation,
+      preview_url: url,
+      output_url: url,
+      thumbnail_url: url,
+    };
+  }
+
   async generate(input: ArtworkStudioInput): Promise<ArtworkGenerationResponse> {
     this.validateInput(input);
     const prompt = buildArtworkPrompt(input);
     const provider = this.resolveProvider();
 
     try {
-      return await provider.generate(input, prompt);
+      const generated = await provider.generate(input, prompt);
+      if (generated.provider !== 'procedural') return generated;
+
+      const persistedProcedural = await Promise.all(
+        generated.variations.map((variation) => this.persistProceduralVariation(variation)),
+      );
+
+      return {
+        ...generated,
+        variations: persistedProcedural,
+      };
     } catch (error) {
       console.error('artwork-studio.generate error', error);
       if (error instanceof ServiceError && error.statusCode === 503) {
