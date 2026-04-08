@@ -8,6 +8,7 @@ export type ArtworkStylePreset =
 export type ArtworkPaletteMode = 'monochrome' | 'cool_luxury' | 'warm_neutral' | 'custom';
 export type ArtworkShapeLanguage = 'diamond' | 'orb' | 'mesh' | 'panels' | 'mixed';
 export type ArtworkContrastLevel = 'low' | 'medium' | 'high';
+export type ArtworkColorIntent = 'prompt_driven' | 'cool_blue' | 'emerald_luxury' | 'sunset_warm' | 'mono_chrome' | 'neon_pop';
 
 export type ArtworkStudioInput = {
   user_id: string;
@@ -26,6 +27,7 @@ export type ArtworkStudioInput = {
   referenceImageUrl?: string;
   referenceImageAssetId?: string;
   variationCount?: number;
+  colorIntent?: ArtworkColorIntent;
 };
 
 export type ArtworkVariation = {

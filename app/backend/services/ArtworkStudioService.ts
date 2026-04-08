@@ -8,6 +8,7 @@ import {
   ArtworkVariation,
   OpenAIArtworkGenerationPayload,
   SaveArtworkRequest,
+  ArtworkColorIntent,
 } from '@/app/backend/types/artwork-studio';
 import { getAdminStorageBucket } from '@/app/lib/firebaseAdmin';
 import { buildBackgroundGenerationPlan, generateBackgroundVariations } from '@/app/lib/background-ai';
@@ -43,6 +44,23 @@ const PALETTE_DIRECTIONS = {
   custom: 'custom color palette aligned with prompt direction',
 } as const;
 
+const COLOR_INTENT_DIRECTIONS: Record<ArtworkColorIntent, string> = {
+  prompt_driven: 'color palette driven by the user prompt keywords',
+  cool_blue: 'color direction focused on deep navy, cobalt, and icy cyan accents',
+  emerald_luxury: 'color direction focused on emerald, teal, and mint highlights',
+  sunset_warm: 'color direction focused on terracotta, amber, and peach glow',
+  mono_chrome: 'color direction focused on black, graphite, silver, and white',
+  neon_pop: 'color direction focused on vivid magenta, cyan, and electric violet',
+};
+
+const COLOR_INTENT_TO_PALETTE_HINT: Partial<Record<ArtworkColorIntent, string>> = {
+  cool_blue: 'cool luxury',
+  emerald_luxury: 'emerald + cyan',
+  sunset_warm: 'warm neutral',
+  mono_chrome: 'black + silver',
+  neon_pop: 'vibrant neon',
+};
+
 type ArtworkGenerationProvider = {
   generate(input: ArtworkStudioInput, prompt: ArtworkPromptBuildResult): Promise<ArtworkGenerationResponse>;
 };
@@ -57,12 +75,16 @@ function parseSize(size: string) {
   return { width: w, height: h };
 }
 
-function asVariationFromFallback(prompt: string, count: number): ArtworkVariation[] {
+function asVariationFromFallback(input: ArtworkStudioInput, prompt: string, count: number): ArtworkVariation[] {
+  const styleFromPreset = input.stylePreset.replaceAll('_', ' ');
+  const paletteFromMode = input.paletteMode.replaceAll('_', ' ');
+  const paletteHintFromIntent = input.colorIntent ? COLOR_INTENT_TO_PALETTE_HINT[input.colorIntent] : undefined;
+
   const plan = buildBackgroundGenerationPlan({
     prompt,
-    palette: 'cool luxury',
-    style: 'editorial fashion',
-    mood: 'premium',
+    palette: paletteHintFromIntent || paletteFromMode,
+    style: styleFromPreset,
+    mood: input.contrastLevel === 'high' ? 'bold' : input.contrastLevel === 'low' ? 'calm' : 'elegant',
   });
 
   return generateBackgroundVariations(plan, prompt, count).map((item, index) => ({
@@ -101,6 +123,7 @@ export function buildArtworkPrompt(input: ArtworkStudioInput): ArtworkPromptBuil
     COMPOSITION_DIRECTIONS[input.compositionType],
     SHAPE_DIRECTIONS[input.shapeLanguage],
     PALETTE_DIRECTIONS[input.paletteMode],
+    input.colorIntent ? COLOR_INTENT_DIRECTIONS[input.colorIntent] : null,
     safeAreaText,
     'design asset oriented output, premium fashion/editorial background utility',
     controlText,
@@ -127,7 +150,7 @@ class ProceduralArtworkProvider implements ArtworkGenerationProvider {
       provider: 'procedural',
       providerModel: 'procedural-svg',
       prompt,
-      variations: asVariationFromFallback(prompt.finalPrompt, variationCount),
+      variations: asVariationFromFallback(input, prompt.finalPrompt, variationCount),
       fallbackUsed: true,
       warnings: ['Using procedural generator fallback.'],
     };
