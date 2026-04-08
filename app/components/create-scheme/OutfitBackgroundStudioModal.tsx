@@ -382,7 +382,7 @@ export default function OutfitBackgroundStudioModal({
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-7xl rounded-3xl border border-white/20 bg-[linear-gradient(150deg,rgba(15,23,42,0.9),rgba(34,12,64,0.88))] p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]"
+        className="flex max-h-[88vh] w-full max-w-7xl flex-col overflow-hidden rounded-3xl border border-white/20 bg-[linear-gradient(150deg,rgba(15,23,42,0.9),rgba(34,12,64,0.88))] p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="mb-4 flex items-start justify-between gap-4">
@@ -393,8 +393,8 @@ export default function OutfitBackgroundStudioModal({
           <button type="button" className="rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold" onClick={onClose}>Close ✕</button>
         </header>
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_1.1fr]">
-          <section className="space-y-4 rounded-2xl border border-white/15 bg-white/5 p-4">
+        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]">
+          <section className="min-h-0 space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4">
             <div className="inline-flex rounded-xl border border-white/20 bg-white/5 p-1">
               {([
                 ['color', 'Color'],
@@ -764,7 +764,7 @@ export default function OutfitBackgroundStudioModal({
             </section>
           </section>
 
-          <section className="space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4">
+          <section className="min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4">
             <p className="text-xs uppercase tracking-[0.12em] text-white/65">Live Preview</p>
             <OutfitCard data={previewData} variant="default" />
             <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/85">
