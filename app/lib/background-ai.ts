@@ -625,6 +625,33 @@ function buildGoldenStarBadgeImage() {
   return toSvgDataUrl(svg);
 }
 
+function buildCircleLoopIconImage() {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    <g transform='translate(600 400) scale(1.7)'>
+      <path d='M -120 -130 A 210 210 0 0 1 170 -95' fill='none' stroke='#020617' stroke-width='28' stroke-linecap='square'/>
+      <polygon points='170,-95 132,-106 148,-72' fill='#020617'/>
+      <path d='M 170 95 A 210 210 0 0 1 -120 130' fill='none' stroke='#020617' stroke-width='28' stroke-linecap='square'/>
+      <polygon points='-120,130 -82,120 -104,90' fill='#020617'/>
+      <path d='M -185 0 A 210 210 0 0 1 -135 -110' fill='none' stroke='#020617' stroke-width='28' stroke-linecap='square'/>
+      <polygon points='-135,-110 -144,-72 -170,-95' fill='#020617'/>
+    </g>
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
+function buildCircleTargetIconImage() {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    <g transform='translate(600 400) scale(1.8)'>
+      <circle cx='0' cy='0' r='188' fill='none' stroke='#020617' stroke-width='36'/>
+      <circle cx='0' cy='0' r='108' fill='none' stroke='#020617' stroke-width='34'/>
+      <circle cx='0' cy='0' r='72' fill='#020617'/>
+    </g>
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
 export function generateBackgroundVariations(plan: BackgroundGenerationPlan, prompt: string, count = 4) {
   const baseSeed = hashText(`${prompt}-${plan.shape_language}-${plan.composition_type}-${plan.palette.join('-')}`);
   const tightPattern = detectTightPattern(plan);
@@ -647,6 +674,18 @@ export function generateBackgroundVariations(plan: BackgroundGenerationPlan, pro
     variations[1] = {
       image: buildGoldenStarBadgeImage(),
       gradient: gradientFromPlan(plan, (baseSeed % 360) + 44, 'radial'),
+      seed: baseSeed + 7919,
+    };
+  }
+  if (tightPattern === 'circles' && variations.length >= 2) {
+    variations[0] = {
+      image: buildCircleLoopIconImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 22, 'conic'),
+      seed: baseSeed,
+    };
+    variations[1] = {
+      image: buildCircleTargetIconImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 58, 'radial'),
       seed: baseSeed + 7919,
     };
   }
