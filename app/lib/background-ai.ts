@@ -626,28 +626,38 @@ function buildGoldenStarBadgeImage() {
 }
 
 function buildCircleLoopIconImage() {
+  const icon = `<g transform='translate(48 48)'>
+    <path d='M -24 -24 A 38 38 0 0 1 28 -12' fill='none' stroke='#0b0b0c' stroke-width='7' stroke-linecap='square'/>
+    <polygon points='28,-12 16,-14 20,-3' fill='#0b0b0c'/>
+    <path d='M 26 18 A 38 38 0 0 1 -16 30' fill='none' stroke='#0b0b0c' stroke-width='7' stroke-linecap='square'/>
+    <polygon points='-16,30 -5,28 -11,19' fill='#0b0b0c'/>
+    <path d='M -36 8 A 38 38 0 0 1 -26 -18' fill='none' stroke='#0b0b0c' stroke-width='7' stroke-linecap='square'/>
+    <polygon points='-26,-18 -27,-6 -36,-11' fill='#0b0b0c'/>
+  </g>`;
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
     <rect width='1200' height='800' fill='#e5e7eb'/>
-    <g transform='translate(600 400) scale(1.7)'>
-      <path d='M -120 -130 A 210 210 0 0 1 170 -95' fill='none' stroke='#020617' stroke-width='28' stroke-linecap='square'/>
-      <polygon points='170,-95 132,-106 148,-72' fill='#020617'/>
-      <path d='M 170 95 A 210 210 0 0 1 -120 130' fill='none' stroke='#020617' stroke-width='28' stroke-linecap='square'/>
-      <polygon points='-120,130 -82,120 -104,90' fill='#020617'/>
-      <path d='M -185 0 A 210 210 0 0 1 -135 -110' fill='none' stroke='#020617' stroke-width='28' stroke-linecap='square'/>
-      <polygon points='-135,-110 -144,-72 -170,-95' fill='#020617'/>
-    </g>
+    ${Array.from({ length: 9 }).map((_, row) =>
+      Array.from({ length: 14 }).map((__, col) => {
+        const x = col * 92 + (row % 2 === 0 ? 0 : 8);
+        const y = row * 88;
+        return `<g transform='translate(${x} ${y})'>${icon}</g>`;
+      }).join('')
+    ).join('')}
   </svg>`;
   return toSvgDataUrl(svg);
 }
 
 function buildCircleTargetIconImage() {
+  const ring = `<circle cx='44' cy='44' r='32' fill='none' stroke='#e81b1f' stroke-width='7'/>`;
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
     <rect width='1200' height='800' fill='#e5e7eb'/>
-    <g transform='translate(600 400) scale(1.8)'>
-      <circle cx='0' cy='0' r='188' fill='none' stroke='#020617' stroke-width='36'/>
-      <circle cx='0' cy='0' r='108' fill='none' stroke='#020617' stroke-width='34'/>
-      <circle cx='0' cy='0' r='72' fill='#020617'/>
-    </g>
+    ${Array.from({ length: 9 }).map((_, row) =>
+      Array.from({ length: 14 }).map((__, col) => {
+        const x = col * 86 + (row % 2 === 0 ? 0 : 6);
+        const y = row * 84;
+        return `<g transform='translate(${x} ${y})'>${ring}</g>`;
+      }).join('')
+    ).join('')}
   </svg>`;
   return toSvgDataUrl(svg);
 }
