@@ -43,13 +43,13 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
 
   const shapeOverlayClassName =
     (resolvedBackground.shape ?? 'none') === 'orb'
-      ? 'bg-[radial-gradient(circle_at_80%_12%,rgba(99,102,241,0.22),transparent_55%)]'
+      ? 'bg-[radial-gradient(circle_at_80%_12%,rgba(99,102,241,0.38),transparent_58%),radial-gradient(circle_at_15%_78%,rgba(56,189,248,0.28),transparent_52%)]'
       : (resolvedBackground.shape ?? 'none') === 'diamond'
-        ? 'bg-[linear-gradient(135deg,rgba(59,130,246,0.16)_0%,transparent_40%,rgba(168,85,247,0.14)_100%)]'
+        ? 'bg-[linear-gradient(135deg,rgba(59,130,246,0.28)_0%,transparent_45%,rgba(168,85,247,0.24)_100%),repeating-linear-gradient(45deg,rgba(255,255,255,0.13)_0px,rgba(255,255,255,0.13)_2px,transparent_2px,transparent_14px)]'
         : (resolvedBackground.shape ?? 'none') === 'mesh'
-          ? 'bg-[linear-gradient(120deg,rgba(15,23,42,0.08)_25%,transparent_25%),linear-gradient(240deg,rgba(15,23,42,0.08)_25%,transparent_25%)] bg-[size:24px_24px]'
+          ? 'bg-[linear-gradient(120deg,rgba(15,23,42,0.16)_25%,transparent_25%),linear-gradient(240deg,rgba(15,23,42,0.16)_25%,transparent_25%)] bg-[size:20px_20px]'
           : (resolvedBackground.shape ?? 'none') === 'stars'
-            ? "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpolygon points='42,8 49,29 71,29 53,42 60,64 42,51 24,64 31,42 13,29 35,29' fill='rgba(15,23,42,0.45)'/%3E%3C/svg%3E\")] bg-[size:42px_42px] opacity-90"
+            ? "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpolygon points='42,8 49,29 71,29 53,42 60,64 42,51 24,64 31,42 13,29 35,29' fill='rgba(15,23,42,0.62)'/%3E%3C/svg%3E\"),linear-gradient(145deg,rgba(255,255,255,0.12),rgba(15,23,42,0.12))] bg-[size:40px_40px,100%_100%] opacity-95"
             : (resolvedBackground.shape ?? 'none') === 'circles'
               ? 'bg-[radial-gradient(circle,rgba(2,6,23,0.42)_40%,transparent_42%)] bg-[size:24px_24px]'
               : (resolvedBackground.shape ?? 'none') === 'triangles'

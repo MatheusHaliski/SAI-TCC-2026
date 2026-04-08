@@ -348,6 +348,9 @@ export default function OutfitBackgroundStudioModal({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, aiCompositionType === 'overlay' ? 'overlay' : aiCompositionType === 'frame' ? 'frame' : aiCompositionType === 'shape_pack' ? 'shape_pack' : 'background'),
+      // preserve user-selected decorative controls when replacing the AI source image
+      shape: prev.shape,
+      gradient: prev.gradient,
     }));
   };
 
@@ -752,7 +755,17 @@ export default function OutfitBackgroundStudioModal({
               key={`seg-${preset.label}`}
               type="button"
               className={`rounded-lg border px-2 py-1 text-[11px] ${draft.background_mode === 'gradient' && JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient) ? 'border-cyan-300 bg-cyan-500/30' : 'border-white/25 bg-white/10'}`}
-              onClick={() => setDraft((prev) => ({ ...prev, ...preset.config, background_mode: 'gradient' }))}
+              onClick={() => setDraft((prev) => {
+                if (prev.background_mode === 'ai_artwork' && prev.ai_artwork?.image_url) {
+                  return {
+                    ...prev,
+                    gradient: preset.config.gradient,
+                    shape: prev.shape || preset.config.shape,
+                    background_mode: 'ai_artwork',
+                  };
+                }
+                return { ...prev, ...preset.config, background_mode: 'gradient' };
+              })}
             >
               {preset.label}
             </button>
