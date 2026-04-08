@@ -801,13 +801,13 @@ export function generateBackgroundVariations(plan: BackgroundGenerationPlan, pro
   }
   if (tightPattern === 'arrows' && variations.length >= 2) {
     variations[0] = {
-      image: buildArrowCircleGridImage(),
-      gradient: gradientFromPlan(plan, (baseSeed % 360) + 30, 'conic'),
+      image: buildArrowChevronRowsImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 64, 'linear'),
       seed: baseSeed,
     };
     variations[1] = {
-      image: buildArrowChevronRowsImage(),
-      gradient: gradientFromPlan(plan, (baseSeed % 360) + 64, 'linear'),
+      image: buildArrowCircleGridImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 30, 'conic'),
       seed: baseSeed + 7919,
     };
   }
