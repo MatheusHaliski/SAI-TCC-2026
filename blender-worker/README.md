@@ -4,7 +4,7 @@ This directory currently runs a **FastAPI RunPod Load Balancer worker** for the 
 
 ## Current active runtime
 - Active app entrypoint: `handler.py`
-- Active container command: `uvicorn handler:app --host 0.0.0.0 --port ${PORT:-80}`
+- Active container command: `python -m uvicorn handler:app --host 0.0.0.0 --port 8000 --log-level info`
 - Load Balancer endpoints:
   - `GET /`
   - `GET /ping`
@@ -28,3 +28,10 @@ The Blender runtime is intentionally deferred:
 - `blender-scripts/uv_unwrap.py`
 
 These files are retained for a future Blender-based phase once the container/runtime supports Blender.
+
+
+## RunPod startup entrypoint
+- Use the image default command from `blender-worker/Dockerfile` (do not override in RunPod):
+  `python -m uvicorn handler:app --host 0.0.0.0 --port 8000 --log-level info`
+- Health check endpoint: `GET /ping` returns `{"status":"ok"}`.
+- Generation endpoints are served by the same FastAPI app (`POST /`, `POST /jobs`, `GET /jobs/{jobId}`).

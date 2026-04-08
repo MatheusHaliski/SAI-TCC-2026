@@ -12,7 +12,7 @@ docker push <registry>/<repo>:<tag>
 
 1. Open RunPod Serverless.
 2. Create endpoint with your custom image `<registry>/<repo>:<tag>`.
-3. Ensure command/entrypoint uses image default (`python3 -u /app/handler.py`).
+3. Ensure command/entrypoint uses image default (`python -m uvicorn handler:app --host 0.0.0.0 --port 8000 --log-level info`).
 4. Set optional env vars:
    - `BLENDER_BIN=blender`
    - `BLENDER_OUTPUT_UPLOAD_URL=<pre-signed PUT URL or upload endpoint>`
