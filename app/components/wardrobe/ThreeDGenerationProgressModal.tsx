@@ -5,6 +5,7 @@ import type { AssetJobStatus } from '@/app/hooks/use3dAssetJob';
 interface Props {
   open: boolean;
   status: AssetJobStatus;
+  progressPercent: number;
   error?: string | null;
   onClose: () => void;
   onRetry: () => void;
@@ -19,7 +20,7 @@ const STATUS_COPY: Record<AssetJobStatus, { title: string; stage: string }> = {
   failed: { title: 'Generating 3D Asset', stage: 'Failed' },
 };
 
-export default function ThreeDGenerationProgressModal({ open, status, error, onClose, onRetry }: Props) {
+export default function ThreeDGenerationProgressModal({ open, status, progressPercent, error, onClose, onRetry }: Props) {
   if (!open) return null;
 
   const ui = STATUS_COPY[status];
@@ -35,8 +36,17 @@ export default function ThreeDGenerationProgressModal({ open, status, error, onC
         </p>
 
         {!isFailed ? (
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full w-1/2 animate-pulse rounded-full bg-gradient-to-r from-cyan-300 to-violet-400" />
+          <div className="mt-4">
+            <div className="mb-1 flex items-center justify-between text-xs text-cyan-100/90">
+              <span>Progress</span>
+              <span>{Math.max(0, Math.min(100, Math.round(progressPercent)))}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-violet-400 transition-all duration-500 ease-out"
+                style={{ width: `${Math.max(3, Math.min(100, progressPercent))}%` }}
+              />
+            </div>
           </div>
         ) : null}
 
