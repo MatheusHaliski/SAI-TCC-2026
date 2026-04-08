@@ -184,13 +184,16 @@ class OpenAIArtworkProvider implements ArtworkGenerationProvider {
       referenceImageUrl: input.referenceImageUrl,
     };
 
-    const results = await Promise.all(
-      Array.from({ length: variationCount }).map(async (_, index) => {
+    const results: ArtworkVariation[] = [];
+    const warnings: string[] = [];
+
+    for (let index = 0; index < variationCount; index += 1) {
+      try {
         const result = await this.client.generate(payload);
         const variationId = `openai_${index + 1}_${Date.now()}`;
         const stored = await this.persistBase64AsImage(result.imageBase64, variationId);
 
-        return {
+        results.push({
           variation_id: variationId,
           preview_url: stored.url,
           output_url: stored.url,
@@ -203,15 +206,22 @@ class OpenAIArtworkProvider implements ArtworkGenerationProvider {
           metadata: {
             revisedPrompt: result.revisedPrompt,
           },
-        };
-      }),
-    );
+        });
+      } catch (error) {
+        warnings.push(`Variation ${index + 1} failed: ${error instanceof Error ? error.message : 'unknown error'}`);
+      }
+    }
+
+    if (!results.length) {
+      throw new ServiceError('OpenAI returned no usable artwork variations.', 502);
+    }
 
     return {
       provider: 'openai',
       providerModel: results[0]?.provider_model ?? null,
       prompt,
       variations: results,
+      warnings: warnings.length ? warnings : undefined,
     };
   }
 }
@@ -242,6 +252,9 @@ export class ArtworkStudioService {
       return await provider.generate(input, prompt);
     } catch (error) {
       console.error('artwork-studio.generate error', error);
+      if (error instanceof ServiceError && error.statusCode === 503) {
+        throw error;
+      }
       const recoverable = error instanceof Error;
       if (recoverable) {
         const fallback = new ProceduralArtworkProvider();

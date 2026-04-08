@@ -11,7 +11,10 @@ function required(name: string) {
 function parseGenerationResponse(payload: Record<string, unknown>, model: string): OpenAIArtworkGenerationResult {
   const data = Array.isArray(payload.data) ? payload.data : [];
   const first = (data[0] ?? {}) as Record<string, unknown>;
-  const imageBase64 = typeof first.b64_json === 'string' ? first.b64_json : '';
+  const imageBase64 =
+    (typeof first.b64_json === 'string' && first.b64_json) ||
+    (typeof first.base64 === 'string' && first.base64) ||
+    '';
   if (!imageBase64) {
     throw new Error('OpenAI returned an empty image response.');
   }
@@ -45,6 +48,7 @@ export class OpenAIArtworkClient {
             prompt: `${payload.prompt}\n\nNegative instructions: ${payload.negativePrompt}`,
             size: `${payload.width}x${payload.height}`,
             quality: payload.quality,
+            response_format: 'b64_json',
             output_format: 'png',
           }),
           signal: controller.signal,
