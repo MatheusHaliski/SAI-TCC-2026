@@ -69,7 +69,7 @@ export default function MyWardrobeView() {
   const [progressItem, setProgressItem] = useState<WardrobeItem | null>(null);
 
   const assetJob = use3dAssetJob({
-    pollIntervalMs: 1800,
+    pollIntervalMs: 1200,
     timeoutMs: 90000,
     onCompleted: (artifactUrl) => {
       if (!progressItem) return;
@@ -210,6 +210,7 @@ export default function MyWardrobeView() {
       <ThreeDGenerationProgressModal
         open={Boolean(progressItem) && !viewerUrl}
         status={assetJob.status}
+        progressPercent={assetJob.progressPercent}
         error={assetJob.error}
         onClose={() => {
           assetJob.cancelPolling();
