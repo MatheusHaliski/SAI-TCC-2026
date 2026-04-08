@@ -30,7 +30,7 @@ type RecommendedPreset = {
   id: string;
   label: string;
   description: string;
-  recipe: (context: PresetContext) => OutfitBackgroundConfig;
+  recipe: (context: PresetContext, uploadedReferenceImage?: string | null) => OutfitBackgroundConfig;
 };
 
 type OutfitMetadata = {
@@ -50,6 +50,12 @@ type PresetContext = {
   brandLogoUrl: string | null;
   heroColor: string;
 };
+
+const asDataUri = (svg: string) => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+
+function escapeSvgAttribute(value: string) {
+  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll('\'', '&apos;');
+}
 
 interface OutfitBackgroundStudioModalProps {
   value: OutfitBackgroundConfig;
@@ -208,6 +214,120 @@ function getRelativeLuminance(hexColor: string) {
   return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
 }
 
+function buildTiledMotifComposition(referenceImage: string, context: PresetContext): OutfitBackgroundConfig {
+  const tiledBrandSurface = asDataUri(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <defs>
+        <linearGradient id='surface' x1='0%' y1='0%' x2='100%' y2='100%'>
+          <stop offset='0%' stop-color='#020617'/>
+          <stop offset='45%' stop-color='#172554'/>
+          <stop offset='100%' stop-color='#312e81'/>
+        </linearGradient>
+      </defs>
+      <rect width='1200' height='800' fill='url(#surface)'/>
+      <rect width='1200' height='800' fill='rgba(248,250,252,0.06)'/>
+      ${Array.from({ length: 7 }).map((_, row) =>
+        Array.from({ length: 10 }).map((__, col) => {
+          const x = col * 120 + (row % 2 ? 42 : 14);
+          const y = row * 108 + 24;
+          const rotation = row % 2 === 0 ? -8 : 8;
+          return `<g transform='translate(${x} ${y}) rotate(${rotation} 44 44)'>
+            <rect x='4' y='4' width='88' height='88' rx='18' fill='rgba(15,23,42,0.28)'/>
+            <image href='${referenceImage}' x='12' y='12' width='72' height='72' preserveAspectRatio='xMidYMid meet' opacity='0.96'/>
+          </g>`;
+        }).join('')
+      ).join('')}
+      <rect width='1200' height='800' fill='rgba(2,6,23,0.18)'/>
+    </svg>`,
+  );
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: { prompt: `${context.brandName} tiled motif from uploaded reference`, image_url: tiledBrandSurface, generation_status: 'done' },
+    gradient: GRADIENT_PRESETS[7].config.gradient,
+    shape: 'diamond',
+  };
+}
+
+function buildEditorialLogoComposition(referenceImage: string, context: PresetContext): OutfitBackgroundConfig {
+  const safeBrand = escapeSvgAttribute(context.brandName);
+  const editorialLogoField = asDataUri(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <defs>
+        <linearGradient id='base' x1='0%' y1='0%' x2='100%' y2='100%'>
+          <stop offset='0%' stop-color='#1e3a8a'/>
+          <stop offset='58%' stop-color='#2563eb'/>
+          <stop offset='100%' stop-color='#facc15'/>
+        </linearGradient>
+        <radialGradient id='fabric' cx='18%' cy='20%' r='68%'>
+          <stop offset='0%' stop-color='rgba(250,204,21,0.35)'/>
+          <stop offset='100%' stop-color='rgba(30,58,138,0.02)'/>
+        </radialGradient>
+        <filter id='soft' x='-20%' y='-20%' width='140%' height='140%'>
+          <feGaussianBlur stdDeviation='16'/>
+        </filter>
+      </defs>
+      <rect width='1200' height='800' fill='url(#base)'/>
+      <path d='M0,116 C220,18 462,98 640,188 C782,258 970,286 1200,220 V0 H0 Z' fill='rgba(250,204,21,0.24)'/>
+      <rect width='1200' height='800' fill='url(#fabric)'/>
+      <ellipse cx='920' cy='564' rx='340' ry='198' fill='rgba(2,6,23,0.38)' filter='url(#soft)'/>
+      <text x='126' y='126' font-size='66' font-family='Arial Black, Arial, sans-serif' fill='rgba(255,255,255,0.16)'>${safeBrand}</text>
+      <g transform='translate(698 176)'>
+        <rect x='0' y='0' width='354' height='448' rx='38' fill='rgba(255,255,255,0.08)'/>
+        <rect x='20' y='20' width='314' height='408' rx='26' fill='rgba(15,23,42,0.3)'/>
+        <image href='${referenceImage}' x='42' y='58' width='270' height='292' preserveAspectRatio='xMidYMid meet'/>
+        <rect x='70' y='360' width='214' height='30' rx='15' fill='rgba(250,204,21,0.68)'/>
+      </g>
+    </svg>`,
+  );
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: { prompt: `${context.brandName} editorial logo composition from uploaded reference`, image_url: editorialLogoField, generation_status: 'done' },
+    gradient: GRADIENT_PRESETS[5].config.gradient,
+    shape: 'orb',
+  };
+}
+
+function buildTonalGeometryComposition(referenceImage: string, context: PresetContext): OutfitBackgroundConfig {
+  const tonalField = asDataUri(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <defs>
+        <linearGradient id='tone' x1='0%' y1='0%' x2='100%' y2='100%'>
+          <stop offset='0%' stop-color='${context.heroColor}'/>
+          <stop offset='60%' stop-color='#0f172a'/>
+          <stop offset='100%' stop-color='#020617'/>
+        </linearGradient>
+        <filter id='blurSoft'><feGaussianBlur stdDeviation='9'/></filter>
+      </defs>
+      <rect width='1200' height='800' fill='url(#tone)'/>
+      ${Array.from({ length: 3 }).map((_, idx) => {
+        const opacity = 0.13 - idx * 0.03;
+        const size = 440 - idx * 70;
+        const x = 220 + idx * 210;
+        const y = 160 + idx * 70;
+        return `<image href='${referenceImage}' x='${x}' y='${y}' width='${size}' height='${size}' preserveAspectRatio='xMidYMid meet' opacity='${opacity.toFixed(2)}' filter='url(#blurSoft)'/>`;
+      }).join('')}
+      <path d='M0,630 C230,560 410,720 648,650 C842,592 1000,470 1200,520 V800 H0 Z' fill='rgba(148,163,184,0.12)'/>
+      ${Array.from({ length: 8 }).map((_, idx) => `<line x1='${idx * 170}' y1='0' x2='${idx * 170 + 180}' y2='800' stroke='rgba(255,255,255,0.04)' stroke-width='1'/>`).join('')}
+    </svg>`,
+  );
+
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: { prompt: `${context.brandName} tonal geometry from uploaded reference`, image_url: tonalField, generation_status: 'done' },
+    gradient: {
+      type: 'linear',
+      angle: 132,
+      intensity: 104,
+      stops: [
+        { color: context.heroColor, position: 0 },
+        { color: '#0f172a', position: 52 },
+        { color: '#1f2937', position: 100 },
+      ],
+    },
+    shape: 'mesh',
+  };
+}
+
 function getRecommendedPresets(context: PresetContext): RecommendedPreset[] {
   const safeBrand = context.brandName.replace(/[<>&]/g, '');
   const logoTag = context.brandLogoUrl
@@ -243,103 +363,56 @@ function getRecommendedPresets(context: PresetContext): RecommendedPreset[] {
   return [
     {
       id: 'brand_tiled_grid',
-      label: `${context.brandName} tiled motif`,
-      description: 'Repeating mini brand motif grid over premium gradient.',
-      recipe: () => ({
-        background_mode: 'ai_artwork',
-        ai_artwork: { prompt: `${context.brandName} motif tiled grid`, image_url: tiledBrandSurface, generation_status: 'done' },
-        gradient: GRADIENT_PRESETS[7].config.gradient,
-        shape: 'diamond',
-      }),
+      label: 'Selection tiled motif',
+      description: 'Transforms uploaded reference into repeated motif tiles on a premium surface.',
+      recipe: (_, uploadedReferenceImage) => (
+        uploadedReferenceImage
+          ? buildTiledMotifComposition(uploadedReferenceImage, context)
+          : {
+              background_mode: 'ai_artwork',
+              ai_artwork: { prompt: `${context.brandName} motif tiled grid`, image_url: tiledBrandSurface, generation_status: 'done' },
+              gradient: GRADIENT_PRESETS[7].config.gradient,
+              shape: 'diamond',
+            }
+      ),
     },
     {
       id: 'brand_editorial_logo',
-      label: `${context.brandName} editorial logo`,
-      description: 'Blue-yellow editorial gradient with a subtle hero logo field.',
-      recipe: () => ({
-        background_mode: 'ai_artwork',
-        ai_artwork: { prompt: `${context.brandName} editorial background`, image_url: editorialLogoField, generation_status: 'done' },
-        gradient: GRADIENT_PRESETS[5].config.gradient,
-        shape: 'orb',
-      }),
+      label: 'Selection editorial logo',
+      description: 'Uses uploaded logo as the hero element over a blue-yellow editorial background.',
+      recipe: (_, uploadedReferenceImage) => (
+        uploadedReferenceImage
+          ? buildEditorialLogoComposition(uploadedReferenceImage, context)
+          : {
+              background_mode: 'ai_artwork',
+              ai_artwork: { prompt: `${context.brandName} editorial background`, image_url: editorialLogoField, generation_status: 'done' },
+              gradient: GRADIENT_PRESETS[5].config.gradient,
+              shape: 'orb',
+            }
+      ),
     },
     {
       id: 'brand_tonal_geometry',
-      label: `${context.brandName} tonal geometry`,
-      description: 'Tonal premium surface with structured brand-driven geometry.',
-      recipe: () => ({
-        background_mode: 'gradient',
-        gradient: {
-          type: 'linear',
-          angle: 132,
-          intensity: 104,
-          stops: [
-            { color: context.heroColor, position: 0 },
-            { color: '#0f172a', position: 52 },
-            { color: '#1f2937', position: 100 },
-          ],
-        },
-        shape: 'mesh',
-      }),
-    },
-  ];
-}
-
-function buildUploadedImagePresets(imageUrl: string): RecommendedPreset[] {
-  const tiledSvg = `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-      <rect width='1200' height='800' fill='#e5e7eb'/>
-      ${Array.from({ length: 6 }).map((_, row) =>
-        Array.from({ length: 8 }).map((__, col) => {
-          const x = col * 160 + (row % 2 === 0 ? 0 : 20);
-          const y = row * 130 + 8;
-          return `<image href='${imageUrl}' x='${x}' y='${y}' width='140' height='110' preserveAspectRatio='xMidYMid slice' opacity='0.95'/>`;
-        }).join('')
-      ).join('')}
-    </svg>`,
-  )}`;
-
-  const popSvg = `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-      <defs>
-        <radialGradient id='dot' cx='50%' cy='50%' r='50%'>
-          <stop offset='0%' stop-color='rgba(30,64,175,0.8)'/>
-          <stop offset='100%' stop-color='rgba(30,64,175,0.0)'/>
-        </radialGradient>
-      </defs>
-      <rect width='1200' height='800' fill='#facc15'/>
-      <path d='M0,0 H1200 V360 C920,240 720,420 460,340 C260,280 120,120 0,180 Z' fill='#2563eb'/>
-      ${Array.from({ length: 26 }).map((_, idx) => {
-        const x = (idx % 13) * 92 + 30;
-        const y = Math.floor(idx / 13) * 88 + 260;
-        const size = 38 + (idx % 5) * 6;
-        return `<circle cx='${x}' cy='${y}' r='${size}' fill='url(#dot)'/>`;
-      }).join('')}
-      <image href='${imageUrl}' x='850' y='430' width='300' height='240' preserveAspectRatio='xMidYMid slice' opacity='0.92'/>
-    </svg>`,
-  )}`;
-
-  return [
-    {
-      id: 'uploaded_grid',
-      label: 'Uploaded Grid',
-      description: 'Rows/columns using your uploaded image.',
-      recipe: () => ({
-        background_mode: 'ai_artwork',
-        ai_artwork: { prompt: 'uploaded image tiled grid', image_url: tiledSvg, generation_status: 'done' },
-        shape: 'none',
-      }),
-    },
-    {
-      id: 'uploaded_pop',
-      label: 'Yellow Blue Pop',
-      description: 'Yellow-blue pop style with uploaded image accent.',
-      recipe: () => ({
-        background_mode: 'ai_artwork',
-        ai_artwork: { prompt: 'yellow blue pop uploaded variation', image_url: popSvg, generation_status: 'done' },
-        gradient: GRADIENT_PRESETS[5].config.gradient,
-        shape: 'beams',
-      }),
+      label: 'Selection tonal geometry',
+      description: 'Builds a subtle tonal geometry treatment derived from the uploaded reference.',
+      recipe: (_, uploadedReferenceImage) => (
+        uploadedReferenceImage
+          ? buildTonalGeometryComposition(uploadedReferenceImage, context)
+          : {
+              background_mode: 'gradient',
+              gradient: {
+                type: 'linear',
+                angle: 132,
+                intensity: 104,
+                stops: [
+                  { color: context.heroColor, position: 0 },
+                  { color: '#0f172a', position: 52 },
+                  { color: '#1f2937', position: 100 },
+                ],
+              },
+              shape: 'mesh',
+            }
+      ),
     },
   ];
 }
@@ -455,18 +528,15 @@ export default function OutfitBackgroundStudioModal({
     return { brandName, brandLogoUrl, heroColor };
   }, [outfitMetadata, previewCardData]);
   const recommendedPresets = useMemo(() => getRecommendedPresets(presetContext), [presetContext]);
-  const uploadedImagePresets = useMemo(
-    () => (aiReferenceImageUrl.startsWith('data:image/') ? buildUploadedImagePresets(aiReferenceImageUrl) : []),
-    [aiReferenceImageUrl],
-  );
-  const displayedPresets = useMemo(
-    () => [...uploadedImagePresets, ...recommendedPresets].slice(0, 6),
-    [uploadedImagePresets, recommendedPresets],
-  );
-  const applyRecommendedBackgroundPreset = (presetId: string, context: PresetContext) => {
+  const displayedPresets = useMemo(() => recommendedPresets.slice(0, 6), [recommendedPresets]);
+  const applyRecommendedPresetFromReferenceImage = (
+    presetId: string,
+    uploadedReferenceImage: string | null,
+    context: PresetContext,
+  ) => {
     const preset = displayedPresets.find((item) => item.id === presetId);
     if (!preset) return;
-    const config = preset.recipe(context);
+    const config = preset.recipe(context, uploadedReferenceImage);
     setDraft((prev) => ({
       ...prev,
       ...config,
@@ -963,11 +1033,14 @@ export default function OutfitBackgroundStudioModal({
                     key={preset.id}
                     type="button"
                     className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)]"
-                    onClick={() => applyRecommendedBackgroundPreset(preset.id, presetContext)}
+                    onClick={() => applyRecommendedPresetFromReferenceImage(preset.id, aiReferenceImageUrl.startsWith('data:image/') ? aiReferenceImageUrl : null, presetContext)}
                   >
                     <p className="text-xs font-semibold">{preset.label}</p>
                     <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
-                    <span className="mt-2 block h-7 rounded-lg border border-white/15" style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(preset.recipe(presetContext)))} />
+                    <span
+                      className="mt-2 block h-7 rounded-lg border border-white/15"
+                      style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(preset.recipe(presetContext, aiReferenceImageUrl.startsWith('data:image/') ? aiReferenceImageUrl : null)))}
+                    />
                   </button>
                 ))}
               </div>
