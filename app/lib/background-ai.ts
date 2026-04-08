@@ -143,8 +143,46 @@ type ShapeLayerVariant = {
   pool: BackgroundShapeLanguage[];
 };
 
+type TightPatternKind = 'stars' | 'circles' | 'triangles' | null;
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function hexToRgb(hex: string) {
+  const value = hex.replace('#', '').trim();
+  const safe = value.length === 6 ? value : '111827';
+  return {
+    r: parseInt(safe.slice(0, 2), 16),
+    g: parseInt(safe.slice(2, 4), 16),
+    b: parseInt(safe.slice(4, 6), 16),
+  };
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+  return `#${[r, g, b].map((channel) => clamp(Math.round(channel), 0, 255).toString(16).padStart(2, '0')).join('')}`;
+}
+
+function mixHex(base: string, target: string, ratio: number) {
+  const a = hexToRgb(base);
+  const b = hexToRgb(target);
+  const t = clamp(ratio, 0, 1);
+  return rgbToHex(
+    a.r + (b.r - a.r) * t,
+    a.g + (b.g - a.g) * t,
+    a.b + (b.b - a.b) * t,
+  );
+}
+
+function detectTightPattern(plan: BackgroundGenerationPlan): TightPatternKind {
+  const keywords = plan.detected_keywords;
+  const hasStar = keywords.some((w) => ['star', 'stars'].includes(w));
+  const hasCircle = keywords.some((w) => ['circle', 'circles', 'orb', 'orbs', 'dots', 'points'].includes(w));
+  const hasTriangle = keywords.some((w) => ['triangle', 'triangles'].includes(w));
+  if (hasStar || plan.shape_language === 'stars') return 'stars';
+  if (hasCircle || plan.shape_language === 'circles_orbs') return 'circles';
+  if (hasTriangle || plan.shape_language === 'triangular') return 'triangles';
+  return null;
 }
 
 function createSeededRng(seed: number) {
@@ -362,7 +400,59 @@ function sampleShapeSize(random: () => number, baseScale: number) {
   return Math.max(10, Math.round(baseScale * multiplier));
 }
 
+function renderStarShape(x: number, y: number, size: number, fill: string, stroke: string, opacity: string) {
+  return `<polygon points='${x},${y - size / 2} ${x + size * 0.14},${y - size * 0.15} ${x + size / 2},${y - size * 0.14} ${x + size * 0.22},${y + size * 0.08} ${x + size * 0.3},${y + size / 2} ${x},${y + size * 0.22} ${x - size * 0.3},${y + size / 2} ${x - size * 0.22},${y + size * 0.08} ${x - size / 2},${y - size * 0.14} ${x - size * 0.14},${y - size * 0.15}' fill='${fill}' opacity='${opacity}' stroke='${stroke}' stroke-width='2.4'/>`;
+}
+
+function renderCircleShape(x: number, y: number, size: number, fill: string, stroke: string, opacity: string) {
+  return `<circle cx='${x}' cy='${y}' r='${Math.round(size / 2.5)}' fill='${fill}' opacity='${opacity}' stroke='${stroke}' stroke-width='2.2'/>`;
+}
+
+function renderTriangleShape(x: number, y: number, size: number, fill: string, stroke: string, opacity: string) {
+  return `<polygon points='${x},${y - size / 2} ${x + size / 2},${y + size / 2} ${x - size / 2},${y + size / 2}' fill='${fill}' opacity='${opacity}' stroke='${stroke}' stroke-width='2.3'/>`;
+}
+
+function buildTightPatternLayer(
+  plan: BackgroundGenerationPlan,
+  random: () => number,
+  layerIndex: number,
+  totalLayers: number,
+  patternKind: Exclude<TightPatternKind, null>,
+) {
+  const layerProgress = totalLayers <= 1 ? 1 : layerIndex / (totalLayers - 1);
+  const rowHeight = 56 + Math.round((1 - layerProgress) * 12);
+  const colWidth = 82 + Math.round((1 - layerProgress) * 14);
+  const yOffset = -22 + layerIndex * 8 + Math.round((random() - 0.5) * 6);
+  const xOffset = -26 + Math.round((random() - 0.5) * 8);
+  const darkBase = mixHex(plan.palette[0], '#050505', 0.68);
+  const darkAlt = mixHex(plan.palette[1], '#0a0a0a', 0.72);
+  const stroke = '#060606';
+  let out = '';
+
+  for (let row = 0; row < 18; row += 1) {
+    for (let col = 0; col < 18; col += 1) {
+      const x = xOffset + col * colWidth + (row % 2 === 0 ? 0 : Math.round(colWidth * 0.42));
+      const y = yOffset + row * rowHeight + Math.round((random() - 0.5) * 4);
+      if (x < -100 || x > 1300 || y < -100 || y > 920) continue;
+      const size = Math.round((patternKind === 'circles' ? 34 : 38) * (0.86 + layerProgress * 0.22 + random() * 0.08));
+      const fill = random() < 0.22 ? darkAlt : darkBase;
+      const opacity = (0.42 + layerProgress * 0.42 + random() * 0.14).toFixed(3);
+
+      if (patternKind === 'stars') out += renderStarShape(x, y, size, fill, stroke, opacity);
+      else if (patternKind === 'circles') out += renderCircleShape(x, y, size, fill, stroke, opacity);
+      else out += renderTriangleShape(x, y, size, fill, stroke, opacity);
+    }
+  }
+
+  return out;
+}
+
 function buildShapeLayer(plan: BackgroundGenerationPlan, random: () => number, layerIndex: number, totalLayers: number) {
+  const tightPattern = detectTightPattern(plan);
+  if (tightPattern) {
+    return buildTightPatternLayer(plan, random, layerIndex, totalLayers, tightPattern);
+  }
+
   const layerProgress = totalLayers <= 1 ? 1 : layerIndex / (totalLayers - 1);
   const baseCount = plan.density === 'minimal' ? 20 : plan.density === 'rich' ? 120 : 60;
   const layerMultiplier = 0.62 + (1 - layerProgress) * 0.95;
@@ -437,16 +527,21 @@ function buildShapeLayer(plan: BackgroundGenerationPlan, random: () => number, l
 export function generateProceduralBackground(plan: BackgroundGenerationPlan, seed: number, prompt: string) {
   const random = createSeededRng(seed);
   const angle = Math.floor(random() * 360);
+  const tightPattern = detectTightPattern(plan);
   const layerCount = clamp(
     plan.layering_depth + (plan.density === 'rich' ? 2 : plan.density === 'minimal' ? -1 : 1),
-    plan.density === 'minimal' ? 3 : 5,
+    tightPattern ? 4 : plan.density === 'minimal' ? 3 : 5,
     12,
   );
   const layerDefinitions = Array.from({ length: layerCount }).map((_, layerIndex) => {
     const layerProgress = layerCount <= 1 ? 1 : layerIndex / (layerCount - 1);
     const blurBoost = plan.density === 'rich' ? 1.35 : 1;
-    const blur = Math.round((plan.blur_strength * (10 + (1 - layerProgress) * 22) + 1.5) * blurBoost);
-    const layerOpacity = clamp((0.2 + plan.glow_intensity * 0.72) * (0.62 + layerProgress * 0.58), 0.14, 0.98);
+    const blur = tightPattern
+      ? Math.round(0.45 + (1 - layerProgress) * 1.2)
+      : Math.round((plan.blur_strength * (10 + (1 - layerProgress) * 22) + 1.5) * blurBoost);
+    const layerOpacity = tightPattern
+      ? clamp(0.48 + layerProgress * 0.34, 0.42, 0.95)
+      : clamp((0.2 + plan.glow_intensity * 0.72) * (0.62 + layerProgress * 0.58), 0.14, 0.98);
     const shapes = buildShapeLayer(plan, random, layerIndex, layerCount);
     return { blur, layerOpacity, layerProgress, shapes, id: `softBlur${layerIndex}` };
   });
@@ -468,11 +563,11 @@ export function generateProceduralBackground(plan: BackgroundGenerationPlan, see
     </defs>
     <rect width='1200' height='800' fill='url(#base)'/>
     ${layerDefinitions.map((layer) => `<g filter='url(#${layer.id})' opacity='${layer.layerOpacity.toFixed(3)}'>${layer.shapes}</g>`).join('')}
-    <rect width='1200' height='800' fill='rgba(255,255,255,0.04)' opacity='${clamp(plan.glow_intensity * 0.55, 0.06, 0.4)}'/>
+    <rect width='1200' height='800' fill='rgba(255,255,255,0.04)' opacity='${tightPattern ? 0.02 : clamp(plan.glow_intensity * 0.55, 0.06, 0.4)}'/>
     <rect width='1200' height='800' fill='url(#grain)' opacity='${textureOpacity}'/>
     <rect x='0' y='0' width='460' height='800' fill='rgba(15,23,42,0.12)'/>
-    <rect width='1200' height='800' fill='rgba(255,255,255,0.06)' transform='rotate(${angle} 600 400)'/>
-    <text x='48' y='742' fill='rgba(255,255,255,0.35)' font-size='22' font-family='Arial'>${safePrompt}</text>
+    <rect width='1200' height='800' fill='rgba(255,255,255,0.06)' opacity='${tightPattern ? 0.015 : 0.06}' transform='rotate(${angle} 600 400)'/>
+    <text x='48' y='742' fill='${tightPattern ? 'rgba(20,20,20,0.42)' : 'rgba(255,255,255,0.35)'}' font-size='22' font-family='Arial'>${safePrompt}</text>
   </svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
