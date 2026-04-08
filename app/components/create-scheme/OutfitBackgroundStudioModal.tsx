@@ -30,6 +30,12 @@ type RecommendedPreset = {
   config: OutfitBackgroundConfig;
 };
 
+type RecommendedPresetId = 'editorial-dark' | 'emerald-luxury' | 'soft-runway' | 'silver-mist' | 'monochrome-editorial' | 'black-luxury-fade';
+
+type RecommendedPresetOption = RecommendedPreset & {
+  id: RecommendedPresetId;
+};
+
 type OutfitMetadata = {
   style?: string;
   occasion?: string;
@@ -199,20 +205,20 @@ function getRelativeLuminance(hexColor: string) {
   return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
 }
 
-function getRecommendedPresets(metadata?: OutfitMetadata): RecommendedPreset[] {
+function getRecommendedPresets(metadata?: OutfitMetadata): RecommendedPresetOption[] {
   const palette = metadata?.palette?.toLowerCase() || '';
   if (palette.includes('black') || palette.includes('silver') || palette.includes('mono')) {
     return [
-      { label: 'Silver Mist', description: 'High-fashion monochrome depth', config: GRADIENT_PRESETS[2].config },
-      { label: 'Monochrome Editorial', description: 'Clean silver-black art direction', config: { ...GRADIENT_PRESETS[2].config, shape: 'none' } },
-      { label: 'Black Luxury Fade', description: 'Safe contrast for text-heavy cards', config: { background_mode: 'solid', solid_color: '#0f172a', shape: 'none' } },
+      { id: 'silver-mist', label: 'Silver Mist', description: 'High-fashion monochrome depth', config: GRADIENT_PRESETS[2].config },
+      { id: 'monochrome-editorial', label: 'Monochrome Editorial', description: 'Clean silver-black art direction', config: { ...GRADIENT_PRESETS[2].config, shape: 'none' } },
+      { id: 'black-luxury-fade', label: 'Black Luxury Fade', description: 'Safe contrast for text-heavy cards', config: { background_mode: 'solid', solid_color: '#0f172a', shape: 'none' } },
     ];
   }
 
   return [
-    { label: 'Editorial Dark', description: 'Premium dark runway finish', config: GRADIENT_PRESETS[0].config },
-    { label: 'Emerald Luxury', description: 'Fashion-tech pop with depth', config: GRADIENT_PRESETS[1].config },
-    { label: 'Soft Runway', description: 'Warm-neutral studio background', config: GRADIENT_PRESETS[4].config },
+    { id: 'editorial-dark', label: 'Editorial Dark', description: 'Premium dark runway finish', config: GRADIENT_PRESETS[0].config },
+    { id: 'emerald-luxury', label: 'Emerald Luxury', description: 'Fashion-tech pop with depth', config: GRADIENT_PRESETS[1].config },
+    { id: 'soft-runway', label: 'Soft Runway', description: 'Warm-neutral studio background', config: GRADIENT_PRESETS[4].config },
   ];
 }
 
@@ -272,6 +278,74 @@ function buildUploadedImagePresets(imageUrl: string): RecommendedPreset[] {
   ];
 }
 
+const EMERALD_LUXURY_ASSET_CANDIDATES = ['png', 'jpg', 'jpeg', 'webp'].map((ext) => `/${encodeURIComponent(`Sem título (25).${ext}`)}`);
+
+const encodeDataUri = (value: string) => value
+  .replaceAll('%', '%25')
+  .replaceAll('#', '%23')
+  .replaceAll('<', '%3C')
+  .replaceAll('>', '%3E')
+  .replaceAll('"', '\'');
+
+async function resolveEmeraldLuxuryAssetPath(): Promise<string | null> {
+  for (const candidate of EMERALD_LUXURY_ASSET_CANDIDATES) {
+    try {
+      const response = await fetch(candidate, { method: 'HEAD', cache: 'no-store' });
+      if (response.ok) return candidate;
+    } catch {
+      // keep trying remaining candidates
+    }
+  }
+  return null;
+}
+
+function buildEmeraldLuxuryComposition(uploadedReferenceImage: string | null, builtInAssetUrl: string): OutfitBackgroundConfig {
+  const uploadedImageMarkup = uploadedReferenceImage
+    ? `
+      <defs>
+        <radialGradient id='emeraldGlow' cx='18%' cy='22%' r='65%'>
+          <stop offset='0%' stop-color='rgba(16,185,129,0.35)'/>
+          <stop offset='100%' stop-color='rgba(16,185,129,0)'/>
+        </radialGradient>
+      </defs>
+      <image href='${uploadedReferenceImage}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.18'/>
+      <rect width='1200' height='800' fill='url(#emeraldGlow)'/>
+      <g transform='translate(150 120)'>
+        <rect x='0' y='0' width='420' height='560' rx='34' fill='rgba(2,6,23,0.5)'/>
+        <rect x='14' y='14' width='392' height='532' rx='28' fill='rgba(16,185,129,0.16)'/>
+        <image href='${uploadedReferenceImage}' x='28' y='28' width='364' height='504' preserveAspectRatio='xMidYMid slice' opacity='0.86'/>
+      </g>`
+    : '';
+  const composedSvg = `data:image/svg+xml;utf8,${encodeDataUri(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <rect width='1200' height='800' fill='#021712'/>
+      <image href='${builtInAssetUrl}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice'/>
+      <rect width='1200' height='800' fill='rgba(2,44,34,0.44)'/>
+      ${uploadedImageMarkup}
+      <rect width='1200' height='800' fill='url(#vignette)'/>
+      <defs>
+        <radialGradient id='vignette' cx='50%' cy='45%' r='75%'>
+          <stop offset='45%' stop-color='rgba(6,95,70,0)'/>
+          <stop offset='100%' stop-color='rgba(2,6,23,0.64)'/>
+        </radialGradient>
+      </defs>
+    </svg>`,
+  )}`;
+
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: uploadedReferenceImage
+        ? 'emerald luxury layered composition with uploaded reference and premium preset asset'
+        : 'emerald luxury preset asset composition',
+      image_url: composedSvg,
+      generation_status: 'done',
+    },
+    gradient: GRADIENT_PRESETS[1].config.gradient,
+    shape: 'mesh',
+  };
+}
+
 export default function OutfitBackgroundStudioModal({
   value,
   previewCardData,
@@ -316,6 +390,25 @@ export default function OutfitBackgroundStudioModal({
     () => [...uploadedImagePresets, ...recommendedPresets].slice(0, 6),
     [uploadedImagePresets, recommendedPresets],
   );
+
+  const applyRecommendedPreset = async (preset: RecommendedPreset) => {
+    const isEmeraldLuxury = 'id' in preset && preset.id === 'emerald-luxury';
+    if (!isEmeraldLuxury) {
+      setDraft(preset.config);
+      return;
+    }
+
+    const uploadedReferenceImage = aiReferenceImageUrl.startsWith('data:image/') ? aiReferenceImageUrl : null;
+    setDraft(buildEmeraldLuxuryComposition(uploadedReferenceImage, EMERALD_LUXURY_ASSET_CANDIDATES[0]));
+
+    const resolvedAssetPath = await resolveEmeraldLuxuryAssetPath();
+    if (!resolvedAssetPath) {
+      console.warn('[BackgroundStudio] Emerald Luxury preset asset missing. Checked:', EMERALD_LUXURY_ASSET_CANDIDATES);
+      return;
+    }
+
+    setDraft(buildEmeraldLuxuryComposition(uploadedReferenceImage, resolvedAssetPath));
+  };
 
   const previewData: OutfitCardData = {
     ...previewCardData,
@@ -838,7 +931,7 @@ export default function OutfitBackgroundStudioModal({
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Recommended presets based on current outfit</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-3">
                 {displayedPresets.map((preset) => (
-                  <button key={preset.label} type="button" className="rounded-lg border border-white/20 bg-white/10 p-2 text-left" onClick={() => setDraft(preset.config)}>
+                  <button key={preset.label} type="button" className="rounded-lg border border-white/20 bg-white/10 p-2 text-left" onClick={() => void applyRecommendedPreset(preset)}>
                     <p className="text-xs font-semibold">{preset.label}</p>
                     <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
                   </button>
