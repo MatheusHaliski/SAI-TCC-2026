@@ -119,3 +119,31 @@ Worker failures return:
 ```
 
 Backend mirrors cloud status into internal records and updates wardrobe pipeline details with failure metadata.
+
+## Fashion AI Background Studio (OpenAI Images API)
+
+The Outfit Card Background Studio now supports OpenAI Images API as a server-side artwork provider for premium fashion/editorial assets (backgrounds, overlays, frames, and shape packs).
+
+### Environment setup
+
+Add the following variables to your server environment (and mirror in local `.env.local` as needed):
+
+```bash
+OPENAI_API_KEY="..."
+OPENAI_IMAGES_MODEL="gpt-image-1.5"
+OPENAI_IMAGES_FALLBACK_MODEL="gpt-image-1"
+OPENAI_IMAGES_SIZE="1536x1024"
+OPENAI_IMAGES_QUALITY="high"
+OPENAI_IMAGES_TIMEOUT_MS="45000"
+NEXT_PUBLIC_ENABLE_OPENAI_ARTWORK_STUDIO="true"
+```
+
+### Security model
+
+- OpenAI credentials are used **server-side only** in Next.js API routes/services.
+- The frontend calls internal routes (`/api/artwork-studio/*`) and never receives provider secrets.
+
+### Feature flag behavior
+
+- `NEXT_PUBLIC_ENABLE_OPENAI_ARTWORK_STUDIO=true`: uses OpenAI Images API backend integration.
+- `NEXT_PUBLIC_ENABLE_OPENAI_ARTWORK_STUDIO=false`: keeps local fallback generation in Background Studio.
