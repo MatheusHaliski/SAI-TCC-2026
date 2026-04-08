@@ -9,6 +9,17 @@ import {
   resolveOutfitBackgroundForRender,
 } from '@/app/lib/outfit-card';
 import { BackgroundGenerationMode } from '@/app/lib/background-ai';
+import type {
+  ArtworkAsset,
+  ArtworkContrastLevel,
+  ArtworkGenerationResponse,
+  ArtworkPaletteMode,
+  ArtworkShapeLanguage,
+  ArtworkStudioInput,
+  ArtworkStylePreset,
+  ArtworkVariation,
+} from '@/app/backend/types/artwork-studio';
+import { applyArtworkToOutfitCard } from '@/app/lib/artwork-studio';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
 
@@ -99,9 +110,11 @@ const GRADIENT_PRESETS: Array<{ label: string; config: OutfitBackgroundConfig }>
   },
 ];
 
-const AI_STYLES = ['editorial fashion', 'luxury minimal', 'futuristic', 'streetwear energy', 'soft abstract', 'glossy premium', 'magazine backdrop', 'runway lighting', 'artistic studio'];
-const AI_MOODS = ['elegant', 'bold', 'dreamy', 'sporty', 'urban', 'experimental', 'premium', 'romantic'];
-const AI_PALETTES = ['monochrome', 'warm neutral', 'cool luxury', 'vibrant neon', 'soft pastel', 'gold accent', 'black + silver', 'emerald + cyan'];
+const STYLE_PRESETS: ArtworkStylePreset[] = ['editorial_fashion', 'luxury_minimal', 'futuristic_sport', 'streetwear', 'monochrome_premium'];
+const PALETTE_MODES: ArtworkPaletteMode[] = ['monochrome', 'cool_luxury', 'warm_neutral', 'custom'];
+const SHAPE_LANGUAGES: ArtworkShapeLanguage[] = ['diamond', 'orb', 'mesh', 'panels', 'mixed'];
+const COMPOSITION_TYPES: Array<ArtworkStudioInput['compositionType']> = ['background', 'shape_pack', 'overlay', 'frame'];
+const CONTRAST_LEVELS: ArtworkContrastLevel[] = ['low', 'medium', 'high'];
 const AI_GENERATION_MODES: Array<{ value: BackgroundGenerationMode; label: string }> = [
   { value: 'preset_assisted', label: 'Preset Assisted' },
   { value: 'hybrid', label: 'Hybrid' },
@@ -164,17 +177,27 @@ export default function OutfitBackgroundStudioModal({
   const [draft, setDraft] = useState<OutfitBackgroundConfig>(resolveOutfitBackgroundForRender(value));
   const [recentColors, setRecentColors] = useState<string[]>([]);
   const [aiPrompt, setAiPrompt] = useState('');
-  const [aiStyle, setAiStyle] = useState(AI_STYLES[0]);
-  const [aiMood, setAiMood] = useState(AI_MOODS[0]);
-  const [aiPalette, setAiPalette] = useState(AI_PALETTES[0]);
+  const [aiStylePreset, setAiStylePreset] = useState<ArtworkStylePreset>('editorial_fashion');
+  const [aiPaletteMode, setAiPaletteMode] = useState<ArtworkPaletteMode>('cool_luxury');
+  const [aiShapeLanguage, setAiShapeLanguage] = useState<ArtworkShapeLanguage>('mesh');
+  const [aiCompositionType, setAiCompositionType] = useState<ArtworkStudioInput['compositionType']>('background');
+  const [aiNegativePrompt, setAiNegativePrompt] = useState('');
+  const [aiDensity, setAiDensity] = useState(50);
+  const [aiContrast, setAiContrast] = useState<ArtworkContrastLevel>('medium');
+  const [aiBlur, setAiBlur] = useState(24);
+  const [aiGlow, setAiGlow] = useState(40);
+  const [aiLayerDepth, setAiLayerDepth] = useState(5);
+  const [aiSafeArea, setAiSafeArea] = useState(true);
+  const [aiReferenceImageUrl, setAiReferenceImageUrl] = useState('');
   const [aiGenerationMode, setAiGenerationMode] = useState<BackgroundGenerationMode>('hybrid');
-  const [useMetadataBoost, setUseMetadataBoost] = useState(true);
-  const [aiResults, setAiResults] = useState<string[]>([]);
+  const [aiResults, setAiResults] = useState<ArtworkVariation[]>([]);
+  const [savedAssets, setSavedAssets] = useState<ArtworkAsset[]>([]);
   const [aiGradientResults, setAiGradientResults] = useState<OutfitBackgroundConfig[]>([]);
-  const [selectedAiResult, setSelectedAiResult] = useState<string | null>(null);
+  const [selectedAiResult, setSelectedAiResult] = useState<ArtworkVariation | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiGenerationPlan, setAiGenerationPlan] = useState<Record<string, unknown> | null>(null);
+  const [backendWarning, setBackendWarning] = useState<string | null>(null);
 
   const recommendedPresets = useMemo(() => getRecommendedPresets(outfitMetadata), [outfitMetadata]);
 
@@ -220,79 +243,77 @@ export default function OutfitBackgroundStudioModal({
   };
 
   const generateAiBackground = async () => {
-    const basePrompt = aiPrompt.trim() || 'luxury editorial abstract background';
-    const metadataAddition = useMetadataBoost
-      ? [
-          outfitMetadata?.style,
-          outfitMetadata?.occasion,
-          outfitMetadata?.palette,
-          outfitMetadata?.mood,
-          outfitMetadata?.visibility,
-          outfitMetadata?.title,
-          outfitMetadata?.brandIdentity,
-          outfitMetadata?.brands?.join(', '),
-          outfitMetadata?.wearstyles?.join(', '),
-        ]
-          .filter(Boolean)
-          .join(', ')
-      : '';
-
-    const mergedPrompt = `${basePrompt}${metadataAddition ? `, ${metadataAddition}` : ''}, ${aiStyle}, ${aiMood}, ${aiPalette}, supportive backdrop, avoid faces, low visual noise`;
-
     setAiLoading(true);
     setAiError(null);
-    const response = await fetch('/api/ai/background-artwork', {
+    setBackendWarning(null);
+
+    const studioInput: ArtworkStudioInput = {
+      user_id: previewCardData.creatorId || 'anonymous',
+      prompt: aiPrompt.trim() || 'premium editorial fashion artwork',
+      negativePrompt: aiNegativePrompt,
+      compositionType: aiCompositionType,
+      stylePreset: aiStylePreset,
+      paletteMode: aiPaletteMode,
+      shapeLanguage: aiShapeLanguage,
+      density: aiDensity,
+      contrastLevel: aiContrast,
+      blurStrength: aiBlur,
+      glowIntensity: aiGlow,
+      layeringDepth: aiLayerDepth,
+      safeAreaMode: aiSafeArea,
+      referenceImageUrl: aiReferenceImageUrl.trim() || undefined,
+      variationCount: 4,
+    };
+
+    const response = await fetch('/api/artwork-studio/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: mergedPrompt, rawPrompt: basePrompt, style: aiStyle, mood: aiMood, palette: aiPalette, generationMode: aiGenerationMode, metadata: outfitMetadata }),
+      body: JSON.stringify(studioInput),
     });
-    const payload = await response.json().catch(() => ({ images: [], gradients: [] }));
+    const payload = (await response.json().catch(() => ({ success: false, error: 'Invalid response' }))) as
+      | { success: true; data: ArtworkGenerationResponse }
+      | { success: false; error: string };
     setAiLoading(false);
 
-    const gradients = Array.isArray(payload.gradients) ? (payload.gradients as OutfitBackgroundConfig[]) : [];
-    const generated = Array.isArray(payload.images) ? (payload.images as string[]) : [];
-    setAiGenerationPlan(payload.generationPlan && typeof payload.generationPlan === 'object' ? payload.generationPlan as Record<string, unknown> : null);
-
-    if (!response.ok || (!generated.length && !gradients.length)) {
-      setAiError('AI artwork failed. You can keep the previous preview or choose a gradient preset.');
+    if (!response.ok || !payload.success) {
+      setAiError(payload.success ? 'AI artwork failed.' : payload.error || 'AI artwork failed.');
       return;
     }
 
-    setAiResults(generated);
-    setAiGradientResults(gradients);
-    if (generated.length) setSelectedAiResult(generated[0]);
+    setAiResults(payload.data.variations);
+    if (payload.data.warnings?.length) setBackendWarning(payload.data.warnings[0]);
+    if (payload.data.variations.length) setSelectedAiResult(payload.data.variations[0]);
+    setAiGenerationPlan({
+      generationMode: aiGenerationMode,
+      compositionType: aiCompositionType,
+      stylePreset: aiStylePreset,
+      paletteMode: aiPaletteMode,
+      shapeLanguage: aiShapeLanguage,
+      safeAreaMode: aiSafeArea,
+      provider: payload.data.provider,
+      fallbackUsed: payload.data.fallbackUsed ?? false,
+    });
+    setAiGradientResults([]);
+  };
 
-    if (gradients.length) {
-      const firstGradient = resolveOutfitBackgroundForRender(gradients[0]);
-      setDraft((prev) => ({
-        ...prev,
-        ...firstGradient,
-        background_mode: 'gradient',
-        ai_artwork: {
-          prompt: mergedPrompt,
-          style: aiStyle,
-          mood: aiMood,
-          palette: aiPalette,
-          image_url: generated[0],
-          generation_status: 'done',
-        },
-      }));
-      return;
-    }
-
+  const applyVariationToDraft = (variation: ArtworkVariation) => {
     setDraft((prev) => ({
       ...prev,
-      background_mode: 'ai_artwork',
-      ai_artwork: {
-        prompt: mergedPrompt,
-        style: aiStyle,
-        mood: aiMood,
-        palette: aiPalette,
-        image_url: generated[0],
-        generation_status: 'done',
-      },
-      texture_overlay: true,
-      shape: 'none',
+      ...applyArtworkToOutfitCard({
+        artwork_id: variation.variation_id,
+        user_id: previewCardData.creatorId || 'anonymous',
+        prompt: aiPrompt,
+        normalized_prompt: aiPrompt.toLowerCase(),
+        composition_type: aiCompositionType,
+        style_preset: aiStylePreset,
+        palette_mode: aiPaletteMode,
+        shape_language: aiShapeLanguage,
+        provider: 'adobe_firefly',
+        preview_url: variation.preview_url,
+        output_url: variation.output_url,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, aiCompositionType === 'overlay' ? 'overlay' : aiCompositionType === 'frame' ? 'frame' : aiCompositionType === 'shape_pack' ? 'shape_pack' : 'background'),
     }));
   };
 
@@ -506,48 +527,57 @@ export default function OutfitBackgroundStudioModal({
 
             {activeTab === 'ai_artwork' ? (
               <div className="space-y-3">
-                <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder="luxury editorial abstract background with silver and black flowing shapes" className="min-h-24 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm" />
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiStyle} onChange={(event) => setAiStyle(event.target.value)}>
-                    {AI_STYLES.map((option) => <option key={option} value={option}>{option}</option>)}
+                <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder="Premium editorial fashion background with geometric layers and elegant negative space." className="min-h-24 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm" />
+                <textarea value={aiNegativePrompt} onChange={(event) => setAiNegativePrompt(event.target.value)} placeholder="Optional negative prompt..." className="min-h-16 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs" />
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiCompositionType} onChange={(event) => setAiCompositionType(event.target.value as ArtworkStudioInput['compositionType'])}>
+                    {COMPOSITION_TYPES.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
-                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiMood} onChange={(event) => setAiMood(event.target.value)}>
-                    {AI_MOODS.map((option) => <option key={option} value={option}>{option}</option>)}
+                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiStylePreset} onChange={(event) => setAiStylePreset(event.target.value as ArtworkStylePreset)}>
+                    {STYLE_PRESETS.map((option) => <option key={option} value={option}>{option.replaceAll('_', ' ')}</option>)}
                   </select>
-                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiPalette} onChange={(event) => setAiPalette(event.target.value)}>
-                    {AI_PALETTES.map((option) => <option key={option} value={option}>{option}</option>)}
+                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiPaletteMode} onChange={(event) => setAiPaletteMode(event.target.value as ArtworkPaletteMode)}>
+                    {PALETTE_MODES.map((option) => <option key={option} value={option}>{option.replaceAll('_', ' ')}</option>)}
                   </select>
+                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiShapeLanguage} onChange={(event) => setAiShapeLanguage(event.target.value as ArtworkShapeLanguage)}>
+                    {SHAPE_LANGUAGES.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiContrast} onChange={(event) => setAiContrast(event.target.value as ArtworkContrastLevel)}>
+                    {CONTRAST_LEVELS.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                  <input value={aiReferenceImageUrl} onChange={(event) => setAiReferenceImageUrl(event.target.value)} placeholder="Reference image URL (optional)" className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-xs" />
                 </div>
+                <label className="text-xs">Density ({aiDensity})</label>
+                <input type="range" min={0} max={100} value={aiDensity} onChange={(event) => setAiDensity(Number(event.target.value))} />
+                <label className="text-xs">Blur ({aiBlur})</label>
+                <input type="range" min={0} max={100} value={aiBlur} onChange={(event) => setAiBlur(Number(event.target.value))} />
+                <label className="text-xs">Glow ({aiGlow})</label>
+                <input type="range" min={0} max={100} value={aiGlow} onChange={(event) => setAiGlow(Number(event.target.value))} />
+                <label className="text-xs">Layering depth ({aiLayerDepth})</label>
+                <input type="range" min={1} max={10} value={aiLayerDepth} onChange={(event) => setAiLayerDepth(Number(event.target.value))} />
                 <select className="w-full rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiGenerationMode} onChange={(event) => setAiGenerationMode(event.target.value as BackgroundGenerationMode)}>
                   {AI_GENERATION_MODES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
                 <label className="flex items-center gap-2 text-xs">
-                  <input type="checkbox" checked={useMetadataBoost} onChange={(event) => setUseMetadataBoost(event.target.checked)} />
-                  Use my outfit metadata to improve prompt
+                  <input type="checkbox" checked={aiSafeArea} onChange={(event) => setAiSafeArea(event.target.checked)} />
+                  Safe area mode for text and subject
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" className="rounded-lg border border-violet-300/60 bg-violet-500/40 px-3 py-2 text-xs font-semibold" onClick={() => void generateAiBackground()}>{aiLoading ? 'Generating...' : 'Generate Background'}</button>
-                  <button type="button" className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs" onClick={() => void generateAiBackground()}>Regenerate</button>
+                  <button disabled={aiLoading} type="button" className="rounded-lg border border-violet-300/60 bg-violet-500/40 px-3 py-2 text-xs font-semibold disabled:opacity-60" onClick={() => void generateAiBackground()}>{aiLoading ? 'Generating...' : 'Generate Artwork'}</button>
+                  <button disabled={aiLoading} type="button" className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs disabled:opacity-60" onClick={() => void generateAiBackground()}>Retry</button>
                   <button
                     type="button"
                     className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs"
                     onClick={() => {
                       if (!selectedAiResult) return;
-                      setDraft((prev) => ({
-                        ...prev,
-                        background_mode: 'ai_artwork',
-                        ai_artwork: {
-                          ...(prev.ai_artwork || { prompt: aiPrompt }),
-                          image_url: selectedAiResult,
-                          generation_status: 'done',
-                        },
-                      }));
+                      applyVariationToDraft(selectedAiResult);
                     }}
                   >
-                    Use This Result
+                    Apply to outfit card
                   </button>
                 </div>
                 {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
+                {backendWarning ? <p className="text-xs text-cyan-200">{backendWarning}</p> : null}
                 {aiGenerationPlan ? (
                   <details className="rounded-lg border border-white/20 bg-black/20 p-2 text-[11px] text-white/80">
                     <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100">Interpreted generation plan</summary>
@@ -572,21 +602,58 @@ export default function OutfitBackgroundStudioModal({
                   </div>
                 ) : null}
 
-                {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
                 <div className="grid grid-cols-3 gap-2">
                   {aiResults.map((result) => (
                     <button
-                      key={result.slice(0, 30)}
+                      key={result.variation_id}
                       type="button"
-                      className={`h-20 rounded-xl border ${selectedAiResult === result ? 'border-violet-300 shadow-[0_0_0_1px_rgba(196,181,253,0.5)]' : 'border-white/20'}`}
-                      style={{ backgroundImage: `url(${result})`, backgroundSize: 'cover' }}
+                      className={`h-20 rounded-xl border ${selectedAiResult?.variation_id === result.variation_id ? 'border-violet-300 shadow-[0_0_0_1px_rgba(196,181,253,0.5)]' : 'border-white/20'}`}
+                      style={{ backgroundImage: `url(${result.preview_url})`, backgroundSize: 'cover' }}
                       onClick={() => {
                         setSelectedAiResult(result);
-                        setDraft((prev) => ({ ...prev, background_mode: 'ai_artwork', ai_artwork: { ...(prev.ai_artwork || { prompt: aiPrompt }), image_url: result, generation_status: 'done' } }));
+                        applyVariationToDraft(result);
                       }}
                     />
                   ))}
                 </div>
+                {selectedAiResult ? (
+                  <button
+                    type="button"
+                    className="rounded-lg border border-emerald-300/70 bg-emerald-500/30 px-3 py-2 text-xs font-semibold"
+                    onClick={async () => {
+                      const payload = {
+                        user_id: previewCardData.creatorId || 'anonymous',
+                        input: {
+                          user_id: previewCardData.creatorId || 'anonymous',
+                          prompt: aiPrompt.trim(),
+                          negativePrompt: aiNegativePrompt.trim() || undefined,
+                          compositionType: aiCompositionType,
+                          stylePreset: aiStylePreset,
+                          paletteMode: aiPaletteMode,
+                          shapeLanguage: aiShapeLanguage,
+                          density: aiDensity,
+                          contrastLevel: aiContrast,
+                          blurStrength: aiBlur,
+                          glowIntensity: aiGlow,
+                          layeringDepth: aiLayerDepth,
+                          safeAreaMode: aiSafeArea,
+                          referenceImageUrl: aiReferenceImageUrl.trim() || undefined,
+                        },
+                        variation: selectedAiResult,
+                      };
+                      const response = await fetch('/api/artwork-studio/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                      const json = await response.json().catch(() => null);
+                      if (!response.ok || !json?.asset) {
+                        setAiError('Could not save artwork asset.');
+                        return;
+                      }
+                      setSavedAssets((prev) => [json.asset as ArtworkAsset, ...prev].slice(0, 8));
+                    }}
+                  >
+                    Save asset
+                  </button>
+                ) : null}
+                {savedAssets.length ? <p className="text-[11px] text-white/75">Saved assets in this session: {savedAssets.length}</p> : null}
               </div>
             ) : null}
 
