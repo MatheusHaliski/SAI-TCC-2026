@@ -4,7 +4,6 @@ import { ReactNode, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  applyPageBackgroundConfig,
   OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
   PageBackgroundConfig,
   PageBackgroundShape,
@@ -86,11 +85,20 @@ function PageBackgroundStudio({
         type="button"
         className="sa-apply-background w-full rounded-lg border border-emerald-200/70 bg-emerald-400/20 px-3 py-2 text-sm font-semibold"
         onClick={() => {
+          onApply(draft);
+        }}
+      >
+        Apply website background
+      </button>
+      <button
+        type="button"
+        className="w-full rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em]"
+        onClick={() => {
           onChange(officialConfig);
           onApply(officialConfig);
         }}
       >
-        Apply website background
+        Reset to official
       </button>
     </div>
   );
@@ -210,7 +218,7 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
         draft={backgroundDraft}
         onChange={(next) => {
           setBackgroundDraft(next);
-          applyPageBackgroundConfig(next);
+          savePageBackgroundConfig(next);
         }}
         onApply={(next) => {
           setBackgroundDraft(next);
