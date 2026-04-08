@@ -48,6 +48,16 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
         ? 'bg-[linear-gradient(135deg,rgba(59,130,246,0.16)_0%,transparent_40%,rgba(168,85,247,0.14)_100%)]'
         : (resolvedBackground.shape ?? 'none') === 'mesh'
           ? 'bg-[linear-gradient(120deg,rgba(15,23,42,0.08)_25%,transparent_25%),linear-gradient(240deg,rgba(15,23,42,0.08)_25%,transparent_25%)] bg-[size:24px_24px]'
+          : (resolvedBackground.shape ?? 'none') === 'stars'
+            ? "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpolygon points='42,8 49,29 71,29 53,42 60,64 42,51 24,64 31,42 13,29 35,29' fill='rgba(15,23,42,0.45)'/%3E%3C/svg%3E\")] bg-[size:42px_42px] opacity-90"
+            : (resolvedBackground.shape ?? 'none') === 'circles'
+              ? 'bg-[radial-gradient(circle,rgba(2,6,23,0.42)_40%,transparent_42%)] bg-[size:24px_24px]'
+              : (resolvedBackground.shape ?? 'none') === 'triangles'
+                ? "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpolygon points='32,8 56,52 8,52' fill='rgba(2,6,23,0.44)'/%3E%3C/svg%3E\")] bg-[size:32px_32px]"
+                : (resolvedBackground.shape ?? 'none') === 'waves'
+                  ? 'bg-[repeating-linear-gradient(165deg,rgba(2,6,23,0.36)_0px,rgba(2,6,23,0.36)_4px,transparent_4px,transparent_12px)]'
+                  : (resolvedBackground.shape ?? 'none') === 'beams'
+                    ? 'bg-[repeating-linear-gradient(90deg,rgba(2,6,23,0.34)_0px,rgba(2,6,23,0.34)_8px,transparent_8px,transparent_26px)]'
           : '';
 
   return (
