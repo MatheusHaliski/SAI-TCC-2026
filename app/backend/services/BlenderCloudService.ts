@@ -37,6 +37,8 @@ interface BlenderCloudConfig {
   statusPathTemplate: string;
   authToken: string;
   authSource: 'BLENDER_CLOUD_API_TOKEN' | 'RUNPOD_API_KEY' | 'none';
+  submitTimeoutMs: number;
+  statusTimeoutMs: number;
 }
 
 function normalizeApiBaseUrl(rawUrl: string): string {
@@ -118,6 +120,8 @@ function resolveBlenderCloudConfiguration(): BlenderCloudConfig {
     statusPathTemplate: normalizeApiPath(process.env.BLENDER_CLOUD_STATUS_PATH_TEMPLATE?.trim() || '/jobs/:jobId'),
     authToken: auth.authToken,
     authSource: auth.authSource,
+    submitTimeoutMs: Number(process.env.BLENDER_CLOUD_SUBMIT_TIMEOUT_MS ?? 15000),
+    statusTimeoutMs: Number(process.env.BLENDER_CLOUD_STATUS_TIMEOUT_MS ?? 10000),
   };
 
   validateBlenderCloudConfiguration(config);
@@ -135,6 +139,19 @@ function toInternalStatus(status: string): BlenderCloudJobStatus['status'] {
 }
 
 export class BlenderCloudService {
+  private async fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, {
+        ...init,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   isConfigured(): boolean {
     return hasRunpodConfiguration();
   }
@@ -156,14 +173,20 @@ export class BlenderCloudService {
     });
     console.log('RUNPOD FINAL URL =', endpointUrl);
 
-    const response = await fetch(endpointUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(config.authToken ? { Authorization: `Bearer ${config.authToken}` } : {}),
-      },
-      body: JSON.stringify({ input: payload }),
-    });
+    let response: Response;
+    try {
+      response = await this.fetchWithTimeout(endpointUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(config.authToken ? { Authorization: `Bearer ${config.authToken}` } : {}),
+        },
+        body: JSON.stringify({ input: payload }),
+      }, config.submitTimeoutMs);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`RunPod submit request failed or timed out after ${config.submitTimeoutMs}ms. url=${endpointUrl} error=${message}`);
+    }
 
     const body = (await response.json().catch(() => ({}))) as RunpodSubmitResponse & Record<string, unknown>;
     const cloudJobId = typeof body.jobId === 'string'
@@ -212,10 +235,16 @@ export class BlenderCloudService {
       cloudJobId,
     });
 
-    const response = await fetch(statusUrl, {
-      method: 'GET',
-      headers: config.authToken ? { Authorization: `Bearer ${config.authToken}` } : {},
-    });
+    let response: Response;
+    try {
+      response = await this.fetchWithTimeout(statusUrl, {
+        method: 'GET',
+        headers: config.authToken ? { Authorization: `Bearer ${config.authToken}` } : {},
+      }, config.statusTimeoutMs);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`RunPod status request failed or timed out after ${config.statusTimeoutMs}ms. url=${statusUrl} error=${message}`);
+    }
 
     const body = (await response.json().catch(() => ({}))) as RunpodStatusResponse & Record<string, unknown>;
     if (!response.ok) {

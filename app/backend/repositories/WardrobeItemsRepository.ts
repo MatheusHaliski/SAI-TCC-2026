@@ -42,8 +42,8 @@ export class WardrobeItemsRepository extends BaseRepository {
       const rawStatus = (item.model_status as ModelGenerationStatus | undefined) ?? 'queued_base';
       const shouldPromoteLegacyDone =
         hasAnyModelUrl
-        && ['queued_segmentation', 'segmentation_done', 'queued_base', 'base_done', 'queued_branding', 'queued_geometry_qa', 'retrying_generation', 'needs_brand_review'].includes(rawStatus);
-      const normalizedStatus = shouldPromoteLegacyDone ? 'done' : rawStatus;
+        && ['queued_segmentation', 'segmentation_done', 'queued_base', 'generating_base', 'base_done', 'queued_branding', 'branding_in_progress', 'queued_geometry_qa', 'retrying_generation', 'needs_brand_review'].includes(rawStatus);
+      const normalizedStatus = shouldPromoteLegacyDone ? 'completed' : rawStatus;
 
       return {
         wardrobe_item_id: doc.id,
@@ -254,7 +254,14 @@ export class WardrobeItemsRepository extends BaseRepository {
     await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
       ...input,
       model_3d_url: resolvedModel3dUrl,
-      model_status: 'done',
+      model_status: 'completed',
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  async updateGenerationAttempt(wardrobeItemId: string, generationAttemptCount: number): Promise<void> {
+    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
+      generation_attempt_count: generationAttemptCount,
       updated_at: new Date().toISOString(),
     });
   }

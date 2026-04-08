@@ -58,6 +58,7 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
   const [jobId, setJobId] = useState<string | null>(null);
   const [artifactUrl, setArtifactUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progressPercent, setProgressPercent] = useState(0);
 
   const pollTimerRef = useRef<number | null>(null);
   const timeoutTimerRef = useRef<number | null>(null);
@@ -79,6 +80,7 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
     stopTimers();
     setArtifactUrl(url);
     setStatus('completed');
+    setProgressPercent(100);
     setError(null);
     options?.onCompleted?.(url);
   }, [options, stopTimers]);
@@ -105,6 +107,7 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
       if (polledStatus === 'completed' && !resolvedArtifact) {
         stopTimers();
         setStatus('failed');
+        setProgressPercent((current) => Math.max(15, current));
         setError('3D generation finished but no model URL was returned.');
         return;
       }
@@ -112,17 +115,24 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
       if (polledStatus === 'failed') {
         stopTimers();
         setStatus('failed');
+        setProgressPercent((current) => Math.max(15, current));
         const payloadError = (payload as Record<string, unknown>)?.error;
         setError(typeof payloadError === 'string' && payloadError.trim() ? payloadError : '3D generation failed.');
         return;
       }
 
-      setStatus(polledStatus === 'queued' ? 'queued' : 'in_progress');
+      const nextStatus = polledStatus === 'queued' ? 'queued' : 'in_progress';
+      setStatus(nextStatus);
+      setProgressPercent((current) => {
+        if (nextStatus === 'queued') return Math.max(current, 25);
+        return Math.min(90, Math.max(45, current + 2));
+      });
     };
 
     void runPoll().catch((pollError) => {
       stopTimers();
       setStatus('failed');
+      setProgressPercent((current) => Math.max(15, current));
       setError(pollError instanceof Error ? pollError.message : 'Unable to poll 3D generation status.');
     });
 
@@ -130,6 +140,7 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
       void runPoll().catch((pollError) => {
         stopTimers();
         setStatus('failed');
+        setProgressPercent((current) => Math.max(15, current));
         setError(pollError instanceof Error ? pollError.message : 'Unable to poll 3D generation status.');
       });
     }, pollIntervalMs);
@@ -137,12 +148,14 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
     timeoutTimerRef.current = window.setTimeout(() => {
       stopTimers();
       setStatus('failed');
+      setProgressPercent((current) => Math.max(15, current));
       setError('3D generation timed out. Please retry.');
     }, timeoutMs);
   }, [completeWithArtifact, pollIntervalMs, stopTimers, timeoutMs]);
 
   const startJob = useCallback(async (input: StartJobInput) => {
     setError(null);
+    setProgressPercent(5);
 
     if (input.existingArtifactUrl?.trim()) {
       completeWithArtifact(input.existingArtifactUrl.trim());
@@ -153,22 +166,26 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
       const existing = input.existingJobId.trim();
       setJobId(existing);
       setStatus('queued');
+      setProgressPercent(20);
       startPolling(existing, input.pollJob);
       return;
     }
 
     if (!input.createJob) {
       setStatus('failed');
+      setProgressPercent(0);
       setError('No active 3D generation job was found for this item.');
       return;
     }
 
     setStatus('submitting');
+    setProgressPercent(10);
     const createdPayload = await input.createJob();
     const createdJobId = extractJobId(createdPayload);
 
     if (!createdJobId) {
       setStatus('failed');
+      setProgressPercent(15);
       setError('The generation request did not return a valid job id.');
       return;
     }
@@ -176,6 +193,7 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
     const normalized = normalizeStatus((createdPayload as Record<string, unknown>)?.status);
     setJobId(createdJobId);
     setStatus(normalized === 'idle' ? 'queued' : normalized);
+    setProgressPercent(normalized === 'queued' ? 25 : normalized === 'in_progress' ? 45 : normalized === 'completed' ? 100 : 15);
 
     if (!TERMINAL_STATUSES.includes(normalized)) {
       startPolling(createdJobId, input.pollJob);
@@ -197,17 +215,20 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
     stopTimers();
     activeJobRef.current = null;
     setStatus((previous) => (TERMINAL_STATUSES.includes(previous) ? previous : 'idle'));
-  }, [stopTimers]);
+    setProgressPercent((current) => (TERMINAL_STATUSES.includes(status) ? current : 0));
+  }, [status, stopTimers]);
 
   const retry = useCallback(() => {
     if (!activeJobRef.current || !pollJobRef.current) {
       setStatus('idle');
+      setProgressPercent(0);
       setError(null);
       return;
     }
 
     setError(null);
     setStatus('queued');
+    setProgressPercent(20);
     startPolling(activeJobRef.current, pollJobRef.current);
   }, [startPolling]);
 
@@ -215,6 +236,7 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
 
   return {
     status,
+    progressPercent,
     jobId,
     artifactUrl,
     error,

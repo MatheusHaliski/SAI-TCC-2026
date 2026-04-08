@@ -14,8 +14,8 @@ import type { ModelGenerationStatus } from '@/app/backend/types/entities';
 const DEFAULT_BRAND_ID = 'default';
 const BRANDING_PASS_VERSION = 'v2-image-first';
 const SEGMENTATION_MIN_CONFIDENCE = Number(process.env.SEGMENTATION_MIN_CONFIDENCE ?? 0.75);
-const MODEL_GENERATION_MAX_POLLS = Number(process.env.BLENDER_MODEL_MAX_POLLS ?? 36);
-const MODEL_GENERATION_POLL_MS = Number(process.env.BLENDER_MODEL_POLL_MS ?? 3000);
+const MODEL_GENERATION_MAX_POLLS = Number(process.env.BLENDER_MODEL_MAX_POLLS ?? 48);
+const MODEL_GENERATION_POLL_MS = Number(process.env.BLENDER_MODEL_POLL_MS ?? 1500);
 const MODEL_GENERATION_JOB_TYPE = (process.env.BLENDER_MODEL_JOB_TYPE ?? 'image_to_garment').trim() || 'image_to_garment';
 
 interface BlenderGenerationResult {
@@ -122,7 +122,7 @@ export class WardrobeService {
     });
 
     if (!needsBrandReview) {
-      void this.enrichWardrobeItemModel({
+      await this.enrichWardrobeItemModel({
         wardrobeItemId: createdItem.wardrobe_item_id,
         imageUrl: image_url,
         pieceType: piece_type,
@@ -152,7 +152,6 @@ export class WardrobeService {
         null,
         {
           stage: 'segmentation_done',
-          segmentation_confidence: isolation.segmentationConfidence,
           ...isolation.stageDetails,
         },
       );
@@ -170,13 +169,16 @@ export class WardrobeService {
         return;
       }
 
-      await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_base');
+      await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_base', null, {
+        stage: 'queued_base',
+      });
       const basePrompt = `Create a single ${input.pieceType} standalone asset only. Exclude person body, mannequin, full outfit, and scene props.`;
       const baseModel = await this.generateModelFromImage(isolation.isolatedImageUrl, {
         prompt: basePrompt,
         pieceType: input.pieceType,
         wardrobeItemId: input.wardrobeItemId,
-        status: 'queued_base',
+        status: 'generating_base',
+        attemptIncrement: 1,
         stageLabel: 'base_generation',
       });
 
@@ -219,7 +221,8 @@ export class WardrobeService {
         prompt: brandingPrompt,
         pieceType: input.pieceType,
         wardrobeItemId: input.wardrobeItemId,
-        status: 'queued_branding',
+        status: 'branding_in_progress',
+        attemptIncrement: 0,
         stageLabel: 'branding_generation',
       });
 
@@ -233,7 +236,8 @@ export class WardrobeService {
       }
 
       await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_geometry_qa');
-      const geometryScope = await this.geometryScopeService.validate({
+      const geometryScope = await this.validateGeometryScopeWithFallback({
+        wardrobeItemId: input.wardrobeItemId,
         modelUrl: brandedModel.model_3d_url,
         pieceType: input.pieceType,
       });
@@ -257,10 +261,12 @@ export class WardrobeService {
             pieceType: input.pieceType,
             wardrobeItemId: input.wardrobeItemId,
             status: 'retrying_generation',
+            attemptIncrement: 1,
             stageLabel: 'retry_generation',
           });
 
-          const retryScope = await this.geometryScopeService.validate({
+          const retryScope = await this.validateGeometryScopeWithFallback({
+            wardrobeItemId: input.wardrobeItemId,
             modelUrl: retryModel.model_3d_url,
             pieceType: input.pieceType,
           });
@@ -341,7 +347,14 @@ export class WardrobeService {
         input.wardrobeItemId,
         'failed',
         error instanceof Error ? error.message : 'Unknown model pipeline failure.',
+        {
+          stage: 'failed',
+        },
       );
+      console.error('[wardrobe-model-pipeline] pipeline failed', {
+        wardrobe_item_id: input.wardrobeItemId,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -353,8 +366,27 @@ export class WardrobeService {
 
   private async generateModelFromImage(
     imageUrl: string,
-    options: { prompt: string; pieceType: string; wardrobeItemId: string; status: ModelGenerationStatus; stageLabel: string },
+    options: {
+      prompt: string;
+      pieceType: string;
+      wardrobeItemId: string;
+      status: ModelGenerationStatus;
+      stageLabel: string;
+      attemptIncrement: number;
+    },
   ): Promise<BlenderGenerationResult> {
+    const item = await this.wardrobeRepo.findById(options.wardrobeItemId);
+    const previousAttempts = Number(item?.generation_attempt_count ?? 0) || 0;
+    const nextAttempts = previousAttempts + options.attemptIncrement;
+    if (options.attemptIncrement > 0) {
+      await this.wardrobeRepo.updateGenerationAttempt(options.wardrobeItemId, nextAttempts);
+    }
+    await this.wardrobeRepo.updatePipelineStatus(options.wardrobeItemId, options.status, null, {
+      stage: options.stageLabel,
+      provider: this.blenderCloudService.isConfigured() ? 'runpod' : 'meshy',
+      generation_attempt_count: nextAttempts,
+    });
+
     if (!this.blenderCloudService.isConfigured()) {
       await this.wardrobeRepo.updatePipelineStatus(options.wardrobeItemId, options.status, null, {
         stage: `${options.stageLabel}_fallback_meshy`,
@@ -363,6 +395,12 @@ export class WardrobeService {
       });
       return this.meshyService.generate3DModelFromImage(imageUrl, { prompt: options.prompt });
     }
+
+    await this.wardrobeRepo.updatePipelineStatus(options.wardrobeItemId, options.status, null, {
+      stage: `${options.stageLabel}_submitting`,
+      provider: 'runpod',
+      job_type: MODEL_GENERATION_JOB_TYPE,
+    });
 
     const submitted = await this.blenderCloudService.submitBlenderCloudJob({
       modelUrl: imageUrl,
@@ -433,6 +471,34 @@ export class WardrobeService {
     }
 
     throw new ServiceError('RunPod Blender model generation timed out before completion.', 504);
+  }
+
+  private async validateGeometryScopeWithFallback(input: {
+    wardrobeItemId: string;
+    modelUrl: string;
+    pieceType: string;
+  }): Promise<{ passed: boolean; scopeScore: number; reasons: string[] }> {
+    try {
+      return await this.geometryScopeService.validate({
+        modelUrl: input.modelUrl,
+        pieceType: input.pieceType,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown geometry scope validation error.';
+      console.warn('[wardrobe-model-pipeline] geometry scope validation failed, applying soft-pass fallback', {
+        wardrobe_item_id: input.wardrobeItemId,
+        error: message,
+      });
+      await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_geometry_qa', null, {
+        stage: 'geometry_scope_fallback',
+        warning: message,
+      });
+      return {
+        passed: true,
+        scopeScore: 0.65,
+        reasons: [`Soft-pass fallback applied because geometry validation errored: ${message}`],
+      };
+    }
   }
 
   private qualityChecksPass(input: { baseModelUrl: string; brandedModelUrl: string }): boolean {

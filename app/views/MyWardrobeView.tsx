@@ -32,8 +32,14 @@ const sections = ['Available', 'Unavailable', 'Favorites'];
 
 const READY_STATUSES = new Set(['done', 'ready', 'completed', 'asset_available']);
 const FAILED_STATUSES = new Set(['failed', 'failed_geometry_scope']);
-const QUEUE_STATUSES = new Set(['queued_segmentation', 'queued_base', 'queued_branding', 'queued_geometry_qa', 'segmentation_done']);
-const PROGRESS_STATUSES = new Set(['base_done', 'retrying_generation', 'in_progress']);
+const QUEUE_STATUSES = new Set([
+  'queued_segmentation',
+  'queued_base',
+  'queued_branding',
+  'queued_geometry_qa',
+  'segmentation_done',
+]);
+const PROGRESS_STATUSES = new Set(['generating_base', 'branding_in_progress', 'base_done', 'retrying_generation', 'in_progress']);
 
 function mapItemState(item: WardrobeItem): 'ready' | 'failed' | 'queued' | 'generating' | 'not_started' {
   const normalized = String(item.model_status ?? '').trim().toLowerCase();
@@ -63,7 +69,7 @@ export default function MyWardrobeView() {
   const [progressItem, setProgressItem] = useState<WardrobeItem | null>(null);
 
   const assetJob = use3dAssetJob({
-    pollIntervalMs: 1800,
+    pollIntervalMs: 1200,
     timeoutMs: 90000,
     onCompleted: (artifactUrl) => {
       if (!progressItem) return;
@@ -204,6 +210,7 @@ export default function MyWardrobeView() {
       <ThreeDGenerationProgressModal
         open={Boolean(progressItem) && !viewerUrl}
         status={assetJob.status}
+        progressPercent={assetJob.progressPercent}
         error={assetJob.error}
         onClose={() => {
           assetJob.cancelPolling();
