@@ -11,6 +11,7 @@ import {
 import { BackgroundGenerationMode } from '@/app/lib/background-ai';
 import type {
   ArtworkAsset,
+  ArtworkColorIntent,
   ArtworkContrastLevel,
   ArtworkGenerationResponse,
   ArtworkPaletteMode,
@@ -115,6 +116,14 @@ const PALETTE_MODES: ArtworkPaletteMode[] = ['monochrome', 'cool_luxury', 'warm_
 const SHAPE_LANGUAGES: ArtworkShapeLanguage[] = ['diamond', 'orb', 'mesh', 'panels', 'mixed'];
 const COMPOSITION_TYPES: Array<ArtworkStudioInput['compositionType']> = ['background', 'shape_pack', 'overlay', 'frame'];
 const CONTRAST_LEVELS: ArtworkContrastLevel[] = ['low', 'medium', 'high'];
+const COLOR_INTENTS: Array<{ value: ArtworkColorIntent; label: string }> = [
+  { value: 'prompt_driven', label: 'Prompt driven' },
+  { value: 'cool_blue', label: 'Cool blue' },
+  { value: 'emerald_luxury', label: 'Emerald luxury' },
+  { value: 'sunset_warm', label: 'Sunset warm' },
+  { value: 'mono_chrome', label: 'Monochrome' },
+  { value: 'neon_pop', label: 'Neon pop' },
+];
 const AI_GENERATION_MODES: Array<{ value: BackgroundGenerationMode; label: string }> = [
   { value: 'preset_assisted', label: 'Preset Assisted' },
   { value: 'hybrid', label: 'Hybrid' },
@@ -184,6 +193,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiNegativePrompt, setAiNegativePrompt] = useState('');
   const [aiDensity, setAiDensity] = useState(50);
   const [aiContrast, setAiContrast] = useState<ArtworkContrastLevel>('medium');
+  const [aiColorIntent, setAiColorIntent] = useState<ArtworkColorIntent>('prompt_driven');
   const [aiBlur, setAiBlur] = useState(24);
   const [aiGlow, setAiGlow] = useState(40);
   const [aiLayerDepth, setAiLayerDepth] = useState(5);
@@ -257,6 +267,7 @@ export default function OutfitBackgroundStudioModal({
       shapeLanguage: aiShapeLanguage,
       density: aiDensity,
       contrastLevel: aiContrast,
+      colorIntent: aiColorIntent,
       blurStrength: aiBlur,
       glowIntensity: aiGlow,
       layeringDepth: aiLayerDepth,
@@ -290,6 +301,7 @@ export default function OutfitBackgroundStudioModal({
       stylePreset: aiStylePreset,
       paletteMode: aiPaletteMode,
       shapeLanguage: aiShapeLanguage,
+      colorIntent: aiColorIntent,
       safeAreaMode: aiSafeArea,
       provider: payload.data.provider,
       fallbackUsed: payload.data.fallbackUsed ?? false,
@@ -556,6 +568,9 @@ export default function OutfitBackgroundStudioModal({
                   <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiContrast} onChange={(event) => setAiContrast(event.target.value as ArtworkContrastLevel)}>
                     {CONTRAST_LEVELS.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
+                  <select className="rounded-xl border border-white/20 bg-slate-900 px-2 py-2 text-xs" value={aiColorIntent} onChange={(event) => setAiColorIntent(event.target.value as ArtworkColorIntent)}>
+                    {COLOR_INTENTS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
                   <input value={aiReferenceImageUrl} onChange={(event) => setAiReferenceImageUrl(event.target.value)} placeholder="Reference image URL (optional)" className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-xs" />
                 </div>
                 <label className="text-xs">Density ({aiDensity})</label>
@@ -649,6 +664,7 @@ export default function OutfitBackgroundStudioModal({
                           shapeLanguage: aiShapeLanguage,
                           density: aiDensity,
                           contrastLevel: aiContrast,
+                          colorIntent: aiColorIntent,
                           blurStrength: aiBlur,
                           glowIntensity: aiGlow,
                           layeringDepth: aiLayerDepth,
