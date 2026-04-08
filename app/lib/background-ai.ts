@@ -135,6 +135,14 @@ const SHAPE_KEYWORDS: Array<{ words: string[]; shape: BackgroundShapeLanguage }>
   { words: ['beam', 'beams', 'light', 'streak'], shape: 'beams' },
 ];
 
+const INTENSITY_KEYWORDS = ['dense', 'packed', 'layered', 'maximal', 'ultra', 'complex', 'chaotic', 'rich'];
+const ATMOSPHERIC_KEYWORDS = ['cinematic', 'dramatic', 'glow', 'luminous', 'vivid', 'energetic'];
+
+type ShapeLayerVariant = {
+  dominant: BackgroundShapeLanguage;
+  pool: BackgroundShapeLanguage[];
+};
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -236,6 +244,8 @@ export function buildBackgroundGenerationPlan(input: BackgroundGenerationInput):
 
   const shapeLanguage = inferShapeFromPrompt(combinedKeywords);
   const compositionType = inferCompositionFromPrompt(combinedKeywords, shapeLanguage);
+  const intenseDensityRequested = combinedKeywords.some((word) => INTENSITY_KEYWORDS.includes(word));
+  const cinematicMoodRequested = combinedKeywords.some((word) => ATMOSPHERIC_KEYWORDS.includes(word));
 
   const plan: BackgroundGenerationPlan = {
     ...DEFAULT_PLAN,
@@ -270,13 +280,26 @@ export function buildBackgroundGenerationPlan(input: BackgroundGenerationInput):
   if (combinedKeywords.some((word) => ['smoke', 'mist', 'fog'].includes(word))) plan.texture_mode = 'mist';
 
   if (plan.density === 'minimal') {
-    plan.layering_depth = 3;
-    plan.glow_intensity = clamp(plan.glow_intensity - 0.2, 0.18, 0.95);
+    plan.layering_depth = 4;
+    plan.glow_intensity = clamp(plan.glow_intensity - 0.12, 0.18, 0.95);
   } else if (plan.density === 'rich') {
-    plan.layering_depth = 7;
-    plan.glow_intensity = clamp(plan.glow_intensity + 0.2, 0.18, 0.95);
+    plan.layering_depth = 9;
+    plan.glow_intensity = clamp(plan.glow_intensity + 0.24, 0.18, 0.98);
   } else {
-    plan.layering_depth = 5;
+    plan.layering_depth = 6;
+  }
+
+  if (intenseDensityRequested) {
+    plan.density = 'rich';
+    plan.layering_depth = clamp(plan.layering_depth + 3, 7, 12);
+    plan.glow_intensity = clamp(plan.glow_intensity + 0.2, 0.35, 0.98);
+    plan.blur_strength = clamp(plan.blur_strength + 0.15, 0.32, 0.95);
+    plan.contrast_level = plan.contrast_level === 'low' ? 'medium' : 'high';
+  }
+
+  if (cinematicMoodRequested) {
+    plan.glow_intensity = clamp(plan.glow_intensity + 0.12, 0.2, 0.98);
+    plan.blur_strength = clamp(plan.blur_strength + 0.08, 0.18, 0.95);
   }
 
   if (!input.prompt.trim()) {
@@ -305,33 +328,103 @@ function gradientFromPlan(plan: BackgroundGenerationPlan, angle: number, type: '
   };
 }
 
-function buildShapeLayer(plan: BackgroundGenerationPlan, random: () => number) {
-  const baseCount = plan.density === 'minimal' ? 8 : plan.density === 'rich' ? 30 : 18;
-  const count = baseCount + Math.floor(random() * 8);
+function resolveShapeMix(dominant: BackgroundShapeLanguage): ShapeLayerVariant {
+  const fallback: BackgroundShapeLanguage[] = ['abstract_blobs', 'circles_orbs', 'stars', 'strokes_stripes'];
+  const families: Record<BackgroundShapeLanguage, BackgroundShapeLanguage[]> = {
+    organic_floral: ['circles_orbs', 'abstract_blobs', 'waves'],
+    triangular: ['beams', 'diamonds', 'strokes_stripes'],
+    circles_orbs: ['abstract_blobs', 'stars', 'waves'],
+    strokes_stripes: ['beams', 'waves', 'triangular'],
+    stars: ['diamonds', 'circles_orbs', 'beams'],
+    diamonds: ['stars', 'triangular', 'beams'],
+    waves: ['strokes_stripes', 'abstract_blobs', 'circles_orbs'],
+    beams: ['triangular', 'strokes_stripes', 'diamonds'],
+    abstract_blobs: ['circles_orbs', 'waves', 'stars'],
+  };
+
+  return {
+    dominant,
+    pool: [dominant, ...(families[dominant] || fallback)],
+  };
+}
+
+function pickShapeLanguage(pool: BackgroundShapeLanguage[], random: () => number, dominance: number) {
+  if (random() < dominance) return pool[0];
+  const idx = 1 + Math.floor(random() * Math.max(1, pool.length - 1));
+  return pool[idx] || pool[0];
+}
+
+function sampleShapeSize(random: () => number, baseScale: number) {
+  const weighted = Math.pow(random(), 2.4); // muitos pequenos, poucos grandes
+  let multiplier = 0.25 + weighted * 1.4;
+  if (random() < 0.07) multiplier *= 1.6; // alguns grandes
+  if (random() < 0.015) multiplier *= 2.2; // raros gigantes
+  return Math.max(10, Math.round(baseScale * multiplier));
+}
+
+function buildShapeLayer(plan: BackgroundGenerationPlan, random: () => number, layerIndex: number, totalLayers: number) {
+  const layerProgress = totalLayers <= 1 ? 1 : layerIndex / (totalLayers - 1);
+  const baseCount = plan.density === 'minimal' ? 20 : plan.density === 'rich' ? 120 : 60;
+  const layerMultiplier = 0.62 + (1 - layerProgress) * 0.95;
+  const count = Math.round(baseCount * layerMultiplier + random() * baseCount * 0.2);
+  const shapeMix = resolveShapeMix(plan.shape_language);
+  const dominance = 0.58 + layerProgress * 0.28;
+  const baseScale = (plan.density === 'rich' ? 220 : plan.density === 'balanced' ? 170 : 135) * (0.7 + layerProgress * 0.55);
+  const clusterCount = 2 + Math.floor(random() * 3);
+  const clusters = Array.from({ length: clusterCount }).map(() => ({
+    x: 120 + random() * 960,
+    y: 90 + random() * 620,
+    radius: 140 + random() * 230,
+  }));
   let out = '';
 
   for (let i = 0; i < count; i += 1) {
-    const x = Math.round(random() * 1200);
-    const y = Math.round(random() * 800);
-    const size = Math.round(26 + random() * (plan.density === 'minimal' ? 160 : 300));
-    const opacity = (0.24 + random() * 0.42).toFixed(2);
-    const fill = plan.palette[Math.floor(random() * plan.palette.length)];
+    const useCluster = random() < 0.42;
+    const cluster = useCluster ? clusters[Math.floor(random() * clusters.length)] : null;
+    const baseX = cluster ? cluster.x + (random() - 0.5) * cluster.radius : random() * 1200;
+    const baseY = cluster ? cluster.y + (random() - 0.5) * cluster.radius : random() * 800;
+    const driftX = (random() - 0.5) * (40 + (1 - layerProgress) * 120);
+    const driftY = (random() - 0.5) * (40 + (1 - layerProgress) * 90);
+    let x = clamp(Math.round(baseX + driftX), -140, 1340);
+    let y = clamp(Math.round(baseY + driftY), -120, 920);
+    if (plan.composition_type === 'structured_grid' && random() < 0.72) {
+      const grid = 64 + Math.round((1 - layerProgress) * 26);
+      x = Math.round(x / grid) * grid + Math.round((random() - 0.5) * 14);
+      y = Math.round(y / grid) * grid + Math.round((random() - 0.5) * 14);
+    }
+    if (plan.composition_type === 'orbital_field' && random() < 0.6) {
+      const radius = 90 + random() * (250 + (1 - layerProgress) * 240);
+      const angle = random() * Math.PI * 2;
+      x = Math.round(600 + Math.cos(angle) * radius + (random() - 0.5) * 40);
+      y = Math.round(400 + Math.sin(angle) * radius * 0.76 + (random() - 0.5) * 40);
+    }
+    if (plan.composition_type === 'beam_directional' && random() < 0.7) {
+      x = Math.round(120 + random() * 960);
+      y = Math.round((random() ** 1.15) * 900) - 60;
+    }
 
-    if (plan.shape_language === 'organic_floral') {
+    const size = sampleShapeSize(random, baseScale);
+    const opacityFloor = 0.05 + (layerProgress * 0.16);
+    const opacityCeil = 0.34 + (layerProgress * 0.45);
+    const opacity = (opacityFloor + random() * (opacityCeil - opacityFloor)).toFixed(3);
+    const fill = plan.palette[Math.floor(random() * plan.palette.length)];
+    const currentShape = pickShapeLanguage(shapeMix.pool, random, dominance);
+
+    if (currentShape === 'organic_floral') {
       out += `<g opacity='${opacity}' transform='translate(${x} ${y})'><circle r='${Math.round(size / 8)}' fill='${fill}'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(0)'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(72)'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(144)'/></g>`;
-    } else if (plan.shape_language === 'triangular') {
+    } else if (currentShape === 'triangular') {
       out += `<polygon points='${x},${y - size / 2} ${x + size / 2},${y + size / 2} ${x - size / 2},${y + size / 2}' fill='${fill}' opacity='${opacity}' stroke='rgba(255,255,255,0.22)' stroke-width='2'/>`;
-    } else if (plan.shape_language === 'circles_orbs') {
+    } else if (currentShape === 'circles_orbs') {
       out += `<circle cx='${x}' cy='${y}' r='${Math.round(size / 2.8)}' fill='${fill}' opacity='${opacity}' stroke='rgba(255,255,255,0.18)' stroke-width='2'/>`;
-    } else if (plan.shape_language === 'strokes_stripes') {
+    } else if (currentShape === 'strokes_stripes') {
       out += `<line x1='${x}' y1='${y}' x2='${x + size}' y2='${y + (random() - 0.5) * 80}' stroke='${fill}' stroke-width='${Math.round(size / 18)}' stroke-linecap='round' opacity='${opacity}'/>`;
-    } else if (plan.shape_language === 'stars') {
+    } else if (currentShape === 'stars') {
       out += `<polygon points='${x},${y - size / 3} ${x + size / 10},${y - size / 10} ${x + size / 3},${y - size / 10} ${x + size / 6},${y + size / 10} ${x + size / 5},${y + size / 3} ${x},${y + size / 6} ${x - size / 5},${y + size / 3} ${x - size / 6},${y + size / 10} ${x - size / 3},${y - size / 10} ${x - size / 10},${y - size / 10}' fill='${fill}' opacity='${opacity}'/>`;
-    } else if (plan.shape_language === 'diamonds') {
+    } else if (currentShape === 'diamonds') {
       out += `<rect x='${x}' y='${y}' width='${Math.round(size / 1.8)}' height='${Math.round(size / 1.8)}' transform='rotate(45 ${x} ${y})' fill='${fill}' opacity='${opacity}' rx='10' stroke='rgba(255,255,255,0.2)' stroke-width='2'/>`;
-    } else if (plan.shape_language === 'waves') {
+    } else if (currentShape === 'waves') {
       out += `<path d='M ${x} ${y} C ${x + size / 2} ${y - size / 2}, ${x + size} ${y + size / 2}, ${x + size * 1.4} ${y}' stroke='${fill}' stroke-width='${Math.round(size / 16)}' fill='none' opacity='${opacity}'/>`;
-    } else if (plan.shape_language === 'beams') {
+    } else if (currentShape === 'beams') {
       out += `<rect x='${x}' y='${y}' width='${Math.round(size / 6)}' height='${Math.round(size * 2)}' fill='${fill}' opacity='${opacity}' rx='10'/>`;
     } else {
       out += `<ellipse cx='${x}' cy='${y}' rx='${Math.round(size / 2)}' ry='${Math.round(size / 3)}' fill='${fill}' opacity='${opacity}'/>`;
@@ -344,7 +437,19 @@ function buildShapeLayer(plan: BackgroundGenerationPlan, random: () => number) {
 export function generateProceduralBackground(plan: BackgroundGenerationPlan, seed: number, prompt: string) {
   const random = createSeededRng(seed);
   const angle = Math.floor(random() * 360);
-  const shapeLayer = buildShapeLayer(plan, random);
+  const layerCount = clamp(
+    plan.layering_depth + (plan.density === 'rich' ? 2 : plan.density === 'minimal' ? -1 : 1),
+    plan.density === 'minimal' ? 3 : 5,
+    12,
+  );
+  const layerDefinitions = Array.from({ length: layerCount }).map((_, layerIndex) => {
+    const layerProgress = layerCount <= 1 ? 1 : layerIndex / (layerCount - 1);
+    const blurBoost = plan.density === 'rich' ? 1.35 : 1;
+    const blur = Math.round((plan.blur_strength * (10 + (1 - layerProgress) * 22) + 1.5) * blurBoost);
+    const layerOpacity = clamp((0.2 + plan.glow_intensity * 0.72) * (0.62 + layerProgress * 0.58), 0.14, 0.98);
+    const shapes = buildShapeLayer(plan, random, layerIndex, layerCount);
+    return { blur, layerOpacity, layerProgress, shapes, id: `softBlur${layerIndex}` };
+  });
   const textureOpacity = plan.texture_mode === 'grain' ? 0.23 : plan.texture_mode === 'mist' ? 0.34 : 0.12;
   const safePrompt = prompt.slice(0, 100).replace(/[<>]/g, '');
 
@@ -355,16 +460,17 @@ export function generateProceduralBackground(plan: BackgroundGenerationPlan, see
         <stop offset='55%' stop-color='${plan.palette[1]}'/>
         <stop offset='100%' stop-color='${plan.palette[2]}'/>
       </linearGradient>
-      <filter id='softBlur'><feGaussianBlur stdDeviation='${Math.round(plan.blur_strength * 12)}'/></filter>
+      ${layerDefinitions.map((layer) => `<filter id='${layer.id}'><feGaussianBlur stdDeviation='${layer.blur}'/></filter>`).join('')}
       <pattern id='grain' width='40' height='40' patternUnits='userSpaceOnUse'>
         <circle cx='10' cy='8' r='1' fill='rgba(255,255,255,0.35)'/>
         <circle cx='24' cy='18' r='1' fill='rgba(0,0,0,0.25)'/>
       </pattern>
     </defs>
     <rect width='1200' height='800' fill='url(#base)'/>
-    <g filter='url(#softBlur)' opacity='${clamp(plan.glow_intensity + 0.16, 0.28, 0.98)}'>${shapeLayer}</g>
+    ${layerDefinitions.map((layer) => `<g filter='url(#${layer.id})' opacity='${layer.layerOpacity.toFixed(3)}'>${layer.shapes}</g>`).join('')}
+    <rect width='1200' height='800' fill='rgba(255,255,255,0.04)' opacity='${clamp(plan.glow_intensity * 0.55, 0.06, 0.4)}'/>
     <rect width='1200' height='800' fill='url(#grain)' opacity='${textureOpacity}'/>
-    <rect x='0' y='0' width='460' height='800' fill='rgba(15,23,42,0.14)'/>
+    <rect x='0' y='0' width='460' height='800' fill='rgba(15,23,42,0.12)'/>
     <rect width='1200' height='800' fill='rgba(255,255,255,0.06)' transform='rotate(${angle} 600 400)'/>
     <text x='48' y='742' fill='rgba(255,255,255,0.35)' font-size='22' font-family='Arial'>${safePrompt}</text>
   </svg>`;
