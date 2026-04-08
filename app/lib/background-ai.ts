@@ -143,7 +143,7 @@ type ShapeLayerVariant = {
   pool: BackgroundShapeLanguage[];
 };
 
-type TightPatternKind = 'stars' | 'circles' | 'triangles' | 'arrows' | 'waves' | null;
+type TightPatternKind = 'stars' | 'circles' | 'triangles' | 'arrows' | 'waves' | 'flowers' | null;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -178,11 +178,13 @@ function detectTightPattern(plan: BackgroundGenerationPlan): TightPatternKind {
   const keywords = plan.detected_keywords;
   const hasArrow = keywords.some((w) => ['arrow', 'arrows', 'chevron', 'chevrons'].includes(w));
   const hasWave = keywords.some((w) => ['wave', 'waves', 'audio', 'sound', 'frequency'].includes(w));
-  const hasStar = keywords.some((w) => ['star', 'stars', 'flower', 'flowers', 'floral'].includes(w));
+  const hasFlower = keywords.some((w) => ['flower', 'flowers', 'floral'].includes(w));
+  const hasStar = keywords.some((w) => ['star', 'stars'].includes(w));
   const hasCircle = keywords.some((w) => ['circle', 'circles', 'circule', 'circules', 'orb', 'orbs', 'dots', 'points'].includes(w));
   const hasTriangle = keywords.some((w) => ['triangle', 'triangles'].includes(w));
   if (hasArrow) return 'arrows';
   if (hasWave || plan.shape_language === 'waves') return 'waves';
+  if (hasFlower) return 'flowers';
   if (hasStar || plan.shape_language === 'stars') return 'stars';
   if (hasCircle || plan.shape_language === 'circles_orbs') return 'circles';
   if (hasTriangle || plan.shape_language === 'triangular') return 'triangles';
@@ -446,6 +448,24 @@ function buildTightPatternLayer(
       }
     }
     return waveLayer;
+  }
+  if (patternKind === 'flowers') {
+    let flowerLayer = '';
+    for (let row = 0; row < 11; row += 1) {
+      for (let col = 0; col < 14; col += 1) {
+        const x = col * 94 + (row % 2 === 0 ? 0 : 10);
+        const y = row * 84 + 10;
+        flowerLayer += `<g transform='translate(${x} ${y})'>
+          <ellipse cx='43' cy='28' rx='12' ry='20' fill='#08090a'/>
+          <ellipse cx='59' cy='42' rx='12' ry='20' transform='rotate(48 59 42)' fill='#08090a'/>
+          <ellipse cx='53' cy='62' rx='12' ry='20' transform='rotate(102 53 62)' fill='#08090a'/>
+          <ellipse cx='33' cy='62' rx='12' ry='20' transform='rotate(152 33 62)' fill='#08090a'/>
+          <ellipse cx='27' cy='42' rx='12' ry='20' transform='rotate(206 27 42)' fill='#08090a'/>
+          <circle cx='43' cy='45' r='10' fill='#f3f4f6'/>
+        </g>`;
+      }
+    }
+    return flowerLayer;
   }
 
   const layerProgress = totalLayers <= 1 ? 1 : layerIndex / (totalLayers - 1);
@@ -762,6 +782,50 @@ function buildWaveBarGridImage() {
   return toSvgDataUrl(svg);
 }
 
+function buildFlowerMonoGridImage() {
+  const flower = `<g transform='translate(40 40)'>
+    <ellipse cx='0' cy='-16' rx='11' ry='18' fill='#08090a'/>
+    <ellipse cx='13' cy='-5' rx='11' ry='18' transform='rotate(50 13 -5)' fill='#08090a'/>
+    <ellipse cx='9' cy='13' rx='11' ry='18' transform='rotate(104 9 13)' fill='#08090a'/>
+    <ellipse cx='-9' cy='13' rx='11' ry='18' transform='rotate(154 -9 13)' fill='#08090a'/>
+    <ellipse cx='-13' cy='-5' rx='11' ry='18' transform='rotate(206 -13 -5)' fill='#08090a'/>
+    <circle cx='0' cy='0' r='9.5' fill='#f3f4f6'/>
+  </g>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    ${Array.from({ length: 10 }).map((_, row) =>
+      Array.from({ length: 14 }).map((__, col) => {
+        const x = col * 90 + (row % 2 === 0 ? 0 : 8);
+        const y = row * 82 + 6;
+        return `<g transform='translate(${x} ${y})'>${flower}</g>`;
+      }).join('')
+    ).join('')}
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
+function buildFlowerLavenderGridImage() {
+  const flower = `<g transform='translate(40 40)'>
+    <ellipse cx='0' cy='-16' rx='10' ry='17' fill='#b49cf1'/>
+    <ellipse cx='13' cy='-5' rx='10' ry='17' transform='rotate(50 13 -5)' fill='#b49cf1'/>
+    <ellipse cx='9' cy='13' rx='10' ry='17' transform='rotate(104 9 13)' fill='#b49cf1'/>
+    <ellipse cx='-9' cy='13' rx='10' ry='17' transform='rotate(154 -9 13)' fill='#b49cf1'/>
+    <ellipse cx='-13' cy='-5' rx='10' ry='17' transform='rotate(206 -13 -5)' fill='#b49cf1'/>
+    <circle cx='0' cy='0' r='8.5' fill='#f7d665'/>
+  </g>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    ${Array.from({ length: 10 }).map((_, row) =>
+      Array.from({ length: 14 }).map((__, col) => {
+        const x = col * 90 + (row % 2 === 0 ? 0 : 8);
+        const y = row * 82 + 6;
+        return `<g transform='translate(${x} ${y})'>${flower}</g>`;
+      }).join('')
+    ).join('')}
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
 export function generateBackgroundVariations(plan: BackgroundGenerationPlan, prompt: string, count = 4) {
   const baseSeed = hashText(`${prompt}-${plan.shape_language}-${plan.composition_type}-${plan.palette.join('-')}`);
   const tightPattern = detectTightPattern(plan);
@@ -820,6 +884,18 @@ export function generateBackgroundVariations(plan: BackgroundGenerationPlan, pro
     variations[1] = {
       image: buildWaveBarGridImage(),
       gradient: gradientFromPlan(plan, (baseSeed % 360) + 72, 'radial'),
+      seed: baseSeed + 7919,
+    };
+  }
+  if (tightPattern === 'flowers' && variations.length >= 2) {
+    variations[0] = {
+      image: buildFlowerMonoGridImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 26, 'linear'),
+      seed: baseSeed,
+    };
+    variations[1] = {
+      image: buildFlowerLavenderGridImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 86, 'radial'),
       seed: baseSeed + 7919,
     };
   }
