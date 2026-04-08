@@ -577,9 +577,58 @@ export function generateProceduralBackground(plan: BackgroundGenerationPlan, see
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+function toSvgDataUrl(svg: string) {
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function buildGoldenStarTileImage() {
+  const starShape = '50,8 61,35 90,35 67,52 76,82 50,64 24,82 33,52 10,35 39,35';
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <defs>
+      <linearGradient id='gold' x1='0' y1='0' x2='1' y2='1'>
+        <stop offset='0%' stop-color='#fef08a'/>
+        <stop offset='48%' stop-color='#fbbf24'/>
+        <stop offset='100%' stop-color='#f59e0b'/>
+      </linearGradient>
+    </defs>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    ${Array.from({ length: 10 }).map((_, row) =>
+      Array.from({ length: 13 }).map((__, col) => {
+        const x = 6 + col * 94 + (row % 2 === 0 ? 0 : 10);
+        const y = 8 + row * 82;
+        return `<g transform='translate(${x} ${y})'><polygon points='${starShape}' fill='url(#gold)' stroke='#f59e0b' stroke-width='2.2'/><line x1='50' y1='10' x2='50' y2='80' stroke='rgba(251,191,36,0.35)' stroke-width='3.2'/></g>`;
+      }).join('')
+    ).join('')}
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
+function buildGoldenStarBadgeImage() {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <defs>
+      <linearGradient id='badgeGold' x1='0' y1='0' x2='1' y2='1'>
+        <stop offset='0%' stop-color='#fde68a'/>
+        <stop offset='55%' stop-color='#f59e0b'/>
+        <stop offset='100%' stop-color='#facc15'/>
+      </linearGradient>
+    </defs>
+    <rect width='1200' height='800' fill='#e5e7eb'/>
+    <g transform='translate(600 400) scale(2.05)'>
+      <polygon points='0,-170 44,-56 164,-40 72,36 102,154 0,94 -102,154 -72,36 -164,-40 -44,-56' fill='url(#badgeGold)' stroke='#020617' stroke-width='18' stroke-linejoin='round'/>
+      <line x1='-142' y1='-132' x2='-195' y2='-190' stroke='#020617' stroke-width='20' stroke-linecap='round'/>
+      <line x1='142' y1='-132' x2='195' y2='-190' stroke='#020617' stroke-width='20' stroke-linecap='round'/>
+      <line x1='-178' y1='26' x2='-250' y2='35' stroke='#020617' stroke-width='20' stroke-linecap='round'/>
+      <line x1='178' y1='26' x2='250' y2='35' stroke='#020617' stroke-width='20' stroke-linecap='round'/>
+      <line x1='0' y1='178' x2='0' y2='258' stroke='#020617' stroke-width='20' stroke-linecap='round'/>
+    </g>
+  </svg>`;
+  return toSvgDataUrl(svg);
+}
+
 export function generateBackgroundVariations(plan: BackgroundGenerationPlan, prompt: string, count = 4) {
   const baseSeed = hashText(`${prompt}-${plan.shape_language}-${plan.composition_type}-${plan.palette.join('-')}`);
-  return Array.from({ length: count }).map((_, idx) => {
+  const tightPattern = detectTightPattern(plan);
+  const variations = Array.from({ length: count }).map((_, idx) => {
     const seed = baseSeed + idx * 7919;
     const gradientType = idx % 3 === 0 ? 'linear' : idx % 3 === 1 ? 'radial' : 'conic';
     return {
@@ -588,4 +637,19 @@ export function generateBackgroundVariations(plan: BackgroundGenerationPlan, pro
       seed,
     };
   });
+
+  if (tightPattern === 'stars' && variations.length >= 2) {
+    variations[0] = {
+      image: buildGoldenStarTileImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 12, 'linear'),
+      seed: baseSeed,
+    };
+    variations[1] = {
+      image: buildGoldenStarBadgeImage(),
+      gradient: gradientFromPlan(plan, (baseSeed % 360) + 44, 'radial'),
+      seed: baseSeed + 7919,
+    };
+  }
+
+  return variations;
 }
