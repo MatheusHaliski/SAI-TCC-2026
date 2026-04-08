@@ -57,7 +57,7 @@ const COLOR_INTENT_TO_PALETTE_HINT: Partial<Record<ArtworkColorIntent, string>> 
   cool_blue: 'cool luxury',
   emerald_luxury: 'emerald + cyan',
   sunset_warm: 'warm neutral',
-  mono_chrome: 'black + silver',
+  mono_chrome: 'red + blue',
   neon_pop: 'vibrant neon',
 };
 
