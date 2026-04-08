@@ -41,7 +41,7 @@ export type OutfitBackgroundConfig = {
     generation_status?: 'idle' | 'loading' | 'done' | 'failed';
   };
   texture_overlay?: boolean;
-  shape?: 'none' | 'orb' | 'diamond' | 'mesh';
+  shape?: 'none' | 'orb' | 'diamond' | 'mesh' | 'stars' | 'circles' | 'triangles' | 'waves' | 'beams';
 };
 
 export type OutfitCardData = {
@@ -52,7 +52,7 @@ export type OutfitCardData = {
   outfitBackground?: OutfitBackgroundConfig | {
     type: 'solid' | 'gradient' | 'image';
     value: string;
-    shape?: 'none' | 'orb' | 'diamond' | 'mesh';
+    shape?: 'none' | 'orb' | 'diamond' | 'mesh' | 'stars' | 'circles' | 'triangles' | 'waves' | 'beams';
   };
   metaBadges?: OutfitMetaBadge[];
   brands?: string[];
@@ -77,6 +77,13 @@ const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const hexToRgba = (hex: string, alpha: number) => {
+  const normalized = /^#([0-9A-F]{6})$/i.test(hex) ? hex : '#111827';
+  const r = parseInt(normalized.slice(1, 3), 16);
+  const g = parseInt(normalized.slice(3, 5), 16);
+  const b = parseInt(normalized.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 export function resolveOutfitBackgroundForRender(input?: OutfitCardData['outfitBackground']): OutfitBackgroundConfig {
   if (!input) return FALLBACK_BACKGROUND;
@@ -140,8 +147,24 @@ export function buildBackgroundCssStyle(background: OutfitBackgroundConfig) {
   }
 
   if (background.background_mode === 'ai_artwork' && background.ai_artwork?.image_url) {
+    const gradient = background.gradient?.stops?.length
+      ? background.gradient.stops
+          .slice(0, 3)
+          .map((stop) => `${hexToRgba(stop.color, 0.34)} ${clamp(stop.position, 0, 100)}%`)
+          .join(', ')
+      : null;
+    const gradientType = background.gradient?.type || 'linear';
+    const gradientOverlay = gradient
+      ? gradientType === 'radial'
+        ? `radial-gradient(circle at center, ${gradient})`
+        : gradientType === 'conic'
+          ? `conic-gradient(from ${background.gradient?.angle ?? 180}deg at 50% 50%, ${gradient})`
+          : `linear-gradient(${background.gradient?.angle ?? 135}deg, ${gradient})`
+      : null;
     return {
-      backgroundImage: `url(${background.ai_artwork.image_url})`,
+      backgroundImage: gradientOverlay
+        ? `${gradientOverlay}, url(${background.ai_artwork.image_url})`
+        : `url(${background.ai_artwork.image_url})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
     };
