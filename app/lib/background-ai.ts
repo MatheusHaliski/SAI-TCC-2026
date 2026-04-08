@@ -62,6 +62,7 @@ export type BackgroundGenerationInput = {
 };
 
 const COLOR_MAP: Record<string, [string, string, string]> = {
+  red: ['#450a0a', '#ef4444', '#fecaca'],
   orange: ['#7c2d12', '#f97316', '#fed7aa'],
   amber: ['#78350f', '#f59e0b', '#fde68a'],
   gold: ['#713f12', '#fbbf24', '#fef3c7'],
@@ -70,10 +71,13 @@ const COLOR_MAP: Record<string, [string, string, string]> = {
   white: ['#111827', '#d1d5db', '#ffffff'],
   beige: ['#f5efe2', '#ddc7a1', '#8b6b4a'],
   cream: ['#fff7e6', '#f5deb3', '#c49a6c'],
+  green: ['#052e16', '#22c55e', '#bbf7d0'],
   emerald: ['#022c22', '#10b981', '#99f6e4'],
   cyan: ['#083344', '#06b6d4', '#a5f3fc'],
   blue: ['#1e3a8a', '#3b82f6', '#bfdbfe'],
+  purple: ['#3b0764', '#9333ea', '#e9d5ff'],
   violet: ['#3b0764', '#8b5cf6', '#ddd6fe'],
+  pink: ['#4a044e', '#ec4899', '#fbcfe8'],
   magenta: ['#500724', '#db2777', '#fbcfe8'],
   neon: ['#09090b', '#22d3ee', '#e879f9'],
 };
@@ -302,29 +306,29 @@ function gradientFromPlan(plan: BackgroundGenerationPlan, angle: number, type: '
 }
 
 function buildShapeLayer(plan: BackgroundGenerationPlan, random: () => number) {
-  const baseCount = plan.density === 'minimal' ? 6 : plan.density === 'rich' ? 26 : 14;
-  const count = baseCount + Math.floor(random() * 6);
+  const baseCount = plan.density === 'minimal' ? 8 : plan.density === 'rich' ? 30 : 18;
+  const count = baseCount + Math.floor(random() * 8);
   let out = '';
 
   for (let i = 0; i < count; i += 1) {
     const x = Math.round(random() * 1200);
     const y = Math.round(random() * 800);
-    const size = Math.round(18 + random() * (plan.density === 'minimal' ? 140 : 240));
-    const opacity = (0.1 + random() * 0.3).toFixed(2);
+    const size = Math.round(26 + random() * (plan.density === 'minimal' ? 160 : 300));
+    const opacity = (0.24 + random() * 0.42).toFixed(2);
     const fill = plan.palette[Math.floor(random() * plan.palette.length)];
 
     if (plan.shape_language === 'organic_floral') {
       out += `<g opacity='${opacity}' transform='translate(${x} ${y})'><circle r='${Math.round(size / 8)}' fill='${fill}'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(0)'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(72)'/><ellipse rx='${Math.round(size / 10)}' ry='${Math.round(size / 4)}' fill='${fill}' transform='rotate(144)'/></g>`;
     } else if (plan.shape_language === 'triangular') {
-      out += `<polygon points='${x},${y - size / 2} ${x + size / 2},${y + size / 2} ${x - size / 2},${y + size / 2}' fill='${fill}' opacity='${opacity}'/>`;
+      out += `<polygon points='${x},${y - size / 2} ${x + size / 2},${y + size / 2} ${x - size / 2},${y + size / 2}' fill='${fill}' opacity='${opacity}' stroke='rgba(255,255,255,0.22)' stroke-width='2'/>`;
     } else if (plan.shape_language === 'circles_orbs') {
-      out += `<circle cx='${x}' cy='${y}' r='${Math.round(size / 3)}' fill='${fill}' opacity='${opacity}'/>`;
+      out += `<circle cx='${x}' cy='${y}' r='${Math.round(size / 2.8)}' fill='${fill}' opacity='${opacity}' stroke='rgba(255,255,255,0.18)' stroke-width='2'/>`;
     } else if (plan.shape_language === 'strokes_stripes') {
       out += `<line x1='${x}' y1='${y}' x2='${x + size}' y2='${y + (random() - 0.5) * 80}' stroke='${fill}' stroke-width='${Math.round(size / 18)}' stroke-linecap='round' opacity='${opacity}'/>`;
     } else if (plan.shape_language === 'stars') {
       out += `<polygon points='${x},${y - size / 3} ${x + size / 10},${y - size / 10} ${x + size / 3},${y - size / 10} ${x + size / 6},${y + size / 10} ${x + size / 5},${y + size / 3} ${x},${y + size / 6} ${x - size / 5},${y + size / 3} ${x - size / 6},${y + size / 10} ${x - size / 3},${y - size / 10} ${x - size / 10},${y - size / 10}' fill='${fill}' opacity='${opacity}'/>`;
     } else if (plan.shape_language === 'diamonds') {
-      out += `<rect x='${x}' y='${y}' width='${Math.round(size / 2)}' height='${Math.round(size / 2)}' transform='rotate(45 ${x} ${y})' fill='${fill}' opacity='${opacity}' rx='8'/>`;
+      out += `<rect x='${x}' y='${y}' width='${Math.round(size / 1.8)}' height='${Math.round(size / 1.8)}' transform='rotate(45 ${x} ${y})' fill='${fill}' opacity='${opacity}' rx='10' stroke='rgba(255,255,255,0.2)' stroke-width='2'/>`;
     } else if (plan.shape_language === 'waves') {
       out += `<path d='M ${x} ${y} C ${x + size / 2} ${y - size / 2}, ${x + size} ${y + size / 2}, ${x + size * 1.4} ${y}' stroke='${fill}' stroke-width='${Math.round(size / 16)}' fill='none' opacity='${opacity}'/>`;
     } else if (plan.shape_language === 'beams') {
@@ -351,16 +355,16 @@ export function generateProceduralBackground(plan: BackgroundGenerationPlan, see
         <stop offset='55%' stop-color='${plan.palette[1]}'/>
         <stop offset='100%' stop-color='${plan.palette[2]}'/>
       </linearGradient>
-      <filter id='softBlur'><feGaussianBlur stdDeviation='${Math.round(plan.blur_strength * 18)}'/></filter>
+      <filter id='softBlur'><feGaussianBlur stdDeviation='${Math.round(plan.blur_strength * 12)}'/></filter>
       <pattern id='grain' width='40' height='40' patternUnits='userSpaceOnUse'>
         <circle cx='10' cy='8' r='1' fill='rgba(255,255,255,0.35)'/>
         <circle cx='24' cy='18' r='1' fill='rgba(0,0,0,0.25)'/>
       </pattern>
     </defs>
     <rect width='1200' height='800' fill='url(#base)'/>
-    <g filter='url(#softBlur)' opacity='${clamp(plan.glow_intensity, 0.15, 0.95)}'>${shapeLayer}</g>
+    <g filter='url(#softBlur)' opacity='${clamp(plan.glow_intensity + 0.16, 0.28, 0.98)}'>${shapeLayer}</g>
     <rect width='1200' height='800' fill='url(#grain)' opacity='${textureOpacity}'/>
-    <rect x='0' y='0' width='500' height='800' fill='rgba(15,23,42,0.2)'/>
+    <rect x='0' y='0' width='460' height='800' fill='rgba(15,23,42,0.14)'/>
     <rect width='1200' height='800' fill='rgba(255,255,255,0.06)' transform='rotate(${angle} 600 400)'/>
     <text x='48' y='742' fill='rgba(255,255,255,0.35)' font-size='22' font-family='Arial'>${safePrompt}</text>
   </svg>`;
