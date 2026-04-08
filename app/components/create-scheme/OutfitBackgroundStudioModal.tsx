@@ -344,6 +344,74 @@ function buildUploadedImagePresets(imageUrl: string): RecommendedPreset[] {
   ];
 }
 
+const EMERALD_LUXURY_ASSET_CANDIDATES = ['png', 'jpg', 'jpeg', 'webp'].map((ext) => `/${encodeURIComponent(`Sem título (25).${ext}`)}`);
+
+const encodeDataUri = (value: string) => value
+  .replaceAll('%', '%25')
+  .replaceAll('#', '%23')
+  .replaceAll('<', '%3C')
+  .replaceAll('>', '%3E')
+  .replaceAll('"', '\'');
+
+async function resolveEmeraldLuxuryAssetPath(): Promise<string | null> {
+  for (const candidate of EMERALD_LUXURY_ASSET_CANDIDATES) {
+    try {
+      const response = await fetch(candidate, { method: 'HEAD', cache: 'no-store' });
+      if (response.ok) return candidate;
+    } catch {
+      // keep trying remaining candidates
+    }
+  }
+  return null;
+}
+
+function buildEmeraldLuxuryComposition(uploadedReferenceImage: string | null, builtInAssetUrl: string): OutfitBackgroundConfig {
+  const uploadedImageMarkup = uploadedReferenceImage
+    ? `
+      <defs>
+        <radialGradient id='emeraldGlow' cx='18%' cy='22%' r='65%'>
+          <stop offset='0%' stop-color='rgba(16,185,129,0.35)'/>
+          <stop offset='100%' stop-color='rgba(16,185,129,0)'/>
+        </radialGradient>
+      </defs>
+      <image href='${uploadedReferenceImage}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.18'/>
+      <rect width='1200' height='800' fill='url(#emeraldGlow)'/>
+      <g transform='translate(150 120)'>
+        <rect x='0' y='0' width='420' height='560' rx='34' fill='rgba(2,6,23,0.5)'/>
+        <rect x='14' y='14' width='392' height='532' rx='28' fill='rgba(16,185,129,0.16)'/>
+        <image href='${uploadedReferenceImage}' x='28' y='28' width='364' height='504' preserveAspectRatio='xMidYMid slice' opacity='0.86'/>
+      </g>`
+    : '';
+  const composedSvg = `data:image/svg+xml;utf8,${encodeDataUri(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <rect width='1200' height='800' fill='#021712'/>
+      <image href='${builtInAssetUrl}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice'/>
+      <rect width='1200' height='800' fill='rgba(2,44,34,0.44)'/>
+      ${uploadedImageMarkup}
+      <rect width='1200' height='800' fill='url(#vignette)'/>
+      <defs>
+        <radialGradient id='vignette' cx='50%' cy='45%' r='75%'>
+          <stop offset='45%' stop-color='rgba(6,95,70,0)'/>
+          <stop offset='100%' stop-color='rgba(2,6,23,0.64)'/>
+        </radialGradient>
+      </defs>
+    </svg>`,
+  )}`;
+
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: uploadedReferenceImage
+        ? 'emerald luxury layered composition with uploaded reference and premium preset asset'
+        : 'emerald luxury preset asset composition',
+      image_url: composedSvg,
+      generation_status: 'done',
+    },
+    gradient: GRADIENT_PRESETS[1].config.gradient,
+    shape: 'mesh',
+  };
+}
+
 export default function OutfitBackgroundStudioModal({
   value,
   previewCardData,
