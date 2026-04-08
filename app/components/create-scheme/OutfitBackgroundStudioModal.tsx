@@ -109,6 +109,26 @@ const GRADIENT_PRESETS: Array<{ label: string; config: OutfitBackgroundConfig }>
       shape: 'diamond',
     },
   },
+  {
+    label: 'Graphite Pulse',
+    config: {
+      background_mode: 'gradient',
+      gradient: { type: 'linear', angle: 110, intensity: 108, stops: [{ color: '#020617', position: 0 }, { color: '#1e293b', position: 52 }, { color: '#334155', position: 100 }] },
+      shape: 'mesh',
+    },
+  },
+];
+const SEGMENTED_GRADIENT_OPTIONS = GRADIENT_PRESETS.slice(0, 8);
+const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
+  'none',
+  'orb',
+  'diamond',
+  'mesh',
+  'stars',
+  'circles',
+  'triangles',
+  'waves',
+  'beams',
 ];
 
 const STYLE_PRESETS: ArtworkStylePreset[] = ['editorial_fashion', 'luxury_minimal', 'futuristic_sport', 'streetwear', 'monochrome_premium'];
@@ -712,9 +732,9 @@ export default function OutfitBackgroundStudioModal({
           </section>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 border-t border-white/15 pt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/15 pt-4">
           <p className="text-xs uppercase tracking-[0.12em] text-white/70">Selected shape</p>
-          {(['none', 'orb', 'diamond', 'mesh'] as const).map((shape) => (
+          {SHAPE_SEGMENT_OPTIONS.map((shape) => (
             <button
               key={shape}
               type="button"
@@ -722,6 +742,19 @@ export default function OutfitBackgroundStudioModal({
               onClick={() => setDraft((prev) => ({ ...prev, shape }))}
             >
               {shape}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/15 pt-3">
+          <p className="text-xs uppercase tracking-[0.12em] text-white/70">Gradient picker</p>
+          {SEGMENTED_GRADIENT_OPTIONS.map((preset) => (
+            <button
+              key={`seg-${preset.label}`}
+              type="button"
+              className={`rounded-lg border px-2 py-1 text-[11px] ${draft.background_mode === 'gradient' && JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient) ? 'border-cyan-300 bg-cyan-500/30' : 'border-white/25 bg-white/10'}`}
+              onClick={() => setDraft((prev) => ({ ...prev, ...preset.config, background_mode: 'gradient' }))}
+            >
+              {preset.label}
             </button>
           ))}
         </div>
