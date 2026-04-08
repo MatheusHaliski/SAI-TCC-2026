@@ -1,7 +1,30 @@
-import { FireflyGenerationPayload, FireflyGenerationResult } from '@/app/backend/types/artwork-studio';
 import { getValidAdobeAccessToken } from './AdobeFireflyAuth';
 
 const DEFAULT_TIMEOUT_MS = 25_000;
+
+type FireflyGenerationPayload = {
+  prompt: string;
+  negativePrompt?: string;
+  numVariations: number;
+  width: number;
+  height: number;
+  referenceImageUrl?: string;
+};
+
+type FireflyGenerationResult = {
+  jobId: string | null;
+  variations: Array<{
+    variation_id: string;
+    preview_url: string;
+    output_url: string;
+    thumbnail_url?: string | null;
+    width?: number | null;
+    height?: number | null;
+    provider_job_id?: string | null;
+    metadata?: Record<string, unknown>;
+  }>;
+  raw: Record<string, unknown>;
+};
 
 function getRequiredEnv(name: string) {
   const value = process.env[name]?.trim();
