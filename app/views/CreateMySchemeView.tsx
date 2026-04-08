@@ -15,6 +15,9 @@ import SchemeStepCard from '@/app/components/create-scheme/SchemeStepCard';
 import SlotReviewCard from '@/app/components/create-scheme/SlotReviewCard';
 import SchemeStepSidebar from '@/app/components/create-scheme/SchemeStepSidebar';
 import OutfitBackgroundStudioModal from '@/app/components/create-scheme/OutfitBackgroundStudioModal';
+import { OutfitInterpretResponse, OutfitInterpretationResult } from '@/app/backend/types/outfit-card-ai';
+import { mapAiInterpretationToManualForm } from '@/app/lib/outfit-ai-mapping';
+import { OUTFIT_PIECE_OPTIONS, OutfitSlotKey, SLOT_TYPE_ALIASES } from '@/app/lib/outfit-piece-options';
 import {
   OutfitBackgroundConfig,
   OutfitCardData,
@@ -44,41 +47,16 @@ type GenerationMode = 'manual' | 'ai';
 
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
 
-const SLOT_TYPE_ALIASES: Record<SlotKey, string[]> = {
-  upper: ['upper', 'upper piece', 'top', 'tops'],
-  lower: ['lower', 'lower piece', 'bottom', 'bottoms'],
-  shoes: ['shoes', 'shoes piece', 'shoe', 'footwear'],
-  accessory: ['accessory', 'accessories'],
-};
-
 const normalizeSchemePieceType = (value: string) => value.trim().toLowerCase();
 
 const DEFAULT_SLOT_SUGGESTIONS: Record<
   SlotKey,
   Array<{ value: string; label: string }>
 > = {
-  upper: [
-    { value: 'suggested:upper:classic-white-tee', label: 'Classic White Tee' },
-    { value: 'suggested:upper:slim-oxford-shirt', label: 'Slim Oxford Shirt' },
-    { value: 'suggested:upper:oversized-hoodie', label: 'Oversized Hoodie' },
-    { value: 'suggested:upper:bomber-jacket', label: 'Bomber Jacket' },
-    { value: 'suggested:upper:tailored-blazer', label: 'Tailored Blazer' },
-  ],
-  lower: [
-    { value: 'suggested:lower:black-tailored-pants', label: 'Black Tailored Pants' },
-    { value: 'suggested:lower:straight-blue-jeans', label: 'Straight Blue Jeans' },
-    { value: 'suggested:lower:cargo-utility-pants', label: 'Cargo Utility Pants' },
-  ],
-  shoes: [
-    { value: 'suggested:shoes:white-sneakers', label: 'White Sneakers' },
-    { value: 'suggested:shoes:leather-loafers', label: 'Leather Loafers' },
-    { value: 'suggested:shoes:chelsea-boots', label: 'Chelsea Boots' },
-  ],
-  accessory: [
-    { value: 'suggested:accessory:minimal-watch', label: 'Minimal Watch' },
-    { value: 'suggested:accessory:crossbody-bag', label: 'Crossbody Bag' },
-    { value: 'suggested:accessory:silver-chain', label: 'Silver Chain' },
-  ],
+  upper: OUTFIT_PIECE_OPTIONS.upper.map((option) => ({ value: `suggested:upper:${option.value}`, label: option.label })),
+  lower: OUTFIT_PIECE_OPTIONS.lower.map((option) => ({ value: `suggested:lower:${option.value}`, label: option.label })),
+  shoes: OUTFIT_PIECE_OPTIONS.shoes.map((option) => ({ value: `suggested:shoes:${option.value}`, label: option.label })),
+  accessory: OUTFIT_PIECE_OPTIONS.accessory.map((option) => ({ value: `suggested:accessory:${option.value}`, label: option.label })),
 };
 
 const sections = ['Scheme Basics', 'Build Outfit', 'AI Assist', 'Slots Review', 'Card Background', 'Save & Generate'];
@@ -167,6 +145,14 @@ export default function CreateMySchemeView() {
   const [mood, setMood] = useState('Urban Premium');
   const [aiPrompt, setAiPrompt] = useState('');
   const [generationMode, setGenerationMode] = useState<GenerationMode>('manual');
+  const [aiInterpreting, setAiInterpreting] = useState(false);
+  const [aiInterpretation, setAiInterpretation] = useState<OutfitInterpretationResult | null>(null);
+  const [aiSlotSuggestions, setAiSlotSuggestions] = useState<Record<SlotKey, Array<{ value: string; label: string }>>>({
+    upper: [],
+    lower: [],
+    shoes: [],
+    accessory: [],
+  });
   const [selectedSection, setSelectedSection] = useState(sections[0]);
   const [slots, setSlots] = useState<Record<SlotKey, string | null>>({
     upper: null,
@@ -461,35 +447,58 @@ export default function CreateMySchemeView() {
   };
 
   const optionsByType = (slot: SlotKey) => {
-    const aliases = SLOT_TYPE_ALIASES[slot];
+    const aliases = SLOT_TYPE_ALIASES[slot as OutfitSlotKey];
     return items.filter((item) => aliases.includes(normalizeSchemePieceType(item.piece_type)));
   };
 
-  const generateFromAiPrompt = () => {
-    const normalizedPrompt = aiPrompt.toLowerCase();
-    if (!normalizedPrompt.trim()) {
+  const generateFromAiPrompt = async () => {
+    const normalizedPrompt = aiPrompt.toLowerCase().trim();
+    if (!normalizedPrompt) {
       setAlertMessage('Write a prompt before running AI generation.');
       return;
     }
 
-    const matchingBrand = brands.find((brand) => normalizedPrompt.includes(brand.name.toLowerCase()));
-    if (matchingBrand) {
-      setSelectedBrandId(matchingBrand.brand_id);
-    }
+    setAiInterpreting(true);
+    try {
+      const response = await fetch('/api/outfit-card/interpret', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: normalizedPrompt, locale: 'pt-BR' }),
+      });
+      const payload = (await response.json().catch(() => null)) as OutfitInterpretResponse | null;
+      if (!response.ok || !payload?.success || !payload.data) {
+        setAlertMessage(payload?.error || 'Unable to interpret this look right now.');
+        return;
+      }
 
-    const nextSlots: Record<SlotKey, string | null> = { upper: null, lower: null, shoes: null, accessory: null };
+      setAiInterpretation(payload.data);
+      const matchingBrand = brands.find((brand) => normalizedPrompt.includes(brand.name.toLowerCase()));
+      if (matchingBrand) setSelectedBrandId(matchingBrand.brand_id);
 
-    (Object.keys(nextSlots) as SlotKey[]).forEach((slot) => {
-      const wardrobeOptions = optionsByType(slot);
-      const matched = wardrobeOptions.find((item) => normalizedPrompt.includes(item.name.toLowerCase()));
-      nextSlots[slot] = matched?.wardrobe_item_id || wardrobeOptions[0]?.wardrobe_item_id || null;
-    });
+      const mapping = mapAiInterpretationToManualForm({
+        interpretation: payload.data,
+        wardrobeItems: items,
+      });
 
-    setSlots(nextSlots);
-    setGenerationMode('ai');
+      setAiSlotSuggestions(mapping.aiSlotOptions);
+      setSlots((prev) => ({
+        ...prev,
+        upper: mapping.slotAssignments.upper ?? prev.upper ?? null,
+        lower: mapping.slotAssignments.lower ?? prev.lower ?? null,
+        shoes: mapping.slotAssignments.shoes ?? prev.shoes ?? null,
+        accessory: mapping.slotAssignments.accessory ?? prev.accessory ?? null,
+      }));
 
-    if (!title.trim()) {
-      setTitle(`AI ${style} ${occasion} Outfit`);
+      if (mapping.style) setStyle(mapping.style);
+      if (mapping.occasion) setOccasion(mapping.occasion);
+      if (mapping.mood) setMood(mapping.mood);
+      if (!title.trim() && mapping.title) setTitle(mapping.title);
+      setGenerationMode('ai');
+      setAlertMessage('Look interpreted. You can keep editing manually.');
+    } catch {
+      setAlertMessage('Unable to interpret this look right now.');
+    } finally {
+      setAiInterpreting(false);
     }
   };
 
@@ -680,6 +689,11 @@ export default function CreateMySchemeView() {
                     label: suggestion.label,
                     hint: 'Suggested',
                   })),
+                  ...aiSlotSuggestions[slot].map((suggestion) => ({
+                    value: suggestion.value,
+                    label: suggestion.label,
+                    hint: 'AI',
+                  })),
                   ...optionsByType(slot).map((item) => ({
                     value: item.wardrobe_item_id,
                     label: item.name,
@@ -758,17 +772,33 @@ export default function CreateMySchemeView() {
           <button
             type="button"
             className={primaryButtonClassName}
-            onClick={() => {
-              generateFromAiPrompt();
+            onClick={async () => {
+              await generateFromAiPrompt();
               setSelectedSection('Slots Review');
             }}
+            disabled={aiInterpreting}
           >
-            Generate from Prompt
+            {aiInterpreting ? 'Interpreting...' : 'Interpretar look'}
           </button>
           <button type="button" className={secondaryButtonClassName} onClick={() => setGenerationMode('ai')}>
             Set as AI Mode
           </button>
         </div>
+        {aiInterpretation ? (
+          <div className="rounded-xl border border-white/20 bg-white/5 p-3 text-sm text-white/90">
+            <p className="font-semibold text-white">Structured interpretation</p>
+            <p className="mt-1 text-white/70">{aiInterpretation.description || aiInterpretation.prompt}</p>
+            <ul className="mt-2 space-y-1 text-xs text-white/80">
+              {aiInterpretation.items.map((item, index) => (
+                <li key={`${item.display_label}-${index}`}>
+                  • {item.display_label} · {item.piece_type}
+                  {item.color ? ` · ${item.color}` : ''}
+                  {item.material ? ` · ${item.material}` : ''}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
     </SectionBlock>
   );

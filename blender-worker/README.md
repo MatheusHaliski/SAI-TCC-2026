@@ -35,3 +35,11 @@ These files are retained for a future Blender-based phase once the container/run
   `python -m uvicorn handler:app --host 0.0.0.0 --port 8000 --log-level info`
 - Health check endpoint: `GET /ping` returns `{"status":"ok"}`.
 - Generation endpoints are served by the same FastAPI app (`POST /`, `POST /jobs`, `GET /jobs/{jobId}`).
+
+## RunPod deployment requirement (critical)
+- If endpoint logs show only template startup lines (for example `runpod/pytorch:...`) and never show uvicorn logs, the endpoint is not using this worker image.
+- You must deploy a **custom image built from `blender-worker/Dockerfile`** and set container port `8000`.
+- Expected proof in logs:
+  - `worker_module_loaded entrypoint=handler.py`
+  - `Uvicorn running on http://0.0.0.0:8000`
+  - `server_starting ...`
