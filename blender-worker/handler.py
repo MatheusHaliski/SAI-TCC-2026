@@ -25,6 +25,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger("stylistai.worker")
+logger.info("worker_module_loaded entrypoint=handler.py")
 
 app = FastAPI(title="StylistAI MVP Mock 3D Worker", version="1.1.0")
 
