@@ -29,7 +29,7 @@ export default function ThreeDGenerationProgressModal({ open, status, progressPe
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="w-full max-w-md rounded-2xl border border-cyan-300/30 bg-slate-950/95 p-5 shadow-[0_0_40px_rgba(34,211,238,0.2)]">
-        <div className="mb-3 text-xs uppercase tracking-[0.25em] text-cyan-200/90">StylistAI • Virtual Wardrobe</div>
+        <div className="mb-3 text-xs uppercase tracking-[0.25em] text-cyan-200/90">FashionAI • Virtual Wardrobe</div>
         <h3 className="text-xl font-semibold text-white">{ui.title}</h3>
         <p className="mt-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-cyan-100">
           Stage: <span className="font-medium">{ui.stage}</span>
