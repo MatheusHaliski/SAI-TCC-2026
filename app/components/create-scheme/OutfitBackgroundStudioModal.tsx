@@ -214,37 +214,87 @@ function getRelativeLuminance(hexColor: string) {
   return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
 }
 
-function buildTiledMotifComposition(referenceImage: string, context: PresetContext): OutfitBackgroundConfig {
+type RepeatedImagePatternOptions = {
+  tileWidth: number;
+  tileHeight: number;
+  gapX: number;
+  gapY: number;
+  columns: number;
+  rows: number;
+  offsetX?: number;
+  offsetY?: number;
+  staggerOffset?: number;
+  frameRadius?: number;
+};
+
+function createRepeatedImagePattern(referenceImage: string, options: RepeatedImagePatternOptions) {
+  const frameRadius = options.frameRadius ?? 18;
+  const framePadding = Math.max(10, Math.round(Math.min(options.tileWidth, options.tileHeight) * 0.12));
+  const frameWidth = options.tileWidth + framePadding * 2;
+  const frameHeight = options.tileHeight + framePadding * 2;
+  const stepX = frameWidth + options.gapX;
+  const stepY = frameHeight + options.gapY;
+  const startX = options.offsetX ?? 12;
+  const startY = options.offsetY ?? 24;
+  const staggerOffset = options.staggerOffset ?? Math.round(stepX * 0.42);
+
+  return Array.from({ length: options.rows }).map((_, row) =>
+    Array.from({ length: options.columns }).map((__, col) => {
+      const x = startX + col * stepX + (row % 2 ? staggerOffset : 0);
+      const y = startY + row * stepY;
+      return `<g transform='translate(${x} ${y})'>
+        <rect x='0' y='0' width='${frameWidth}' height='${frameHeight}' rx='${frameRadius + 4}' fill='rgba(15,23,42,0.34)'/>
+        <rect x='1' y='1' width='${frameWidth - 2}' height='${frameHeight - 2}' rx='${frameRadius + 4}' fill='rgba(2,6,23,0.22)' stroke='rgba(248,250,252,0.24)' stroke-width='1.3'/>
+        <rect x='${framePadding}' y='${framePadding}' width='${options.tileWidth}' height='${options.tileHeight}' rx='${frameRadius}' fill='rgba(248,250,252,0.96)'/>
+        <image href='${referenceImage}' x='${framePadding + 6}' y='${framePadding + 6}' width='${Math.max(12, options.tileWidth - 12)}' height='${Math.max(12, options.tileHeight - 12)}' preserveAspectRatio='xMidYMid meet' opacity='0.98'/>
+      </g>`;
+    }).join('')
+  ).join('');
+}
+
+function buildTiledMotifComposition(referenceImage: string, context: PresetContext, imageAspectRatio = 1): OutfitBackgroundConfig {
+  const safeAspectRatio = Number.isFinite(imageAspectRatio) && imageAspectRatio > 0 ? imageAspectRatio : 1;
+  const tileHeight = 96;
+  const tileWidth = Math.round(Math.min(156, Math.max(68, tileHeight * safeAspectRatio)));
+  const repeatedPattern = createRepeatedImagePattern(referenceImage, {
+    tileWidth,
+    tileHeight,
+    gapX: 20,
+    gapY: 22,
+    columns: 8,
+    rows: 6,
+    offsetX: 14,
+    offsetY: 28,
+    staggerOffset: 38,
+    frameRadius: 14,
+  });
   const tiledBrandSurface = asDataUri(
     `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
       <defs>
         <linearGradient id='surface' x1='0%' y1='0%' x2='100%' y2='100%'>
           <stop offset='0%' stop-color='#020617'/>
-          <stop offset='45%' stop-color='#172554'/>
-          <stop offset='100%' stop-color='#312e81'/>
+          <stop offset='52%' stop-color='#0f172a'/>
+          <stop offset='100%' stop-color='#172554'/>
         </linearGradient>
+        <filter id='softShadow' x='-12%' y='-12%' width='124%' height='124%'>
+          <feGaussianBlur stdDeviation='2.8'/>
+        </filter>
       </defs>
       <rect width='1200' height='800' fill='url(#surface)'/>
-      <rect width='1200' height='800' fill='rgba(248,250,252,0.06)'/>
-      ${Array.from({ length: 7 }).map((_, row) =>
-        Array.from({ length: 10 }).map((__, col) => {
-          const x = col * 120 + (row % 2 ? 42 : 14);
-          const y = row * 108 + 24;
-          const rotation = row % 2 === 0 ? -8 : 8;
-          return `<g transform='translate(${x} ${y}) rotate(${rotation} 44 44)'>
-            <rect x='4' y='4' width='88' height='88' rx='18' fill='rgba(15,23,42,0.28)'/>
-            <image href='${referenceImage}' x='12' y='12' width='72' height='72' preserveAspectRatio='xMidYMid meet' opacity='0.96'/>
-          </g>`;
-        }).join('')
-      ).join('')}
-      <rect width='1200' height='800' fill='rgba(2,6,23,0.18)'/>
+      <rect width='1200' height='800' fill='rgba(248,250,252,0.04)'/>
+      <g filter='url(#softShadow)' opacity='0.28'>
+        ${repeatedPattern}
+      </g>
+      ${repeatedPattern}
+      <rect width='1200' height='800' fill='rgba(2,6,23,0.09)'/>
+      <text x='66' y='760' font-size='22' font-family='Inter, Arial, sans-serif' fill='rgba(148,163,184,0.55)' letter-spacing='3'>${escapeSvgAttribute(context.brandName.toUpperCase())} MOTIF SURFACE</text>
     </svg>`,
   );
   return {
     background_mode: 'ai_artwork',
     ai_artwork: { prompt: `${context.brandName} tiled motif from uploaded reference`, image_url: tiledBrandSurface, generation_status: 'done' },
-    gradient: GRADIENT_PRESETS[7].config.gradient,
-    shape: 'diamond',
+    shape: 'none',
+    texture_overlay: false,
   };
 }
 
@@ -529,14 +579,35 @@ export default function OutfitBackgroundStudioModal({
   }, [outfitMetadata, previewCardData]);
   const recommendedPresets = useMemo(() => getRecommendedPresets(presetContext), [presetContext]);
   const displayedPresets = useMemo(() => recommendedPresets.slice(0, 6), [recommendedPresets]);
-  const applyRecommendedPresetFromReferenceImage = (
+  const isUploadedReferenceImage = (value: string) => value.startsWith('data:image/') || value.startsWith('blob:');
+  const getUploadedReferenceImage = () => (isUploadedReferenceImage(aiReferenceImageUrl) ? aiReferenceImageUrl : null);
+  const probeReferenceImageDimensions = async (source: string): Promise<{ width: number; height: number } | null> => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    if (typeof window === 'undefined') return null;
+    return new Promise((resolve) => {
+      const image = new window.Image();
+      image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+      image.onerror = () => resolve(null);
+      image.src = source;
+    });
+  };
+
+  const applyRecommendedPresetFromReferenceImage = async (
     presetId: string,
     uploadedReferenceImage: string | null,
     context: PresetContext,
   ) => {
     const preset = displayedPresets.find((item) => item.id === presetId);
     if (!preset) return;
-    const config = preset.recipe(context, uploadedReferenceImage);
+    let config = preset.recipe(context, uploadedReferenceImage);
+    if (presetId === 'brand_tiled_grid' && uploadedReferenceImage) {
+      const dimensions = await probeReferenceImageDimensions(uploadedReferenceImage);
+      if (!dimensions || !dimensions.width || !dimensions.height) {
+        console.warn('background-studio: failed to load uploaded reference image for tiled motif preset; applying fallback preset.');
+      } else {
+        config = buildTiledMotifComposition(uploadedReferenceImage, context, dimensions.width / dimensions.height);
+      }
+    }
     setDraft((prev) => ({
       ...prev,
       ...config,
@@ -623,7 +694,7 @@ export default function OutfitBackgroundStudioModal({
     }
 
     console.debug('artwork_studio.normalized_response', payload.data);
-    const uploadedReferenceVariation = aiReferenceImageUrl.startsWith('data:image/')
+    const uploadedReferenceVariation = isUploadedReferenceImage(aiReferenceImageUrl)
       ? [{
           variation_id: `reference_upload_${Date.now()}`,
           preview_url: aiReferenceImageUrl,
@@ -1033,13 +1104,13 @@ export default function OutfitBackgroundStudioModal({
                     key={preset.id}
                     type="button"
                     className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)]"
-                    onClick={() => applyRecommendedPresetFromReferenceImage(preset.id, aiReferenceImageUrl.startsWith('data:image/') ? aiReferenceImageUrl : null, presetContext)}
+                    onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, getUploadedReferenceImage(), presetContext)}
                   >
                     <p className="text-xs font-semibold">{preset.label}</p>
                     <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
                     <span
                       className="mt-2 block h-7 rounded-lg border border-white/15"
-                      style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(preset.recipe(presetContext, aiReferenceImageUrl.startsWith('data:image/') ? aiReferenceImageUrl : null)))}
+                      style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(preset.recipe(presetContext, getUploadedReferenceImage())))}
                     />
                   </button>
                 ))}
