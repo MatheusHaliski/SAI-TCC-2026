@@ -62,14 +62,37 @@ function getJobId(source: Record<string, unknown>): string {
   return typeof candidate === 'string' ? candidate.trim() : '';
 }
 
-function normalizeStatus(statusLike: unknown): BlenderCloudJobStatus['status'] {
-  const normalized = String(statusLike ?? '').trim().toLowerCase().replace(/\s+/g, '_');
-  if (['completed', 'succeeded', 'done', 'success'].includes(normalized)) return 'completed';
-  if (['failed', 'error', 'timed_out', 'timeout'].includes(normalized)) return 'failed';
-  if (['cancelled', 'canceled', 'terminated'].includes(normalized)) return 'cancelled';
-  if (['running', 'in_progress', 'processing', 'started'].includes(normalized)) return 'in_progress';
+function normalizeStatus(statusLike: unknown): BlenderCloudJobStatus['status'] | null {
+  const normalized = String(statusLike ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (!normalized) return null;
+  if (['completed', 'succeeded', 'done', 'success', 'finished', 'complete'].includes(normalized)) return 'completed';
+  if (['failed', 'error', 'errored', 'timed_out', 'timeout'].includes(normalized)) return 'failed';
+  if (['cancelled', 'canceled', 'terminated', 'aborted'].includes(normalized)) return 'cancelled';
+  if (['running', 'in_progress', 'processing', 'started', 'active'].includes(normalized)) return 'in_progress';
   if (['submitted', 'accepted'].includes(normalized)) return 'submitted';
-  return 'queued';
+  if (['queued', 'pending', 'waiting'].includes(normalized)) return 'queued';
+  return null;
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function findArtifactUrl(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+      return trimmed;
+    }
+  }
+  if (!value || typeof value !== 'object') return null;
+
+  const record = value as Record<string, unknown>;
+  for (const key of ['url', 'href', 'download_url', 'downloadUrl', 'model_url', 'modelUrl', 'glb_url', 'glbUrl']) {
+    const candidate = readString(record[key]);
+    if (candidate) return candidate;
+  }
+  return null;
 }
 
 function extractArtifacts(payload: Record<string, unknown>): Record<string, unknown> | null {
@@ -85,7 +108,14 @@ function extractArtifacts(payload: Record<string, unknown>): Record<string, unkn
     'modelUrl',
     'outputModelUrl',
     'outputUrl',
+    'glb',
     'glbUrl',
+    'glb_url',
+    'model_url',
+    'output_url',
+    'download_url',
+    'file_url',
+    'result_url',
     'artifact_url',
     'artifactUrl',
     'url',
@@ -107,15 +137,74 @@ function extractArtifacts(payload: Record<string, unknown>): Record<string, unkn
     return acc;
   }, {});
 
-  const combined = { ...fromTop, ...fromOutput };
+  const nestedOutputCandidates: Record<string, unknown> = {};
+  const modelCandidate = findArtifactUrl(output.model);
+  const fileCandidate = findArtifactUrl(output.file);
+  const resultCandidate = findArtifactUrl(output.result);
+  if (modelCandidate) nestedOutputCandidates.model = modelCandidate;
+  if (fileCandidate) nestedOutputCandidates.file = fileCandidate;
+  if (resultCandidate) nestedOutputCandidates.result = resultCandidate;
+
+  const combined = { ...fromTop, ...fromOutput, ...nestedOutputCandidates };
   return Object.keys(combined).length > 0 ? combined : null;
 }
 
+function isErrorLikeText(value: string): boolean {
+  return /(error|failed|failure|traceback|exception|timed?\s*out|invalid|not found|unable)/i.test(value);
+}
+
 function extractErrorMessage(payload: Record<string, unknown>): string | null {
-  const candidate = payload.error ?? toRecord(payload.output).error;
-  if (typeof candidate === 'string' && candidate.trim()) return candidate.trim();
-  if (candidate && typeof candidate === 'object') return JSON.stringify(candidate);
+  const output = toRecord(payload.output);
+  const candidates: unknown[] = [
+    payload.error,
+    output.error,
+    payload.traceback,
+    output.traceback,
+    payload.message,
+    output.message,
+    payload.detail,
+    output.detail,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      const message = candidate.trim();
+      if (candidate === payload.message || candidate === output.message || candidate === payload.detail || candidate === output.detail) {
+        if (!isErrorLikeText(message)) continue;
+      }
+      return message;
+    }
+    if (candidate && typeof candidate === 'object') {
+      return clipForLog(candidate, 800);
+    }
+  }
   return null;
+}
+
+function resolveRawStatus(payload: Record<string, unknown>): { rawStatus: unknown; candidates: Array<{ field: string; value: unknown }> } {
+  const output = toRecord(payload.output);
+  const candidates: Array<{ field: string; value: unknown }> = [
+    { field: 'body.status', value: payload.status },
+    { field: 'output.status', value: output.status },
+    { field: 'body.state', value: payload.state },
+    { field: 'output.state', value: output.state },
+    { field: 'body.phase', value: payload.phase },
+    { field: 'output.phase', value: output.phase },
+    { field: 'body.result', value: payload.result },
+    { field: 'output.result', value: output.result },
+    { field: 'body.job_status', value: payload.job_status },
+    { field: 'output.job_status', value: output.job_status },
+  ].filter((candidate) => candidate.value !== undefined && candidate.value !== null);
+
+  const preferred = candidates.find((candidate) => {
+    if (typeof candidate.value === 'string') return candidate.value.trim().length > 0;
+    return typeof candidate.value === 'number' || typeof candidate.value === 'boolean';
+  });
+
+  return {
+    rawStatus: preferred?.value ?? null,
+    candidates,
+  };
 }
 
 function clipForLog(value: unknown, max = 500): string {
@@ -241,7 +330,7 @@ export class BlenderCloudService {
     }
 
     const cloudJobId = getJobId(body);
-    const normalizedStatus = normalizeStatus(body.status);
+    const normalizedStatus = normalizeStatus(body.status) ?? (extractArtifacts(body) ? 'completed' : 'submitted');
     const artifacts = extractArtifacts(body);
 
     if (cloudJobId) {
@@ -299,29 +388,103 @@ export class BlenderCloudService {
       throw new Error(`Blender Cloud status request failed. url=${statusUrl} timeoutMs=${config.statusTimeoutMs} error=${message}`);
     }
 
-    const body = toRecord((await response.json().catch(() => ({}))) as PodStatusResponse);
+    const rawText = await response.text().catch(() => '');
+    const rawResponseExcerpt = clipForLog(rawText || null, 800);
 
-    console.info('[blender-cloud] status response', {
+    console.info('[blender-cloud] raw status response text', {
       cloudJobId,
       statusUrl,
       responseStatus: response.status,
-      bodyExcerpt: clipForLog(body),
+      rawTextExcerpt: rawResponseExcerpt,
     });
 
     if (!response.ok) {
-      throw new Error(`Blender Cloud status failed. url=${statusUrl} status=${response.status} body=${clipForLog(body)}`);
+      throw new Error(`Blender Cloud status failed. cloudJobId=${cloudJobId} url=${statusUrl} status=${response.status} body=${rawResponseExcerpt}`);
     }
 
+    if (!rawText.trim()) {
+      console.warn('[blender-cloud] empty status response body', {
+        cloudJobId,
+        statusUrl,
+        responseStatus: response.status,
+      });
+      return {
+        cloudJobId,
+        status: 'failed',
+        artifacts: null,
+        metrics: null,
+        logs: null,
+        raw: { responseStatus: response.status, rawText: '' },
+        errorMessage: 'Status response body was empty',
+      };
+    }
+
+    let parsedBody: unknown;
+    try {
+      parsedBody = JSON.parse(rawText) as PodStatusResponse;
+    } catch (error) {
+      console.warn('[blender-cloud] NON-JSON RESPONSE from status endpoint', {
+        cloudJobId,
+        statusUrl,
+        responseStatus: response.status,
+        parseError: error instanceof Error ? error.message : String(error),
+        rawTextExcerpt: rawResponseExcerpt,
+      });
+      return {
+        cloudJobId,
+        status: 'failed',
+        artifacts: null,
+        metrics: null,
+        logs: null,
+        raw: { responseStatus: response.status, rawText },
+        errorMessage: 'Status endpoint returned non-JSON response',
+      };
+    }
+
+    const body = toRecord(parsedBody);
     const output = toRecord(body.output);
+    const artifacts = extractArtifacts(body);
+    const errorMessage = extractErrorMessage(body);
+    const { rawStatus, candidates } = resolveRawStatus(body);
+    const normalizedFromStatus = normalizeStatus(rawStatus);
+
+    let finalStatus: BlenderCloudJobStatus['status'];
+    if (errorMessage) {
+      finalStatus = 'failed';
+    } else if (artifacts) {
+      finalStatus = 'completed';
+    } else if (normalizedFromStatus) {
+      finalStatus = normalizedFromStatus;
+    } else {
+      finalStatus = 'in_progress';
+      console.warn('[blender-cloud] status missing from payload and no terminal signal found', {
+        cloudJobId,
+        statusUrl,
+        responseStatus: response.status,
+        parsedPayloadExcerpt: clipForLog(body, 1200),
+      });
+    }
+
+    console.info('[blender-cloud] status poll diagnostics', {
+      cloudJobId,
+      statusUrl,
+      responseStatus: response.status,
+      rawResponseExcerpt: rawResponseExcerpt,
+      statusCandidates: candidates.map((candidate) => ({ field: candidate.field, valueExcerpt: clipForLog(candidate.value, 160) })),
+      rawStatus: rawStatus ?? null,
+      normalizedStatus: finalStatus,
+      artifactsFound: Boolean(artifacts),
+      errorMessageFound: Boolean(errorMessage),
+    });
 
     return {
       cloudJobId,
-      status: normalizeStatus(body.status ?? output.status),
-      artifacts: extractArtifacts(body),
+      status: finalStatus,
+      artifacts,
       metrics: Object.keys(toRecord(body.metrics)).length ? toRecord(body.metrics) : Object.keys(toRecord(output.metrics)).length ? toRecord(output.metrics) : null,
       logs: Object.keys(toRecord(body.logs)).length ? toRecord(body.logs) : Object.keys(toRecord(output.logs)).length ? toRecord(output.logs) : null,
       raw: body,
-      errorMessage: extractErrorMessage(body),
+      errorMessage,
     };
   }
 }
