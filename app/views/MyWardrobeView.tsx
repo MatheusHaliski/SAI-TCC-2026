@@ -211,6 +211,7 @@ export default function MyWardrobeView() {
         open={Boolean(progressItem) && !viewerUrl}
         status={assetJob.status}
         progressPercent={assetJob.progressPercent}
+        pollAttempts={assetJob.pollAttempts}
         error={assetJob.error}
         onClose={() => {
           assetJob.cancelPolling();

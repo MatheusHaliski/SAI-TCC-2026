@@ -419,7 +419,48 @@ export class WardrobeService {
       provider: 'runpod',
       cloud_job_id: submitted.cloudJobId,
       job_type: MODEL_GENERATION_JOB_TYPE,
+      cloud_submit_status: submitted.status,
     });
+
+    const resolveModelFromArtifacts = (artifacts: Record<string, unknown> | null) => {
+      const source = artifacts ?? {};
+      const modelUrlCandidates = [
+        source.outputModelUrl,
+        source.modelUrl,
+        source.model_3d_url,
+        source.outputUrl,
+        source.glbUrl,
+        source.artifact_url,
+        source.artifactUrl,
+      ];
+      const previewUrlCandidates = [
+        source.previewUrl,
+        source.posterUrl,
+        source.thumbnailUrl,
+      ];
+
+      const model_3d_url = modelUrlCandidates.find((url) => typeof url === 'string' && url.trim().length > 0);
+      const model_preview_url =
+        previewUrlCandidates.find((url) => typeof url === 'string' && url.trim().length > 0) ?? null;
+
+      const resolvedModelUrl = typeof model_3d_url === 'string' ? model_3d_url.trim() : '';
+      if (!resolvedModelUrl || !resolvedModelUrl.toLowerCase().startsWith('http')) {
+        throw new ServiceError('RunPod Blender model generation completed without a valid model URL.', 502);
+      }
+
+      return {
+        model_3d_url: resolvedModelUrl,
+        model_preview_url: typeof model_preview_url === 'string' ? model_preview_url.trim() : null,
+      };
+    };
+
+    if (submitted.status === 'completed') {
+      return resolveModelFromArtifacts(submitted.artifacts);
+    }
+
+    if (submitted.status === 'failed' || submitted.status === 'cancelled') {
+      throw new ServiceError(`RunPod Blender model generation ${submitted.status} during submit phase.`, 502);
+    }
 
     for (let poll = 0; poll < MODEL_GENERATION_MAX_POLLS; poll += 1) {
       if (poll > 0 && poll % 6 === 0) {
@@ -433,38 +474,12 @@ export class WardrobeService {
 
       const status = await this.blenderCloudService.getBlenderCloudJobStatus(submitted.cloudJobId);
       if (status.status === 'completed') {
-        const artifacts = status.artifacts ?? {};
-        const modelUrlCandidates = [
-          artifacts.outputModelUrl,
-          artifacts.modelUrl,
-          artifacts.outputUrl,
-          artifacts.glbUrl,
-        ];
-        const previewUrlCandidates = [
-          artifacts.previewUrl,
-          artifacts.posterUrl,
-          artifacts.thumbnailUrl,
-        ];
-
-        const model_3d_url = modelUrlCandidates.find((url) => typeof url === 'string' && url.trim().length > 0);
-        const model_preview_url =
-          previewUrlCandidates.find((url) => typeof url === 'string' && url.trim().length > 0) ?? null;
-
-        const resolvedModelUrl = typeof model_3d_url === 'string' ? model_3d_url.trim() : '';
-        if (!resolvedModelUrl || !resolvedModelUrl.toLowerCase().startsWith('http')) {
-          throw new ServiceError('RunPod Blender model generation completed without a valid model URL.', 502);
-        }
-
-        return {
-          model_3d_url: resolvedModelUrl,
-          model_preview_url: typeof model_preview_url === 'string' ? model_preview_url.trim() : null,
-        };
+        return resolveModelFromArtifacts(status.artifacts);
       }
 
-      if (status.status === 'failed') {
-        const remoteError = status.raw?.error;
-        const details = typeof remoteError === 'string' ? remoteError : JSON.stringify(remoteError ?? status.raw);
-        throw new ServiceError(`RunPod Blender model generation failed: ${details}`, 502);
+      if (status.status === 'failed' || status.status === 'cancelled') {
+        const details = status.errorMessage ?? JSON.stringify(status.raw?.error ?? status.raw);
+        throw new ServiceError(`RunPod Blender model generation ${status.status}: ${details}`, 502);
       }
 
       await new Promise((resolve) => setTimeout(resolve, MODEL_GENERATION_POLL_MS));

@@ -2,7 +2,7 @@ import { BaseRepository } from './BaseRepository';
 
 const PIPELINE_JOBS_COLLECTION = 'sai-pipelineJobs';
 
-export type UvPipelineStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type UvPipelineStatus = 'queued' | 'submitted' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
 
 export interface UvPipelineJobRecord {
   user_id: string;
@@ -48,7 +48,7 @@ export class PipelineJobsRepository extends BaseRepository {
     const snapshot = await this.db
       .collection(PIPELINE_JOBS_COLLECTION)
       .where('user_id', '==', userId)
-      .where('status', 'in', ['pending', 'running'])
+      .where('status', 'in', ['queued', 'submitted', 'in_progress'])
       .limit(25)
       .get();
 

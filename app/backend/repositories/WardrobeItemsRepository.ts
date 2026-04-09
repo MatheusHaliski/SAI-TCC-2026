@@ -266,6 +266,19 @@ export class WardrobeItemsRepository extends BaseRepository {
     });
   }
 
+
+  async updateModel3dUrl(wardrobeItemId: string, model3dUrl: string): Promise<void> {
+    const normalized = model3dUrl.trim();
+    if (!normalized) return;
+
+    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
+      model_3d_url: normalized,
+      model_status: 'completed',
+      model_generation_error: null,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
   async getAnalysisByUser(userId: string): Promise<WardrobeAnalysis> {
     const items = await this.findByUser(userId);
     return {
