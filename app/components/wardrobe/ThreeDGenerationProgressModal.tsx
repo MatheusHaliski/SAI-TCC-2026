@@ -7,6 +7,7 @@ interface Props {
   status: AssetJobStatus;
   progressPercent: number;
   error?: string | null;
+  pollAttempts?: number;
   onClose: () => void;
   onRetry: () => void;
 }
@@ -18,13 +19,15 @@ const STATUS_COPY: Record<AssetJobStatus, { title: string; stage: string }> = {
   in_progress: { title: 'Generating 3D Asset', stage: 'Processing mesh pipeline' },
   completed: { title: 'Generating 3D Asset', stage: 'Ready' },
   failed: { title: 'Generating 3D Asset', stage: 'Failed' },
+  timed_out: { title: 'Generating 3D Asset', stage: 'Timed out' },
+  cancelled: { title: 'Generating 3D Asset', stage: 'Cancelled' },
 };
 
-export default function ThreeDGenerationProgressModal({ open, status, progressPercent, error, onClose, onRetry }: Props) {
+export default function ThreeDGenerationProgressModal({ open, status, progressPercent, error, pollAttempts, onClose, onRetry }: Props) {
   if (!open) return null;
 
   const ui = STATUS_COPY[status];
-  const isFailed = status === 'failed';
+  const isFailed = status === 'failed' || status === 'timed_out' || status === 'cancelled';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -38,7 +41,7 @@ export default function ThreeDGenerationProgressModal({ open, status, progressPe
         {!isFailed ? (
           <div className="mt-4">
             <div className="mb-1 flex items-center justify-between text-xs text-cyan-100/90">
-              <span>Progress</span>
+              <span>Progress (estimated while processing)</span>
               <span>{Math.max(0, Math.min(100, Math.round(progressPercent)))}%</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-white/10">
@@ -47,6 +50,7 @@ export default function ThreeDGenerationProgressModal({ open, status, progressPe
                 style={{ width: `${Math.max(3, Math.min(100, progressPercent))}%` }}
               />
             </div>
+            {pollAttempts ? <p className="mt-2 text-xs text-cyan-100/70">Polling attempt #{pollAttempts}</p> : null}
           </div>
         ) : null}
 

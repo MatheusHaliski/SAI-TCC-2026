@@ -3,6 +3,29 @@ import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItem
 import { BlenderCloudService } from './BlenderCloudService';
 import { ServiceError } from './errors';
 
+function findUrlInArtifacts(artifacts: Record<string, unknown> | null): string | null {
+  if (!artifacts) return null;
+
+  const candidates = [
+    artifacts.model_3d_url,
+    artifacts.modelUrl,
+    artifacts.outputModelUrl,
+    artifacts.outputUrl,
+    artifacts.glbUrl,
+    artifacts.artifact_url,
+    artifacts.artifactUrl,
+    artifacts.url,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
 export class BlenderPipelineService {
   constructor(
     private readonly pipelineJobsRepository = new PipelineJobsRepository(),
@@ -43,7 +66,7 @@ export class BlenderPipelineService {
       wardrobe_item_id,
       provider: 'runpod',
       cloud_job_id: null,
-      status: 'pending',
+      status: 'queued',
       stage: 'queued',
       input_payload: {
         modelUrl,
@@ -59,29 +82,67 @@ export class BlenderPipelineService {
       finished_at: null,
     });
 
-    const runpodSubmitted = await this.blenderCloudService.submitBlenderCloudJob({
-      modelUrl,
-      jobType: 'uv_unwrap',
-      options: { generation_mode },
-    });
+    try {
+      const runpodSubmitted = await this.blenderCloudService.submitBlenderCloudJob({
+        modelUrl,
+        jobType: 'uv_unwrap',
+        options: { generation_mode },
+      });
 
-    await this.pipelineJobsRepository.update(created.pipeline_job_id, {
-      cloud_job_id: runpodSubmitted.cloudJobId,
-      status: 'running',
-      stage: 'queued_in_runpod',
-      started_at: new Date().toISOString(),
-      metrics: {
-        runpodSubmitResponse: runpodSubmitted.raw,
-      },
-    });
+      const submittedStatus = runpodSubmitted.status === 'completed'
+        ? 'completed'
+        : runpodSubmitted.status === 'failed' || runpodSubmitted.status === 'cancelled'
+          ? runpodSubmitted.status
+          : 'submitted';
 
-    return {
-      jobId: created.pipeline_job_id,
-      cloudJobId: runpodSubmitted.cloudJobId,
-      provider: 'runpod',
-      status: 'pending',
-      stage: 'queued',
-    };
+      await this.pipelineJobsRepository.update(created.pipeline_job_id, {
+        cloud_job_id: runpodSubmitted.cloudJobId,
+        status: submittedStatus,
+        stage: submittedStatus === 'completed' ? 'completed' : 'submitted_to_runpod',
+        started_at: new Date().toISOString(),
+        metrics: {
+          runpodSubmitResponse: runpodSubmitted.raw,
+        },
+        artifacts: runpodSubmitted.artifacts,
+        finished_at: submittedStatus === 'completed' ? new Date().toISOString() : null,
+      });
+
+      if (submittedStatus === 'completed') {
+        const artifactUrl = findUrlInArtifacts(runpodSubmitted.artifacts);
+        await this.wardrobeItemsRepository.updatePipelineStatus(wardrobe_item_id, 'done', null, {
+          stage: 'uv_pipeline_completed_inline',
+          pipeline_job_id: created.pipeline_job_id,
+          cloud_job_id: runpodSubmitted.cloudJobId,
+          provider: 'runpod',
+          uv_job_artifacts: runpodSubmitted.artifacts,
+        });
+
+        if (artifactUrl) {
+          await this.wardrobeItemsRepository.updateModel3dUrl(wardrobe_item_id, artifactUrl);
+        }
+      }
+
+      return {
+        jobId: created.pipeline_job_id,
+        cloudJobId: runpodSubmitted.cloudJobId,
+        provider: 'runpod',
+        status: submittedStatus,
+        stage: submittedStatus === 'completed' ? 'completed' : 'submitted_to_runpod',
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unable to submit job to Blender Cloud service.';
+      await this.pipelineJobsRepository.update(created.pipeline_job_id, {
+        status: 'failed',
+        stage: 'submit_failed',
+        error_message: errorMessage,
+        finished_at: new Date().toISOString(),
+      });
+      await this.wardrobeItemsRepository.updatePipelineStatus(wardrobe_item_id, 'failed', errorMessage, {
+        stage: 'uv_pipeline_submit_failed',
+        pipeline_job_id: created.pipeline_job_id,
+      });
+      throw new ServiceError(errorMessage, 502);
+    }
   }
 
   async getJob(pipelineJobId: string) {
@@ -108,24 +169,37 @@ export class BlenderPipelineService {
     }
 
     if (!job.cloud_job_id) {
+      if (job.status !== 'failed' && job.status !== 'cancelled') {
+        await this.pipelineJobsRepository.update(pipelineJobId, {
+          status: 'failed',
+          stage: 'missing_cloud_job_id',
+          error_message: 'Pipeline job is missing cloud_job_id.',
+          finished_at: new Date().toISOString(),
+        });
+      }
+      return (await this.pipelineJobsRepository.findById(pipelineJobId)) ?? job;
+    }
+
+    if (['completed', 'failed', 'cancelled'].includes(job.status)) {
       return job;
     }
 
-    if (job.status === 'completed' || job.status === 'failed') {
-      return job;
-    }
-
-    const remote = await this.blenderCloudService.getBlenderCloudJobStatus(job.cloud_job_id);
+    const remote = await this.blenderCloudService.getBlenderCloudJobStatus(job.cloud_job_id, job.metrics?.runpodSubmitResponse as Record<string, unknown> | undefined);
+    const mergedMetrics = {
+      ...(job.metrics ?? {}),
+      ...(remote.metrics ?? {}),
+      last_remote_status: remote.status,
+      last_synced_at: new Date().toISOString(),
+    };
 
     if (remote.status === 'completed') {
+      const resolvedModelUrl = findUrlInArtifacts(remote.artifacts);
+
       await this.pipelineJobsRepository.update(pipelineJobId, {
         status: 'completed',
         stage: 'completed',
         artifacts: remote.artifacts,
-        metrics: {
-          ...(job.metrics ?? {}),
-          ...(remote.metrics ?? {}),
-        },
+        metrics: mergedMetrics,
         error_message: null,
         finished_at: new Date().toISOString(),
       });
@@ -138,29 +212,32 @@ export class BlenderPipelineService {
         uv_job_artifacts: remote.artifacts,
         uv_job_metrics: remote.metrics,
       });
-    } else if (remote.status === 'failed') {
+
+      if (resolvedModelUrl) {
+        await this.wardrobeItemsRepository.updateModel3dUrl(job.wardrobe_item_id, resolvedModelUrl);
+      }
+    } else if (remote.status === 'failed' || remote.status === 'cancelled') {
+      const failureMessage = remote.errorMessage ?? (remote.status === 'cancelled' ? 'RunPod Blender job was cancelled.' : 'RunPod Blender job failed.');
       await this.pipelineJobsRepository.update(pipelineJobId, {
-        status: 'failed',
-        stage: 'failed',
+        status: remote.status,
+        stage: remote.status,
         artifacts: remote.artifacts,
-        metrics: {
-          ...(job.metrics ?? {}),
-          ...(remote.metrics ?? {}),
-        },
-        error_message: JSON.stringify(remote.raw.error ?? 'RunPod job failed'),
+        metrics: mergedMetrics,
+        error_message: failureMessage,
         finished_at: new Date().toISOString(),
       });
 
-      await this.wardrobeItemsRepository.updatePipelineStatus(job.wardrobe_item_id, 'failed', 'RunPod Blender job failed.', {
-        stage: 'uv_pipeline_failed',
+      await this.wardrobeItemsRepository.updatePipelineStatus(job.wardrobe_item_id, 'failed', failureMessage, {
+        stage: remote.status === 'cancelled' ? 'uv_pipeline_cancelled' : 'uv_pipeline_failed',
         pipeline_job_id: pipelineJobId,
         cloud_job_id: job.cloud_job_id,
         provider: 'runpod',
       });
     } else {
       await this.pipelineJobsRepository.update(pipelineJobId, {
-        status: 'running',
-        stage: remote.status === 'in_progress' ? 'in_progress' : 'queued',
+        status: remote.status === 'submitted' ? 'submitted' : remote.status === 'in_progress' ? 'in_progress' : 'queued',
+        stage: remote.status,
+        metrics: mergedMetrics,
       });
     }
 
