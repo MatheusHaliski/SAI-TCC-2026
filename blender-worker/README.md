@@ -36,6 +36,17 @@ These files are retained for a future Blender-based phase once the container/run
 - Health check endpoint: `GET /ping` returns `{"status":"ok"}`.
 - Generation endpoints are served by the same FastAPI app (`POST /`, `POST /jobs`, `GET /jobs/{jobId}`).
 
+## Build and tag guidance (production-safe)
+- Build using the worker directory as build context so frontend files and repo-level artifacts are never sent to Docker:
+  - `docker buildx build --platform linux/amd64 -t stylistai-worker:runpod-2026-04-09 .`
+- Prefer explicit immutable tags for deployments:
+  - `stylistai-worker:v1`
+  - `stylistai-worker:v2`
+  - `stylistai-worker:runpod-2026-04-09`
+- You may optionally add a moving alias after publishing a versioned tag:
+  - `docker tag stylistai-worker:runpod-2026-04-09 stylistai-worker:latest`
+  - but deploy RunPod endpoints against the versioned tag, not `latest` alone.
+
 ## RunPod deployment requirement (critical)
 - If endpoint logs show only template startup lines (for example `runpod/pytorch:...`) and never show uvicorn logs, the endpoint is not using this worker image.
 - You must deploy a **custom image built from `blender-worker/Dockerfile`** and set container port `8000`.

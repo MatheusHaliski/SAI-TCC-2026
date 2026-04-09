@@ -8,9 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY requirements.txt ./requirements.txt
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy only the runtime files required for the active FastAPI worker.
+COPY handler.py ./handler.py
 
 EXPOSE 8000
 

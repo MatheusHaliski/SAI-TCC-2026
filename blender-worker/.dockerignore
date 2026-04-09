@@ -1,12 +1,50 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.log
-.git/
+# VCS / metadata
+.git
 .gitignore
-.env
+.github
+
+# Python caches / virtualenvs
+__pycache__/
+*.py[cod]
+*.so
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tox/
+.nox/
 .venv/
 venv/
+env/
+
+# Secrets / env files
+.env
+.env.*
+*.pem
+*.key
+
+# Logs / temp / artifacts
+*.log
+logs/
+log/
 output/
-/tmp/
+artifacts/
+tmp/
+temp/
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Frontend / monorepo heavy folders (defensive if build context changes)
+node_modules/
+.next/
+dist/
+build/
+coverage/
+notebooks/
+
+# Docs/tests not required for runtime container
+README.md
+tests/
