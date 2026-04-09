@@ -1,56 +1,45 @@
-# StylistAI RunPod Worker (MVP / Option A)
+# StylistAI GPU Worker Runtime
 
-This directory currently runs a **FastAPI RunPod Load Balancer worker** for the Add Piece / Virtual Wardrobe flow.
+This folder contains the heavy GPU worker runtime.
 
-## Current active runtime
-- Active app entrypoint: `handler.py`
-- Active container command: `python -m uvicorn handler:app --host 0.0.0.0 --port 8000 --log-level info`
-- Load Balancer endpoints:
-  - `GET /`
-  - `GET /ping`
-  - `POST /`
-  - `POST /jobs`
-  - `GET /jobs/{jobId}`
+## Responsibilities
+- execute GPU/PyTorch/Blender-compatible workload
+- generate artifacts
+- expose structured job status and diagnostics
 
-## MVP behavior
-For MVP, the worker:
-1. Accepts LB-compatible payloads on `POST /` (`{ "input": ... }`).
-2. Queues a lightweight metadata-only processing step.
-3. Writes a deterministic `.glb` artifact.
-4. Exposes status polling on `GET /jobs/{jobId}`.
+## Base image
+- `runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404`
 
-`/ping` is intentionally public for RunPod health checks and bypasses auth middleware.
+## Endpoints
+- `GET /health`
+- `GET /ping`
+- `GET /diagnostics`
+- `POST /jobs` (also `POST /` for LB payload)
+- `GET /jobs/{jobId}` (also `GET /status/{jobId}`)
 
-## Not active yet (future phase)
-The Blender runtime is intentionally deferred:
-- `app.py`
-- `worker_entry.py`
-- `blender-scripts/uv_unwrap.py`
+## Startup behavior
+Container default command:
 
-These files are retained for a future Blender-based phase once the container/runtime supports Blender.
+```bash
+/usr/local/bin/runpod-worker-bootstrap.sh
+```
 
+Bootstrap supports no-heavy-rebuild flows:
 
-## RunPod startup entrypoint
-- Use the image default command from `blender-worker/Dockerfile` (do not override in RunPod):
-  `python -m uvicorn handler:app --host 0.0.0.0 --port 8000 --log-level info`
-- Health check endpoint: `GET /ping` returns `{"status":"ok"}`.
-- Generation endpoints are served by the same FastAPI app (`POST /`, `POST /jobs`, `GET /jobs/{jobId}`).
+- `WORKER_CODE_SYNC_DIR=/runpod-volume/stylistai-worker`
+- `WORKER_CODE_SYNC_GIT=https://github.com/<org>/<repo>.git`
+- `WORKER_CODE_SYNC_REF=main`
 
-## Build and tag guidance (production-safe)
-- Build using the worker directory as build context so frontend files and repo-level artifacts are never sent to Docker:
-  - `docker buildx build --platform linux/amd64 -t stylistai-worker:runpod-2026-04-09 .`
-- Prefer explicit immutable tags for deployments:
-  - `stylistai-worker:v1`
-  - `stylistai-worker:v2`
-  - `stylistai-worker:runpod-2026-04-09`
-- You may optionally add a moving alias after publishing a versioned tag:
-  - `docker tag stylistai-worker:runpod-2026-04-09 stylistai-worker:latest`
-  - but deploy RunPod endpoints against the versioned tag, not `latest` alone.
+Then launches:
 
-## RunPod deployment requirement (critical)
-- If endpoint logs show only template startup lines (for example `runpod/pytorch:...`) and never show uvicorn logs, the endpoint is not using this worker image.
-- You must deploy a **custom image built from `blender-worker/Dockerfile`** and set container port `8000`.
-- Expected proof in logs:
-  - `worker_module_loaded entrypoint=handler.py`
-  - `Uvicorn running on http://0.0.0.0:8000`
-  - `server_starting ...`
+```bash
+python -m uvicorn handler:app --host 0.0.0.0 --port 8000 --log-level info
+```
+
+## Build
+
+From repo root:
+
+```bash
+DOCKER_BUILDKIT=1 docker build -f blender-worker/Dockerfile -t stylistai-worker:runpod-2026-04-09 .
+```

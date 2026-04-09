@@ -1,149 +1,59 @@
-# SAI Cloud Blender Pipeline (RunPod Load Balancer)
+# SAI Cloud Blender Pipeline (RunPod Separated Runtime)
 
-This project now uses a **cloud-first Blender pipeline**. Blender runs headless in a RunPod Serverless worker image, and the Next.js backend tracks + syncs RunPod job state into internal pipeline records.
+This repository now supports a **separated RunPod deployment**:
 
-## Architecture
+- `blender-api/`: lightweight FastAPI orchestrator (submit/status/health/diagnostics)
+- `blender-worker/`: heavy GPU worker runtime (RunPod PyTorch base image)
+- `blender_common/`: shared status contracts used by both runtimes
 
-Frontend  
-↓  
-Backend (Next.js API routes/services)  
-↓  
-RunPod API  
-↓  
-RunPod Serverless Worker (`blender-worker`)  
-↓  
-Remote Storage URLs (input/output artifacts)  
-↓  
-Backend status sync to `sai-pipelineJobs` and wardrobe records  
-↓  
-Frontend processing status + artifacts
+## Why this architecture
 
-## Backend Environment Variables
+- API starts quickly on `python:3.11-slim` and avoids CUDA/PyTorch pull penalties.
+- Worker uses RunPod-native PyTorch image (`runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404`) so the heavy CUDA stack aligns with RunPod template caches.
+- Small code changes can be shipped without rebuilding the heavy worker base by syncing code from a mounted volume or Git at startup.
 
-Set these in your server environment:
+## Runtime contracts
 
-```bash
-RUNPOD_API_KEY="..."
-RUNPOD_ENDPOINT_URL="https://<endpoint-id>.api.runpod.ai"
-BLENDER_CLOUD_API_TOKEN="..."                                 # optional override token
-```
+The API/orchestrator and worker preserve the normalized terminal state behavior:
 
-Resolution rules:
-- API URL = `RUNPOD_ENDPOINT_URL` (required)
-- API token = `BLENDER_CLOUD_API_TOKEN` fallback to `RUNPOD_API_KEY`
-- Calls go directly to the LB URL root.
+- terminal statuses: `completed`, `failed`, `cancelled`
+- artifact-first completion logic
+- error-first failure logic (except explicit `cancelled`)
 
-## RunPod Worker Files
+Primary endpoints:
 
-- `blender-worker/Dockerfile`
-- `blender-worker/requirements.txt`
-- `blender-worker/handler.py`
-- `blender-worker/blender-scripts/uv_unwrap.py`
+- `POST /submit` (alias: `POST /jobs`, `POST /` LB-compatible)
+- `GET /status/{jobId}` (alias: `GET /jobs/{jobId}`)
+- `GET /health` (plus `GET /ping`)
+- `GET /diagnostics`
 
-## Deploy Worker to RunPod
-
-1. Build and push worker image:
-   ```bash
-   docker build -t <registry>/<repo>:<tag> ./blender-worker
-   docker push <registry>/<repo>:<tag>
-   ```
-2. In RunPod Serverless, create/update endpoint with your custom image.
-3. Configure worker env vars as needed (example: `BLENDER_OUTPUT_UPLOAD_URL` for artifact upload).
-4. Set backend env vars (`RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_URL`) and deploy app.
-
-## Example RunPod Job Payload (submit)
-
-```json
-{
-  "input": {
-    "modelUrl": "https://storage.example.com/assets/item-123.glb",
-    "jobType": "uv_unwrap",
-    "options": {
-      "generation_mode": "fast_uv"
-    }
-  }
-}
-```
-
-## Example RunPod Status Response (provider -> backend mapping)
-
-```json
-{
-  "id": "sync-job-id",
-  "status": "IN_PROGRESS"
-}
-```
-
-Mapped internal status:
-- `QUEUED` -> `queued`
-- `IN_PROGRESS`/`RUNNING` -> `in_progress`
-- `COMPLETED` -> `completed`
-- `FAILED`/`CANCELLED`/`TIMED_OUT` -> `failed`
-
-## Example Completed Worker Result Shape
-
-```json
-{
-  "status": "completed",
-  "artifacts": {
-    "outputModelPath": "/tmp/runpod-.../output-....glb",
-    "outputModelUrl": "https://storage.example.com/processed/item-123.glb"
-  },
-  "metrics": {
-    "durationMs": 12345,
-    "blenderDurationMs": 11012
-  },
-  "logs": {
-    "stdout": "...",
-    "stderr": "..."
-  }
-}
-```
-
-## Error Handling Contract (safe fallback)
-
-Worker failures return:
-
-```json
-{
-  "status": "failed",
-  "error": {
-    "code": "blender_failed",
-    "message": "Blender execution failed with exit code 1"
-  },
-  "logs": {
-    "stdout": "...",
-    "stderr": "..."
-  }
-}
-```
-
-Backend mirrors cloud status into internal records and updates wardrobe pipeline details with failure metadata.
-
-## Fashion AI Background Studio (OpenAI Images API)
-
-The Outfit Card Background Studio now supports OpenAI Images API as a server-side artwork provider for premium fashion/editorial assets (backgrounds, overlays, frames, and shape packs).
-
-### Environment setup
-
-Add the following variables to your server environment (and mirror in local `.env.local` as needed):
+## Build images (immutable tags)
 
 ```bash
-OPENAI_API_KEY="..."
-OPENAI_IMAGES_MODEL="gpt-image-1.5"
-OPENAI_IMAGES_FALLBACK_MODEL="gpt-image-1"
-OPENAI_IMAGES_SIZE="1536x1024"
-OPENAI_IMAGES_QUALITY="high"
-OPENAI_IMAGES_TIMEOUT_MS="45000"
-NEXT_PUBLIC_ENABLE_OPENAI_ARTWORK_STUDIO="true"
+# API orchestrator image
+DOCKER_BUILDKIT=1 docker build -f blender-api/Dockerfile -t stylistai-api:runpod-2026-04-09 .
+
+# GPU worker image
+DOCKER_BUILDKIT=1 docker build -f blender-worker/Dockerfile -t stylistai-worker:runpod-2026-04-09 .
 ```
 
-### Security model
+Optional moving aliases **after** versioned tags are published:
 
-- OpenAI credentials are used **server-side only** in Next.js API routes/services.
-- The frontend calls internal routes (`/api/artwork-studio/*`) and never receives provider secrets.
+```bash
+docker tag stylistai-api:runpod-2026-04-09 stylistai-api:latest
+docker tag stylistai-worker:runpod-2026-04-09 stylistai-worker:latest
+```
 
-### Feature flag behavior
+## Push images
 
-- `NEXT_PUBLIC_ENABLE_OPENAI_ARTWORK_STUDIO=true`: uses OpenAI Images API backend integration.
-- `NEXT_PUBLIC_ENABLE_OPENAI_ARTWORK_STUDIO=false`: keeps local fallback generation in Background Studio.
+```bash
+docker tag stylistai-api:runpod-2026-04-09 <registry>/stylistai-api:runpod-2026-04-09
+docker tag stylistai-worker:runpod-2026-04-09 <registry>/stylistai-worker:runpod-2026-04-09
+
+docker push <registry>/stylistai-api:runpod-2026-04-09
+docker push <registry>/stylistai-worker:runpod-2026-04-09
+```
+
+## RunPod guidance
+
+See `docs/runpod-separated-deployment.md` for full pod/env/startup/volume guidance.

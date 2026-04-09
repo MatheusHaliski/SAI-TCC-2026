@@ -1,4 +1,3 @@
-# StylistAI API/orchestrator image (lightweight)
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
