@@ -12,21 +12,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-try:
-    from fastapi import FastAPI, HTTPException, Request
-    from fastapi.responses import JSONResponse
-    from pydantic import BaseModel, Field
-except Exception:
-    logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO").upper(),
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
-    logging.getLogger("stylistai.worker").exception("startup_import_failure missing_or_invalid_runtime_dependency")
-    raise
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
-# Option A (MVP): this FastAPI mock-3D worker is the only active runtime.
-# Blender-backed files (app.py, worker_entry.py, blender-scripts/uv_unwrap.py)
-# remain in the repository for a future phase and are intentionally not used here.
+from blender_common import finalize_job_status, normalize_status
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -35,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger("stylistai.worker")
 logger.info("worker_module_loaded entrypoint=handler.py")
 
-app = FastAPI(title="StylistAI MVP Mock 3D Worker", version="1.1.0")
+app = FastAPI(title="StylistAI GPU Worker", version="2.0.0")
 
 OUTPUT_DIR = Path(os.getenv("WORKER_OUTPUT_DIR", "/tmp/stylistai-3d-output"))
 OUTPUT_PUBLIC_BASE_URL = os.getenv("OUTPUT_PUBLIC_BASE_URL", "").strip()
@@ -45,7 +35,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 jobs_lock = threading.Lock()
 executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
-JobState = Literal["queued", "in_progress", "completed", "failed"]
+JobState = Literal["queued", "submitted", "in_progress", "completed", "failed", "cancelled"]
 jobs: dict[str, dict[str, Any]] = {}
 
 
@@ -89,6 +79,7 @@ def update_job(job_id: str, **updates: Any) -> None:
         if not record:
             return
         record.update(updates)
+        record["status"] = finalize_job_status(record.get("status"), record.get("artifacts"), record.get("error"))
         record["updatedAt"] = now_iso()
 
 
@@ -100,7 +91,7 @@ def get_job(job_id: str) -> dict[str, Any] | None:
 
 def write_dummy_glb(output_path: Path, metadata: dict[str, Any]) -> None:
     gltf_json = {
-        "asset": {"version": "2.0", "generator": "StylistAI-Worker-MVP"},
+        "asset": {"version": "2.0", "generator": "StylistAI-Worker-RunPod"},
         "scene": 0,
         "scenes": [{"nodes": []}],
         "nodes": [],
@@ -130,7 +121,6 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
     output_path = OUTPUT_DIR / f"{job_id}.glb"
 
     try:
-        # Lightweight metadata-only processing to keep LB response and startup fast.
         features = {
             "imageUrlLength": len(payload.imageUrl),
             "hasModelUrl": bool(payload.modelUrl),
@@ -174,12 +164,13 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
 @app.on_event("startup")
 def startup_log() -> None:
     logger.info("app_loaded title=%s version=%s", app.title, app.version)
-    logger.info(
-        "server_starting app=stylistai-worker host=0.0.0.0 port=%s endpoints=/,/ping,/jobs,/jobs/{jobId}",
-        os.getenv("PORT", "8000"),
-    )
-    logger.info("port_binding host=0.0.0.0 port=%s", os.getenv("PORT", "8000"))
+    logger.info("server_starting app=stylistai-worker host=0.0.0.0 port=%s", os.getenv("PORT", "8000"))
     logger.info("server_ready output_dir=%s max_workers=%s", OUTPUT_DIR, MAX_WORKERS)
+
+
+@app.get("/")
+def root() -> dict[str, str]:
+    return {"message": "StylistAI GPU worker running"}
 
 
 @app.get("/ping")
@@ -187,10 +178,33 @@ def ping() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/health")
+def health() -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "service": "stylistai-gpu-worker",
+        "outputDir": str(OUTPUT_DIR),
+        "maxWorkers": MAX_WORKERS,
+    }
+
+
+@app.get("/diagnostics")
+def diagnostics() -> dict[str, Any]:
+    with jobs_lock:
+        sample = list(jobs.values())[-3:]
+    return {
+        "service": "stylistai-gpu-worker",
+        "jobCount": len(jobs),
+        "sampleJobs": [
+            {"jobId": item["jobId"], "status": normalize_status(item.get("status")), "updatedAt": item.get("updatedAt")}
+            for item in sample
+        ],
+    }
+
+
 @app.middleware("http")
-async def auth_and_logging_middleware(request: Request, call_next):
-    print("Incoming request:", request.url.path)
-    if request.url.path in {"/ping", "/"}:
+async def auth_middleware(request: Request, call_next):
+    if request.url.path in {"/ping", "/", "/health"}:
         return await call_next(request)
 
     expected_token = os.getenv("BLENDER_WORKER_TOKEN", "").strip()
@@ -202,11 +216,6 @@ async def auth_and_logging_middleware(request: Request, call_next):
         return JSONResponse(status_code=401, content={"detail": "Unauthorized", "message": "no token provided"})
 
     return await call_next(request)
-
-
-@app.get("/")
-def root() -> dict[str, str]:
-    return {"message": "RunPod server running"}
 
 
 @app.post("/jobs", response_model=JobResponse)
@@ -237,9 +246,10 @@ def job_status(jobId: str) -> dict[str, Any]:
     if not record:
         raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": "Job not found"})
 
+    status = finalize_job_status(record.get("status"), record.get("artifacts"), record.get("error"))
     response: dict[str, Any] = {
         "jobId": jobId,
-        "status": record["status"],
+        "status": status,
     }
     if record.get("artifacts"):
         response["artifacts"] = record["artifacts"]
@@ -248,6 +258,11 @@ def job_status(jobId: str) -> dict[str, Any]:
     if record.get("error"):
         response["error"] = record["error"]
     return response
+
+
+@app.get("/status/{jobId}")
+def job_status_alias(jobId: str) -> dict[str, Any]:
+    return job_status(jobId)
 
 
 if __name__ == "__main__":
