@@ -215,58 +215,106 @@ function getRelativeLuminance(hexColor: string) {
 }
 
 type RepeatedImagePatternOptions = {
-  tileWidth: number;
-  tileHeight: number;
-  gapX: number;
-  gapY: number;
+  motifWidth: number;
+  motifHeight: number;
+  spacingX: number;
+  spacingY: number;
   columns: number;
   rows: number;
+  canvasWidth: number;
+  canvasHeight: number;
+  repeatMode: 'grid' | 'staggered' | 'diagonal' | 'scattered-balanced';
+  minScale: number;
+  maxScale: number;
+  minOpacity: number;
+  maxOpacity: number;
+  maxRotationDeg: number;
+  safeArea: { x: number; y: number; width: number; height: number };
   offsetX?: number;
   offsetY?: number;
-  staggerOffset?: number;
-  frameRadius?: number;
 };
 
+function seededRandom(seed: number) {
+  const value = Math.sin(seed) * 10000;
+  return value - Math.floor(value);
+}
+
 function createRepeatedImagePattern(referenceImage: string, options: RepeatedImagePatternOptions) {
-  const frameRadius = options.frameRadius ?? 18;
-  const framePadding = Math.max(10, Math.round(Math.min(options.tileWidth, options.tileHeight) * 0.12));
-  const frameWidth = options.tileWidth + framePadding * 2;
-  const frameHeight = options.tileHeight + framePadding * 2;
-  const stepX = frameWidth + options.gapX;
-  const stepY = frameHeight + options.gapY;
-  const startX = options.offsetX ?? 12;
+  const stepX = options.motifWidth + options.spacingX;
+  const stepY = options.motifHeight + options.spacingY;
+  const startX = options.offsetX ?? 24;
   const startY = options.offsetY ?? 24;
-  const staggerOffset = options.staggerOffset ?? Math.round(stepX * 0.42);
+  const diagonalShift = Math.round(stepX * 0.32);
+  const safeX2 = options.safeArea.x + options.safeArea.width;
+  const safeY2 = options.safeArea.y + options.safeArea.height;
 
   return Array.from({ length: options.rows }).map((_, row) =>
     Array.from({ length: options.columns }).map((__, col) => {
-      const x = startX + col * stepX + (row % 2 ? staggerOffset : 0);
-      const y = startY + row * stepY;
-      return `<g transform='translate(${x} ${y})'>
-        <rect x='0' y='0' width='${frameWidth}' height='${frameHeight}' rx='${frameRadius + 4}' fill='rgba(15,23,42,0.34)'/>
-        <rect x='1' y='1' width='${frameWidth - 2}' height='${frameHeight - 2}' rx='${frameRadius + 4}' fill='rgba(2,6,23,0.22)' stroke='rgba(248,250,252,0.24)' stroke-width='1.3'/>
-        <rect x='${framePadding}' y='${framePadding}' width='${options.tileWidth}' height='${options.tileHeight}' rx='${frameRadius}' fill='rgba(248,250,252,0.96)'/>
-        <image href='${referenceImage}' x='${framePadding + 6}' y='${framePadding + 6}' width='${Math.max(12, options.tileWidth - 12)}' height='${Math.max(12, options.tileHeight - 12)}' preserveAspectRatio='xMidYMid meet' opacity='0.98'/>
+      let x = startX + col * stepX;
+      let y = startY + row * stepY;
+      if (options.repeatMode === 'staggered' && row % 2 !== 0) x += Math.round(stepX * 0.48);
+      if (options.repeatMode === 'diagonal') x += row * diagonalShift;
+      if (options.repeatMode === 'scattered-balanced') {
+        x += Math.round((seededRandom((row + 2) * 17 + (col + 5) * 29) - 0.5) * (options.spacingX * 0.65));
+        y += Math.round((seededRandom((row + 11) * 31 + (col + 7) * 13) - 0.5) * (options.spacingY * 0.65));
+      }
+
+      const variationSeed = row * 97 + col * 53 + options.columns * 11;
+      const scale = options.minScale + seededRandom(variationSeed + 1) * (options.maxScale - options.minScale);
+      const opacity = options.minOpacity + seededRandom(variationSeed + 2) * (options.maxOpacity - options.minOpacity);
+      const rotation = (seededRandom(variationSeed + 3) * 2 - 1) * options.maxRotationDeg;
+      const motifW = Math.round(options.motifWidth * scale);
+      const motifH = Math.round(options.motifHeight * scale);
+      const motifX = Math.round(x - (motifW - options.motifWidth) / 2);
+      const motifY = Math.round(y - (motifH - options.motifHeight) / 2);
+      const centerX = motifX + motifW / 2;
+      const centerY = motifY + motifH / 2;
+      const inSafeArea = centerX >= options.safeArea.x && centerX <= safeX2 && centerY >= options.safeArea.y && centerY <= safeY2;
+      const safeAreaOpacity = inSafeArea ? 0.35 : 1;
+
+      return `<g transform='translate(${centerX} ${centerY}) rotate(${rotation.toFixed(2)}) translate(${-centerX} ${-centerY})' opacity='${(opacity * safeAreaOpacity).toFixed(3)}'>
+        <image href='${referenceImage}' x='${motifX}' y='${motifY}' width='${motifW}' height='${motifH}' preserveAspectRatio='xMidYMid meet'/>
       </g>`;
     }).join('')
   ).join('');
 }
 
 function buildTiledMotifComposition(referenceImage: string, context: PresetContext, imageAspectRatio = 1): OutfitBackgroundConfig {
+  const extractMotifSeed = () => ({
+    source: referenceImage,
+    aspectRatio: imageAspectRatio,
+    dominantColor: context.heroColor,
+    brandName: context.brandName,
+  });
+  const motifSeed = extractMotifSeed();
   const safeAspectRatio = Number.isFinite(imageAspectRatio) && imageAspectRatio > 0 ? imageAspectRatio : 1;
-  const tileHeight = 96;
-  const tileWidth = Math.round(Math.min(156, Math.max(68, tileHeight * safeAspectRatio)));
-  const repeatedPattern = createRepeatedImagePattern(referenceImage, {
-    tileWidth,
-    tileHeight,
-    gapX: 20,
-    gapY: 22,
-    columns: 8,
-    rows: 6,
-    offsetX: 14,
-    offsetY: 28,
-    staggerOffset: 38,
-    frameRadius: 14,
+  const motifScale: 'tiny' | 'small' | 'medium' = safeAspectRatio > 1.8 ? 'tiny' : safeAspectRatio < 0.7 ? 'medium' : 'small';
+  const density: 'low' | 'medium' | 'high' = 'high';
+  const repeatModes: RepeatedImagePatternOptions['repeatMode'][] = ['grid', 'staggered', 'diagonal', 'scattered-balanced'];
+  const repeatMode = repeatModes[Math.abs(context.brandName.length) % repeatModes.length];
+  const motifHeightByScale = { tiny: 54, small: 68, medium: 84 } as const;
+  const densityRows = { low: 6, medium: 7, high: 9 } as const;
+  const densityCols = { low: 10, medium: 12, high: 15 } as const;
+  const motifHeight = motifHeightByScale[motifScale];
+  const motifWidth = Math.round(Math.min(138, Math.max(40, motifHeight * safeAspectRatio)));
+  const repeatedPattern = createRepeatedImagePattern(motifSeed.source, {
+    motifWidth,
+    motifHeight,
+    spacingX: 16,
+    spacingY: 18,
+    columns: densityCols[density],
+    rows: densityRows[density],
+    canvasWidth: 1200,
+    canvasHeight: 800,
+    repeatMode,
+    minScale: 0.92,
+    maxScale: 1.08,
+    minOpacity: 0.26,
+    maxOpacity: 0.52,
+    maxRotationDeg: 7,
+    safeArea: { x: 110, y: 90, width: 550, height: 360 },
+    offsetX: 16,
+    offsetY: 20,
   });
   const tiledBrandSurface = asDataUri(
     `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
@@ -274,27 +322,51 @@ function buildTiledMotifComposition(referenceImage: string, context: PresetConte
         <linearGradient id='surface' x1='0%' y1='0%' x2='100%' y2='100%'>
           <stop offset='0%' stop-color='#020617'/>
           <stop offset='52%' stop-color='#0f172a'/>
-          <stop offset='100%' stop-color='#172554'/>
+          <stop offset='100%' stop-color='${motifSeed.dominantColor}'/>
         </linearGradient>
+        <radialGradient id='safeAreaMask' cx='30%' cy='28%' r='42%'>
+          <stop offset='0%' stop-color='rgba(15,23,42,0.70)'/>
+          <stop offset='75%' stop-color='rgba(15,23,42,0.22)'/>
+          <stop offset='100%' stop-color='rgba(15,23,42,0)'/>
+        </radialGradient>
+        <pattern id='microGrid' width='20' height='20' patternUnits='userSpaceOnUse'>
+          <path d='M20 0H0V20' fill='none' stroke='rgba(148,163,184,0.08)' stroke-width='1'/>
+        </pattern>
         <filter id='softShadow' x='-12%' y='-12%' width='124%' height='124%'>
           <feGaussianBlur stdDeviation='2.8'/>
         </filter>
       </defs>
       <rect width='1200' height='800' fill='url(#surface)'/>
-      <rect width='1200' height='800' fill='rgba(248,250,252,0.04)'/>
+      <rect width='1200' height='800' fill='url(#microGrid)'/>
+      <rect width='1200' height='800' fill='rgba(248,250,252,0.03)'/>
       <g filter='url(#softShadow)' opacity='0.28'>
         ${repeatedPattern}
       </g>
       ${repeatedPattern}
-      <rect width='1200' height='800' fill='rgba(2,6,23,0.09)'/>
-      <text x='66' y='760' font-size='22' font-family='Inter, Arial, sans-serif' fill='rgba(148,163,184,0.55)' letter-spacing='3'>${escapeSvgAttribute(context.brandName.toUpperCase())} MOTIF SURFACE</text>
+      <rect x='60' y='60' width='610' height='390' rx='44' fill='url(#safeAreaMask)'/>
+      <rect width='1200' height='800' fill='rgba(2,6,23,0.12)'/>
+      <text x='66' y='760' font-size='22' font-family='Inter, Arial, sans-serif' fill='rgba(148,163,184,0.55)' letter-spacing='3'>${escapeSvgAttribute(context.brandName.toUpperCase())} MOTIF SURFACE · ${repeatMode.toUpperCase()}</text>
     </svg>`,
   );
   return {
     background_mode: 'ai_artwork',
-    ai_artwork: { prompt: `${context.brandName} tiled motif from uploaded reference`, image_url: tiledBrandSurface, generation_status: 'done' },
+    ai_artwork: {
+      prompt: `${context.brandName} repeated motif surface from uploaded logo, ${repeatMode} layout, premium editorial texture`,
+      image_url: tiledBrandSurface,
+      generation_status: 'done',
+    },
     shape: 'none',
     texture_overlay: false,
+    gradient: {
+      type: 'linear',
+      angle: 132,
+      intensity: 104,
+      stops: [
+        { color: '#020617', position: 0 },
+        { color: '#0f172a', position: 50 },
+        { color: context.heroColor, position: 100 },
+      ],
+    },
   };
 }
 
