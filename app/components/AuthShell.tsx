@@ -60,7 +60,7 @@ export default function AuthShell({
         >
           <div className="flex h-full w-full items-center justify-center">
             <img
-              src="/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg"
+              src="/Sem título (30).png"
               alt="FAI"
               className="h-full w-full object-contain"
             />
@@ -101,7 +101,7 @@ export default function AuthShell({
               <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-2">
                 <div className="flex flex-col items-center justify-center gap-3">
                   <img
-                    src="/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg"
+                    src="/Sem título (30).png"
                     alt="FAI"
                     className="h-64 w-full max-w-[720px] object-contain sm:h-62 md:h-66 lg:h-68"
                   />
