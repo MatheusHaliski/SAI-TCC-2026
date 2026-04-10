@@ -137,14 +137,58 @@ function extractRegion(source, x0, x1) {
 }
 
 function removeNeutralBackground(img) {
-  const samples = [[0,0],[img.width-1,0],[0,img.height-1],[img.width-1,img.height-1]];
-  let r=0,g=0,b=0;
-  for (const [x,y] of samples) { const i=(y*img.width+x)*4; r+=img.pixels[i]; g+=img.pixels[i+1]; b+=img.pixels[i+2]; }
-  r/=samples.length; g/=samples.length; b/=samples.length;
+  const samples = [[0, 0], [img.width - 1, 0], [0, img.height - 1], [img.width - 1, img.height - 1]];
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  for (const [x, y] of samples) {
+    const i = (y * img.width + x) * 4;
+    r += img.pixels[i];
+    g += img.pixels[i + 1];
+    b += img.pixels[i + 2];
+  }
+  r /= samples.length;
+  g /= samples.length;
+  b /= samples.length;
 
-  for (let i = 0; i < img.pixels.length; i += 4) {
-    const dist = Math.hypot(img.pixels[i]-r, img.pixels[i+1]-g, img.pixels[i+2]-b);
-    if (dist < 24) img.pixels[i+3] = 0;
+  const nearBg = new Uint8Array(img.width * img.height);
+  for (let y = 0; y < img.height; y += 1) {
+    for (let x = 0; x < img.width; x += 1) {
+      const i = (y * img.width + x) * 4;
+      const dist = Math.hypot(img.pixels[i] - r, img.pixels[i + 1] - g, img.pixels[i + 2] - b);
+      const bright = img.pixels[i] > 225 && img.pixels[i + 1] > 225 && img.pixels[i + 2] > 225;
+      nearBg[y * img.width + x] = dist < 36 || bright ? 1 : 0;
+    }
+  }
+
+  // Flood fill from borders only, preserving bright details inside mannequin.
+  const visited = new Uint8Array(img.width * img.height);
+  const queue = [];
+  const push = (x, y) => {
+    if (x < 0 || y < 0 || x >= img.width || y >= img.height) return;
+    const idx = y * img.width + x;
+    if (visited[idx] || !nearBg[idx]) return;
+    visited[idx] = 1;
+    queue.push([x, y]);
+  };
+
+  for (let x = 0; x < img.width; x += 1) {
+    push(x, 0);
+    push(x, img.height - 1);
+  }
+  for (let y = 0; y < img.height; y += 1) {
+    push(0, y);
+    push(img.width - 1, y);
+  }
+
+  while (queue.length) {
+    const [x, y] = queue.pop();
+    const idx = y * img.width + x;
+    img.pixels[idx * 4 + 3] = 0;
+    push(x + 1, y);
+    push(x - 1, y);
+    push(x, y + 1);
+    push(x, y - 1);
   }
 }
 
@@ -173,13 +217,22 @@ function cropToBox(img, box) {
   return { width, height, pixels };
 }
 
-function normalizeCanvas(img, outW = 900, outH = 1600, topPadding = 80) {
+function padBox(box, img, padding) {
+  return {
+    minX: Math.max(0, box.minX - padding),
+    minY: Math.max(0, box.minY - padding),
+    maxX: Math.min(img.width - 1, box.maxX + padding),
+    maxY: Math.min(img.height - 1, box.maxY + padding),
+  };
+}
+
+function normalizeCanvas(img, outW = 1200, outH = 2000, topMarginRatio = 0.08) {
   const pixels = Buffer.alloc(outW * outH * 4, 0);
-  const scale = Math.min((outW * 0.75) / img.width, (outH * 0.88) / img.height);
+  const scale = Math.min((outW * 0.68) / img.width, (outH * 0.86) / img.height);
   const scaledW = Math.round(img.width * scale);
   const scaledH = Math.round(img.height * scale);
   const offsetX = Math.floor((outW - scaledW) / 2);
-  const offsetY = topPadding;
+  const offsetY = Math.max(Math.floor(outH * topMarginRatio), Math.floor((outH - scaledH) / 2));
 
   for (let y = 0; y < scaledH; y += 1) {
     for (let x = 0; x < scaledW; x += 1) {
@@ -206,8 +259,10 @@ const female = extractRegion(source, half, source.width);
 removeNeutralBackground(male);
 removeNeutralBackground(female);
 
-const maleNorm = normalizeCanvas(cropToBox(male, bboxAlpha(male)));
-const femaleNorm = normalizeCanvas(cropToBox(female, bboxAlpha(female)));
+const maleBox = padBox(bboxAlpha(male), male, 64);
+const femaleBox = padBox(bboxAlpha(female), female, 64);
+const maleNorm = normalizeCanvas(cropToBox(male, maleBox));
+const femaleNorm = normalizeCanvas(cropToBox(female, femaleBox));
 
 writePng(path.join(OUT_DIR, 'male-default.png'), maleNorm.width, maleNorm.height, maleNorm.pixels);
 writePng(path.join(OUT_DIR, 'female-default.png'), femaleNorm.width, femaleNorm.height, femaleNorm.pixels);
