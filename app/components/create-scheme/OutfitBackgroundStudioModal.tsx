@@ -25,13 +25,26 @@ import { applyArtworkToOutfitCard } from '@/app/lib/artwork-studio';
 import FancySelect from '@/app/components/ui/fancy-select';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
-type RecommendedPresetId = 'brand_tiled_grid' | 'brand_editorial_logo' | 'brand_tonal_geometry';
+type BackgroundPresetId =
+  | 'selection_tiled_motif'
+  | 'selection_editorial_logo'
+  | 'selection_tonal_geometry'
+  | 'selection_logo_image_fusion'
+  | 'selection_tech_amber_energy'
+  | 'selection_metallic_sport_identity'
+  | 'selection_neon_motion_grid'
+  | 'selection_luxury_fabric_monogram'
+  | 'selection_editorial_collage'
+  | 'selection_soft_premium_minimal';
+
+type PresetCategory = 'pattern_surface' | 'editorial_branding' | 'tech_energy' | 'hybrid_fusion';
 
 type RecommendedPreset = {
-  id: RecommendedPresetId;
+  id: BackgroundPresetId;
+  category: PresetCategory;
   label: string;
   description: string;
-  recipe: (context: PresetContext, uploadedReferenceImage?: string | null) => OutfitBackgroundConfig;
+  recipe: (context: PresetContext, recipe: CompositionRecipe, uploadedReferenceImage?: string | null) => OutfitBackgroundConfig;
 };
 
 type OutfitMetadata = {
@@ -50,6 +63,21 @@ type PresetContext = {
   brandName: string;
   brandLogoUrl: string | null;
   heroColor: string;
+};
+
+type ReferenceIntent = 'logo_pure' | 'logo_with_background' | 'symbol_texture' | 'editorial_image' | 'product_photo' | 'abstract_image' | 'fabric_pattern';
+
+type CompositionRecipe = {
+  presetId: BackgroundPresetId;
+  compositionMode: 'pattern' | 'hero' | 'fusion' | 'tech' | 'editorial' | 'minimal';
+  colorStory: string;
+  motifDensity: 'low' | 'medium' | 'high';
+  logoWeight: number;
+  imageWeight: number;
+  geometryWeight: number;
+  glowWeight: number;
+  repeatMode?: 'grid' | 'staggered' | 'diagonal';
+  safeAreaBias: 'high' | 'medium' | 'low';
 };
 
 const asDataUri = (svg: string) => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -487,92 +515,104 @@ function buildTonalGeometryComposition(referenceImage: string, context: PresetCo
   };
 }
 
-function getRecommendedPresets(context: PresetContext): RecommendedPreset[] {
-  const safeBrand = context.brandName.replace(/[<>&]/g, '');
-  const logoTag = context.brandLogoUrl
-    ? `<image href='${context.brandLogoUrl}' x='0' y='0' width='56' height='56' opacity='0.9' preserveAspectRatio='xMidYMid meet'/>`
-    : `<text x='28' y='34' text-anchor='middle' font-size='16' font-family='Arial, sans-serif' fill='white'>${context.brandName.slice(0, 1).toUpperCase()}</text>`;
-  const tiledBrandSurface = `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-      <rect width='1200' height='800' fill='#0f172a'/>
-      ${Array.from({ length: 9 }).map((_, row) =>
-        Array.from({ length: 12 }).map((__, col) => {
-          const x = col * 96 + (row % 2 ? 22 : 0);
-          const y = row * 92 + 8;
-          return `<g transform='translate(${x} ${y})'>${logoTag}</g>`;
-        }).join('')
-      ).join('')}
-    </svg>`,
-  )}`;
-  const editorialLogoField = `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-      <defs>
-        <linearGradient id='base' x1='0%' y1='0%' x2='100%' y2='100%'>
-          <stop offset='0%' stop-color='#1d4ed8'/>
-          <stop offset='62%' stop-color='#0ea5e9'/>
-          <stop offset='100%' stop-color='#facc15'/>
-        </linearGradient>
-      </defs>
-      <rect width='1200' height='800' fill='url(#base)'/>
-      <circle cx='920' cy='430' r='250' fill='rgba(15,23,42,0.2)'/>
-      <text x='870' y='460' font-size='140' font-family='Arial Black, Arial, sans-serif' fill='rgba(2,6,23,0.3)'>${safeBrand}</text>
-    </svg>`,
-  )}`;
+function analyzeReferenceIntent(referenceImage?: string | null): ReferenceIntent {
+  if (!referenceImage) return 'logo_pure';
+  if (referenceImage.includes('logo') || referenceImage.includes('brand')) return 'logo_pure';
+  if (referenceImage.includes('pattern') || referenceImage.includes('fabric')) return 'fabric_pattern';
+  if (referenceImage.includes('product')) return 'product_photo';
+  if (referenceImage.includes('editorial') || referenceImage.includes('campaign')) return 'editorial_image';
+  if (referenceImage.includes('texture')) return 'symbol_texture';
+  return 'abstract_image';
+}
 
+function extractPrimaryVisualSubject(referenceImage?: string | null) {
+  if (!referenceImage) return 'brand_mark';
+  if (referenceImage.includes('data:image/')) return 'uploaded_symbol';
+  if (referenceImage.includes('blob:')) return 'uploaded_photo';
+  return 'asset_subject';
+}
+
+function detectLogoLikeSubject(referenceImage?: string | null) {
+  const subject = extractPrimaryVisualSubject(referenceImage);
+  const intent = analyzeReferenceIntent(referenceImage);
+  return subject === 'uploaded_symbol' || intent === 'logo_pure' || intent === 'logo_with_background';
+}
+
+function buildCompositionRecipe(input: {
+  presetId: BackgroundPresetId;
+  referenceIntent: ReferenceIntent;
+  gradient?: OutfitBackgroundConfig['gradient'];
+}): CompositionRecipe {
+  const common = {
+    colorStory: input.gradient?.stops?.map((stop) => stop.color).join(' → ') || 'selection-premium',
+    motifDensity: 'medium' as const,
+    logoWeight: input.referenceIntent === 'logo_pure' ? 0.9 : 0.7,
+    imageWeight: input.referenceIntent === 'editorial_image' ? 0.9 : 0.65,
+    geometryWeight: 0.45,
+    glowWeight: 0.3,
+    safeAreaBias: 'high' as const,
+  };
+  const recipeByPreset: Record<BackgroundPresetId, CompositionRecipe> = {
+    selection_tiled_motif: { ...common, presetId: input.presetId, compositionMode: 'pattern', motifDensity: 'high', repeatMode: 'staggered', geometryWeight: 0.3, glowWeight: 0.2 },
+    selection_editorial_logo: { ...common, presetId: input.presetId, compositionMode: 'hero', motifDensity: 'low', repeatMode: 'grid', logoWeight: 0.98, imageWeight: 0.35 },
+    selection_tonal_geometry: { ...common, presetId: input.presetId, compositionMode: 'editorial', motifDensity: 'medium', repeatMode: 'diagonal', geometryWeight: 0.8 },
+    selection_logo_image_fusion: { ...common, presetId: input.presetId, compositionMode: 'fusion', motifDensity: 'medium', logoWeight: 0.72, imageWeight: 0.88, geometryWeight: 0.6, glowWeight: 0.48 },
+    selection_tech_amber_energy: { ...common, presetId: input.presetId, compositionMode: 'tech', motifDensity: 'high', repeatMode: 'diagonal', logoWeight: 0.78, imageWeight: 0.66, geometryWeight: 0.86, glowWeight: 0.82, safeAreaBias: 'medium' },
+    selection_metallic_sport_identity: { ...common, presetId: input.presetId, compositionMode: 'tech', motifDensity: 'medium', repeatMode: 'grid', logoWeight: 0.72, imageWeight: 0.62, geometryWeight: 0.76, glowWeight: 0.46 },
+    selection_neon_motion_grid: { ...common, presetId: input.presetId, compositionMode: 'tech', motifDensity: 'high', repeatMode: 'diagonal', logoWeight: 0.7, imageWeight: 0.7, geometryWeight: 0.9, glowWeight: 0.88, safeAreaBias: 'medium' },
+    selection_luxury_fabric_monogram: { ...common, presetId: input.presetId, compositionMode: 'pattern', motifDensity: 'medium', repeatMode: 'staggered', logoWeight: 0.84, imageWeight: 0.48, geometryWeight: 0.26, glowWeight: 0.14 },
+    selection_editorial_collage: { ...common, presetId: input.presetId, compositionMode: 'editorial', motifDensity: 'low', repeatMode: 'grid', logoWeight: 0.66, imageWeight: 0.92, geometryWeight: 0.52, glowWeight: 0.4 },
+    selection_soft_premium_minimal: { ...common, presetId: input.presetId, compositionMode: 'minimal', motifDensity: 'low', repeatMode: 'grid', logoWeight: 0.56, imageWeight: 0.35, geometryWeight: 0.2, glowWeight: 0.08 },
+  };
+  return recipeByPreset[input.presetId];
+}
+
+function buildSurfaceFromRecipe(
+  recipe: CompositionRecipe,
+  context: PresetContext,
+  referenceImage: string,
+): OutfitBackgroundConfig {
+  const brand = escapeSvgAttribute(context.brandName);
+  const commonGradient = {
+    type: 'linear' as const,
+    angle: 130,
+    intensity: 105,
+    stops: [{ color: '#0b1120', position: 0 }, { color: context.heroColor, position: 54 }, { color: '#f8fafc', position: 100 }],
+  };
+  const buildImageSurface = (svg: string, shape: NonNullable<OutfitBackgroundConfig['shape']> = 'mesh'): OutfitBackgroundConfig => ({
+    background_mode: 'ai_artwork',
+    ai_artwork: { prompt: `${context.brandName} ${recipe.presetId} composition`, image_url: asDataUri(svg), generation_status: 'done' },
+    gradient: commonGradient,
+    shape,
+  });
+  if (recipe.presetId === 'selection_tiled_motif') return buildTiledMotifFromReference(referenceImage, context, 1, commonGradient);
+  if (recipe.presetId === 'selection_editorial_logo') return buildEditorialLogoComposition(referenceImage, context);
+  if (recipe.presetId === 'selection_tonal_geometry') return buildTonalGeometryComposition(referenceImage, context);
+
+  const generators: Record<Exclude<BackgroundPresetId, 'selection_tiled_motif' | 'selection_editorial_logo' | 'selection_tonal_geometry'>, () => OutfitBackgroundConfig> = {
+    selection_logo_image_fusion: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#020617'/><image href='${referenceImage}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.58'/><path d='M0,640 C250,560 520,730 860,620 C1030,565 1130,500 1200,440 V800 H0 Z' fill='rgba(15,23,42,0.64)'/><image href='${referenceImage}' x='730' y='120' width='350' height='430' preserveAspectRatio='xMidYMid meet' opacity='0.88'/><text x='90' y='690' font-size='74' font-family='Arial Black,Arial,sans-serif' fill='rgba(255,255,255,0.86)'>${brand}</text></svg>`, 'orb'),
+    selection_tech_amber_energy: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='amber' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#2b1202'/><stop offset='46%' stop-color='#f97316'/><stop offset='100%' stop-color='#fde047'/></linearGradient><filter id='glow'><feGaussianBlur stdDeviation='8'/></filter></defs><rect width='1200' height='800' fill='url(#amber)'/><image href='${referenceImage}' x='0' y='0' width='1200' height='800' opacity='0.18' preserveAspectRatio='xMidYMid slice'/><g stroke='rgba(255,214,10,0.45)' stroke-width='2'>${Array.from({ length: 10 }).map((_, i) => `<line x1='${i * 130}' y1='0' x2='${i * 130 + 220}' y2='800'/>`).join('')}</g><rect x='730' y='120' width='360' height='460' rx='34' fill='rgba(15,23,42,0.45)'/><image href='${referenceImage}' x='760' y='150' width='300' height='330' opacity='0.94' preserveAspectRatio='xMidYMid meet'/><circle cx='360' cy='320' r='170' fill='rgba(255,224,110,0.32)' filter='url(#glow)'/><text x='80' y='716' font-size='56' fill='rgba(17,24,39,0.78)' font-family='Arial Black,Arial,sans-serif'>${brand} · TECH AMBER ENERGY</text></svg>`, 'beams'),
+    selection_metallic_sport_identity: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='metal' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='42%' stop-color='#374151'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#metal)'/><path d='M0,560 L1200,190 L1200,380 L0,760 Z' fill='rgba(148,163,184,0.24)'/><image href='${referenceImage}' x='100' y='120' width='420' height='420' opacity='0.22' preserveAspectRatio='xMidYMid meet'/><image href='${referenceImage}' x='760' y='170' width='330' height='330' opacity='0.92' preserveAspectRatio='xMidYMid meet'/><rect x='742' y='150' width='366' height='366' rx='34' fill='none' stroke='rgba(226,232,240,0.62)' stroke-width='4'/><text x='84' y='716' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>METALLIC SPORT IDENTITY</text></svg>`, 'diamond'),
+    selection_neon_motion_grid: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='neon' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='55%' stop-color='#0f172a'/><stop offset='100%' stop-color='#1d4ed8'/></linearGradient></defs><rect width='1200' height='800' fill='url(#neon)'/>${Array.from({ length: 12 }).map((_, i) => `<line x1='${i * 110}' y1='-50' x2='${i * 110 + 320}' y2='850' stroke='rgba(34,211,238,0.22)' stroke-width='2'/>`).join('')}<image href='${referenceImage}' x='720' y='150' width='370' height='430' opacity='0.88' preserveAspectRatio='xMidYMid meet'/><rect x='702' y='132' width='406' height='466' rx='36' fill='none' stroke='rgba(56,189,248,0.64)' stroke-width='3'/></svg>`, 'arrows'),
+    selection_luxury_fabric_monogram: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#1f2937'/>${Array.from({ length: 8 }).map((_, row) => Array.from({ length: 12 }).map((__, col) => `<image href='${referenceImage}' x='${col * 98 + (row % 2 ? 16 : 0)}' y='${row * 96 + 10}' width='64' height='64' opacity='0.24' preserveAspectRatio='xMidYMid meet'/>`).join('')).join('')}<rect width='1200' height='800' fill='rgba(245,158,11,0.08)'/><text x='84' y='720' font-size='52' fill='rgba(243,244,246,0.88)' font-family='Times New Roman,serif'>${brand} MONOGRAM FABRIC</text></svg>`, 'none'),
+    selection_editorial_collage: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#111827'/><image href='${referenceImage}' x='0' y='0' width='620' height='800' opacity='0.66' preserveAspectRatio='xMidYMid slice'/><image href='${referenceImage}' x='540' y='110' width='610' height='540' opacity='0.84' preserveAspectRatio='xMidYMid slice'/><rect x='520' y='90' width='640' height='570' fill='none' stroke='rgba(248,250,252,0.32)' stroke-width='3'/><text x='560' y='706' font-size='58' fill='rgba(248,250,252,0.9)' font-family='Arial Black,Arial,sans-serif'>EDITORIAL COLLAGE</text></svg>`, 'mesh'),
+    selection_soft_premium_minimal: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='soft' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#f8fafc'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#soft)'/><circle cx='230' cy='200' r='180' fill='rgba(148,163,184,0.18)'/><rect x='720' y='210' width='310' height='380' rx='30' fill='rgba(15,23,42,0.08)'/><image href='${referenceImage}' x='760' y='252' width='230' height='290' preserveAspectRatio='xMidYMid meet' opacity='0.72'/><text x='84' y='710' font-size='48' fill='rgba(30,41,59,0.7)' font-family='Inter,Arial,sans-serif'>${brand}</text></svg>`, 'none'),
+  };
+  return generators[recipe.presetId as keyof typeof generators]();
+}
+
+function getRecommendedPresets(): RecommendedPreset[] {
   return [
-    {
-      id: 'brand_tiled_grid',
-      label: 'Selection tiled motif',
-      description: 'Transforms uploaded reference into repeated motif tiles on a premium surface.',
-      recipe: (_, uploadedReferenceImage) => (
-        uploadedReferenceImage
-          ? buildTiledMotifFromReference(uploadedReferenceImage, context)
-          : {
-              background_mode: 'ai_artwork',
-              ai_artwork: { prompt: `${context.brandName} motif tiled grid`, image_url: tiledBrandSurface, generation_status: 'done' },
-              gradient: GRADIENT_PRESETS[7].config.gradient,
-              shape: 'diamond',
-            }
-      ),
-    },
-    {
-      id: 'brand_editorial_logo',
-      label: 'Selection editorial logo',
-      description: 'Uses uploaded logo as the hero element over a blue-yellow editorial background.',
-      recipe: (_, uploadedReferenceImage) => (
-        uploadedReferenceImage
-          ? buildEditorialLogoComposition(uploadedReferenceImage, context)
-          : {
-              background_mode: 'ai_artwork',
-              ai_artwork: { prompt: `${context.brandName} editorial background`, image_url: editorialLogoField, generation_status: 'done' },
-              gradient: GRADIENT_PRESETS[5].config.gradient,
-              shape: 'orb',
-            }
-      ),
-    },
-    {
-      id: 'brand_tonal_geometry',
-      label: 'Selection tonal geometry',
-      description: 'Builds a subtle tonal geometry treatment derived from the uploaded reference.',
-      recipe: (_, uploadedReferenceImage) => (
-        uploadedReferenceImage
-          ? buildTonalGeometryComposition(uploadedReferenceImage, context)
-          : {
-              background_mode: 'gradient',
-              gradient: {
-                type: 'linear',
-                angle: 132,
-                intensity: 104,
-                stops: [
-                  { color: context.heroColor, position: 0 },
-                  { color: '#0f172a', position: 52 },
-                  { color: '#1f2937', position: 100 },
-                ],
-              },
-              shape: 'mesh',
-            }
-      ),
-    },
+    { id: 'selection_tiled_motif', category: 'pattern_surface', label: 'Selection tiled motif', description: 'Turns the uploaded logo into a repeated premium motif surface.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Selection luxury fabric monogram', description: 'Builds a refined fashion surface with repeated branded monogram texture.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_tonal_geometry', category: 'pattern_surface', label: 'Selection tonal geometry', description: 'Combines tonal palette extraction with subtle geometric paneling.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_editorial_logo', category: 'editorial_branding', label: 'Selection editorial logo', description: 'Uses the uploaded logo as a hero element in a clean campaign-style composition.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_editorial_collage', category: 'editorial_branding', label: 'Selection editorial collage', description: 'Fuses cropped logo and treated imagery into a depth-rich editorial card.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_soft_premium_minimal', category: 'editorial_branding', label: 'Selection soft premium minimal', description: 'Minimal, high-readability premium composition with restrained visual weight.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_tech_amber_energy', category: 'tech_energy', label: 'Selection tech amber energy', description: 'Fuses uploaded logo with high-energy amber/orange AI-tech visual treatment.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_neon_motion_grid', category: 'tech_energy', label: 'Selection neon motion grid', description: 'Adds diagonal neon movement, digital grid rhythm, and logo anchoring.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_metallic_sport_identity', category: 'tech_energy', label: 'Selection metallic sport identity', description: 'Applies silver/graphite highlights for premium sport-tech brand identity.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_logo_image_fusion', category: 'hybrid_fusion', label: 'Selection logo + stylized image fusion', description: 'Blends uploaded logo with stylized image composition for richer hero surfaces.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
   ];
 }
 
@@ -673,7 +713,7 @@ export default function OutfitBackgroundStudioModal({
   const [savedAssets, setSavedAssets] = useState<ArtworkAsset[]>([]);
   const [aiGradientResults, setAiGradientResults] = useState<OutfitBackgroundConfig[]>([]);
   const [selectedAiResult, setSelectedAiResult] = useState<ArtworkVariation | null>(null);
-  const [selectedRecommendedPreset, setSelectedRecommendedPreset] = useState<RecommendedPresetId | null>(null);
+  const [selectedRecommendedPreset, setSelectedRecommendedPreset] = useState<BackgroundPresetId | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
@@ -687,8 +727,13 @@ export default function OutfitBackgroundStudioModal({
       : '#1d4ed8';
     return { brandName, brandLogoUrl, heroColor };
   }, [outfitMetadata, previewCardData]);
-  const recommendedPresets = useMemo(() => getRecommendedPresets(presetContext), [presetContext]);
-  const displayedPresets = useMemo(() => recommendedPresets.slice(0, 6), [recommendedPresets]);
+  const recommendedPresets = useMemo(() => getRecommendedPresets(), []);
+  const groupedPresets = useMemo(() => ({
+    pattern_surface: recommendedPresets.filter((item) => item.category === 'pattern_surface'),
+    editorial_branding: recommendedPresets.filter((item) => item.category === 'editorial_branding'),
+    tech_energy: recommendedPresets.filter((item) => item.category === 'tech_energy'),
+    hybrid_fusion: recommendedPresets.filter((item) => item.category === 'hybrid_fusion'),
+  }), [recommendedPresets]);
   const isUploadedReferenceImage = (value: string) => value.startsWith('data:image/') || value.startsWith('blob:');
   const getUploadedReferenceImage = () => (isUploadedReferenceImage(aiReferenceImageUrl) ? aiReferenceImageUrl : null);
   const probeReferenceImageDimensions = async (source: string): Promise<{ width: number; height: number } | null> => {
@@ -703,18 +748,28 @@ export default function OutfitBackgroundStudioModal({
   };
 
   const applyRecommendedPresetFromReferenceImage = async (
-    presetId: RecommendedPresetId,
+    presetId: BackgroundPresetId,
     uploadedReferenceImage: string | null,
     context: PresetContext,
   ) => {
-    const preset = displayedPresets.find((item) => item.id === presetId);
+    const preset = recommendedPresets.find((item) => item.id === presetId);
     if (!preset) return;
-    let config = preset.recipe(context, uploadedReferenceImage);
-    if (presetId === 'brand_tiled_grid' && uploadedReferenceImage) {
+    const referenceIntent = analyzeReferenceIntent(uploadedReferenceImage);
+    let recipe = buildCompositionRecipe({ presetId, referenceIntent, gradient: draft.gradient });
+    if (detectLogoLikeSubject(uploadedReferenceImage)) {
+      recipe = { ...recipe, logoWeight: Math.min(1, recipe.logoWeight + 0.08) };
+    }
+    let config = preset.recipe(context, recipe, uploadedReferenceImage);
+    if (presetId === 'selection_tiled_motif' && uploadedReferenceImage) {
       const dimensions = await probeReferenceImageDimensions(uploadedReferenceImage);
       if (!dimensions || !dimensions.width || !dimensions.height) {
         console.warn('background-studio: failed to load uploaded reference image for tiled motif preset; applying fallback preset.');
       } else {
+        recipe = {
+          ...recipe,
+          repeatMode: dimensions.width > dimensions.height ? 'diagonal' : 'staggered',
+          motifDensity: dimensions.width > dimensions.height * 1.6 ? 'high' : recipe.motifDensity,
+        };
         config = buildTiledMotifFromReference(
           uploadedReferenceImage,
           context,
@@ -777,7 +832,7 @@ export default function OutfitBackgroundStudioModal({
     setBackendWarning(null);
     const uploadedReferenceImage = getUploadedReferenceImage();
 
-    if (selectedRecommendedPreset === 'brand_tiled_grid' && uploadedReferenceImage) {
+    if (selectedRecommendedPreset === 'selection_tiled_motif' && uploadedReferenceImage) {
       const dimensions = await probeReferenceImageDimensions(uploadedReferenceImage);
       const ratio = dimensions && dimensions.width && dimensions.height ? dimensions.width / dimensions.height : 1;
       const tiledSurface = buildTiledMotifFromReference(uploadedReferenceImage, presetContext, ratio, draft.gradient);
@@ -838,7 +893,7 @@ export default function OutfitBackgroundStudioModal({
     }
 
     console.debug('artwork_studio.normalized_response', payload.data);
-    const uploadedReferenceVariation = isUploadedReferenceImage(aiReferenceImageUrl) && selectedRecommendedPreset !== 'brand_tiled_grid'
+    const uploadedReferenceVariation = isUploadedReferenceImage(aiReferenceImageUrl) && selectedRecommendedPreset !== 'selection_tiled_motif'
       ? [{
           variation_id: `reference_upload_${Date.now()}`,
           preview_url: aiReferenceImageUrl,
@@ -1242,21 +1297,42 @@ export default function OutfitBackgroundStudioModal({
 
             <section className="rounded-xl border border-white/20 bg-white/10 p-3">
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Recommended presets based on current outfit</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                {displayedPresets.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)]"
-                    onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, getUploadedReferenceImage(), presetContext)}
-                  >
-                    <p className="text-xs font-semibold">{preset.label}</p>
-                    <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
-                    <span
-                      className="mt-2 block h-7 rounded-lg border border-white/15"
-                      style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(preset.recipe(presetContext, getUploadedReferenceImage())))}
-                    />
-                  </button>
+              <div className="mt-2 space-y-3">
+                {([
+                  { key: 'pattern_surface' as const, label: 'Pattern / Surface', presets: groupedPresets.pattern_surface },
+                  { key: 'editorial_branding' as const, label: 'Editorial / Branding', presets: groupedPresets.editorial_branding },
+                  { key: 'tech_energy' as const, label: 'Tech / Energy', presets: groupedPresets.tech_energy },
+                  { key: 'hybrid_fusion' as const, label: 'Hybrid / Fusion', presets: groupedPresets.hybrid_fusion },
+                ]).map((group) => (
+                  <div key={group.key}>
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">{group.label}</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {group.presets.map((preset) => {
+                        const uploadedReferenceImage = getUploadedReferenceImage();
+                        const previewRecipe = buildCompositionRecipe({
+                          presetId: preset.id,
+                          referenceIntent: analyzeReferenceIntent(uploadedReferenceImage),
+                          gradient: draft.gradient,
+                        });
+                        const previewConfig = preset.recipe(presetContext, previewRecipe, uploadedReferenceImage);
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)]"
+                            onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
+                          >
+                            <p className="text-xs font-semibold">{preset.label}</p>
+                            <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
+                            <span
+                              className="mt-2 block h-9 rounded-lg border border-white/15"
+                              style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig))}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 ))}
               </div>
             </section>
