@@ -16,7 +16,7 @@ export const TESTER_2D_MANNEQUINS: Tester2DMannequin[] = [
   {
     id: 'male',
     label: 'Male mannequin',
-    imageUrl: '/ChatGPT Image 6 de mar. de 2026, 18_03_49.png',
+    imageUrl: '/tester2d/mannequins/male-default.png',
     sprite: { scaleX: 2, offsetXPercent: 0 },
     canvasWidth: 900,
     canvasHeight: 1600,
@@ -30,7 +30,7 @@ export const TESTER_2D_MANNEQUINS: Tester2DMannequin[] = [
   {
     id: 'female',
     label: 'Female mannequin',
-    imageUrl: '/ChatGPT Image 6 de mar. de 2026, 18_03_49.png',
+    imageUrl: '/tester2d/mannequins/female-default.png',
     sprite: { scaleX: 2, offsetXPercent: 100 },
     canvasWidth: 900,
     canvasHeight: 1600,
