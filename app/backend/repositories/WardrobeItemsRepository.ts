@@ -1,4 +1,4 @@
-import { ModelGenerationStatus, WardrobeAnalysis, WardrobeViewItem } from '@/app/backend/types/entities';
+import { ModelGenerationStatus, WardrobeAnalysis, WardrobeImageAnalysis, WardrobeViewItem } from '@/app/backend/types/entities';
 import { resolveWardrobeModelUrl } from '@/app/lib/wardrobeModelUrl';
 import { BaseRepository } from './BaseRepository';
 import { BrandsRepository } from './BrandsRepository';
@@ -6,6 +6,19 @@ import { MarketsRepository } from './MarketsRepository';
 import { UsersRepository } from './UsersRepository';
 
 const WARDROBE_ITEMS_COLLECTION = 'sai-wardrobeItems';
+const RECOMMENDED_ACTIONS: WardrobeImageAnalysis['recommended_action'][] = [
+  'approve_catalog_2d',
+  'refine_with_diffusion',
+  'normalize_only',
+  'request_reupload',
+];
+
+function normalizeRecommendedAction(value: unknown): WardrobeImageAnalysis['recommended_action'] {
+  if (typeof value === 'string' && RECOMMENDED_ACTIONS.includes(value as WardrobeImageAnalysis['recommended_action'])) {
+    return value as WardrobeImageAnalysis['recommended_action'];
+  }
+  return 'normalize_only';
+}
 
 function aggregate(items: WardrobeViewItem[], key: keyof Pick<WardrobeViewItem, 'brand' | 'season' | 'gender' | 'piece_type'>) {
   return items.reduce<Record<string, number>>((acc, item) => {
@@ -64,7 +77,7 @@ export class WardrobeItemsRepository extends BaseRepository {
           front_view_score: Number(item.front_view_score ?? 0),
           background_clean_score: Number(item.background_clean_score ?? 0),
           catalog_readiness_score: Number(item.catalog_readiness_score ?? 0),
-          recommended_action: (item.recommended_action as string) ?? 'normalize_only',
+          recommended_action: normalizeRecommendedAction(item.recommended_action),
         },
         model_3d_url: model3dUrl,
         model_preview_url: (item.model_preview_url as string | null) ?? null,
@@ -115,6 +128,11 @@ export class WardrobeItemsRepository extends BaseRepository {
       const market = marketsMap.get(String(item.market_id ?? ''));
       const creator = await this.usersRepository.getById(String(item.user_id ?? ''));
       const brand = brandMap.get(String(item.brand_id ?? '')) ?? (item.brand_id === 'default' ? 'Default brand' : 'Unknown');
+      const model3dUrl = resolveWardrobeModelUrl({
+        model_3d_url: (item.model_3d_url as string | null) ?? null,
+        model_branded_3d_url: (item.model_branded_3d_url as string | null) ?? null,
+        model_base_3d_url: (item.model_base_3d_url as string | null) ?? null,
+      });
 
       return {
         wardrobe_item_id: doc.id,
@@ -137,7 +155,7 @@ export class WardrobeItemsRepository extends BaseRepository {
           front_view_score: Number(item.front_view_score ?? 0),
           background_clean_score: Number(item.background_clean_score ?? 0),
           catalog_readiness_score: Number(item.catalog_readiness_score ?? 0),
-          recommended_action: (item.recommended_action as string) ?? 'normalize_only',
+          recommended_action: normalizeRecommendedAction(item.recommended_action),
         },
         piece_type: String(item.piece_type ?? ''),
         brand,

@@ -28,7 +28,12 @@ export async function GET() {
     const seededPieces = piecesSnap.docs.map((doc) => doc.data());
 
     const wardrobeDerivedPieces = wardrobeSnap.docs
-      .map((doc) => ({ id: doc.id, ...(doc.data() as Record<string, unknown>) }))
+      .map(
+        (doc): Record<string, unknown> & { id: string } => ({
+          id: doc.id,
+          ...(doc.data() as Record<string, unknown>),
+        }),
+      )
       .filter((item) => Boolean(resolve2DImage(item)))
       .map((item, index) => ({
         piece_id: String(item.id),
