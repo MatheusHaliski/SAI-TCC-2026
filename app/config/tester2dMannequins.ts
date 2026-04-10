@@ -8,6 +8,8 @@ export type Tester2DMannequin = {
   imageUrl: string;
   canvasWidth: number;
   canvasHeight: number;
+  nativeAssetWidth?: number;
+  nativeAssetHeight?: number;
   slots: {
     upper: Tester2DSlotBounds;
     lower: Tester2DSlotBounds;
@@ -21,26 +23,30 @@ export const TESTER_2D_MANNEQUINS: Tester2DMannequin[] = [
     id: 'male',
     label: 'Male mannequin',
     imageUrl: '/tester2d/mannequins/male-default.png',
+    nativeAssetWidth: 232,
+    nativeAssetHeight: 649,
     canvasWidth: 1200,
     canvasHeight: 2000,
     slots: {
-      upper: { x: 315, y: 430, width: 570, height: 600 },
-      lower: { x: 330, y: 980, width: 540, height: 770 },
-      shoes: { x: 360, y: 1700, width: 480, height: 210 },
-      accessory: { x: 250, y: 340, width: 700, height: 1200 },
+      upper: { x: 352, y: 454, width: 498, height: 548 },
+      lower: { x: 372, y: 968, width: 455, height: 716 },
+      shoes: { x: 405, y: 1678, width: 392, height: 190 },
+      accessory: { x: 278, y: 340, width: 646, height: 1190 },
     },
   },
   {
     id: 'female',
     label: 'Female mannequin',
     imageUrl: '/tester2d/mannequins/female-default.png',
+    nativeAssetWidth: 203,
+    nativeAssetHeight: 646,
     canvasWidth: 1200,
     canvasHeight: 2000,
     slots: {
-      upper: { x: 330, y: 420, width: 540, height: 610 },
-      lower: { x: 345, y: 965, width: 510, height: 790 },
-      shoes: { x: 370, y: 1710, width: 460, height: 205 },
-      accessory: { x: 260, y: 330, width: 680, height: 1220 },
+      upper: { x: 360, y: 446, width: 472, height: 538 },
+      lower: { x: 380, y: 956, width: 438, height: 728 },
+      shoes: { x: 414, y: 1686, width: 376, height: 188 },
+      accessory: { x: 288, y: 336, width: 620, height: 1186 },
     },
   },
 ];

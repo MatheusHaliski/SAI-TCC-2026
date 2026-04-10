@@ -39,7 +39,7 @@ export default function DressTesterView() {
   const [pieces, setPieces] = useState<Tester2DWardrobeItem[]>([]);
   const [selectedMannequin, setSelectedMannequin] = useState<Tester2DMannequin['id']>('female');
   const [equipped, setEquipped] = useState<Partial<Record<'upper' | 'lower' | 'shoes' | 'accessory', Tester2DWardrobeItem & { render_layer?: number }>>>({});
-  const [zoom, setZoom] = useState(0.55);
+  const [zoom, setZoom] = useState(1);
   const [showDebug, setShowDebug] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -50,9 +50,12 @@ export default function DressTesterView() {
     const response = await fetch('/api/dress-tester/bootstrap');
     const payload = (await response.json()) as BootstrapPayload;
 
+    let unreliableCount = 0;
     const resolved = (payload.pieces || [])
       .map((piece) => {
         const resolvedAsset = getBestTester2DAssetForWardrobeItem(piece);
+        if (!resolvedAsset.geometryReliable) unreliableCount += 1;
+
         return {
           piece_id: piece.piece_id,
           name: piece.name,
@@ -60,9 +63,16 @@ export default function DressTesterView() {
           image_url: resolvedAsset.url,
           render_layer: piece.render_layer,
           assetSource: resolvedAsset.source,
+          geometryReliable: resolvedAsset.geometryReliable,
         };
       })
       .filter((piece) => Boolean(piece.image_url));
+
+    if (unreliableCount > 0) {
+      setMessage(`${unreliableCount} peça(s) usam fallback sem preparo 2D; o fit pode ser limitado.`);
+    } else {
+      setMessage(null);
+    }
 
     setPieces(resolved);
     setLoading(false);
@@ -81,8 +91,14 @@ export default function DressTesterView() {
   const layers = useMemo(() => resolveOverlayLayers(mannequin, equipped), [mannequin, equipped]);
 
   const applyPiece = (piece: Tester2DWardrobeItem) => {
+    if (!piece.geometryReliable) {
+      setMessage('Essa peça não possui asset 2D aprovado/normalizado. Aplicação bloqueada para evitar fitting incorreto.');
+      return;
+    }
+
     const slot = resolveSlotFromPieceType(piece.piece_type);
     setSelectedCategory(slot);
+    setMessage(null);
     setEquipped((prev) => ({ ...prev, [slot]: piece }));
   };
 
@@ -104,9 +120,12 @@ export default function DressTesterView() {
           />
           <Tester2DControls
             zoom={zoom}
-            onZoomIn={() => setZoom((prev) => Math.min(0.9, prev + 0.05))}
-            onZoomOut={() => setZoom((prev) => Math.max(0.4, prev - 0.05))}
-            onReset={() => setEquipped({})}
+            onZoomIn={() => setZoom((prev) => Math.min(1.18, prev + 0.04))}
+            onZoomOut={() => setZoom((prev) => Math.max(0.86, prev - 0.04))}
+            onReset={() => {
+              setEquipped({});
+              setZoom(1);
+            }}
             showDebug={showDebug}
             onToggleDebug={() => setShowDebug((prev) => !prev)}
           />

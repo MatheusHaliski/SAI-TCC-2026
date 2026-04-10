@@ -15,10 +15,10 @@ export default function Tester2DOverlayLayer({ layer, debug = false }: { layer: 
     <div
       className="absolute"
       style={{
-        left: layer.style.left,
-        top: layer.style.top,
-        width: layer.style.width,
-        height: layer.style.height,
+        left: `${layer.style.leftPct}%`,
+        top: `${layer.style.topPct}%`,
+        width: `${layer.style.widthPct}%`,
+        height: `${layer.style.heightPct}%`,
         zIndex: layer.style.zIndex,
         transform: `rotate(${layer.style.rotate}deg)`,
       }}
