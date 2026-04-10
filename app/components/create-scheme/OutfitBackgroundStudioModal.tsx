@@ -270,6 +270,135 @@ type MotifSeed = {
   brandName: string;
 };
 
+type CanvasTiledMotifOptions = {
+  canvasWidth: number;
+  canvasHeight: number;
+  gridColumns: number;
+  gridRows: number;
+  tileOpacity: number;
+};
+
+function createOffscreenCanvas(width: number, height: number) {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
+}
+
+async function loadImageFromSource(source: string): Promise<HTMLImageElement> {
+  if (typeof window === 'undefined') {
+    throw new Error('window_unavailable');
+  }
+  return new Promise((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('image_load_failed'));
+    image.src = source;
+  });
+}
+
+function createReferenceTile(image: HTMLImageElement, tileSize: number, tilePadding: number): HTMLCanvasElement {
+  const tileCanvas = createOffscreenCanvas(tileSize, tileSize);
+  if (!tileCanvas) throw new Error('canvas_unavailable');
+  const tileCtx = tileCanvas.getContext('2d');
+  if (!tileCtx) throw new Error('canvas_context_unavailable');
+  const contentSize = Math.max(4, tileSize - tilePadding * 2);
+  const scale = Math.min(contentSize / image.naturalWidth, contentSize / image.naturalHeight);
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  const offsetX = (tileSize - drawWidth) / 2;
+  const offsetY = (tileSize - drawHeight) / 2;
+  tileCtx.clearRect(0, 0, tileSize, tileSize);
+  tileCtx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+  return tileCanvas;
+}
+
+function renderRepeatedTileGrid(
+  ctx: CanvasRenderingContext2D,
+  tileCanvas: HTMLCanvasElement,
+  options: CanvasTiledMotifOptions,
+) {
+  const stepX = options.canvasWidth / options.gridColumns;
+  const stepY = options.canvasHeight / options.gridRows;
+  const baseDrawSize = Math.min(stepX, stepY) * 0.88;
+  for (let row = 0; row < options.gridRows; row += 1) {
+    for (let col = 0; col < options.gridColumns; col += 1) {
+      const seed = row * 157 + col * 89 + 17;
+      const scale = 0.94 + seededRandom(seed) * 0.13;
+      const localOpacity = options.tileOpacity + seededRandom(seed + 3) * 0.14;
+      const offsetX = (seededRandom(seed + 5) - 0.5) * stepX * 0.18;
+      const offsetY = (seededRandom(seed + 7) - 0.5) * stepY * 0.18;
+      const rotation = (seededRandom(seed + 11) - 0.5) * 0.18;
+      const drawSize = baseDrawSize * scale;
+      const centerX = stepX * (col + 0.5) + offsetX + (row % 2 ? stepX * 0.08 : 0);
+      const centerY = stepY * (row + 0.5) + offsetY;
+      ctx.save();
+      ctx.globalAlpha = Math.min(0.85, Math.max(0.2, localOpacity));
+      ctx.translate(centerX, centerY);
+      ctx.rotate(rotation);
+      ctx.drawImage(tileCanvas, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+      ctx.restore();
+    }
+  }
+}
+
+async function buildTiledMotifFromReferenceImage(
+  referenceImage: string,
+  context: PresetContext,
+  baseGradient?: OutfitBackgroundConfig['gradient'],
+): Promise<OutfitBackgroundConfig> {
+  const image = await loadImageFromSource(referenceImage);
+  const canvasWidth = 1200;
+  const canvasHeight = 800;
+  const ratio = image.naturalWidth / Math.max(1, image.naturalHeight);
+  const gridColumns = ratio > 1.4 ? 6 : ratio < 0.8 ? 5 : 4;
+  const gridRows = ratio > 1.4 ? 4 : 5;
+  const tileSize = Math.max(120, Math.round(Math.min(canvasWidth / gridColumns, canvasHeight / gridRows) * 0.9));
+  const canvas = createOffscreenCanvas(canvasWidth, canvasHeight);
+  if (!canvas) throw new Error('canvas_unavailable');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('canvas_context_unavailable');
+  const gradient = ctx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
+  const gradientStops = baseGradient?.stops?.length
+    ? baseGradient.stops
+    : [
+        { color: '#020617', position: 0 },
+        { color: '#0f172a', position: 50 },
+        { color: context.heroColor, position: 100 },
+      ];
+  gradientStops.forEach((stop) => gradient.addColorStop(Math.min(1, Math.max(0, stop.position / 100)), stop.color));
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  const tileCanvas = createReferenceTile(image, tileSize, Math.round(tileSize * 0.14));
+  renderRepeatedTileGrid(ctx, tileCanvas, {
+    canvasWidth,
+    canvasHeight,
+    gridColumns,
+    gridRows,
+    tileOpacity: 0.34,
+  });
+  ctx.fillStyle = 'rgba(2,6,23,0.14)';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  const outputUrl = canvas.toDataURL('image/png');
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: `${context.brandName} repeated motif surface from uploaded logo via canvas tiled composition`,
+      image_url: outputUrl,
+      generation_status: 'done',
+    },
+    shape: 'none',
+    texture_overlay: false,
+    gradient: {
+      type: 'linear',
+      angle: 132,
+      intensity: 104,
+      stops: gradientStops,
+    },
+  };
+}
+
 function seededRandom(seed: number) {
   const value = Math.sin(seed) * 10000;
   return value - Math.floor(value);
@@ -717,6 +846,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
+  const [presetRequirementMessage, setPresetRequirementMessage] = useState<string | null>(null);
 
   const presetContext = useMemo<PresetContext>(() => {
     const metadataBrand = outfitMetadata?.brandIdentity || outfitMetadata?.brands?.[0] || previewCardData.pieces?.[0]?.brand || 'SELECTION';
@@ -736,24 +866,19 @@ export default function OutfitBackgroundStudioModal({
   }), [recommendedPresets]);
   const isUploadedReferenceImage = (value: string) => value.startsWith('data:image/') || value.startsWith('blob:');
   const getUploadedReferenceImage = () => (isUploadedReferenceImage(aiReferenceImageUrl) ? aiReferenceImageUrl : null);
-  const probeReferenceImageDimensions = async (source: string): Promise<{ width: number; height: number } | null> => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    if (typeof window === 'undefined') return null;
-    return new Promise((resolve) => {
-      const image = new window.Image();
-      image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
-      image.onerror = () => resolve(null);
-      image.src = source;
-    });
-  };
 
   const applyRecommendedPresetFromReferenceImage = async (
     presetId: BackgroundPresetId,
     uploadedReferenceImage: string | null,
     context: PresetContext,
   ) => {
+    setPresetRequirementMessage(null);
     const preset = recommendedPresets.find((item) => item.id === presetId);
     if (!preset) return;
+    if (presetId === 'selection_tiled_motif' && !uploadedReferenceImage) {
+      setPresetRequirementMessage('Selection Tiled Motif requires a REFERENCE IMAGE UPLOAD to generate the repeated mosaic.');
+      return;
+    }
     const referenceIntent = analyzeReferenceIntent(uploadedReferenceImage);
     let recipe = buildCompositionRecipe({ presetId, referenceIntent, gradient: draft.gradient });
     if (detectLogoLikeSubject(uploadedReferenceImage)) {
@@ -761,21 +886,11 @@ export default function OutfitBackgroundStudioModal({
     }
     let config = preset.recipe(context, recipe, uploadedReferenceImage);
     if (presetId === 'selection_tiled_motif' && uploadedReferenceImage) {
-      const dimensions = await probeReferenceImageDimensions(uploadedReferenceImage);
-      if (!dimensions || !dimensions.width || !dimensions.height) {
-        console.warn('background-studio: failed to load uploaded reference image for tiled motif preset; applying fallback preset.');
-      } else {
-        recipe = {
-          ...recipe,
-          repeatMode: dimensions.width > dimensions.height ? 'diagonal' : 'staggered',
-          motifDensity: dimensions.width > dimensions.height * 1.6 ? 'high' : recipe.motifDensity,
-        };
-        config = buildTiledMotifFromReference(
-          uploadedReferenceImage,
-          context,
-          dimensions.width / dimensions.height,
-          draft.gradient,
-        );
+      try {
+        config = await buildTiledMotifFromReferenceImage(uploadedReferenceImage, context, draft.gradient);
+      } catch {
+        setPresetRequirementMessage('Unable to process the uploaded image for Selection Tiled Motif. Please upload a valid image and try again.');
+        return;
       }
     }
     setSelectedRecommendedPreset(presetId);
@@ -830,12 +945,23 @@ export default function OutfitBackgroundStudioModal({
     setAiLoading(true);
     setAiError(null);
     setBackendWarning(null);
+    setPresetRequirementMessage(null);
     const uploadedReferenceImage = getUploadedReferenceImage();
 
-    if (selectedRecommendedPreset === 'selection_tiled_motif' && uploadedReferenceImage) {
-      const dimensions = await probeReferenceImageDimensions(uploadedReferenceImage);
-      const ratio = dimensions && dimensions.width && dimensions.height ? dimensions.width / dimensions.height : 1;
-      const tiledSurface = buildTiledMotifFromReference(uploadedReferenceImage, presetContext, ratio, draft.gradient);
+    if (selectedRecommendedPreset === 'selection_tiled_motif') {
+      if (!uploadedReferenceImage) {
+        setAiLoading(false);
+        setAiError('Selection Tiled Motif depends on REFERENCE IMAGE UPLOAD. Upload an image before generating.');
+        return;
+      }
+      let tiledSurface: OutfitBackgroundConfig;
+      try {
+        tiledSurface = await buildTiledMotifFromReferenceImage(uploadedReferenceImage, presetContext, draft.gradient);
+      } catch {
+        setAiLoading(false);
+        setAiError('Could not build tiled motif from the uploaded reference image.');
+        return;
+      }
       const outputUrl = tiledSurface.ai_artwork?.image_url || uploadedReferenceImage;
       const variation: ArtworkVariation = {
         variation_id: `tiled_motif_${Date.now()}`,
@@ -847,8 +973,8 @@ export default function OutfitBackgroundStudioModal({
         provider_model: 'selection-tiled-motif',
         metadata: {
           source: 'selection_tiled_motif',
-          fallback: !dimensions,
-          repeat_mode: 'preset_driven',
+          fallback: false,
+          repeat_mode: 'canvas_grid',
         },
       };
       setAiLoading(false);
@@ -1217,6 +1343,7 @@ export default function OutfitBackgroundStudioModal({
                   </button>
                 </div>
                 {aiError ? <p className="text-xs text-amber-200">{aiError}</p> : null}
+                {presetRequirementMessage ? <p className="text-xs text-amber-200">{presetRequirementMessage}</p> : null}
                 {backendWarning ? <p className="text-xs text-cyan-200">{backendWarning}</p> : null}
                 {aiResults.length ? <p className="text-[11px] text-white/60">Provider: {aiResults[0]?.provider} {aiResults[0]?.provider_model ? `· ${aiResults[0].provider_model}` : ''}</p> : null}
                 {aiGradientResults.length ? (
@@ -1309,6 +1436,8 @@ export default function OutfitBackgroundStudioModal({
                     <div className="grid gap-2 sm:grid-cols-2">
                       {group.presets.map((preset) => {
                         const uploadedReferenceImage = getUploadedReferenceImage();
+                        const requiresUploadedReference = preset.id === 'selection_tiled_motif';
+                        const isDisabled = requiresUploadedReference && !uploadedReferenceImage;
                         const previewRecipe = buildCompositionRecipe({
                           presetId: preset.id,
                           referenceIntent: analyzeReferenceIntent(uploadedReferenceImage),
@@ -1319,11 +1448,13 @@ export default function OutfitBackgroundStudioModal({
                           <button
                             key={preset.id}
                             type="button"
-                            className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)]"
+                            disabled={isDisabled}
+                            className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)] disabled:cursor-not-allowed disabled:opacity-50"
                             onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
                           >
                             <p className="text-xs font-semibold">{preset.label}</p>
                             <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
+                            {isDisabled ? <p className="mt-1 text-[10px] text-amber-200">Requires REFERENCE IMAGE UPLOAD</p> : null}
                             <span
                               className="mt-2 block h-9 rounded-lg border border-white/15"
                               style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig))}
