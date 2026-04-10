@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { getBest2DAssetForWardrobeItem } from '@/app/services/Tester2DAssetResolver';
 
 type CardState = 'ready' | 'generating' | 'queued' | 'failed' | 'not_started';
 
@@ -27,7 +28,7 @@ const STYLE_BY_STATE: Record<CardState, string> = {
 };
 
 export default function WardrobeItemCard(props: Props) {
-  const preview2D = props.imageAssets?.approved_catalog_2d_url || props.imageAssets?.normalized_2d_preview_url || props.imageAssets?.raw_upload_image_url || props.imageUrl;
+  const preview2D = getBest2DAssetForWardrobeItem({ image_url: props.imageUrl, image_assets: props.imageAssets });
 
   return (
     <article onClick={props.onClick} className={`cursor-pointer rounded-2xl border p-4 transition hover:border-cyan-300/60 ${STYLE_BY_STATE[props.state]}`}>

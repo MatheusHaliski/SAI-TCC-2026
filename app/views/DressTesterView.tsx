@@ -3,138 +3,118 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
-import MannequinStage from '@/app/components/dress-tester/MannequinStage';
-import PieceGrid from '@/app/components/dress-tester/PieceGrid';
-import MannequinSelector from '@/app/components/dress-tester/MannequinSelector';
-import {
-  createEmptySelection,
-  DRESS_TESTER_CATEGORIES,
-  DressTesterCategory,
-  DressTesterGender,
-  Mannequin2D,
-  WardrobePiece2D,
-} from '@/app/lib/dress-tester-models';
-import { useOutfitStateManager } from '@/app/hooks/useOutfitStateManager';
+import Tester2DControls from '@/app/components/tester2d/Tester2DControls';
+import Tester2DMannequinSelector from '@/app/components/tester2d/Tester2DMannequinSelector';
+import Tester2DStage from '@/app/components/tester2d/Tester2DStage';
+import Tester2DWardrobePanel, { Tester2DWardrobeItem } from '@/app/components/tester2d/Tester2DWardrobePanel';
+import { getTester2DMannequinById, Tester2DMannequin } from '@/app/config/tester2dMannequins';
+import { resolveOverlayLayers, resolveSlotFromPieceType } from '@/app/services/Tester2DOverlayService';
+import { getBest2DAssetForWardrobeItem } from '@/app/services/Tester2DAssetResolver';
+
+interface BootstrapPiece {
+  piece_id: string;
+  name: string;
+  piece_type: string;
+  image_url?: string;
+  approved_catalog_2d_url?: string | null;
+  normalized_2d_preview_url?: string | null;
+  raw_upload_image_url?: string | null;
+  image_assets?: {
+    approved_catalog_2d_url?: string | null;
+    normalized_2d_preview_url?: string | null;
+    raw_upload_image_url?: string | null;
+  };
+  render_layer?: number;
+}
 
 interface BootstrapPayload {
-  mannequins: Mannequin2D[];
-  pieces: WardrobePiece2D[];
+  pieces: BootstrapPiece[];
 }
 
 export default function DressTesterView() {
   const [loading, setLoading] = useState(true);
-  const [mannequins, setMannequins] = useState<Mannequin2D[]>([]);
-  const [pieces, setPieces] = useState<WardrobePiece2D[]>([]);
-  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [selectedGender, setSelectedGender] = useState<DressTesterGender>('female');
-  const [selectedMannequinId, setSelectedMannequinId] = useState<string | null>(null);
-  const [resetOnSwitch, setResetOnSwitch] = useState(true);
+  const [pieces, setPieces] = useState<Tester2DWardrobeItem[]>([]);
+  const [selectedMannequin, setSelectedMannequin] = useState<Tester2DMannequin['id']>('female');
+  const [equipped, setEquipped] = useState<Partial<Record<'upper' | 'lower' | 'shoes' | 'accessory', Tester2DWardrobeItem & { render_layer?: number }>>>({});
+  const [zoom, setZoom] = useState(0.55);
+  const [showAnchors, setShowAnchors] = useState(false);
 
-  const mannequin = useMemo(
-    () => mannequins.find((item) => item.mannequin_id === selectedMannequinId) ?? mannequins.find((item) => item.gender === selectedGender) ?? mannequins[0] ?? null,
-    [mannequins, selectedGender, selectedMannequinId],
-  );
+  const mannequin = useMemo(() => getTester2DMannequinById(selectedMannequin), [selectedMannequin]);
 
   const refreshData = useCallback(async () => {
     setLoading(true);
     const response = await fetch('/api/dress-tester/bootstrap');
     const payload = (await response.json()) as BootstrapPayload;
-    setMannequins(payload.mannequins || []);
-    setPieces(payload.pieces || []);
+
+    const resolved = (payload.pieces || [])
+      .map((piece) => ({
+        piece_id: piece.piece_id,
+        name: piece.name,
+        piece_type: piece.piece_type,
+        image_url: getBest2DAssetForWardrobeItem(piece),
+        render_layer: piece.render_layer,
+      }))
+      .filter((piece) => Boolean(piece.image_url));
+
+    setPieces(resolved);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void refreshData().catch(() => {
-        setMessage('Unable to load tester assets.');
+        setMessage('Could not load wardrobe assets for Tester 2D.');
         setLoading(false);
       });
     }, 0);
-
     return () => window.clearTimeout(timer);
   }, [refreshData]);
 
-  const {
-    activeCategory,
-    availablePieces,
-    removeFromCategory,
-    resetLook,
-    resolvedLayers,
-    selection,
-    setActiveCategory,
-    wearPiece,
-  } = useOutfitStateManager({ mannequin, pieces });
+  const layers = useMemo(() => resolveOverlayLayers(mannequin, equipped), [mannequin, equipped]);
 
-  const saveOutfit = async () => {
-    if (!mannequin) return;
-    setSaving(true);
-    const response = await fetch('/api/dress-tester/outfits', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mannequin_id: mannequin.mannequin_id,
-        pose_code: mannequin.pose_code,
-        selection: { ...createEmptySelection(mannequin.mannequin_id, mannequin.pose_code), ...selection },
-      }),
-    });
-    setSaving(false);
-    setMessage(response.ok ? 'Outfit saved.' : 'Unable to save outfit.');
+  const applyPiece = (piece: Tester2DWardrobeItem) => {
+    const slot = resolveSlotFromPieceType(piece.piece_type);
+    setEquipped((prev) => ({ ...prev, [slot]: piece }));
   };
 
-  if (loading) return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Loading dress tester...</div>;
-  if (!mannequin) return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Select a mannequin to start.</div>;
+  if (loading) return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Loading Tester 2D...</div>;
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Tester 2D" subtitle="Unified outfit editor powered by transparent clothing overlays" />
+      <PageHeader title="Tester 2D" subtitle="Single studio workspace for mannequin-based outfit editing" />
 
-      <SectionBlock title="Mannequin Selector" subtitle="Toggle male/female mannequins sourced from external assets">
-        <MannequinSelector
-          mannequins={mannequins}
-          selectedMannequinId={mannequin.mannequin_id}
-          selectedGender={selectedGender}
-          resetOnSwitch={resetOnSwitch}
-          onGenderChange={setSelectedGender}
-          onSelectMannequin={(item) => {
-            setSelectedGender(item.gender as DressTesterGender);
-            setSelectedMannequinId(item.mannequin_id);
-            if (resetOnSwitch) resetLook(item);
-          }}
-          onToggleReset={() => setResetOnSwitch((prev) => !prev)}
-        />
-      </SectionBlock>
-
-      <SectionBlock title="Outfit Editor" subtitle="Single composition view with category slots and layering controls">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <MannequinStage mannequin={mannequin} layers={resolvedLayers} highlightedType={activeCategory} />
-
-          <div className="space-y-3 rounded-2xl border border-white/20 bg-black/20 p-3">
-            <div className="flex flex-wrap gap-2">
-              {DRESS_TESTER_CATEGORIES.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setActiveCategory(category as DressTesterCategory)}
-                  className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${activeCategory === category ? 'border-white bg-white text-black' : 'border-white/25 text-white'}`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-
-            <PieceGrid pieces={availablePieces} selectedPieceId={selection[activeCategory]} onSelect={wearPiece} />
-
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => removeFromCategory(activeCategory)} className="rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white">Remove slot</button>
-              <button onClick={() => resetLook()} className="rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white">Reset outfit</button>
-              <button onClick={saveOutfit} disabled={saving} className="col-span-2 rounded-xl border border-white bg-white px-3 py-2 text-xs uppercase tracking-[0.2em] text-black disabled:opacity-60">{saving ? 'Saving...' : 'Save look'}</button>
-            </div>
-
-            {message ? <p className="text-xs text-white/70">{message}</p> : null}
-          </div>
+      <SectionBlock title="Controls" subtitle="Select mannequin, adjust stage, and reset safely when switching avatars">
+        <div className="space-y-3">
+          <Tester2DMannequinSelector
+            selectedId={selectedMannequin}
+            onChange={(id) => {
+              setSelectedMannequin(id);
+              setEquipped({});
+              setMessage('Outfit reset after mannequin switch (safe MVP behavior).');
+            }}
+          />
+          <Tester2DControls
+            zoom={zoom}
+            onZoomIn={() => setZoom((prev) => Math.min(0.9, prev + 0.05))}
+            onZoomOut={() => setZoom((prev) => Math.max(0.4, prev - 0.05))}
+            onReset={() => setEquipped({})}
+            showAnchors={showAnchors}
+            onToggleAnchors={() => setShowAnchors((prev) => !prev)}
+          />
+          {message ? <p className="text-xs text-white/70">{message}</p> : null}
         </div>
       </SectionBlock>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <SectionBlock title="Editing Stage" subtitle="Centralized mannequin-first composition surface">
+          <Tester2DStage mannequin={mannequin} layers={layers} zoom={zoom} showAnchors={showAnchors} />
+        </SectionBlock>
+
+        <SectionBlock title="Wardrobe 2D Library" subtitle="Click a piece to apply/replace its target slot immediately">
+          <Tester2DWardrobePanel items={pieces} onApply={applyPiece} />
+        </SectionBlock>
+      </div>
     </div>
   );
 }

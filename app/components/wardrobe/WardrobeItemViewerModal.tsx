@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
+import { getBest2DAssetForWardrobeItem } from '@/app/services/Tester2DAssetResolver';
 
 interface WardrobeViewerItem {
   name: string;
@@ -27,7 +28,7 @@ export default function WardrobeItemViewerModal({ open, item, onClose, onOpen3D 
 
   const image2d = useMemo(() => {
     if (!item) return '';
-    return item.image_assets?.approved_catalog_2d_url || item.image_assets?.normalized_2d_preview_url || item.image_assets?.raw_upload_image_url || item.image_url;
+    return getBest2DAssetForWardrobeItem(item);
   }, [item]);
 
   if (!open || !item) return null;
