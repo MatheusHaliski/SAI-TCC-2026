@@ -9,7 +9,7 @@ import Tester2DStage from '@/app/components/tester2d/Tester2DStage';
 import Tester2DWardrobePanel, { Tester2DWardrobeItem } from '@/app/components/tester2d/Tester2DWardrobePanel';
 import { getTester2DMannequinById, Tester2DMannequin } from '@/app/config/tester2dMannequins';
 import { resolveOverlayLayers, resolveSlotFromPieceType } from '@/app/services/Tester2DOverlayService';
-import { getBest2DAssetForWardrobeItem } from '@/app/services/Tester2DAssetResolver';
+import { getBestTester2DAssetForWardrobeItem } from '@/app/services/Tester2DAssetResolver';
 
 interface BootstrapPiece {
   piece_id: string;
@@ -19,10 +19,12 @@ interface BootstrapPiece {
   approved_catalog_2d_url?: string | null;
   normalized_2d_preview_url?: string | null;
   raw_upload_image_url?: string | null;
+  segmented_png_url?: string | null;
   image_assets?: {
     approved_catalog_2d_url?: string | null;
     normalized_2d_preview_url?: string | null;
     raw_upload_image_url?: string | null;
+    segmented_png_url?: string | null;
   };
   render_layer?: number;
 }
@@ -38,7 +40,8 @@ export default function DressTesterView() {
   const [selectedMannequin, setSelectedMannequin] = useState<Tester2DMannequin['id']>('female');
   const [equipped, setEquipped] = useState<Partial<Record<'upper' | 'lower' | 'shoes' | 'accessory', Tester2DWardrobeItem & { render_layer?: number }>>>({});
   const [zoom, setZoom] = useState(0.55);
-  const [showAnchors, setShowAnchors] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const mannequin = useMemo(() => getTester2DMannequinById(selectedMannequin), [selectedMannequin]);
 
@@ -48,13 +51,17 @@ export default function DressTesterView() {
     const payload = (await response.json()) as BootstrapPayload;
 
     const resolved = (payload.pieces || [])
-      .map((piece) => ({
-        piece_id: piece.piece_id,
-        name: piece.name,
-        piece_type: piece.piece_type,
-        image_url: getBest2DAssetForWardrobeItem(piece),
-        render_layer: piece.render_layer,
-      }))
+      .map((piece) => {
+        const resolvedAsset = getBestTester2DAssetForWardrobeItem(piece);
+        return {
+          piece_id: piece.piece_id,
+          name: piece.name,
+          piece_type: piece.piece_type,
+          image_url: resolvedAsset.url,
+          render_layer: piece.render_layer,
+          assetSource: resolvedAsset.source,
+        };
+      })
       .filter((piece) => Boolean(piece.image_url));
 
     setPieces(resolved);
@@ -75,6 +82,7 @@ export default function DressTesterView() {
 
   const applyPiece = (piece: Tester2DWardrobeItem) => {
     const slot = resolveSlotFromPieceType(piece.piece_type);
+    setSelectedCategory(slot);
     setEquipped((prev) => ({ ...prev, [slot]: piece }));
   };
 
@@ -99,8 +107,8 @@ export default function DressTesterView() {
             onZoomIn={() => setZoom((prev) => Math.min(0.9, prev + 0.05))}
             onZoomOut={() => setZoom((prev) => Math.max(0.4, prev - 0.05))}
             onReset={() => setEquipped({})}
-            showAnchors={showAnchors}
-            onToggleAnchors={() => setShowAnchors((prev) => !prev)}
+            showDebug={showDebug}
+            onToggleDebug={() => setShowDebug((prev) => !prev)}
           />
           {message ? <p className="text-xs text-white/70">{message}</p> : null}
         </div>
@@ -108,7 +116,7 @@ export default function DressTesterView() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <SectionBlock title="Editing Stage" subtitle="Centralized mannequin-first composition surface">
-          <Tester2DStage mannequin={mannequin} layers={layers} zoom={zoom} showAnchors={showAnchors} />
+          <Tester2DStage mannequin={mannequin} layers={layers} zoom={zoom} showDebug={showDebug} selectedSlot={selectedCategory} />
         </SectionBlock>
 
         <SectionBlock title="Wardrobe 2D Library" subtitle="Click a piece to apply/replace its target slot immediately">

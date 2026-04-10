@@ -2,6 +2,8 @@ import { getAdminStorageBucket } from '@/app/lib/firebaseAdmin';
 import { NextResponse } from 'next/server';
 
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
+const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
+const ALLOWED_BINARY_MIME = new Set(['application/octet-stream', 'binary/octet-stream']);
 
 const extensionFromMimeType = (mimeType: string) => {
   if (mimeType === 'image/jpeg') return 'jpg';
@@ -11,17 +13,30 @@ const extensionFromMimeType = (mimeType: string) => {
   return 'bin';
 };
 
+const extensionFromName = (name: string) => {
+  const ext = name.toLowerCase().split('.').pop() ?? '';
+  return ext;
+};
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-    const file = formData.get('image');
+    const file = formData.get('image') ?? formData.get('file') ?? formData.get('asset');
 
     if (!(file instanceof File)) {
-      return NextResponse.json({ error: 'Image file is required.' }, { status: 400 });
+      return NextResponse.json({ error: 'Upload file is required.' }, { status: 400 });
     }
 
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Only image files are allowed.' }, { status: 400 });
+    const fileType = (file.type || '').toLowerCase();
+    const inferredExtension = extensionFromName(file.name);
+    const inferredFromMime = extensionFromMimeType(fileType);
+    const binaryMime = ALLOWED_BINARY_MIME.has(fileType) || fileType.length === 0;
+    const isImageMime = fileType.startsWith('image/');
+    const isAllowedBinaryImage = binaryMime && ALLOWED_EXTENSIONS.has(inferredExtension);
+    const isAllowed = isImageMime || isAllowedBinaryImage;
+
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Only image payloads are allowed (jpeg/png/webp/gif).' }, { status: 400 });
     }
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -30,14 +45,15 @@ export async function POST(request: Request) {
 
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const bucket = getAdminStorageBucket();
-    const fileExtension = extensionFromMimeType(file.type);
+    const fileExtension = isImageMime ? extensionFromMimeType(fileType) : inferredExtension || inferredFromMime;
+    const contentType = isImageMime ? fileType : `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
     const path = `wardrobe-images/${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
     const bucketFile = bucket.file(path);
     const downloadToken = crypto.randomUUID();
 
     await bucketFile.save(fileBuffer, {
       metadata: {
-        contentType: file.type,
+        contentType,
         metadata: {
           firebaseStorageDownloadTokens: downloadToken,
         },

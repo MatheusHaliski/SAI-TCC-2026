@@ -7,6 +7,7 @@ export interface Tester2DWardrobeItem {
   name: string;
   piece_type: string;
   image_url: string;
+  assetSource?: string;
 }
 
 interface Props {
@@ -25,6 +26,7 @@ export default function Tester2DWardrobePanel({ items, onApply }: Props) {
           <div>
             <p className="text-sm font-semibold text-white">{item.name}</p>
             <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">{item.piece_type}</p>
+            {item.assetSource ? <p className="text-[10px] uppercase tracking-[0.16em] text-white/45">asset: {item.assetSource}</p> : null}
           </div>
         </button>
       ))}
