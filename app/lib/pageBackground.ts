@@ -8,6 +8,7 @@ export interface PageBackgroundConfig {
 }
 
 const PAGE_BACKGROUND_KEY = 'sai_page_background_config';
+export const GOLDEN_BACKGROUND_ASSET = '/Firefly_Consegue adicionar quebras de linha tech ao gradiente (adicionar ranhuras) 3787887.jpg';
 export const OFFICIAL_WEBSITE_BACKGROUND_GRADIENT = `url("data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000'>
     <defs>
@@ -33,11 +34,27 @@ export const OFFICIAL_WEBSITE_BACKGROUND_GRADIENT = `url("data:image/svg+xml;utf
     <rect width='1600' height='1000' fill='url(#glowB)'/>
   </svg>`,
 )}")`;
+export const GOLDEN_WEBSITE_BACKGROUND_GRADIENT = [
+  'linear-gradient(132deg, rgba(8, 6, 2, 0.82) 0%, rgba(42, 25, 7, 0.78) 38%, rgba(12, 10, 7, 0.9) 100%)',
+  'linear-gradient(118deg, rgba(255, 214, 120, 0.3) 0%, rgba(240, 180, 66, 0.16) 44%, rgba(52, 33, 11, 0.48) 100%)',
+  'repeating-linear-gradient(-20deg, rgba(255, 233, 172, 0.14) 0 1px, rgba(17, 12, 4, 0) 1px 18px)',
+  'repeating-linear-gradient(88deg, rgba(252, 221, 149, 0.08) 0 2px, rgba(28, 18, 6, 0) 2px 26px)',
+  `url("${GOLDEN_BACKGROUND_ASSET}")`,
+].join(', ');
 
 export const DEFAULT_PAGE_BACKGROUND_CONFIG: PageBackgroundConfig = {
   gradient: OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
   shape: 'orb',
 };
+
+const withTechGrooves = (base: string, opacity = 0.1): string => [
+  'linear-gradient(160deg, rgba(12, 10, 8, 0.74) 0%, rgba(22, 16, 8, 0.5) 58%, rgba(8, 6, 4, 0.82) 100%)',
+  `repeating-linear-gradient(135deg, rgba(255, 240, 200, ${opacity}) 0 1px, rgba(10, 7, 3, 0) 1px 14px)`,
+  `repeating-linear-gradient(95deg, rgba(241, 201, 120, ${Math.max(opacity - 0.04, 0.03)}) 0 2px, rgba(10, 7, 3, 0) 2px 24px)`,
+  base,
+].join(', ');
+
+const isGoldenBackground = (gradient: string): boolean => gradient.includes(GOLDEN_BACKGROUND_ASSET);
 
 export const readPageBackgroundConfig = (): PageBackgroundConfig => {
   const raw = getLS(PAGE_BACKGROUND_KEY);
@@ -56,8 +73,11 @@ export const readPageBackgroundConfig = (): PageBackgroundConfig => {
 export const applyPageBackgroundConfig = (config: PageBackgroundConfig): void => {
   if (typeof document === 'undefined') return;
   document.documentElement.style.setProperty('--home-shell-bg', config.gradient);
-  document.documentElement.style.setProperty('--sidebar-gradient', config.gradient);
-  document.documentElement.style.setProperty('--sidebar-gradient-soft', config.gradient);
+  document.documentElement.style.setProperty('--sidebar-gradient', withTechGrooves(config.gradient, isGoldenBackground(config.gradient) ? 0.16 : 0.09));
+  document.documentElement.style.setProperty('--sidebar-gradient-soft', withTechGrooves(config.gradient, isGoldenBackground(config.gradient) ? 0.12 : 0.07));
+  document.documentElement.style.setProperty('--drawer-surface-bg', withTechGrooves(config.gradient, isGoldenBackground(config.gradient) ? 0.2 : 0.08));
+  document.documentElement.style.setProperty('--drawer-surface-border', isGoldenBackground(config.gradient) ? 'rgba(255, 220, 150, 0.5)' : 'rgba(255, 255, 255, 0.3)');
+  document.documentElement.style.setProperty('--drawer-surface-shadow', isGoldenBackground(config.gradient) ? '0 22px 50px rgba(92, 54, 8, 0.55)' : '0 22px 50px rgba(12, 24, 18, 0.45)');
   document.documentElement.setAttribute('data-home-shape', config.shape);
 };
 
