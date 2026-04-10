@@ -77,9 +77,10 @@ export class ImageSegmentationService {
     if (typeof output === 'string') segmentedPngUrl = output;
     if (Array.isArray(output)) segmentedPngUrl = String(output[0] ?? '');
     if (output && typeof output === 'object' && !Array.isArray(output)) {
-      segmentedPngUrl = String(output.image ?? '');
-      maskUrl = output.mask ? String(output.mask) : null;
-      confidence = Number(output.confidence ?? confidence);
+      const outputPayload = output as { image?: string; mask?: string; confidence?: number };
+      segmentedPngUrl = String(outputPayload.image ?? '');
+      maskUrl = outputPayload.mask ? String(outputPayload.mask) : null;
+      confidence = Number(outputPayload.confidence ?? confidence);
     }
 
     if (!segmentedPngUrl) throw new ServiceError('Segmentation provider returned no image output.', 502);
