@@ -8,6 +8,7 @@ import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import { resolveWardrobeModelUrl } from '@/app/lib/wardrobeModelUrl';
 import ThreeDViewerModal from '@/app/components/wardrobe/ThreeDViewerModal';
+import WardrobeItemViewerModal from '@/app/components/wardrobe/WardrobeItemViewerModal';
 import ThreeDGenerationProgressModal from '@/app/components/wardrobe/ThreeDGenerationProgressModal';
 import WardrobeItemCard from '@/app/components/wardrobe/WardrobeItemCard';
 import { use3dAssetJob } from '@/app/hooks/use3dAssetJob';
@@ -16,6 +17,8 @@ interface WardrobeItem {
   wardrobe_item_id: string;
   name: string;
   image_url: string;
+  image_assets?: { raw_upload_image_url?: string | null; segmented_png_url?: string | null; normalized_2d_preview_url?: string | null; approved_catalog_2d_url?: string | null; model_3d_url?: string | null };
+  image_analysis?: { catalog_readiness_score?: number; recommended_action?: string };
   model_3d_url?: string | null;
   model_preview_url?: string | null;
   model_base_3d_url?: string | null;
@@ -65,6 +68,7 @@ export default function MyWardrobeView() {
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [viewerItem, setViewerItem] = useState<WardrobeItem | null>(null);
+  const [modalItem, setModalItem] = useState<WardrobeItem | null>(null);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [progressItem, setProgressItem] = useState<WardrobeItem | null>(null);
 
@@ -189,11 +193,12 @@ export default function MyWardrobeView() {
                       key={item.wardrobe_item_id}
                       name={item.name}
                       imageUrl={item.image_url}
+                      imageAssets={item.image_assets}
                       brand={item.brand}
                       pieceType={item.piece_type}
                       state={cardState}
                       statusLabel={stateLabel(cardState, item.model_status)}
-                      onClick={() => { void handleOpenViewerIntent(item); }}
+                      onClick={() => setModalItem(item)}
                       onAvailable={() => setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'available' }))}
                       onUnavailable={() => setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'unavailable' }))}
                       onToggleFavorite={() => setFavorites((prev) => ({ ...prev, [item.wardrobe_item_id]: !prev[item.wardrobe_item_id] }))}
@@ -206,6 +211,18 @@ export default function MyWardrobeView() {
           ))}
         </div>
       </div>
+
+
+      <WardrobeItemViewerModal
+        open={Boolean(modalItem)}
+        item={modalItem}
+        onClose={() => setModalItem(null)}
+        onOpen3D={() => {
+          if (!modalItem) return;
+          setModalItem(null);
+          void handleOpenViewerIntent(modalItem);
+        }}
+      />
 
       <ThreeDGenerationProgressModal
         open={Boolean(progressItem) && !viewerUrl}

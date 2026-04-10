@@ -7,6 +7,7 @@ type CardState = 'ready' | 'generating' | 'queued' | 'failed' | 'not_started';
 interface Props {
   name: string;
   imageUrl: string;
+  imageAssets?: { approved_catalog_2d_url?: string | null; normalized_2d_preview_url?: string | null; raw_upload_image_url?: string | null };
   brand: string;
   pieceType: string;
   statusLabel: string;
@@ -26,9 +27,11 @@ const STYLE_BY_STATE: Record<CardState, string> = {
 };
 
 export default function WardrobeItemCard(props: Props) {
+  const preview2D = props.imageAssets?.approved_catalog_2d_url || props.imageAssets?.normalized_2d_preview_url || props.imageAssets?.raw_upload_image_url || props.imageUrl;
+
   return (
     <article onClick={props.onClick} className={`cursor-pointer rounded-2xl border p-4 transition hover:border-cyan-300/60 ${STYLE_BY_STATE[props.state]}`}>
-      <Image src={props.imageUrl} alt={props.name} width={640} height={360} className="h-36 w-full rounded-xl object-cover" unoptimized />
+      <Image src={preview2D} alt={props.name} width={640} height={360} className="h-36 w-full rounded-xl object-cover" unoptimized />
       <h3 className="mt-3 text-base font-semibold text-white">{props.name}</h3>
       <p className="text-sm text-white/70">Brand: {props.brand}</p>
       <p className="text-sm text-white/70">Type: {props.pieceType}</p>

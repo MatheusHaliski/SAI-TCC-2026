@@ -83,6 +83,26 @@ export interface PieceItem {
   updated_at: string;
 }
 
+
+export interface WardrobeImageAssets {
+  raw_upload_image_url: string | null;
+  segmented_png_url: string | null;
+  normalized_2d_preview_url: string | null;
+  approved_catalog_2d_url: string | null;
+  model_3d_url: string | null;
+}
+
+export interface WardrobeImageAnalysis {
+  contains_human: boolean;
+  rotation_z_degrees: number;
+  fully_visible: boolean;
+  centered_score: number;
+  front_view_score: number;
+  background_clean_score: number;
+  catalog_readiness_score: number;
+  recommended_action: 'approve_catalog_2d' | 'refine_with_diffusion' | 'normalize_only' | 'request_reupload';
+}
+
 export interface WardrobeItem {
   wardrobe_item_id: EntityId;
   user_id: EntityId;
@@ -90,6 +110,8 @@ export interface WardrobeItem {
   market_id: EntityId;
   name: string;
   image_url: string;
+  image_assets?: WardrobeImageAssets;
+  image_analysis?: WardrobeImageAnalysis;
   model_3d_url: string | null;
   model_preview_url: string | null;
   model_base_3d_url: string | null;
@@ -162,6 +184,8 @@ export interface WardrobeViewItem {
   wardrobe_item_id: EntityId;
   name: string;
   image_url: string;
+  image_assets?: WardrobeImageAssets;
+  image_analysis?: WardrobeImageAnalysis;
   model_3d_url?: string | null;
   model_preview_url?: string | null;
   model_base_3d_url?: string | null;
@@ -188,6 +212,8 @@ export interface WardrobeViewItem {
 export interface PieceItemSearchResult {
   piece_item_id: EntityId;
   image_url: string;
+  image_assets?: WardrobeImageAssets;
+  image_analysis?: WardrobeImageAnalysis;
   gender: string;
   brand: string;
   name: string;
@@ -261,6 +287,8 @@ export interface WardrobePiece2D {
   pose_code: string;
   render_layer: number;
   image_url: string;
+  image_assets?: WardrobeImageAssets;
+  image_analysis?: WardrobeImageAnalysis;
   thumbnail_url: string;
   hide_layers: string[];
   hides_piece_types: Array<'top' | 'bottom' | 'dress' | 'shoes' | 'bag' | 'outerwear' | 'accessory'>;
