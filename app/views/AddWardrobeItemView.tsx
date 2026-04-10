@@ -8,6 +8,11 @@ import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import FancySelect from '@/app/components/ui/fancy-select';
 import { getAuthSessionProfile } from '@/app/lib/authSession';
 import { getServerSession } from '@/app/lib/clientSession';
+import {
+  buildBlenderWorkerSubmitPayload,
+  pollBlenderWorkerJob,
+  submitBlenderWorkerJob,
+} from '@/app/services/blenderWorkerClient';
 
 type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type Market = { market_id: string; season: string; gender: string };
@@ -188,11 +193,6 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     [markets],
   );
 
-  const selectedBrand = useMemo(
-    () => brands.find((brand) => brand.brand_id === form.brand_id) ?? null,
-    [brands, form.brand_id],
-  );
-
   useEffect(() => {
     if (!submitting) {
       setSubmitProgress(0);
@@ -242,30 +242,39 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         | null;
       const createdWardrobeItemId = createdPiece?.wardrobe_item_id?.trim();
       if (createdWardrobeItemId && form.piece_type === 'upper_piece') {
-        const uvResponse = await fetch('/api/wardrobe-items/generate-uv', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
+        try {
+          const submitPayload = buildBlenderWorkerSubmitPayload({
             wardrobe_item_id: createdWardrobeItemId,
-            category: 'upper_body',
-            garment_prompt: `${form.color || 'unspecified'} ${selectedBrand?.name || 'generic'} shirt`,
-            color: form.color || 'unspecified',
-            brand: selectedBrand?.name || 'unspecified',
-            base_model_id: 'upper_body_v1',
-            generation_mode: 'fast_uv',
-            modelUrl: form.image_url,
-          }),
-        });
-        if (uvResponse.ok) {
-          const uvPayload = (await uvResponse.json().catch(() => null)) as
-            | { jobId?: string; cloudJobId?: string; status?: string }
-            | null;
-          setUvJobId(uvPayload?.jobId ?? null);
-          setUvJobStatus(uvPayload?.status ?? 'pending');
-        } else {
+            name: form.name,
+            piece_type: form.piece_type,
+            image_url: form.image_url,
+          });
+          console.log('[3d-worker] submit:start', {
+            pieceId: createdWardrobeItemId,
+            pieceName: form.name,
+            imageUrl: submitPayload.imageUrl,
+            payload: submitPayload,
+          });
+          const submitResponse = await submitBlenderWorkerJob(submitPayload);
+          const cloudJobId = String(submitResponse.jobId ?? submitResponse.job_id ?? submitResponse.id ?? '').trim();
+          console.log('[3d-worker] submit:done', {
+            pieceId: createdWardrobeItemId,
+            pieceName: form.name,
+            jobId: cloudJobId || null,
+          });
+
+          if (!cloudJobId) {
+            setUvJobId(null);
+            setUvJobStatus('failed_to_schedule');
+            setAlertMessage('3D worker did not return a valid job id.');
+          } else {
+            setUvJobId(cloudJobId);
+            setUvJobStatus(String(submitResponse.status ?? 'queued'));
+          }
+        } catch (workerError) {
           setUvJobId(null);
           setUvJobStatus('failed_to_schedule');
+          setAlertMessage(workerError instanceof Error ? workerError.message : 'Could not submit 3D worker job.');
         }
       }
 
@@ -292,14 +301,23 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     if (!uvJobId) return;
     let cancelled = false;
     const timer = window.setInterval(async () => {
-      const response = await fetch(`/api/pipeline-jobs/${uvJobId}`);
-      if (!response.ok) return;
-      const payload = (await response.json().catch(() => null)) as
-        | { status?: string }
-        | null;
-      if (!payload?.status || cancelled) return;
-      setUvJobStatus(payload.status);
-      if (payload.status === 'completed' || payload.status === 'failed') {
+      try {
+        const payload = await pollBlenderWorkerJob(uvJobId);
+        if (!payload?.status || cancelled) return;
+        const nextStatus = String(payload.status);
+        console.log('[3d-worker] poll', {
+          jobId: uvJobId,
+          status: nextStatus,
+        });
+        setUvJobStatus(nextStatus);
+        if (nextStatus === 'completed' || nextStatus === 'failed') {
+          window.clearInterval(timer);
+        }
+      } catch (pollError) {
+        if (!cancelled) {
+          setUvJobStatus('failed');
+          setAlertMessage(pollError instanceof Error ? pollError.message : 'Could not poll 3D job status.');
+        }
         window.clearInterval(timer);
       }
     }, 2500);
