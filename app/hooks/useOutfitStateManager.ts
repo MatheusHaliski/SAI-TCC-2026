@@ -10,6 +10,7 @@ import {
   ResolvedLayer,
   WardrobePiece2D,
 } from '@/app/lib/dress-tester-models';
+import { clothingOverlayEngine } from '@/app/services/ClothingOverlayEngine';
 
 interface UseOutfitStateManagerArgs {
   mannequin: Mannequin2D | null;
@@ -120,22 +121,12 @@ export function useOutfitStateManager({ mannequin, pieces }: UseOutfitStateManag
 
   const resolvedLayers = useMemo<ResolvedLayer[]>(() => {
     const selectedIds = new Set(selectedPieces.map((piece) => piece.piece_id));
+    const conflictFreePieces = selectedPieces.filter(
+      (piece) => !hasConflict(piece, new Set([...selectedIds].filter((id) => id !== piece.piece_id))),
+    );
 
-    return selectedPieces
-      .filter((piece) => !hasConflict(piece, new Set([...selectedIds].filter((id) => id !== piece.piece_id))))
-      .sort((a, b) => a.render_layer - b.render_layer)
-      .map((piece) => ({
-        piece_id: piece.piece_id,
-        piece_type: piece.piece_type,
-        image_url: piece.image_url,
-        render_layer: piece.render_layer,
-        anchor: {
-          ...piece.anchor,
-          scale: piece.scale_adjustment ?? piece.anchor.scale,
-        },
-        name: piece.name,
-      }));
-  }, [selectedPieces]);
+    return clothingOverlayEngine.resolveLayers(conflictFreePieces, selection, mannequin?.pose_code ?? selection.pose_code);
+  }, [mannequin?.pose_code, selectedPieces, selection]);
 
   const availablePieces = useMemo(
     () =>

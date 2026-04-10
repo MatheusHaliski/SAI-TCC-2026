@@ -49,6 +49,23 @@ export class WardrobeItemsRepository extends BaseRepository {
         wardrobe_item_id: doc.id,
         name: String(item.name ?? ''),
         image_url: String(item.image_url ?? ''),
+        image_assets: {
+          raw_upload_image_url: String(item.raw_upload_image_url ?? item.image_url ?? ''),
+          segmented_png_url: (item.segmented_png_url as string | null) ?? null,
+          normalized_2d_preview_url: (item.normalized_2d_preview_url as string | null) ?? null,
+          approved_catalog_2d_url: (item.approved_catalog_2d_url as string | null) ?? null,
+          model_3d_url: model3dUrl,
+        },
+        image_analysis: {
+          contains_human: Boolean(item.contains_human),
+          rotation_z_degrees: Number(item.rotation_z_degrees ?? 0),
+          fully_visible: Boolean(item.fully_visible),
+          centered_score: Number(item.centered_score ?? 0),
+          front_view_score: Number(item.front_view_score ?? 0),
+          background_clean_score: Number(item.background_clean_score ?? 0),
+          catalog_readiness_score: Number(item.catalog_readiness_score ?? 0),
+          recommended_action: (item.recommended_action as string) ?? 'normalize_only',
+        },
         model_3d_url: model3dUrl,
         model_preview_url: (item.model_preview_url as string | null) ?? null,
         model_base_3d_url: modelBase3dUrl,
@@ -105,6 +122,23 @@ export class WardrobeItemsRepository extends BaseRepository {
         creator_name: creator?.name || 'Creator',
         name: String(item.name ?? ''),
         image_url: String(item.image_url ?? ''),
+        image_assets: {
+          raw_upload_image_url: String(item.raw_upload_image_url ?? item.image_url ?? ''),
+          segmented_png_url: (item.segmented_png_url as string | null) ?? null,
+          normalized_2d_preview_url: (item.normalized_2d_preview_url as string | null) ?? null,
+          approved_catalog_2d_url: (item.approved_catalog_2d_url as string | null) ?? null,
+          model_3d_url: model3dUrl,
+        },
+        image_analysis: {
+          contains_human: Boolean(item.contains_human),
+          rotation_z_degrees: Number(item.rotation_z_degrees ?? 0),
+          fully_visible: Boolean(item.fully_visible),
+          centered_score: Number(item.centered_score ?? 0),
+          front_view_score: Number(item.front_view_score ?? 0),
+          background_clean_score: Number(item.background_clean_score ?? 0),
+          catalog_readiness_score: Number(item.catalog_readiness_score ?? 0),
+          recommended_action: (item.recommended_action as string) ?? 'normalize_only',
+        },
         piece_type: String(item.piece_type ?? ''),
         brand,
         color: String(item.color ?? ''),
@@ -212,6 +246,77 @@ export class WardrobeItemsRepository extends BaseRepository {
     };
   }
 
+
+  async update2DAssets(
+    wardrobeItemId: string,
+    input: {
+      image_assets: {
+        raw_upload_image_url: string;
+        segmented_png_url: string | null;
+        normalized_2d_preview_url: string | null;
+        approved_catalog_2d_url: string | null;
+      };
+      image_analysis: {
+        contains_human: boolean;
+        rotation_z_degrees: number;
+        fully_visible: boolean;
+        centered_score: number;
+        front_view_score: number;
+        background_clean_score: number;
+        catalog_readiness_score: number;
+        recommended_action: string;
+      };
+      stage_details: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
+      raw_upload_image_url: input.image_assets.raw_upload_image_url,
+      segmented_png_url: input.image_assets.segmented_png_url,
+      normalized_2d_preview_url: input.image_assets.normalized_2d_preview_url,
+      approved_catalog_2d_url: input.image_assets.approved_catalog_2d_url,
+      contains_human: input.image_analysis.contains_human,
+      rotation_z_degrees: input.image_analysis.rotation_z_degrees,
+      fully_visible: input.image_analysis.fully_visible,
+      centered_score: input.image_analysis.centered_score,
+      front_view_score: input.image_analysis.front_view_score,
+      background_clean_score: input.image_analysis.background_clean_score,
+      catalog_readiness_score: input.image_analysis.catalog_readiness_score,
+      recommended_action: input.image_analysis.recommended_action,
+      pipeline_stage_details: input.stage_details,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  async findWith2DAssetsById(wardrobeItemId: string): Promise<(Record<string, unknown> & { wardrobe_item_id: string }) | null> {
+    const item = await this.findById(wardrobeItemId);
+    if (!item) return null;
+    const model3dUrl = resolveWardrobeModelUrl({
+      model_3d_url: (item.model_3d_url as string | null) ?? null,
+      model_base_3d_url: (item.model_base_3d_url as string | null) ?? null,
+      model_branded_3d_url: (item.model_branded_3d_url as string | null) ?? null,
+    });
+
+    return {
+      ...item,
+      image_assets: {
+        raw_upload_image_url: String(item.raw_upload_image_url ?? item.image_url ?? ''),
+        segmented_png_url: (item.segmented_png_url as string | null) ?? null,
+        normalized_2d_preview_url: (item.normalized_2d_preview_url as string | null) ?? null,
+        approved_catalog_2d_url: (item.approved_catalog_2d_url as string | null) ?? null,
+        model_3d_url: model3dUrl,
+      },
+      image_analysis: {
+        contains_human: Boolean(item.contains_human),
+        rotation_z_degrees: Number(item.rotation_z_degrees ?? 0),
+        fully_visible: Boolean(item.fully_visible),
+        centered_score: Number(item.centered_score ?? 0),
+        front_view_score: Number(item.front_view_score ?? 0),
+        background_clean_score: Number(item.background_clean_score ?? 0),
+        catalog_readiness_score: Number(item.catalog_readiness_score ?? 0),
+        recommended_action: String(item.recommended_action ?? 'normalize_only'),
+      },
+    };
+  }
   async existsById(wardrobeItemId: string): Promise<boolean> {
     const snap = await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).get();
     return snap.exists;
