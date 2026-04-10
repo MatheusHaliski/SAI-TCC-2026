@@ -25,9 +25,10 @@ import { applyArtworkToOutfitCard } from '@/app/lib/artwork-studio';
 import FancySelect from '@/app/components/ui/fancy-select';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
+type RecommendedPresetId = 'brand_tiled_grid' | 'brand_editorial_logo' | 'brand_tonal_geometry';
 
 type RecommendedPreset = {
-  id: string;
+  id: RecommendedPresetId;
   label: string;
   description: string;
   recipe: (context: PresetContext, uploadedReferenceImage?: string | null) => OutfitBackgroundConfig;
@@ -234,6 +235,13 @@ type RepeatedImagePatternOptions = {
   offsetY?: number;
 };
 
+type MotifSeed = {
+  source: string;
+  aspectRatio: number;
+  dominantColor: string;
+  brandName: string;
+};
+
 function seededRandom(seed: number) {
   const value = Math.sin(seed) * 10000;
   return value - Math.floor(value);
@@ -279,25 +287,25 @@ function createRepeatedImagePattern(referenceImage: string, options: RepeatedIma
   ).join('');
 }
 
-function buildTiledMotifComposition(referenceImage: string, context: PresetContext, imageAspectRatio = 1): OutfitBackgroundConfig {
-  const extractMotifSeed = () => ({
+function extractMotifSeed(referenceImage: string, context: PresetContext, imageAspectRatio = 1): MotifSeed {
+  return {
     source: referenceImage,
-    aspectRatio: imageAspectRatio,
+    aspectRatio: Number.isFinite(imageAspectRatio) && imageAspectRatio > 0 ? imageAspectRatio : 1,
     dominantColor: context.heroColor,
     brandName: context.brandName,
-  });
-  const motifSeed = extractMotifSeed();
-  const safeAspectRatio = Number.isFinite(imageAspectRatio) && imageAspectRatio > 0 ? imageAspectRatio : 1;
+  };
+}
+
+function generateRepeatedPattern(motifSeed: MotifSeed, repeatMode: RepeatedImagePatternOptions['repeatMode']) {
+  const safeAspectRatio = motifSeed.aspectRatio;
   const motifScale: 'tiny' | 'small' | 'medium' = safeAspectRatio > 1.8 ? 'tiny' : safeAspectRatio < 0.7 ? 'medium' : 'small';
   const density: 'low' | 'medium' | 'high' = 'high';
-  const repeatModes: RepeatedImagePatternOptions['repeatMode'][] = ['grid', 'staggered', 'diagonal', 'scattered-balanced'];
-  const repeatMode = repeatModes[Math.abs(context.brandName.length) % repeatModes.length];
   const motifHeightByScale = { tiny: 54, small: 68, medium: 84 } as const;
   const densityRows = { low: 6, medium: 7, high: 9 } as const;
   const densityCols = { low: 10, medium: 12, high: 15 } as const;
   const motifHeight = motifHeightByScale[motifScale];
   const motifWidth = Math.round(Math.min(138, Math.max(40, motifHeight * safeAspectRatio)));
-  const repeatedPattern = createRepeatedImagePattern(motifSeed.source, {
+  return createRepeatedImagePattern(motifSeed.source, {
     motifWidth,
     motifHeight,
     spacingX: 16,
@@ -316,13 +324,29 @@ function buildTiledMotifComposition(referenceImage: string, context: PresetConte
     offsetX: 16,
     offsetY: 20,
   });
-  const tiledBrandSurface = asDataUri(
+}
+
+function compositeMotifSurface(
+  motifSeed: MotifSeed,
+  repeatedPattern: string,
+  repeatMode: RepeatedImagePatternOptions['repeatMode'],
+  baseGradient?: OutfitBackgroundConfig['gradient'],
+) {
+  const gradientStops = baseGradient?.stops?.length
+    ? baseGradient.stops
+    : [
+        { color: '#020617', position: 0 },
+        { color: '#0f172a', position: 50 },
+        { color: motifSeed.dominantColor, position: 100 },
+      ];
+  const stopMarkup = gradientStops.map((stop) => (
+    `<stop offset='${Math.min(100, Math.max(0, stop.position))}%' stop-color='${stop.color}'/>`
+  )).join('');
+  return asDataUri(
     `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
       <defs>
         <linearGradient id='surface' x1='0%' y1='0%' x2='100%' y2='100%'>
-          <stop offset='0%' stop-color='#020617'/>
-          <stop offset='52%' stop-color='#0f172a'/>
-          <stop offset='100%' stop-color='${motifSeed.dominantColor}'/>
+          ${stopMarkup}
         </linearGradient>
         <radialGradient id='safeAreaMask' cx='30%' cy='28%' r='42%'>
           <stop offset='0%' stop-color='rgba(15,23,42,0.70)'/>
@@ -345,9 +369,22 @@ function buildTiledMotifComposition(referenceImage: string, context: PresetConte
       ${repeatedPattern}
       <rect x='60' y='60' width='610' height='390' rx='44' fill='url(#safeAreaMask)'/>
       <rect width='1200' height='800' fill='rgba(2,6,23,0.12)'/>
-      <text x='66' y='760' font-size='22' font-family='Inter, Arial, sans-serif' fill='rgba(148,163,184,0.55)' letter-spacing='3'>${escapeSvgAttribute(context.brandName.toUpperCase())} MOTIF SURFACE · ${repeatMode.toUpperCase()}</text>
+      <text x='66' y='760' font-size='22' font-family='Inter, Arial, sans-serif' fill='rgba(148,163,184,0.55)' letter-spacing='3'>${escapeSvgAttribute(motifSeed.brandName.toUpperCase())} MOTIF SURFACE · ${repeatMode.toUpperCase()}</text>
     </svg>`,
   );
+}
+
+function buildTiledMotifFromReference(
+  referenceImage: string,
+  context: PresetContext,
+  imageAspectRatio = 1,
+  baseGradient?: OutfitBackgroundConfig['gradient'],
+): OutfitBackgroundConfig {
+  const motifSeed = extractMotifSeed(referenceImage, context, imageAspectRatio);
+  const repeatModes: RepeatedImagePatternOptions['repeatMode'][] = ['grid', 'staggered', 'diagonal', 'scattered-balanced'];
+  const repeatMode = repeatModes[Math.abs(context.brandName.length) % repeatModes.length];
+  const repeatedPattern = generateRepeatedPattern(motifSeed, repeatMode);
+  const tiledBrandSurface = compositeMotifSurface(motifSeed, repeatedPattern, repeatMode, baseGradient);
   return {
     background_mode: 'ai_artwork',
     ai_artwork: {
@@ -489,7 +526,7 @@ function getRecommendedPresets(context: PresetContext): RecommendedPreset[] {
       description: 'Transforms uploaded reference into repeated motif tiles on a premium surface.',
       recipe: (_, uploadedReferenceImage) => (
         uploadedReferenceImage
-          ? buildTiledMotifComposition(uploadedReferenceImage, context)
+          ? buildTiledMotifFromReference(uploadedReferenceImage, context)
           : {
               background_mode: 'ai_artwork',
               ai_artwork: { prompt: `${context.brandName} motif tiled grid`, image_url: tiledBrandSurface, generation_status: 'done' },
@@ -636,6 +673,7 @@ export default function OutfitBackgroundStudioModal({
   const [savedAssets, setSavedAssets] = useState<ArtworkAsset[]>([]);
   const [aiGradientResults, setAiGradientResults] = useState<OutfitBackgroundConfig[]>([]);
   const [selectedAiResult, setSelectedAiResult] = useState<ArtworkVariation | null>(null);
+  const [selectedRecommendedPreset, setSelectedRecommendedPreset] = useState<RecommendedPresetId | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
@@ -665,7 +703,7 @@ export default function OutfitBackgroundStudioModal({
   };
 
   const applyRecommendedPresetFromReferenceImage = async (
-    presetId: string,
+    presetId: RecommendedPresetId,
     uploadedReferenceImage: string | null,
     context: PresetContext,
   ) => {
@@ -677,9 +715,15 @@ export default function OutfitBackgroundStudioModal({
       if (!dimensions || !dimensions.width || !dimensions.height) {
         console.warn('background-studio: failed to load uploaded reference image for tiled motif preset; applying fallback preset.');
       } else {
-        config = buildTiledMotifComposition(uploadedReferenceImage, context, dimensions.width / dimensions.height);
+        config = buildTiledMotifFromReference(
+          uploadedReferenceImage,
+          context,
+          dimensions.width / dimensions.height,
+          draft.gradient,
+        );
       }
     }
+    setSelectedRecommendedPreset(presetId);
     setDraft((prev) => ({
       ...prev,
       ...config,
@@ -731,6 +775,34 @@ export default function OutfitBackgroundStudioModal({
     setAiLoading(true);
     setAiError(null);
     setBackendWarning(null);
+    const uploadedReferenceImage = getUploadedReferenceImage();
+
+    if (selectedRecommendedPreset === 'brand_tiled_grid' && uploadedReferenceImage) {
+      const dimensions = await probeReferenceImageDimensions(uploadedReferenceImage);
+      const ratio = dimensions && dimensions.width && dimensions.height ? dimensions.width / dimensions.height : 1;
+      const tiledSurface = buildTiledMotifFromReference(uploadedReferenceImage, presetContext, ratio, draft.gradient);
+      const outputUrl = tiledSurface.ai_artwork?.image_url || uploadedReferenceImage;
+      const variation: ArtworkVariation = {
+        variation_id: `tiled_motif_${Date.now()}`,
+        preview_url: outputUrl,
+        output_url: outputUrl,
+        thumbnail_url: outputUrl,
+        provider: 'procedural',
+        provider_job_id: null,
+        provider_model: 'selection-tiled-motif',
+        metadata: {
+          source: 'selection_tiled_motif',
+          fallback: !dimensions,
+          repeat_mode: 'preset_driven',
+        },
+      };
+      setAiLoading(false);
+      setDraft((prev) => ({ ...prev, ...tiledSurface }));
+      setAiResults([variation]);
+      setSelectedAiResult(variation);
+      setAiGradientResults([]);
+      return;
+    }
 
     const studioInput: ArtworkStudioInput = {
       user_id: previewCardData.creatorId || 'anonymous',
@@ -766,7 +838,7 @@ export default function OutfitBackgroundStudioModal({
     }
 
     console.debug('artwork_studio.normalized_response', payload.data);
-    const uploadedReferenceVariation = isUploadedReferenceImage(aiReferenceImageUrl)
+    const uploadedReferenceVariation = isUploadedReferenceImage(aiReferenceImageUrl) && selectedRecommendedPreset !== 'brand_tiled_grid'
       ? [{
           variation_id: `reference_upload_${Date.now()}`,
           preview_url: aiReferenceImageUrl,
