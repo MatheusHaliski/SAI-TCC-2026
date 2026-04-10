@@ -4,6 +4,7 @@ import { ReactNode, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  GOLDEN_WEBSITE_BACKGROUND_GRADIENT,
   OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
   PageBackgroundConfig,
   PageBackgroundShape,
@@ -22,7 +23,7 @@ function RightDrawer({ title, onClose, children }: { title: string; onClose: () 
   return (
     <>
       <Overlay onClose={onClose} />
-      <aside className="sa-right-drawer fixed right-0 top-0 z-[80] h-full w-full max-w-sm border-l border-emerald-100/30 bg-gradient-to-b from-emerald-700/95 via-emerald-800/95 to-emerald-950/95 p-4 text-white shadow-2xl">
+      <aside className="sa-right-drawer fixed right-0 top-0 z-[80] h-full w-full max-w-sm border-l p-4 text-white shadow-2xl">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold uppercase tracking-[0.15em] text-white/70">{title}</p>
           <button type="button" onClick={onClose} className="rounded-lg border border-white/30 px-2 py-1 text-xs">✕</button>
@@ -55,6 +56,10 @@ function PageBackgroundStudio({
     gradient: OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
     shape: 'orb',
   };
+  const goldenConfig: PageBackgroundConfig = {
+    gradient: GOLDEN_WEBSITE_BACKGROUND_GRADIENT,
+    shape: 'diamond',
+  };
   return (
     <div className="sa-page-studio space-y-3 rounded-xl border border-emerald-100/30 bg-emerald-950/40 p-3">
       <p className="text-xs uppercase tracking-[0.12em] text-emerald-100/80">Page Background Studio</p>
@@ -85,10 +90,11 @@ function PageBackgroundStudio({
         type="button"
         className="sa-apply-background w-full rounded-lg border border-emerald-200/70 bg-emerald-400/20 px-3 py-2 text-sm font-semibold"
         onClick={() => {
-          onApply(draft);
+          onChange(goldenConfig);
+          onApply(goldenConfig);
         }}
       >
-        Apply website background
+        APPLY WEBSITE GOLDEN BACKGROUND
       </button>
       <button
         type="button"
