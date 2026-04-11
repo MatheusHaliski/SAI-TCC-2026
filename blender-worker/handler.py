@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -26,6 +27,25 @@ logger = logging.getLogger("stylistai.worker")
 logger.info("worker_module_loaded entrypoint=handler.py")
 
 app = FastAPI(title="StylistAI GPU Worker", version="2.0.0")
+
+
+def get_allowed_origins() -> list[str]:
+    raw_origins = os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "https://sai-tcc-2026.vercel.app,http://localhost:3000",
+    )
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    return origins or ["https://sai-tcc-2026.vercel.app", "http://localhost:3000"]
+
+
+allowed_origins = get_allowed_origins()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 OUTPUT_DIR = Path(os.getenv("WORKER_OUTPUT_DIR", "/tmp/stylistai-3d-output"))
 OUTPUT_PUBLIC_BASE_URL = os.getenv("OUTPUT_PUBLIC_BASE_URL", "").strip()
@@ -165,6 +185,7 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
 def startup_log() -> None:
     logger.info("app_loaded title=%s version=%s", app.title, app.version)
     logger.info("server_starting app=stylistai-worker host=0.0.0.0 port=%s", os.getenv("PORT", "8000"))
+    logger.info("cors_allowed_origins origins=%s", ",".join(allowed_origins))
     logger.info("server_ready output_dir=%s max_workers=%s", OUTPUT_DIR, MAX_WORKERS)
 
 
