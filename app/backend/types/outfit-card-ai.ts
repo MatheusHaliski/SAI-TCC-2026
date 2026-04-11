@@ -44,6 +44,8 @@ export type OutfitInterpretResponse = {
   success: boolean;
   data?: OutfitInterpretationResult;
   error?: string;
+  error_code?: string;
+  request_id?: string;
 };
 
 export type OpenAIOutfitInterpretPayload = {
