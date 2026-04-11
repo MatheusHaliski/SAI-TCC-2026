@@ -14,7 +14,7 @@ from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
@@ -77,6 +77,18 @@ class LbRequest(BaseModel):
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def build_preflight_response(request: Request) -> Response:
+    request_origin = request.headers.get("origin", "")
+    allow_origin = request_origin if request_origin in allowed_origins else allowed_origins[0]
+    headers = {
+        "Access-Control-Allow-Origin": allow_origin,
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Headers": request.headers.get("access-control-request-headers", "*"),
+        "Access-Control-Max-Age": "86400",
+    }
+    return Response(status_code=204, headers=headers)
 
 
 def register_job(job_id: str, payload: JobRequest) -> None:
@@ -187,7 +199,6 @@ def startup_log() -> None:
     logger.info("server_starting app=stylistai-worker host=0.0.0.0 port=%s", os.getenv("PORT", "8000"))
     logger.info("cors_allowed_origins origins=%s", ",".join(allowed_origins))
     logger.info("server_ready output_dir=%s max_workers=%s", OUTPUT_DIR, MAX_WORKERS)
-    logger.info("cors_allowed_origins origins=%s", CORS_ALLOWED_ORIGINS)
 
 
 @app.get("/")
@@ -226,6 +237,9 @@ def diagnostics() -> dict[str, Any]:
 
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return build_preflight_response(request)
+
     if request.url.path in {"/ping", "/", "/health"}:
         return await call_next(request)
 
@@ -238,6 +252,11 @@ async def auth_middleware(request: Request, call_next):
         return JSONResponse(status_code=401, content={"detail": "Unauthorized", "message": "no token provided"})
 
     return await call_next(request)
+
+
+@app.options("/{rest_of_path:path}")
+def preflight(rest_of_path: str, request: Request) -> Response:
+    return build_preflight_response(request)
 
 
 @app.post("/jobs", response_model=JobResponse)
