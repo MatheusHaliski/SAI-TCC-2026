@@ -22,7 +22,7 @@ Responsibilities:
 - return structured errors
 
 Suggested image:
-- `docker.io/matheushaliski/stylistai-worker:runpod-2026-04-11-v3`
+- `docker.io/matheushaliski/stylistai-worker:runpod-2026-04-11-v4`
 
 Base image:
 - `runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404`
@@ -38,24 +38,24 @@ Run from repo root:
 
 ```bash
 DOCKER_BUILDKIT=1 docker build -f blender-api/Dockerfile -t stylistai-api:runpod-2026-04-09 .
-DOCKER_BUILDKIT=1 docker build -f blender-worker/Dockerfile -t docker.io/matheushaliski/stylistai-worker:runpod-2026-04-11-v3 .
+DOCKER_BUILDKIT=1 docker build -f blender-worker/Dockerfile -t stylistai-worker:runpod-2026-04-11-v4 .
 ```
 
 ## 3) Push commands
 
 ```bash
 docker tag stylistai-api:runpod-2026-04-09 <registry>/stylistai-api:runpod-2026-04-09
-docker tag docker.io/matheushaliski/stylistai-worker:runpod-2026-04-11-v3 <registry>/stylistai-worker:runpod-2026-04-11-v3
+docker tag stylistai-worker:runpod-2026-04-11-v4 <registry>/stylistai-worker:runpod-2026-04-11-v4
 
 docker push <registry>/stylistai-api:runpod-2026-04-09
-docker push <registry>/stylistai-worker:runpod-2026-04-11-v3
+docker push <registry>/stylistai-worker:runpod-2026-04-11-v4
 ```
 
 Optional:
 
 ```bash
 docker tag <registry>/stylistai-api:runpod-2026-04-09 <registry>/stylistai-api:latest
-docker tag <registry>/stylistai-worker:runpod-2026-04-11-v3 <registry>/stylistai-worker:latest
+docker tag <registry>/stylistai-worker:runpod-2026-04-11-v4 <registry>/stylistai-worker:latest
 docker push <registry>/stylistai-api:latest
 docker push <registry>/stylistai-worker:latest
 ```
@@ -63,7 +63,7 @@ docker push <registry>/stylistai-worker:latest
 ## 4) RunPod pod setup
 
 ## GPU worker pod
-- Container image: `docker.io/matheushaliski/stylistai-worker:runpod-2026-04-11-v3`
+- Container image: `docker.io/matheushaliski/stylistai-worker:runpod-2026-04-11-v4`
 - Container port: `8000`
 - Start command: use image default (`/usr/local/bin/runpod-worker-bootstrap.sh`)
 
