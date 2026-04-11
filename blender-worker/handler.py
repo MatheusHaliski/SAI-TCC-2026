@@ -187,6 +187,7 @@ def startup_log() -> None:
     logger.info("server_starting app=stylistai-worker host=0.0.0.0 port=%s", os.getenv("PORT", "8000"))
     logger.info("cors_allowed_origins origins=%s", ",".join(allowed_origins))
     logger.info("server_ready output_dir=%s max_workers=%s", OUTPUT_DIR, MAX_WORKERS)
+    logger.info("cors_allowed_origins origins=%s", CORS_ALLOWED_ORIGINS)
 
 
 @app.get("/")
