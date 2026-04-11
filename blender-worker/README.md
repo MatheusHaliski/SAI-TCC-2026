@@ -41,5 +41,5 @@ python -m uvicorn handler:app --host 0.0.0.0 --port 8000 --log-level info
 From repo root:
 
 ```bash
-DOCKER_BUILDKIT=1 docker build -f blender-worker/Dockerfile -t stylistai-worker:runpod-2026-04-09 .
+DOCKER_BUILDKIT=1 docker build -f blender-worker/Dockerfile -t docker.io/matheushaliski/stylistai-worker:runpod-2026-04-11-v3 .
 ```
