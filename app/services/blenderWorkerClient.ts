@@ -1,0 +1,145 @@
+export type BlenderWorkerStatus = 'queued' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
+
+export interface BlenderWorkerJobPayload {
+  imageUrl: string;
+  jobType: string;
+  options: {
+    prompt: string;
+    type: string;
+  };
+  modelUrl?: string;
+}
+
+interface PieceLikeRecord {
+  [key: string]: unknown;
+}
+
+const DEFAULT_JOB_TYPE = 'blender_uv_pipeline';
+
+function sanitizeUrl(candidate: unknown): string | null {
+  if (typeof candidate !== 'string') return null;
+  const trimmed = candidate.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function readPath(source: PieceLikeRecord, path: string[]): unknown {
+  return path.reduce<unknown>((acc, key) => {
+    if (!acc || typeof acc !== 'object') return undefined;
+    return (acc as PieceLikeRecord)[key];
+  }, source);
+}
+
+export function resolveWorkerBaseUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_BLENDER_WORKER_URL?.trim() ?? '';
+  if (!raw) {
+    throw new Error('Missing NEXT_PUBLIC_BLENDER_WORKER_URL configuration.');
+  }
+  return raw.replace(/\/+$/, '');
+}
+
+export function resolvePieceImageUrl(piece: PieceLikeRecord): string | null {
+  const candidatePaths = [
+    ['imageUrl'],
+    ['image_url'],
+    ['imagemUrl'],
+    ['photoUrl'],
+    ['thumbnailUrl'],
+    ['image_assets', 'raw_upload_image_url'],
+    ['image_assets', 'segmented_png_url'],
+    ['image_assets', 'normalized_2d_preview_url'],
+    ['image_assets', 'approved_catalog_2d_url'],
+  ];
+
+  for (const path of candidatePaths) {
+    const value = readPath(piece, path);
+    const url = sanitizeUrl(value);
+    if (url) return url;
+  }
+
+  return null;
+}
+
+function resolvePieceModelUrl(piece: PieceLikeRecord): string | null {
+  const candidatePaths = [
+    ['modelUrl'],
+    ['model_url'],
+    ['model_3d_url'],
+    ['model_base_3d_url'],
+    ['model_branded_3d_url'],
+  ];
+
+  for (const path of candidatePaths) {
+    const value = readPath(piece, path);
+    const modelUrl = sanitizeUrl(value);
+    if (modelUrl) return modelUrl;
+  }
+
+  return null;
+}
+
+export function buildBlenderWorkerSubmitPayload(piece: PieceLikeRecord): BlenderWorkerJobPayload {
+  const imageUrl = resolvePieceImageUrl(piece);
+  if (!imageUrl) {
+    throw new Error('A valid piece image URL is required before starting 3D generation.');
+  }
+
+  const prompt = sanitizeUrl(piece.name) ?? sanitizeUrl(piece.title) ?? 'Unnamed piece';
+  const type = sanitizeUrl(piece.piece_type) ?? sanitizeUrl(piece.type) ?? 'unspecified_piece';
+  const modelUrl = resolvePieceModelUrl(piece);
+
+  const payload: BlenderWorkerJobPayload = {
+    imageUrl,
+    jobType: DEFAULT_JOB_TYPE,
+    options: {
+      prompt,
+      type,
+    },
+  };
+
+  if (modelUrl) {
+    payload.modelUrl = modelUrl;
+  }
+
+  return payload;
+}
+
+export async function submitBlenderWorkerJob(payload: BlenderWorkerJobPayload): Promise<Record<string, unknown>> {
+  const workerBaseUrl = resolveWorkerBaseUrl();
+  const requestUrl = `${workerBaseUrl}/jobs`;
+
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!response.ok) {
+    const message = typeof body?.error === 'string' ? body.error : `Worker submit failed with status ${response.status}.`;
+    throw new Error(message);
+  }
+
+  return body ?? {};
+}
+
+export async function pollBlenderWorkerJob(jobId: string): Promise<Record<string, unknown>> {
+  const workerBaseUrl = resolveWorkerBaseUrl();
+  const requestUrl = `${workerBaseUrl}/jobs/${encodeURIComponent(jobId)}`;
+
+  const response = await fetch(requestUrl, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!response.ok) {
+    const message = typeof body?.error === 'string' ? body.error : `Worker status poll failed with status ${response.status}.`;
+    throw new Error(message);
+  }
+
+  return body ?? {};
+}
