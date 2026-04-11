@@ -219,6 +219,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
     setSubmitting(true);
     try {
+      let workerSubmitError: string | null = null;
       const response = await fetch('/api/add-piece', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -274,12 +275,12 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         } catch (workerError) {
           setUvJobId(null);
           setUvJobStatus('failed_to_schedule');
-          setAlertMessage(workerError instanceof Error ? workerError.message : 'Could not submit 3D worker job.');
+          workerSubmitError = workerError instanceof Error ? workerError.message : 'Could not submit 3D worker job.';
         }
       }
 
       setSubmitProgress(100);
-      setAlertMessage('Piece added to your wardrobe successfully.');
+      setAlertMessage(workerSubmitError ?? 'Piece added to your wardrobe successfully.');
       onPieceCreated?.();
       setForm((prev) => ({
         ...prev,
@@ -310,7 +311,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
           status: nextStatus,
         });
         setUvJobStatus(nextStatus);
-        if (nextStatus === 'completed' || nextStatus === 'failed') {
+        if (nextStatus === 'completed' || nextStatus === 'failed' || nextStatus === 'cancelled') {
           window.clearInterval(timer);
         }
       } catch (pollError) {
