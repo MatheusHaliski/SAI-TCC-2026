@@ -836,6 +836,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiLayerDepth, setAiLayerDepth] = useState(5);
   const [aiSafeArea, setAiSafeArea] = useState(true);
   const [aiReferenceImageUrl, setAiReferenceImageUrl] = useState('');
+  const [aiReferenceImageDataUrl, setAiReferenceImageDataUrl] = useState('');
   const [aiReferenceFileName, setAiReferenceFileName] = useState('');
   const [aiGenerationMode, setAiGenerationMode] = useState<BackgroundGenerationMode>('hybrid');
   const [aiResults, setAiResults] = useState<ArtworkVariation[]>([]);
@@ -866,6 +867,18 @@ export default function OutfitBackgroundStudioModal({
   }), [recommendedPresets]);
   const isUploadedReferenceImage = (value: string) => value.startsWith('data:image/') || value.startsWith('blob:');
   const getUploadedReferenceImage = () => (isUploadedReferenceImage(aiReferenceImageUrl) ? aiReferenceImageUrl : null);
+  const getReferenceImageForApi = () => {
+    const candidate = aiReferenceImageDataUrl.trim();
+    if (!candidate) return undefined;
+    const MAX_REFERENCE_BYTES = 1_500_000;
+    return candidate.length <= MAX_REFERENCE_BYTES ? candidate : undefined;
+  };
+
+  useEffect(() => () => {
+    if (aiReferenceImageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(aiReferenceImageUrl);
+    }
+  }, [aiReferenceImageUrl]);
 
   const applyRecommendedPresetFromReferenceImage = async (
     presetId: BackgroundPresetId,
@@ -999,7 +1012,7 @@ export default function OutfitBackgroundStudioModal({
       glowIntensity: aiGlow,
       layeringDepth: aiLayerDepth,
       safeAreaMode: aiSafeArea,
-      referenceImageUrl: aiReferenceImageUrl.trim() || undefined,
+      referenceImageUrl: getReferenceImageForApi(),
       variationCount: 4,
     };
 
@@ -1299,14 +1312,33 @@ export default function OutfitBackgroundStudioModal({
                       onChange={(event) => {
                         const file = event.target.files?.[0];
                         if (!file) {
+                          if (aiReferenceImageUrl.startsWith('blob:')) {
+                            URL.revokeObjectURL(aiReferenceImageUrl);
+                          }
                           setAiReferenceImageUrl('');
+                          setAiReferenceImageDataUrl('');
                           setAiReferenceFileName('');
                           return;
                         }
+
+                        const previewUrl = URL.createObjectURL(file);
+                        if (aiReferenceImageUrl.startsWith('blob:')) {
+                          URL.revokeObjectURL(aiReferenceImageUrl);
+                        }
+                        setAiReferenceImageUrl(previewUrl);
+                        setAiReferenceImageDataUrl('');
+                        setBackendWarning(null);
+
+                        if (file.size > 1_500_000) {
+                          setBackendWarning('Large reference image detected. Local presets will work, but server-side reference upload was skipped to keep generation stable.');
+                          setAiReferenceFileName(file.name);
+                          return;
+                        }
+
                         const reader = new FileReader();
                         reader.onload = () => {
                           const result = typeof reader.result === 'string' ? reader.result : '';
-                          setAiReferenceImageUrl(result);
+                          setAiReferenceImageDataUrl(result);
                           setAiReferenceFileName(file.name);
                         };
                         reader.readAsDataURL(file);
@@ -1402,7 +1434,7 @@ export default function OutfitBackgroundStudioModal({
                           glowIntensity: aiGlow,
                           layeringDepth: aiLayerDepth,
                           safeAreaMode: aiSafeArea,
-                          referenceImageUrl: aiReferenceImageUrl.trim() || undefined,
+                          referenceImageUrl: getReferenceImageForApi(),
                         },
                         variation: selectedAiResult,
                       };
