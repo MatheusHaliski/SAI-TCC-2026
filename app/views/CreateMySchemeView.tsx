@@ -46,6 +46,7 @@ type DescriptionMode = 'ai' | 'manual' | 'none';
 type GenerationMode = 'manual' | 'ai';
 
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
+type AiGenerationError = { code: string; message: string; requestId?: string };
 
 const normalizeSchemePieceType = (value: string) => value.trim().toLowerCase();
 
@@ -146,6 +147,7 @@ export default function CreateMySchemeView() {
   const [aiPrompt, setAiPrompt] = useState('');
   const [generationMode, setGenerationMode] = useState<GenerationMode>('manual');
   const [aiInterpreting, setAiInterpreting] = useState(false);
+  const [aiError, setAiError] = useState<AiGenerationError | null>(null);
   const [aiInterpretation, setAiInterpretation] = useState<OutfitInterpretationResult | null>(null);
   const [aiSlotSuggestions, setAiSlotSuggestions] = useState<Record<SlotKey, Array<{ value: string; label: string }>>>({
     upper: [],
@@ -455,20 +457,45 @@ export default function CreateMySchemeView() {
     const normalizedPrompt = aiPrompt.toLowerCase().trim();
     if (!normalizedPrompt) {
       setAlertMessage('Write a prompt before running AI generation.');
-      return;
+      return false;
     }
+    if (aiInterpreting) return false;
 
     setAiInterpreting(true);
+    setAiError(null);
     try {
-      const response = await fetch('/api/outfit-card/interpret', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: normalizedPrompt, locale: 'pt-BR' }),
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25_000);
+      let response: Response;
+      try {
+        response = await fetch('/api/outfit-card/interpret', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: normalizedPrompt, locale: 'pt-BR' }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+
       const payload = (await response.json().catch(() => null)) as OutfitInterpretResponse | null;
-      if (!response.ok || !payload?.success || !payload.data) {
-        setAlertMessage(payload?.error || 'Unable to interpret this look right now.');
-        return;
+      const hasValidItems = Boolean(payload?.data && Array.isArray(payload.data.items));
+      if (!response.ok || !payload?.success || !hasValidItems) {
+        const errorCode = payload?.error_code || (!hasValidItems ? 'INVALID_AI_RESPONSE' : 'AI_INTERPRETATION_FAILED');
+        const userMessage = payload?.error || 'Unable to interpret this look right now.';
+        console.error('AI GENERATION ERROR', {
+          code: errorCode,
+          requestId: payload?.request_id,
+          status: response.status,
+          payload,
+        });
+        setAiError({
+          code: errorCode,
+          message: userMessage,
+          requestId: payload?.request_id,
+        });
+        setAlertMessage(userMessage);
+        return false;
       }
 
       setAiInterpretation(payload.data);
@@ -495,8 +522,16 @@ export default function CreateMySchemeView() {
       if (!title.trim() && mapping.title) setTitle(mapping.title);
       setGenerationMode('ai');
       setAlertMessage('Look interpreted. You can keep editing manually.');
-    } catch {
-      setAlertMessage('Unable to interpret this look right now.');
+      return true;
+    } catch (error) {
+      const code = error instanceof Error && error.name === 'AbortError' ? 'AI_TIMEOUT' : 'AI_REQUEST_FAILED';
+      const message = code === 'AI_TIMEOUT'
+        ? 'AI generation timed out. Please try again.'
+        : 'Unable to interpret this look right now.';
+      console.error('AI GENERATION ERROR', { code, error });
+      setAiError({ code, message });
+      setAlertMessage(message);
+      return false;
     } finally {
       setAiInterpreting(false);
     }
@@ -773,8 +808,8 @@ export default function CreateMySchemeView() {
             type="button"
             className={primaryButtonClassName}
             onClick={async () => {
-              await generateFromAiPrompt();
-              setSelectedSection('Slots Review');
+              const success = await generateFromAiPrompt();
+              if (success) setSelectedSection('Slots Review');
             }}
             disabled={aiInterpreting}
           >
@@ -797,6 +832,16 @@ export default function CreateMySchemeView() {
                 </li>
               ))}
             </ul>
+          </div>
+        ) : null}
+        {aiError ? (
+          <div className="rounded-xl border border-rose-300/50 bg-rose-500/10 p-3 text-sm text-rose-100">
+            <p className="font-semibold">AI generation failed</p>
+            <p className="mt-1">{aiError.message}</p>
+            <p className="mt-2 text-xs text-rose-100/80">
+              code: {aiError.code}
+              {aiError.requestId ? ` · trace: ${aiError.requestId}` : ''}
+            </p>
           </div>
         ) : null}
       </div>
