@@ -5,7 +5,8 @@ import time
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
@@ -15,6 +16,47 @@ GPU_WORKER_TOKEN = os.getenv("GPU_WORKER_TOKEN", "").strip()
 REQUEST_TIMEOUT_MS = int(os.getenv("API_REQUEST_TIMEOUT_MS", "15000"))
 
 app = FastAPI(title="StylistAI Blender API Orchestrator", version="2.0.0")
+
+ALLOWED_ORIGINS = [
+    "https://sai-tcc-2026.vercel.app",
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.options("/{rest_of_path:path}")
+async def options_handler(request: Request, rest_of_path: str):
+    origin = request.headers.get("origin", "*")
+
+    return Response(
+        status_code=204,
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "86400",
+        },
+    )
+
+
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    response = await call_next(request)
+    origin = request.headers.get("origin")
+
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+
+    return response
 
 
 class JobRequest(BaseModel):
