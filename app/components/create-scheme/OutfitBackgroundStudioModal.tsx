@@ -893,7 +893,7 @@ export default function OutfitBackgroundStudioModal({
     }
 
     console.debug('artwork_studio.normalized_response', payload.data);
-    const uploadedReferenceVariation = isUploadedReferenceImage(aiReferenceImageUrl) && selectedRecommendedPreset !== 'selection_tiled_motif'
+    const uploadedReferenceVariation = isUploadedReferenceImage(aiReferenceImageUrl)
       ? [{
           variation_id: `reference_upload_${Date.now()}`,
           preview_url: aiReferenceImageUrl,

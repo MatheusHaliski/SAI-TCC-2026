@@ -12,6 +12,11 @@ import WardrobeItemViewerModal from '@/app/components/wardrobe/WardrobeItemViewe
 import ThreeDGenerationProgressModal from '@/app/components/wardrobe/ThreeDGenerationProgressModal';
 import WardrobeItemCard from '@/app/components/wardrobe/WardrobeItemCard';
 import { use3dAssetJob } from '@/app/hooks/use3dAssetJob';
+import {
+  buildBlenderWorkerSubmitPayload,
+  pollBlenderWorkerJob,
+  submitBlenderWorkerJob,
+} from '@/app/services/blenderWorkerClient';
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -64,7 +69,6 @@ function stateLabel(state: ReturnType<typeof mapItemState>, status?: string) {
 export default function MyWardrobeView() {
   const [items, setItems] = useState<WardrobeItem[]>([]);
   const [selectedSection, setSelectedSection] = useState(sections[0]?.toLowerCase() ?? 'available');
-  const [resolvedUserId, setResolvedUserId] = useState('');
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [viewerItem, setViewerItem] = useState<WardrobeItem | null>(null);
@@ -98,7 +102,6 @@ export default function MyWardrobeView() {
         return;
       }
 
-      setResolvedUserId(userId);
       const wardrobeResponse = await fetch(`/api/wardrobe-items/user/${userId}`);
       const wardrobeItems = await wardrobeResponse.json().catch(() => []);
       setItems(wardrobeResponse.ok && Array.isArray(wardrobeItems) ? wardrobeItems : []);
@@ -106,30 +109,6 @@ export default function MyWardrobeView() {
 
     void loadWardrobeData().catch(() => setItems([]));
   }, []);
-
-  const refreshItem = async (itemId: string) => {
-    if (!resolvedUserId) throw new Error('Session unavailable.');
-    const response = await fetch(`/api/wardrobe-items/user/${resolvedUserId}`);
-    if (!response.ok) throw new Error('Unable to sync 3D generation status.');
-    const data = (await response.json().catch(() => [])) as WardrobeItem[];
-    if (!Array.isArray(data)) throw new Error('Malformed wardrobe payload.');
-    setItems(data);
-    const fresh = data.find((item) => item.wardrobe_item_id === itemId);
-    if (!fresh) throw new Error('Wardrobe item not found while polling.');
-
-    const normalized = mapItemState(fresh);
-    const modelUrl = resolveWardrobeModelUrl(fresh);
-
-    if (normalized === 'ready' && modelUrl) {
-      return { jobId: fresh.wardrobe_item_id, status: 'completed', artifacts: { model_3d_url: modelUrl } };
-    }
-
-    if (normalized === 'failed') {
-      return { jobId: fresh.wardrobe_item_id, status: 'failed', error: fresh.model_generation_error ?? '3D generation failed.' };
-    }
-
-    return { jobId: fresh.wardrobe_item_id, status: normalized === 'queued' ? 'queued' : 'in_progress' };
-  };
 
   const grouped = useMemo(() => {
     const available = items.filter((item) => (availability[item.wardrobe_item_id] ?? 'available') === 'available');
@@ -166,8 +145,32 @@ export default function MyWardrobeView() {
     setProgressItem(item);
 
     await assetJob.startJob({
-      existingJobId: item.wardrobe_item_id,
-      pollJob: () => refreshItem(item.wardrobe_item_id),
+      createJob: async () => {
+        const payload = buildBlenderWorkerSubmitPayload(item as unknown as Record<string, unknown>);
+        console.log('[3d-worker] submit:start', {
+          pieceId: item.wardrobe_item_id,
+          pieceName: item.name,
+          imageUrl: payload.imageUrl,
+          payload,
+        });
+        const response = await submitBlenderWorkerJob(payload);
+        console.log('[3d-worker] submit:done', {
+          pieceId: item.wardrobe_item_id,
+          pieceName: item.name,
+          jobId: response.jobId ?? response.job_id ?? response.id ?? null,
+        });
+        return response;
+      },
+      pollJob: async (jobId) => {
+        const payload = await pollBlenderWorkerJob(jobId);
+        console.log('[3d-worker] poll', {
+          pieceId: item.wardrobe_item_id,
+          pieceName: item.name,
+          jobId,
+          status: payload.status ?? null,
+        });
+        return payload;
+      },
     });
   };
 
