@@ -3,8 +3,9 @@
 This folder contains the heavy GPU worker runtime.
 
 ## Responsibilities
-- execute GPU/PyTorch/Blender-compatible workload
-- generate artifacts
+- execute strict product-only fashion 3D pipeline
+- validate and preprocess uploaded image before Meshy
+- generate and refine GLB artifact
 - expose structured job status and diagnostics
 
 ## Base image
@@ -16,6 +17,22 @@ This folder contains the heavy GPU worker runtime.
 - `GET /diagnostics`
 - `POST /jobs` (also `POST /` for LB payload)
 - `GET /jobs/{jobId}` (also `GET /status/{jobId}`)
+
+## Pipeline stages
+1. Input fetch + validation gate.
+2. Garment-only segmentation and recentered cleaned PNG generation.
+3. Image quality scoring on cleaned asset.
+4. Meshy base generation using cleaned image + metadata prompt.
+5. Blender/trimesh refinement (center, normalize scale, clean scene) and final GLB export.
+
+## Failure codes
+- `invalid_input_person_detected`
+- `invalid_input_low_quality`
+- `invalid_input_background_noise`
+- `invalid_input_multiple_objects`
+- `segmentation_failed`
+- `meshy_failed`
+- `blender_failed`
 
 ## Startup behavior
 Container default command:
@@ -34,12 +51,4 @@ Then launches:
 
 ```bash
 python -m uvicorn handler:app --host 0.0.0.0 --port 8000 --log-level info
-```
-
-## Build
-
-From repo root:
-
-```bash
-DOCKER_BUILDKIT=1 docker build -f blender-worker/Dockerfile -t docker.io/matheushaliski/stylistai-worker:runpod-2026-04-11-v3 .
 ```

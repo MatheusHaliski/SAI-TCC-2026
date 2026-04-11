@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import struct
 import threading
 import time
 import uuid
@@ -18,6 +17,16 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
+from pipeline import (
+    PipelineError,
+    build_meshy_prompt,
+    fetch_image,
+    generate_base_glb_with_meshy,
+    preprocess_garment,
+    run_blender_refinement,
+    score_cleaned_image,
+    validate_input_image,
+)
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -121,24 +130,6 @@ def get_job(job_id: str) -> dict[str, Any] | None:
         return dict(record) if record else None
 
 
-def write_dummy_glb(output_path: Path, metadata: dict[str, Any]) -> None:
-    gltf_json = {
-        "asset": {"version": "2.0", "generator": "StylistAI-Worker-RunPod"},
-        "scene": 0,
-        "scenes": [{"nodes": []}],
-        "nodes": [],
-        "extras": metadata,
-    }
-    json_bytes = json.dumps(gltf_json, separators=(",", ":")).encode("utf-8")
-    padded_json = json_bytes + (b" " * ((4 - len(json_bytes) % 4) % 4))
-    total_length = 12 + 8 + len(padded_json)
-
-    with output_path.open("wb") as glb:
-        glb.write(struct.pack("<III", 0x46546C67, 2, total_length))
-        glb.write(struct.pack("<I4s", len(padded_json), b"JSON"))
-        glb.write(padded_json)
-
-
 def build_artifact_url(output_path: Path, job_id: str) -> str:
     if OUTPUT_PUBLIC_BASE_URL:
         base = OUTPUT_PUBLIC_BASE_URL.rstrip("/")
@@ -150,46 +141,92 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
     logger.info("job_started jobId=%s jobType=%s", job_id, payload.jobType)
     update_job(job_id, status="in_progress")
     started = time.perf_counter()
-    output_path = OUTPUT_DIR / f"{job_id}.glb"
+
+    job_dir = OUTPUT_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    original_path = job_dir / "input_original"
+    cleaned_path = job_dir / "input_cleaned.png"
+    base_glb_path = job_dir / "base_meshy.glb"
+    refined_glb_path = OUTPUT_DIR / f"{job_id}.glb"
+    debug_path = job_dir / "debug.json"
+
+    debug: dict[str, Any] = {
+        "jobId": job_id,
+        "originalImageUrl": payload.imageUrl,
+        "pipeline": "hybrid_meshy_blender",
+        "timestamps": {"startedAt": now_iso()},
+    }
 
     try:
-        features = {
-            "imageUrlLength": len(payload.imageUrl),
-            "hasModelUrl": bool(payload.modelUrl),
-            "optionKeys": sorted(payload.options.keys()),
+        fetch_image(payload.imageUrl, original_path)
+        validation = validate_input_image(original_path)
+        debug["validation"] = {
+            "accepted": validation.accepted,
+            "code": validation.code,
+            "message": validation.message,
+            "metadata": validation.metadata,
         }
+        if not validation.accepted:
+            raise PipelineError(validation.code or "invalid_input", validation.message or "Input rejected", {"qualityReport": validation.metadata})
 
-        metadata = {
-            "jobType": payload.jobType,
-            "sourceImageUrl": payload.imageUrl,
-            "options": payload.options,
-            "imageFeatures": features,
-            "modelSourceHint": payload.modelUrl,
-        }
-        write_dummy_glb(output_path, metadata)
+        preprocess_meta = preprocess_garment(original_path, cleaned_path)
+        quality_report = score_cleaned_image(cleaned_path)
+        debug["preprocess"] = preprocess_meta
+        debug["qualityReport"] = quality_report
+
+        prompt = build_meshy_prompt(preprocess_meta, payload.options)
+        meshy_meta = generate_base_glb_with_meshy(cleaned_path, base_glb_path, prompt, payload.options)
+        debug["meshy"] = meshy_meta
+
+        blender_meta = run_blender_refinement(base_glb_path, refined_glb_path, job_dir)
+        debug["blender"] = blender_meta
 
         duration_ms = int((time.perf_counter() - started) * 1000)
+        debug["timestamps"]["finishedAt"] = now_iso()
+        debug["durationMs"] = duration_ms
+        debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
+
         update_job(
             job_id,
             status="completed",
             artifacts={
-                "model_3d_url": build_artifact_url(output_path, job_id),
-                "model_3d_path": str(output_path),
+                "model_3d_url": build_artifact_url(refined_glb_path, job_id),
+                "model_3d_path": str(refined_glb_path),
+                "cleaned_image_path": str(cleaned_path),
+                "base_glb_path": str(base_glb_path),
+                "debug_report_path": str(debug_path),
             },
             metrics={"durationMs": duration_ms},
+            qualityReport=quality_report,
+            debug=debug,
             error=None,
         )
         logger.info("job_completed jobId=%s durationMs=%s", job_id, duration_ms)
+    except PipelineError as exc:
+        debug["error"] = {"code": exc.code, "message": exc.message, "details": exc.details or {}}
+        debug["timestamps"]["failedAt"] = now_iso()
+        debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
+        logger.warning("job_failed jobId=%s code=%s message=%s", job_id, exc.code, exc.message)
+        update_job(
+            job_id,
+            status="failed",
+            error={"code": exc.code, "message": exc.message, "details": exc.details or {}},
+            qualityReport=(exc.details or {}).get("qualityReport") or debug.get("qualityReport"),
+            debug=debug,
+        )
     except Exception as exc:
         logger.exception("job_failed jobId=%s", job_id)
+        debug["error"] = {"code": "processing_error", "message": str(exc), "type": exc.__class__.__name__}
+        debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
         update_job(
             job_id,
             status="failed",
             error={
-                "code": "PROCESSING_ERROR",
+                "code": "processing_error",
                 "message": str(exc),
                 "type": exc.__class__.__name__,
             },
+            debug=debug,
         )
 
 
@@ -298,6 +335,10 @@ def job_status(jobId: str) -> dict[str, Any]:
         response["metrics"] = record["metrics"]
     if record.get("error"):
         response["error"] = record["error"]
+    if record.get("qualityReport"):
+        response["qualityReport"] = record["qualityReport"]
+    if record.get("debug"):
+        response["debug"] = record["debug"]
     return response
 
 
