@@ -12,12 +12,15 @@ from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
 
-GPU_WORKER_URL = os.getenv("GPU_WORKER_URL", "").rstrip("/")
+GPU_WORKER_URL = os.getenv("GPU_WORKER_URL", "").strip()
+RUNNING_AS_ORCHESTRATOR = bool(GPU_WORKER_URL)
 GPU_WORKER_TOKEN = os.getenv("GPU_WORKER_TOKEN", "").strip()
 REQUEST_TIMEOUT_MS = int(os.getenv("API_REQUEST_TIMEOUT_MS", "30000"))
 
-if not GPU_WORKER_URL:
-    raise RuntimeError("GPU_WORKER_URL is required and must point to the GPU worker service.")
+if RUNNING_AS_ORCHESTRATOR:
+    print(f"[startup] orchestrator mode enabled; GPU_WORKER_URL={GPU_WORKER_URL}")
+else:
+    print("[startup] worker mode enabled; GPU_WORKER_URL not required")
 
 
 def _is_loopback(url: str) -> bool:
@@ -25,7 +28,7 @@ def _is_loopback(url: str) -> bool:
     return host in {"127.0.0.1", "localhost"}
 
 
-if _is_loopback(GPU_WORKER_URL):
+if RUNNING_AS_ORCHESTRATOR and _is_loopback(GPU_WORKER_URL):
     raise RuntimeError("GPU_WORKER_URL cannot point to localhost in orchestrator mode.")
 
 app = FastAPI(title="StylistAI Blender API Orchestrator", version="2.0.0")
@@ -109,8 +112,8 @@ def ping() -> dict[str, str]:
 
 @app.on_event("startup")
 def validate_worker():
-    if not GPU_WORKER_URL:
-        raise RuntimeError("GPU_WORKER_URL not configured")
+    if not RUNNING_AS_ORCHESTRATOR:
+        return
 
     try:
         with httpx.Client(timeout=5) as client:
@@ -125,6 +128,17 @@ def _worker_headers() -> dict[str, str]:
     if GPU_WORKER_TOKEN:
         headers["Authorization"] = f"Bearer {GPU_WORKER_TOKEN}"
     return headers
+
+
+def _require_orchestrator_mode() -> None:
+    if not RUNNING_AS_ORCHESTRATOR:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "ORCHESTRATOR_DISABLED",
+                "message": "GPU_WORKER_URL is not configured; orchestrator endpoints are unavailable in worker mode.",
+            },
+        )
 
 
 def _post_with_retry(
@@ -169,6 +183,7 @@ def _normalize_status_payload(job_id: str, payload: dict[str, Any]) -> dict[str,
 
 @app.post("/submit", response_model=SubmitResponse)
 def submit(payload: JobRequest, authorization: str | None = Header(default=None)) -> dict[str, str]:
+    _require_orchestrator_mode()
     expected = os.getenv("API_ORCHESTRATOR_TOKEN", "").strip()
     if expected and authorization != f"Bearer {expected}":
         raise HTTPException(status_code=401, detail={"code": "UNAUTHORIZED", "message": "Invalid token."})
@@ -227,6 +242,7 @@ def submit_lb(payload: LbSubmitRequest) -> dict[str, str]:
 
 @app.get("/status/{job_id}")
 def status(job_id: str) -> dict[str, Any]:
+    _require_orchestrator_mode()
     try:
         with httpx.Client(timeout=REQUEST_TIMEOUT_MS / 1000) as client:
             response = client.get(f"{GPU_WORKER_URL}/jobs/{job_id}", headers=_worker_headers())
@@ -267,9 +283,13 @@ def diagnostics() -> dict[str, Any]:
     diagnostics_payload: dict[str, Any] = {
         "service": "stylistai-blender-api",
         "workerBaseUrl": GPU_WORKER_URL,
+        "runningAsOrchestrator": RUNNING_AS_ORCHESTRATOR,
         "workerAuthEnabled": bool(GPU_WORKER_TOKEN),
         "requestTimeoutMs": REQUEST_TIMEOUT_MS,
     }
+
+    if not RUNNING_AS_ORCHESTRATOR:
+        return diagnostics_payload
 
     try:
         with httpx.Client(timeout=REQUEST_TIMEOUT_MS / 1000) as client:
