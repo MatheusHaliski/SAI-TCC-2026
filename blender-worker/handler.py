@@ -18,6 +18,10 @@ from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
 from pipeline import (
+    DEFAULT_BLUR_THRESHOLD,
+    DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE,
+    DEFAULT_EDGE_DENSITY_LOW_TEXTURE,
+    DEFAULT_EDGE_DENSITY_MIN,
     PipelineError,
     build_meshy_prompt,
     fetch_image,
@@ -59,6 +63,30 @@ app.add_middleware(
 OUTPUT_DIR = Path(os.getenv("WORKER_OUTPUT_DIR", "/tmp/stylistai-3d-output"))
 OUTPUT_PUBLIC_BASE_URL = os.getenv("OUTPUT_PUBLIC_BASE_URL", "").strip()
 MAX_WORKERS = int(os.getenv("WORKER_MAX_THREADS", "4"))
+
+
+def _get_env_float(name: str, default: float) -> float:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning("Invalid %s value '%s'; using default %.4f", name, raw, default)
+        return default
+
+
+def _runtime_diagnostics() -> dict[str, Any]:
+    return {
+        "appVersion": os.getenv("APP_VERSION", app.version).strip() or app.version,
+        "imageTag": os.getenv("IMAGE_TAG", "").strip() or "unknown",
+        "buildSha": os.getenv("BUILD_SHA", "").strip() or "unknown",
+        "validationMode": os.getenv("VALIDATION_MODE", "adaptive").strip() or "adaptive",
+        "blurThresholdDefault": _get_env_float("GARMENT_BLUR_THRESHOLD_DEFAULT", DEFAULT_BLUR_THRESHOLD),
+        "blurThresholdLowTexture": _get_env_float("GARMENT_BLUR_THRESHOLD_LOW_TEXTURE", DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE),
+        "edgeDensityMin": _get_env_float("GARMENT_EDGE_DENSITY_MIN", DEFAULT_EDGE_DENSITY_MIN),
+        "edgeDensityLowTexture": _get_env_float("GARMENT_EDGE_DENSITY_LOW_TEXTURE", DEFAULT_EDGE_DENSITY_LOW_TEXTURE),
+    }
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 jobs_lock = threading.Lock()
@@ -232,9 +260,13 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
 
 @app.on_event("startup")
 def startup_log() -> None:
+    runtime = _runtime_diagnostics()
+    adaptive_active = runtime["validationMode"].lower() == "adaptive"
     logger.info("app_loaded title=%s version=%s", app.title, app.version)
     logger.info("server_starting app=stylistai-worker host=0.0.0.0 port=%s", os.getenv("PORT", "8000"))
     logger.info("cors_allowed_origins origins=%s", ",".join(allowed_origins))
+    logger.info("runtime_diagnostics %s", json.dumps(runtime, sort_keys=True))
+    logger.info("adaptive_garment_validation active=%s validationMode=%s", adaptive_active, runtime["validationMode"])
     logger.info("server_ready output_dir=%s max_workers=%s", OUTPUT_DIR, MAX_WORKERS)
 
 
@@ -250,11 +282,20 @@ def ping() -> dict[str, str]:
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    runtime = _runtime_diagnostics()
     return {
         "status": "ok",
         "service": "stylistai-gpu-worker",
         "outputDir": str(OUTPUT_DIR),
         "maxWorkers": MAX_WORKERS,
+        "appVersion": runtime["appVersion"],
+        "imageTag": runtime["imageTag"],
+        "buildSha": runtime["buildSha"],
+        "validationMode": runtime["validationMode"],
+        "blurThresholdDefault": runtime["blurThresholdDefault"],
+        "blurThresholdLowTexture": runtime["blurThresholdLowTexture"],
+        "edgeDensityMin": runtime["edgeDensityMin"],
+        "edgeDensityLowTexture": runtime["edgeDensityLowTexture"],
     }
 
 
