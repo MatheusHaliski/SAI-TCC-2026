@@ -10,6 +10,7 @@ import { PipelineJobsRepository } from '@/app/backend/repositories/PipelineJobsR
 import { BlenderPipelineService } from './BlenderPipelineService';
 import { BlenderCloudService } from './BlenderCloudService';
 import type { ModelGenerationStatus } from '@/app/backend/types/entities';
+import { classifyGarmentGender, classifyGarmentType } from '@/app/lib/fashion-ai/utils/garment-classification';
 
 const DEFAULT_BRAND_ID = 'default';
 const BRANDING_PASS_VERSION = 'v2-image-first';
@@ -80,6 +81,10 @@ export class WardrobeService {
     }
 
     const selectedBrandId = String(input.brand_id ?? DEFAULT_BRAND_ID).trim() || DEFAULT_BRAND_ID;
+    const fitPieceType = classifyGarmentType({ pieceType: piece_type, name });
+    const fitGender = classifyGarmentGender({ gender, name });
+    const compatibleMannequins =
+      fitGender === 'male' ? ['male_v1'] : fitGender === 'female' ? ['female_v1'] : ['male_v1', 'female_v1'];
     const detection = await this.brandDetectionService.detect({
       selectedBrandId,
       name,
@@ -119,6 +124,22 @@ export class WardrobeService {
       material: String(input.material ?? '').trim() || 'unspecified',
       style_tags: Array.isArray(input.style_tags) ? input.style_tags.map((tag) => String(tag)) : [],
       occasion_tags: Array.isArray(input.occasion_tags) ? input.occasion_tags.map((tag) => String(tag)) : [],
+      fitProfile: {
+        pieceType: fitPieceType,
+        targetGender: fitGender,
+        preparationStatus: 'pending',
+        originalImageUrl: image_url,
+        preparedAssetUrl: null,
+        preparedMaskUrl: null,
+        compatibleMannequins,
+        fitMode: 'overlay',
+        normalizedBBox: null,
+        garmentAnchors: null,
+        validationWarnings: [],
+        preparationError: null,
+        preparedAt: null,
+        updatedAt: new Date().toISOString(),
+      },
     });
 
     if (!needsBrandReview) {
