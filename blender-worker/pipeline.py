@@ -22,7 +22,8 @@ DEFAULT_MIN_INPUT_SHORTEST_SIDE = 448
 DEFAULT_BLUR_THRESHOLD = 85.0
 DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE = 45.0
 DEFAULT_LOW_TEXTURE_STD_THRESHOLD = 32.0
-DEFAULT_EDGE_DENSITY_MIN = 0.012
+DEFAULT_EDGE_DENSITY_MIN = 0.006
+DEFAULT_EDGE_DENSITY_LOW_TEXTURE = 0.0025
 DEFAULT_ALLOW_PREPROCESS_RETRY = True
 DEFAULT_PREPROCESS_SHARPEN_AMOUNT = 0.25
 DEFAULT_PREPROCESS_UPSCALE_MIN_SIDE = 1024
@@ -168,6 +169,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
     blur_threshold_low_texture = max(0.0, _get_env_float("GARMENT_BLUR_THRESHOLD_LOW_TEXTURE", DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE))
     low_texture_std_threshold = max(0.0, _get_env_float("GARMENT_LOW_TEXTURE_STD_THRESHOLD", DEFAULT_LOW_TEXTURE_STD_THRESHOLD))
     edge_density_min = max(0.0, _get_env_float("GARMENT_EDGE_DENSITY_MIN", DEFAULT_EDGE_DENSITY_MIN))
+    edge_density_low_texture = max(0.0, _get_env_float("GARMENT_EDGE_DENSITY_LOW_TEXTURE", DEFAULT_EDGE_DENSITY_LOW_TEXTURE))
     allow_preprocess_retry = _get_env_bool("GARMENT_ALLOW_PREPROCESS_RETRY", DEFAULT_ALLOW_PREPROCESS_RETRY)
     preprocess_sharpen_amount = max(0.0, _get_env_float("GARMENT_PREPROCESS_SHARPEN_AMOUNT", DEFAULT_PREPROCESS_SHARPEN_AMOUNT))
     preprocess_upscale_min_side = max(1, _get_env_int("GARMENT_PREPROCESS_UPSCALE_MIN_SIDE", DEFAULT_PREPROCESS_UPSCALE_MIN_SIDE))
@@ -178,6 +180,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
     preprocess_retry_applied = False
     low_texture_class = metrics["textureScore"] < low_texture_std_threshold
     applied_blur_threshold = blur_threshold_low_texture if low_texture_class else blur_threshold_default
+    applied_edge_density_threshold = edge_density_low_texture if low_texture_class else edge_density_min
 
     metadata = {
         "width": w,
@@ -186,6 +189,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
         "textureScore": round(metrics["textureScore"], 4),
         "edgeDensity": round(metrics["edgeDensity"], 4),
         "appliedBlurThreshold": round(applied_blur_threshold, 4),
+        "appliedEdgeDensityThreshold": round(applied_edge_density_threshold, 4),
         "lowTextureClass": bool(low_texture_class),
         "preprocessRetryApplied": bool(preprocess_retry_applied),
         "brightness": round(metrics["brightness"], 4),
@@ -194,6 +198,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
         "personFaceConfidence": round(metrics["personFaceConfidence"], 4),
         "skinRatio": round(metrics["skinRatio"], 4),
         "edgeDensityMin": round(edge_density_min, 4),
+        "edgeDensityLowTextureMin": round(edge_density_low_texture, 4),
     }
 
     quality_decision = "accepted"
@@ -201,7 +206,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
     if min(w, h) < min_shortest_side:
         quality_decision = "rejected_resolution"
         logger.info(
-            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f edgeThreshold=%.4f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
             w,
             h,
@@ -209,13 +214,14 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
             metrics["textureScore"],
             metrics["edgeDensity"],
             applied_blur_threshold,
+            applied_edge_density_threshold,
             low_texture_class,
             preprocess_retry_applied,
         )
         return ImageValidationResult(False, "invalid_input_low_quality", f"Image resolution is too low; minimum {min_shortest_side}px on shortest side.", metadata)
 
-    if metrics["blurScore"] < applied_blur_threshold:
-        should_retry = allow_preprocess_retry and (metrics["edgeDensity"] >= edge_density_min or low_texture_class)
+    if metrics["blurScore"] < applied_blur_threshold and metrics["edgeDensity"] < applied_edge_density_threshold:
+        should_retry = allow_preprocess_retry and (metrics["edgeDensity"] >= applied_edge_density_threshold or low_texture_class)
         if should_retry:
             retry_bgr = _preprocess_for_blur_retry(
                 bgr=bgr,
@@ -227,11 +233,13 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
             preprocess_retry_applied = True
             low_texture_class = metrics["textureScore"] < low_texture_std_threshold
             applied_blur_threshold = blur_threshold_low_texture if low_texture_class else blur_threshold_default
+            applied_edge_density_threshold = edge_density_low_texture if low_texture_class else edge_density_min
             metadata.update({
                 "blurScore": round(metrics["blurScore"], 4),
                 "textureScore": round(metrics["textureScore"], 4),
                 "edgeDensity": round(metrics["edgeDensity"], 4),
                 "appliedBlurThreshold": round(applied_blur_threshold, 4),
+                "appliedEdgeDensityThreshold": round(applied_edge_density_threshold, 4),
                 "lowTextureClass": bool(low_texture_class),
                 "preprocessRetryApplied": bool(preprocess_retry_applied),
                 "brightness": round(metrics["brightness"], 4),
@@ -241,10 +249,10 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
                 "skinRatio": round(metrics["skinRatio"], 4),
             })
 
-    if metrics["blurScore"] < applied_blur_threshold:
+    if metrics["blurScore"] < applied_blur_threshold and metrics["edgeDensity"] < applied_edge_density_threshold:
         quality_decision = "rejected_blur"
         logger.info(
-            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f edgeThreshold=%.4f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
             metadata["width"],
             metadata["height"],
@@ -252,6 +260,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
             metrics["textureScore"],
             metrics["edgeDensity"],
             applied_blur_threshold,
+            applied_edge_density_threshold,
             low_texture_class,
             preprocess_retry_applied,
         )
@@ -259,7 +268,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
     if metrics["brightness"] < 0.2 or metrics["brightness"] > 0.9:
         quality_decision = "rejected_brightness"
         logger.info(
-            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f edgeThreshold=%.4f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
             metadata["width"],
             metadata["height"],
@@ -267,6 +276,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
             metrics["textureScore"],
             metrics["edgeDensity"],
             applied_blur_threshold,
+            applied_edge_density_threshold,
             low_texture_class,
             preprocess_retry_applied,
         )
@@ -274,7 +284,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
     if metrics["contrast"] < 0.12:
         quality_decision = "rejected_contrast"
         logger.info(
-            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f edgeThreshold=%.4f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
             metadata["width"],
             metadata["height"],
@@ -282,6 +292,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
             metrics["textureScore"],
             metrics["edgeDensity"],
             applied_blur_threshold,
+            applied_edge_density_threshold,
             low_texture_class,
             preprocess_retry_applied,
         )
@@ -289,7 +300,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
     if metrics["backgroundComplexity"] > 0.28:
         quality_decision = "rejected_background"
         logger.info(
-            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f edgeThreshold=%.4f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
             metadata["width"],
             metadata["height"],
@@ -297,6 +308,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
             metrics["textureScore"],
             metrics["edgeDensity"],
             applied_blur_threshold,
+            applied_edge_density_threshold,
             low_texture_class,
             preprocess_retry_applied,
         )
@@ -304,7 +316,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
     if metrics["personFaceConfidence"] > 0.45 or metrics["skinRatio"] > 0.22:
         quality_decision = "rejected_person"
         logger.info(
-            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f edgeThreshold=%.4f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
             metadata["width"],
             metadata["height"],
@@ -312,13 +324,14 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
             metrics["textureScore"],
             metrics["edgeDensity"],
             applied_blur_threshold,
+            applied_edge_density_threshold,
             low_texture_class,
             preprocess_retry_applied,
         )
         return ImageValidationResult(False, "invalid_input_person_detected", "Visible person/body features detected in input image.", metadata)
 
     logger.info(
-        "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
+        "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f edgeThreshold=%.4f lowTextureClass=%s preprocessRetryApplied=%s",
         quality_decision,
         metadata["width"],
         metadata["height"],
@@ -326,6 +339,7 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
         metrics["textureScore"],
         metrics["edgeDensity"],
         applied_blur_threshold,
+        applied_edge_density_threshold,
         low_texture_class,
         preprocess_retry_applied,
     )
