@@ -1,5 +1,5 @@
 # StylistAI API/orchestrator image (lightweight)
-FROM runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404
+FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
