@@ -498,12 +498,23 @@ export default function CreateMySchemeView() {
         return false;
       }
 
-      setAiInterpretation(payload.data);
+      const interpretation = payload.data;
+      if (!interpretation) {
+        setAiError({
+          code: 'INVALID_AI_RESPONSE',
+          message: 'Unable to interpret this look right now.',
+          requestId: payload.request_id,
+        });
+        setAlertMessage('Unable to interpret this look right now.');
+        return false;
+      }
+
+      setAiInterpretation(interpretation);
       const matchingBrand = brands.find((brand) => normalizedPrompt.includes(brand.name.toLowerCase()));
       if (matchingBrand) setSelectedBrandId(matchingBrand.brand_id);
 
       const mapping = mapAiInterpretationToManualForm({
-        interpretation: payload.data,
+        interpretation,
         wardrobeItems: items,
       });
 
