@@ -81,7 +81,7 @@ def _runtime_diagnostics() -> dict[str, Any]:
         "appVersion": os.getenv("APP_VERSION", app.version).strip() or app.version,
         "imageTag": os.getenv("IMAGE_TAG", "").strip() or "unknown",
         "buildSha": os.getenv("BUILD_SHA", "").strip() or "unknown",
-        "validationMode": os.getenv("VALIDATION_MODE", "adaptive").strip() or "adaptive",
+        "validationMode": os.getenv("VALIDATION_MODE", "production").strip() or "production",
         "blurThresholdDefault": _get_env_float("GARMENT_BLUR_THRESHOLD_DEFAULT", DEFAULT_BLUR_THRESHOLD),
         "blurThresholdLowTexture": _get_env_float("GARMENT_BLUR_THRESHOLD_LOW_TEXTURE", DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE),
         "edgeDensityMin": _get_env_float("GARMENT_EDGE_DENSITY_MIN", DEFAULT_EDGE_DENSITY_MIN),
