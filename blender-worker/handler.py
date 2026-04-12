@@ -81,11 +81,14 @@ def _runtime_diagnostics() -> dict[str, Any]:
         "appVersion": os.getenv("APP_VERSION", app.version).strip() or app.version,
         "imageTag": os.getenv("IMAGE_TAG", "").strip() or "unknown",
         "buildSha": os.getenv("BUILD_SHA", "").strip() or "unknown",
-        "validationMode": os.getenv("VALIDATION_MODE", "adaptive").strip() or "adaptive",
-        "blurThresholdDefault": _get_env_float("GARMENT_BLUR_THRESHOLD_DEFAULT", DEFAULT_BLUR_THRESHOLD),
-        "blurThresholdLowTexture": _get_env_float("GARMENT_BLUR_THRESHOLD_LOW_TEXTURE", DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE),
-        "edgeDensityMin": _get_env_float("GARMENT_EDGE_DENSITY_MIN", DEFAULT_EDGE_DENSITY_MIN),
-        "edgeDensityLowTexture": _get_env_float("GARMENT_EDGE_DENSITY_LOW_TEXTURE", DEFAULT_EDGE_DENSITY_LOW_TEXTURE),
+        "validationMode": os.getenv("VALIDATION_MODE", "production").strip() or "production",
+        "minInputShortestSide": int(os.getenv("MIN_INPUT_SHORTEST_SIDE", "256")),
+        "blurThresholdDefault": _get_env_float("BLUR_THRESHOLD", _get_env_float("GARMENT_BLUR_THRESHOLD_DEFAULT", DEFAULT_BLUR_THRESHOLD)),
+        "blurThresholdLowTexture": _get_env_float("BLUR_THRESHOLD_LOW_TEXTURE", _get_env_float("GARMENT_BLUR_THRESHOLD_LOW_TEXTURE", DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE)),
+        "edgeDensityMin": _get_env_float("EDGE_DENSITY_MIN", _get_env_float("GARMENT_EDGE_DENSITY_MIN", DEFAULT_EDGE_DENSITY_MIN)),
+        "edgeDensityLowTexture": _get_env_float("EDGE_DENSITY_LOW_TEXTURE", _get_env_float("GARMENT_EDGE_DENSITY_LOW_TEXTURE", DEFAULT_EDGE_DENSITY_LOW_TEXTURE)),
+        "qualityScoreMin": _get_env_float("QUALITY_SCORE_MIN", 0.35),
+        "enablePersonDetection": os.getenv("ENABLE_PERSON_DETECTION", "false").strip().lower() in {"1", "true", "yes", "on"},
     }
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
