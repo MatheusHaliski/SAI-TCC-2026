@@ -18,6 +18,9 @@ from PIL import Image
 from rembg import remove
 
 logger = logging.getLogger("stylistai.pipeline")
+DEFAULT_BLUR_THRESHOLD = 67.5
+DEFAULT_LOW_TEXTURE_THRESHOLD = 28.0
+LOW_TEXTURE_BLUR_RELAX_FACTOR = 0.6
 
 
 @dataclass
@@ -84,6 +87,28 @@ def fetch_image(image_url: str, out_path: Path) -> Path:
     return out_path
 
 
+def _get_blur_threshold() -> float:
+    raw = os.getenv("GARMENT_BLUR_THRESHOLD", "").strip()
+    if not raw:
+        return DEFAULT_BLUR_THRESHOLD
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        logger.warning("Invalid GARMENT_BLUR_THRESHOLD value '%s'; using default %.2f", raw, DEFAULT_BLUR_THRESHOLD)
+        return DEFAULT_BLUR_THRESHOLD
+
+
+def _get_low_texture_threshold() -> float:
+    raw = os.getenv("GARMENT_LOW_TEXTURE_THRESHOLD", "").strip()
+    if not raw:
+        return DEFAULT_LOW_TEXTURE_THRESHOLD
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        logger.warning("Invalid GARMENT_LOW_TEXTURE_THRESHOLD value '%s'; using default %.2f", raw, DEFAULT_LOW_TEXTURE_THRESHOLD)
+        return DEFAULT_LOW_TEXTURE_THRESHOLD
+
+
 def validate_input_image(image_path: Path) -> ImageValidationResult:
     bgr = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
     if bgr is None:
@@ -94,6 +119,11 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
     blur = _variance_of_laplacian(bgr)
+    texture_score = float(np.std(gray))
+    blur_threshold = _get_blur_threshold()
+    low_texture_threshold = _get_low_texture_threshold()
+    is_low_texture = texture_score < low_texture_threshold
+    applied_blur_threshold = blur_threshold * LOW_TEXTURE_BLUR_RELAX_FACTOR if is_low_texture else blur_threshold
     brightness = _brightness(gray)
     contrast = _contrast(gray)
     bg_complexity = _background_complexity(gray)
@@ -111,18 +141,76 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
         "skinRatio": round(skin_ratio, 4),
     }
 
+    quality_decision = "accepted"
+
     if min(w, h) < 512:
+        quality_decision = "rejected_resolution"
+        logger.info(
+            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            quality_decision,
+            blur,
+            texture_score,
+            applied_blur_threshold,
+        )
         return ImageValidationResult(False, "invalid_input_low_quality", "Image resolution is too low; minimum 512px on shortest side.", metadata)
-    if blur < 90:
+    if blur < applied_blur_threshold:
+        quality_decision = "rejected_blur"
+        logger.info(
+            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            quality_decision,
+            blur,
+            texture_score,
+            applied_blur_threshold,
+        )
         return ImageValidationResult(False, "invalid_input_low_quality", "Image is too blurry for garment reconstruction.", metadata)
     if brightness < 0.2 or brightness > 0.9:
+        quality_decision = "rejected_brightness"
+        logger.info(
+            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            quality_decision,
+            blur,
+            texture_score,
+            applied_blur_threshold,
+        )
         return ImageValidationResult(False, "invalid_input_low_quality", "Image lighting is unsuitable (under/over exposed).", metadata)
     if contrast < 0.12:
+        quality_decision = "rejected_contrast"
+        logger.info(
+            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            quality_decision,
+            blur,
+            texture_score,
+            applied_blur_threshold,
+        )
         return ImageValidationResult(False, "invalid_input_low_quality", "Image contrast is too low.", metadata)
     if bg_complexity > 0.28:
+        quality_decision = "rejected_background"
+        logger.info(
+            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            quality_decision,
+            blur,
+            texture_score,
+            applied_blur_threshold,
+        )
         return ImageValidationResult(False, "invalid_input_background_noise", "Background is too noisy for reliable product isolation.", metadata)
     if face_conf > 0.45 or skin_ratio > 0.22:
+        quality_decision = "rejected_person"
+        logger.info(
+            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            quality_decision,
+            blur,
+            texture_score,
+            applied_blur_threshold,
+        )
         return ImageValidationResult(False, "invalid_input_person_detected", "Visible person/body features detected in input image.", metadata)
+
+    logger.info(
+        "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+        quality_decision,
+        blur,
+        texture_score,
+        applied_blur_threshold,
+    )
 
     return ImageValidationResult(True, None, None, metadata)
 
