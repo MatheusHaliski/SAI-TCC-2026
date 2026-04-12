@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import time
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException, Request, Response
@@ -11,9 +12,21 @@ from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
 
-GPU_WORKER_URL = os.getenv("GPU_WORKER_URL", "http://127.0.0.1:8000").rstrip("/")
+GPU_WORKER_URL = os.getenv("GPU_WORKER_URL", "").rstrip("/")
 GPU_WORKER_TOKEN = os.getenv("GPU_WORKER_TOKEN", "").strip()
-REQUEST_TIMEOUT_MS = int(os.getenv("API_REQUEST_TIMEOUT_MS", "15000"))
+REQUEST_TIMEOUT_MS = int(os.getenv("API_REQUEST_TIMEOUT_MS", "30000"))
+
+if not GPU_WORKER_URL:
+    raise RuntimeError("GPU_WORKER_URL is required and must point to the GPU worker service.")
+
+
+def _is_loopback(url: str) -> bool:
+    host = urlparse(url).hostname
+    return host in {"127.0.0.1", "localhost"}
+
+
+if _is_loopback(GPU_WORKER_URL):
+    raise RuntimeError("GPU_WORKER_URL cannot point to localhost in orchestrator mode.")
 
 app = FastAPI(title="StylistAI Blender API Orchestrator", version="2.0.0")
 
@@ -94,11 +107,43 @@ def ping() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.on_event("startup")
+def validate_worker():
+    if not GPU_WORKER_URL:
+        raise RuntimeError("GPU_WORKER_URL not configured")
+
+    try:
+        with httpx.Client(timeout=5) as client:
+            res = client.get(f"{GPU_WORKER_URL}/ping")
+            print("[startup] worker ping:", res.status_code)
+    except Exception as exc:
+        print("[startup] WARNING: worker not reachable:", str(exc))
+
+
 def _worker_headers() -> dict[str, str]:
     headers = {"Content-Type": "application/json"}
     if GPU_WORKER_TOKEN:
         headers["Authorization"] = f"Bearer {GPU_WORKER_TOKEN}"
     return headers
+
+
+def _post_with_retry(
+    client: httpx.Client,
+    url: str,
+    json: dict[str, Any],
+    headers: dict[str, str],
+    retries: int = 3,
+) -> httpx.Response:
+    last_exc: Exception | None = None
+    for i in range(retries):
+        try:
+            return client.post(url, json=json, headers=headers)
+        except Exception as exc:
+            last_exc = exc
+            time.sleep(1.5 * (i + 1))
+    if last_exc is None:
+        raise RuntimeError("Failed to submit request and no exception was captured.")
+    raise last_exc
 
 
 def _normalize_status_payload(job_id: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -133,12 +178,24 @@ def submit(payload: JobRequest, authorization: str | None = Header(default=None)
 
     started = time.perf_counter()
     try:
+        print(f"[orchestrator] forwarding request to worker: {GPU_WORKER_URL}/jobs")
         with httpx.Client(timeout=REQUEST_TIMEOUT_MS / 1000) as client:
-            response = client.post(f"{GPU_WORKER_URL}/jobs", json=payload.model_dump(), headers=_worker_headers())
+            response = _post_with_retry(
+                client=client,
+                url=f"{GPU_WORKER_URL}/jobs",
+                json=payload.model_dump(),
+                headers=_worker_headers(),
+            )
     except Exception as exc:
+        print(f"[orchestrator] worker request failed: {str(exc)}")
         raise HTTPException(
             status_code=503,
-            detail={"code": "WORKER_UNREACHABLE", "message": f"Unable to submit GPU worker job: {exc}"},
+            detail={
+                "code": "WORKER_UNREACHABLE",
+                "message": "Failed to reach GPU worker",
+                "workerUrl": GPU_WORKER_URL,
+                "error": str(exc),
+            },
         ) from exc
 
     if response.status_code >= 400:

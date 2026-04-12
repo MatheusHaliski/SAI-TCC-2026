@@ -100,7 +100,15 @@ PORT=8000
 GPU_WORKER_URL=http://<worker-private-host>:8000
 GPU_WORKER_TOKEN=<same-as-BLENDER_WORKER_TOKEN>
 API_ORCHESTRATOR_TOKEN=<optional-api-token>
-API_REQUEST_TIMEOUT_MS=15000
+API_REQUEST_TIMEOUT_MS=30000
+```
+
+Public endpoint example:
+
+```bash
+GPU_WORKER_URL=https://your-worker-endpoint.runpod.net
+GPU_WORKER_TOKEN=your-token-if-needed
+API_REQUEST_TIMEOUT_MS=30000
 ```
 
 ## 5) Volume strategy (recommended for fast iteration)

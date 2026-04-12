@@ -10,10 +10,18 @@ Lightweight FastAPI layer that fronts the GPU worker.
 - `GET /diagnostics`
 
 ## Environment variables
-- `GPU_WORKER_URL` (required in production)
+- `GPU_WORKER_URL` (required, must not be `localhost` or `127.0.0.1` in orchestrator mode)
 - `GPU_WORKER_TOKEN` (optional, recommended)
 - `API_ORCHESTRATOR_TOKEN` (optional)
-- `API_REQUEST_TIMEOUT_MS` (default `15000`)
+- `API_REQUEST_TIMEOUT_MS` (default `30000`)
+
+Example production config:
+
+```bash
+GPU_WORKER_URL=https://your-worker-endpoint.runpod.net
+GPU_WORKER_TOKEN=your-token-if-needed
+API_REQUEST_TIMEOUT_MS=30000
+```
 
 ## Build
 
