@@ -220,6 +220,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     setSubmitting(true);
     try {
       let workerSubmitError: string | null = null;
+      let localFitPreparationStatus: string | null = null;
       const response = await fetch('/api/add-piece', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -242,6 +243,18 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         | { wardrobe_item_id?: string }
         | null;
       const createdWardrobeItemId = createdPiece?.wardrobe_item_id?.trim();
+      if (createdWardrobeItemId) {
+        const processResponse = await fetch('/api/wardrobe/process-piece', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pieceId: createdWardrobeItemId }),
+        });
+        const processPayload = (await processResponse.json().catch(() => null)) as
+          | { preparationStatus?: string }
+          | null;
+        localFitPreparationStatus = processPayload?.preparationStatus ?? 'failed';
+      }
+
       if (createdWardrobeItemId && form.piece_type === 'upper_piece') {
         try {
           const submitPayload = buildBlenderWorkerSubmitPayload({
@@ -280,7 +293,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       }
 
       setSubmitProgress(100);
-      setAlertMessage(workerSubmitError ?? 'Piece added to your wardrobe successfully.');
+      setAlertMessage(workerSubmitError ?? `Piece added to your wardrobe successfully. 2D prep status: ${localFitPreparationStatus ?? 'unknown'}.`);
       onPieceCreated?.();
       setForm((prev) => ({
         ...prev,
