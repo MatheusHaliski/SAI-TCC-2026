@@ -18,9 +18,15 @@ from PIL import Image
 from rembg import remove
 
 logger = logging.getLogger("stylistai.pipeline")
-DEFAULT_BLUR_THRESHOLD = 67.5
-DEFAULT_LOW_TEXTURE_THRESHOLD = 28.0
-LOW_TEXTURE_BLUR_RELAX_FACTOR = 0.6
+DEFAULT_MIN_INPUT_SHORTEST_SIDE = 448
+DEFAULT_BLUR_THRESHOLD = 85.0
+DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE = 45.0
+DEFAULT_LOW_TEXTURE_STD_THRESHOLD = 32.0
+DEFAULT_EDGE_DENSITY_MIN = 0.012
+DEFAULT_ALLOW_PREPROCESS_RETRY = True
+DEFAULT_PREPROCESS_SHARPEN_AMOUNT = 0.25
+DEFAULT_PREPROCESS_UPSCALE_MIN_SIDE = 1024
+DEFAULT_PREPROCESS_CONTRAST = 1.06
 
 
 @dataclass
@@ -80,6 +86,35 @@ def _connected_components(mask: np.ndarray) -> tuple[int, np.ndarray, np.ndarray
     return num_labels - 1, labels, stats[1:]
 
 
+def _get_env_float(name: str, default: float) -> float:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning("Invalid %s value '%s'; using default %.4f", name, raw, default)
+        return default
+
+
+def _get_env_int(name: str, default: int) -> int:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        logger.warning("Invalid %s value '%s'; using default %d", name, raw, default)
+        return default
+
+
+def _get_env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name, "").strip().lower()
+    if not raw:
+        return default
+    return raw in {"1", "true", "yes", "on"}
+
+
 def fetch_image(image_url: str, out_path: Path) -> Path:
     response = requests.get(image_url, timeout=30)
     response.raise_for_status()
@@ -87,26 +122,40 @@ def fetch_image(image_url: str, out_path: Path) -> Path:
     return out_path
 
 
-def _get_blur_threshold() -> float:
-    raw = os.getenv("GARMENT_BLUR_THRESHOLD", "").strip()
-    if not raw:
-        return DEFAULT_BLUR_THRESHOLD
-    try:
-        return max(0.0, float(raw))
-    except ValueError:
-        logger.warning("Invalid GARMENT_BLUR_THRESHOLD value '%s'; using default %.2f", raw, DEFAULT_BLUR_THRESHOLD)
-        return DEFAULT_BLUR_THRESHOLD
+def _compute_quality_metrics(bgr: np.ndarray) -> dict[str, float]:
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    return {
+        "blurScore": _variance_of_laplacian(bgr),
+        "textureScore": float(np.std(gray)),
+        "edgeDensity": _background_complexity(gray),
+        "brightness": _brightness(gray),
+        "contrast": _contrast(gray),
+        "backgroundComplexity": _background_complexity(gray),
+        "personFaceConfidence": _face_confidence(gray),
+        "skinRatio": _skin_ratio(rgb),
+    }
 
 
-def _get_low_texture_threshold() -> float:
-    raw = os.getenv("GARMENT_LOW_TEXTURE_THRESHOLD", "").strip()
-    if not raw:
-        return DEFAULT_LOW_TEXTURE_THRESHOLD
-    try:
-        return max(0.0, float(raw))
-    except ValueError:
-        logger.warning("Invalid GARMENT_LOW_TEXTURE_THRESHOLD value '%s'; using default %.2f", raw, DEFAULT_LOW_TEXTURE_THRESHOLD)
-        return DEFAULT_LOW_TEXTURE_THRESHOLD
+def _preprocess_for_blur_retry(
+    bgr: np.ndarray,
+    upscale_min_side: int,
+    sharpen_amount: float,
+    contrast_gain: float,
+) -> np.ndarray:
+    h, w = bgr.shape[:2]
+    min_side = min(h, w)
+    processed = bgr
+    if min_side < upscale_min_side:
+        scale = upscale_min_side / float(min_side)
+        new_w = max(1, int(round(w * scale)))
+        new_h = max(1, int(round(h * scale)))
+        processed = cv2.resize(processed, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+
+    blurred = cv2.GaussianBlur(processed, (0, 0), 1.2)
+    processed = cv2.addWeighted(processed, 1.0 + sharpen_amount, blurred, -sharpen_amount, 0)
+    processed = cv2.convertScaleAbs(processed, alpha=contrast_gain, beta=0)
+    return processed
 
 
 def validate_input_image(image_path: Path) -> ImageValidationResult:
@@ -114,102 +163,171 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
     if bgr is None:
         return ImageValidationResult(False, "invalid_input_read_error", "Could not parse image", {})
 
-    h, w = bgr.shape[:2]
-    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    min_shortest_side = max(1, _get_env_int("MIN_INPUT_SHORTEST_SIDE", DEFAULT_MIN_INPUT_SHORTEST_SIDE))
+    blur_threshold_default = max(0.0, _get_env_float("GARMENT_BLUR_THRESHOLD_DEFAULT", DEFAULT_BLUR_THRESHOLD))
+    blur_threshold_low_texture = max(0.0, _get_env_float("GARMENT_BLUR_THRESHOLD_LOW_TEXTURE", DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE))
+    low_texture_std_threshold = max(0.0, _get_env_float("GARMENT_LOW_TEXTURE_STD_THRESHOLD", DEFAULT_LOW_TEXTURE_STD_THRESHOLD))
+    edge_density_min = max(0.0, _get_env_float("GARMENT_EDGE_DENSITY_MIN", DEFAULT_EDGE_DENSITY_MIN))
+    allow_preprocess_retry = _get_env_bool("GARMENT_ALLOW_PREPROCESS_RETRY", DEFAULT_ALLOW_PREPROCESS_RETRY)
+    preprocess_sharpen_amount = max(0.0, _get_env_float("GARMENT_PREPROCESS_SHARPEN_AMOUNT", DEFAULT_PREPROCESS_SHARPEN_AMOUNT))
+    preprocess_upscale_min_side = max(1, _get_env_int("GARMENT_PREPROCESS_UPSCALE_MIN_SIDE", DEFAULT_PREPROCESS_UPSCALE_MIN_SIDE))
+    preprocess_contrast = max(0.1, _get_env_float("GARMENT_PREPROCESS_CONTRAST", DEFAULT_PREPROCESS_CONTRAST))
 
-    blur = _variance_of_laplacian(bgr)
-    texture_score = float(np.std(gray))
-    blur_threshold = _get_blur_threshold()
-    low_texture_threshold = _get_low_texture_threshold()
-    is_low_texture = texture_score < low_texture_threshold
-    applied_blur_threshold = blur_threshold * LOW_TEXTURE_BLUR_RELAX_FACTOR if is_low_texture else blur_threshold
-    brightness = _brightness(gray)
-    contrast = _contrast(gray)
-    bg_complexity = _background_complexity(gray)
-    face_conf = _face_confidence(gray)
-    skin_ratio = _skin_ratio(rgb)
+    h, w = bgr.shape[:2]
+    metrics = _compute_quality_metrics(bgr)
+    preprocess_retry_applied = False
+    low_texture_class = metrics["textureScore"] < low_texture_std_threshold
+    applied_blur_threshold = blur_threshold_low_texture if low_texture_class else blur_threshold_default
 
     metadata = {
         "width": w,
         "height": h,
-        "blurScore": round(blur, 4),
-        "brightness": round(brightness, 4),
-        "contrast": round(contrast, 4),
-        "backgroundComplexity": round(bg_complexity, 4),
-        "personFaceConfidence": round(face_conf, 4),
-        "skinRatio": round(skin_ratio, 4),
+        "blurScore": round(metrics["blurScore"], 4),
+        "textureScore": round(metrics["textureScore"], 4),
+        "edgeDensity": round(metrics["edgeDensity"], 4),
+        "appliedBlurThreshold": round(applied_blur_threshold, 4),
+        "lowTextureClass": bool(low_texture_class),
+        "preprocessRetryApplied": bool(preprocess_retry_applied),
+        "brightness": round(metrics["brightness"], 4),
+        "contrast": round(metrics["contrast"], 4),
+        "backgroundComplexity": round(metrics["backgroundComplexity"], 4),
+        "personFaceConfidence": round(metrics["personFaceConfidence"], 4),
+        "skinRatio": round(metrics["skinRatio"], 4),
+        "edgeDensityMin": round(edge_density_min, 4),
     }
 
     quality_decision = "accepted"
 
-    if min(w, h) < 512:
+    if min(w, h) < min_shortest_side:
         quality_decision = "rejected_resolution"
         logger.info(
-            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
-            blur,
-            texture_score,
+            w,
+            h,
+            metrics["blurScore"],
+            metrics["textureScore"],
+            metrics["edgeDensity"],
             applied_blur_threshold,
+            low_texture_class,
+            preprocess_retry_applied,
         )
-        return ImageValidationResult(False, "invalid_input_low_quality", "Image resolution is too low; minimum 512px on shortest side.", metadata)
-    if blur < applied_blur_threshold:
+        return ImageValidationResult(False, "invalid_input_low_quality", f"Image resolution is too low; minimum {min_shortest_side}px on shortest side.", metadata)
+
+    if metrics["blurScore"] < applied_blur_threshold:
+        should_retry = allow_preprocess_retry and (metrics["edgeDensity"] >= edge_density_min or low_texture_class)
+        if should_retry:
+            retry_bgr = _preprocess_for_blur_retry(
+                bgr=bgr,
+                upscale_min_side=preprocess_upscale_min_side,
+                sharpen_amount=preprocess_sharpen_amount,
+                contrast_gain=preprocess_contrast,
+            )
+            metrics = _compute_quality_metrics(retry_bgr)
+            preprocess_retry_applied = True
+            low_texture_class = metrics["textureScore"] < low_texture_std_threshold
+            applied_blur_threshold = blur_threshold_low_texture if low_texture_class else blur_threshold_default
+            metadata.update({
+                "blurScore": round(metrics["blurScore"], 4),
+                "textureScore": round(metrics["textureScore"], 4),
+                "edgeDensity": round(metrics["edgeDensity"], 4),
+                "appliedBlurThreshold": round(applied_blur_threshold, 4),
+                "lowTextureClass": bool(low_texture_class),
+                "preprocessRetryApplied": bool(preprocess_retry_applied),
+                "brightness": round(metrics["brightness"], 4),
+                "contrast": round(metrics["contrast"], 4),
+                "backgroundComplexity": round(metrics["backgroundComplexity"], 4),
+                "personFaceConfidence": round(metrics["personFaceConfidence"], 4),
+                "skinRatio": round(metrics["skinRatio"], 4),
+            })
+
+    if metrics["blurScore"] < applied_blur_threshold:
         quality_decision = "rejected_blur"
         logger.info(
-            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
-            blur,
-            texture_score,
+            metadata["width"],
+            metadata["height"],
+            metrics["blurScore"],
+            metrics["textureScore"],
+            metrics["edgeDensity"],
             applied_blur_threshold,
+            low_texture_class,
+            preprocess_retry_applied,
         )
         return ImageValidationResult(False, "invalid_input_low_quality", "Image is too blurry for garment reconstruction.", metadata)
-    if brightness < 0.2 or brightness > 0.9:
+    if metrics["brightness"] < 0.2 or metrics["brightness"] > 0.9:
         quality_decision = "rejected_brightness"
         logger.info(
-            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
-            blur,
-            texture_score,
+            metadata["width"],
+            metadata["height"],
+            metrics["blurScore"],
+            metrics["textureScore"],
+            metrics["edgeDensity"],
             applied_blur_threshold,
+            low_texture_class,
+            preprocess_retry_applied,
         )
         return ImageValidationResult(False, "invalid_input_low_quality", "Image lighting is unsuitable (under/over exposed).", metadata)
-    if contrast < 0.12:
+    if metrics["contrast"] < 0.12:
         quality_decision = "rejected_contrast"
         logger.info(
-            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
-            blur,
-            texture_score,
+            metadata["width"],
+            metadata["height"],
+            metrics["blurScore"],
+            metrics["textureScore"],
+            metrics["edgeDensity"],
             applied_blur_threshold,
+            low_texture_class,
+            preprocess_retry_applied,
         )
         return ImageValidationResult(False, "invalid_input_low_quality", "Image contrast is too low.", metadata)
-    if bg_complexity > 0.28:
+    if metrics["backgroundComplexity"] > 0.28:
         quality_decision = "rejected_background"
         logger.info(
-            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
-            blur,
-            texture_score,
+            metadata["width"],
+            metadata["height"],
+            metrics["blurScore"],
+            metrics["textureScore"],
+            metrics["edgeDensity"],
             applied_blur_threshold,
+            low_texture_class,
+            preprocess_retry_applied,
         )
         return ImageValidationResult(False, "invalid_input_background_noise", "Background is too noisy for reliable product isolation.", metadata)
-    if face_conf > 0.45 or skin_ratio > 0.22:
+    if metrics["personFaceConfidence"] > 0.45 or metrics["skinRatio"] > 0.22:
         quality_decision = "rejected_person"
         logger.info(
-            "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+            "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
             quality_decision,
-            blur,
-            texture_score,
+            metadata["width"],
+            metadata["height"],
+            metrics["blurScore"],
+            metrics["textureScore"],
+            metrics["edgeDensity"],
             applied_blur_threshold,
+            low_texture_class,
+            preprocess_retry_applied,
         )
         return ImageValidationResult(False, "invalid_input_person_detected", "Visible person/body features detected in input image.", metadata)
 
     logger.info(
-        "Input quality decision=%s blurScore=%.4f textureScore=%.4f blurThreshold=%.2f",
+        "Input quality decision=%s width=%d height=%d blurScore=%.4f textureScore=%.4f edgeDensity=%.4f blurThreshold=%.2f lowTextureClass=%s preprocessRetryApplied=%s",
         quality_decision,
-        blur,
-        texture_score,
+        metadata["width"],
+        metadata["height"],
+        metrics["blurScore"],
+        metrics["textureScore"],
+        metrics["edgeDensity"],
         applied_blur_threshold,
+        low_texture_class,
+        preprocess_retry_applied,
     )
 
     return ImageValidationResult(True, None, None, metadata)
