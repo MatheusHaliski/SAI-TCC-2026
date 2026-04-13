@@ -4,6 +4,16 @@ const TOP_TOKENS = ['shirt', 'camisa', 't-shirt', 'tee', 'blouse', 'jacket', 'ho
 const BOTTOM_TOKENS = ['pants', 'jeans', 'shorts', 'skirt', 'lower', 'bottom', 'calça'];
 const SHOE_TOKENS = ['shoe', 'sneaker', 'boot', 'heel', 'sandals'];
 const FULL_BODY_TOKENS = ['dress', 'jumpsuit', 'macacão', 'one-piece', 'full'];
+const MALE_GENDER_TOKENS = ['male', 'masculino', 'man', 'men', 'masc'];
+const FEMALE_GENDER_TOKENS = ['female', 'feminino', 'woman', 'women', 'fem'];
+
+function escapeRegexToken(token: string): string {
+  return token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function containsBoundedToken(text: string, token: string): boolean {
+  return new RegExp(`(^|[^a-z])${escapeRegexToken(token)}([^a-z]|$)`, 'i').test(text);
+}
 
 export function classifyGarmentType(input: { pieceType?: string; name?: string }): WardrobePieceType {
   const text = `${input.pieceType ?? ''} ${input.name ?? ''}`.toLowerCase();
@@ -19,7 +29,7 @@ export function classifyGarmentGender(input: { gender?: string; name?: string })
   const gender = String(input.gender ?? '').toLowerCase().trim();
   const text = `${gender} ${input.name ?? ''}`.toLowerCase();
 
-  if (['male', 'masculino', 'man', 'men', 'masc'].some((token) => text.includes(token))) return 'male';
-  if (['female', 'feminino', 'woman', 'women', 'fem'].some((token) => text.includes(token))) return 'female';
+  if (FEMALE_GENDER_TOKENS.some((token) => containsBoundedToken(text, token))) return 'female';
+  if (MALE_GENDER_TOKENS.some((token) => containsBoundedToken(text, token))) return 'male';
   return 'unisex';
 }
