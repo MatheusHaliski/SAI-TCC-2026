@@ -1087,7 +1087,7 @@ function buildSurfaceFromRecipe(
     });
   }
 
-  const generators: Record<Exclude<BackgroundPresetId, 'selection_tiled_motif' | 'selection_editorial_logo' | 'selection_tonal_geometry'>, () => OutfitBackgroundConfig> = {
+  const generators: Partial<Record<BackgroundPresetId, () => OutfitBackgroundConfig>> = {
     selection_logo_image_fusion: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#020617'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.58'/><path d='M0,640 C250,560 520,730 860,620 C1030,565 1130,500 1200,440 V800 H0 Z' fill='rgba(15,23,42,0.64)'/><image href='${safeReferenceImage || ''}' x='730' y='120' width='350' height='430' preserveAspectRatio='xMidYMid meet' opacity='0.88'/><text x='90' y='690' font-size='74' font-family='Arial Black,Arial,sans-serif' fill='rgba(255,255,255,0.86)'>${brand}</text></svg>`, 'orb'),
     selection_tech_amber_energy: () => buildTechAmberEnergyConfig(context, safeReferenceImage),
     selection_metallic_sport_identity: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='metal' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='42%' stop-color='#374151'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#metal)'/><path d='M0,560 L1200,190 L1200,380 L0,760 Z' fill='rgba(148,163,184,0.24)'/><image href='${safeReferenceImage || ''}' x='100' y='120' width='420' height='420' opacity='0.22' preserveAspectRatio='xMidYMid meet'/><image href='${safeReferenceImage || ''}' x='760' y='170' width='330' height='330' opacity='0.92' preserveAspectRatio='xMidYMid meet'/><rect x='742' y='150' width='366' height='366' rx='34' fill='none' stroke='rgba(226,232,240,0.62)' stroke-width='4'/><text x='84' y='716' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>METALLIC SPORT IDENTITY</text></svg>`, 'diamond'),
@@ -1096,7 +1096,27 @@ function buildSurfaceFromRecipe(
     selection_editorial_collage: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#111827'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='620' height='800' opacity='0.66' preserveAspectRatio='xMidYMid slice'/><image href='${safeReferenceImage || ''}' x='540' y='110' width='610' height='540' opacity='0.84' preserveAspectRatio='xMidYMid slice'/><rect x='520' y='90' width='640' height='570' fill='none' stroke='rgba(248,250,252,0.32)' stroke-width='3'/><text x='560' y='706' font-size='58' fill='rgba(248,250,252,0.9)' font-family='Arial Black,Arial,sans-serif'>EDITORIAL COLLAGE</text></svg>`, 'mesh'),
     selection_soft_premium_minimal: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#e2c28c'/></svg>`, 'none'),
   };
-  return generators[recipe.presetId as keyof typeof generators]();
+  const generator = generators[recipe.presetId];
+  if (generator) return generator();
+  return buildImageSurface(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#0f172a'/><text x='80' y='700' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>${brand}</text></svg>`,
+    'none',
+  );
+}
+
+function buildRecommendedPresetConfig(
+  presetId: BackgroundPresetId,
+  context: PresetContext,
+  recipe: CompositionRecipe,
+  uploadedReferenceImage?: string | null,
+): OutfitBackgroundConfig {
+  const safeReferenceImage = uploadedReferenceImage || context.brandLogoUrl || null;
+  if (presetId === 'selection_tonal_geometry') return buildTonalGeometryPreset(context, safeReferenceImage);
+  if (presetId === 'selection_tech_amber_energy') return buildTechAmberEnergyPreset(context, safeReferenceImage);
+  if (presetId === 'selection_neon_motion_grid') return buildNeonMotionGridPreset(context, safeReferenceImage);
+  if (presetId === 'selection_luxury_fabric_monogram') return buildLuxuryFabricMonogramPreset(context, safeReferenceImage);
+  if (presetId === 'selection_editorial_logo' && safeReferenceImage) return buildEditorialLogoComposition(safeReferenceImage, context);
+  return buildSurfaceFromRecipe(recipe, context, safeReferenceImage);
 }
 
 function buildRecommendedPresetConfig(
