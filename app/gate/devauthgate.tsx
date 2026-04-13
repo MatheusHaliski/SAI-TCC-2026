@@ -1,119 +1,108 @@
 "use client";
 
-import {useEffect} from "react";
+import { useEffect } from "react";
 import { useAuthGate } from "@/app/gate/auth";
-import {usePathname, useRouter} from "next/navigation";
-import {
-    clearDevSessionToken,
-    getDevSessionToken,
-    setDevSessionToken,
-} from "@/app/lib/devSession";
+import { usePathname, useRouter } from "next/navigation";
+import { clearDevSessionToken, getDevSessionToken, setDevSessionToken } from "@/app/lib/devSession";
 import { clearAuthSessionProfile, clearAuthSessionToken } from "@/app/lib/authSession";
 import { clearSharedAccessToken } from "@/app/lib/accessTokenShare";
-import Script from "next/script";
+
+const ff = "'Inter', 'Segoe UI', Arial, sans-serif";
 
 export default function DevAuthGate() {
-    const {
-        googleAuthed,
-        googleUserId,
-        googleError,
-        pinInput,
-        setPinInput,
-        pinVerified,
-        pinError,
-        pinLocked,
-        verifyPin,
-        resetGate
-    } = useAuthGate();
-
-
+    const { googleAuthed, googleUserId, googleError, pinInput, setPinInput, pinVerified, pinError, pinLocked, verifyPin, resetGate } = useAuthGate();
     const pathname = usePathname();
     const router = useRouter();
+
     useEffect(() => {
         if (pathname !== "/devauthgate") return;
-        resetGate();
-        clearDevSessionToken();
-        clearAuthSessionToken();
-        clearAuthSessionProfile();
-        clearSharedAccessToken();
+        resetGate(); clearDevSessionToken(); clearAuthSessionToken(); clearAuthSessionProfile(); clearSharedAccessToken();
     }, [pathname, resetGate]);
 
     useEffect(() => {
-        if (typeof window === "undefined") return;
-
-        const g = (window as any).google;
-        if (!g?.accounts?.id) return; // script ainda não carregou
-
-        g.accounts.id.initialize({
-            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-        });
-
-        g.accounts.id.renderButton(
-            document.getElementById("google-signin"),
-            { theme: "outline", size: "large", width: 320 }
-        );
-    }, []);
-
-    useEffect(() => {
         if (!googleAuthed || !pinVerified) return;
-        const existing = getDevSessionToken();
-        if (existing) {
-            return
-        }else{
-            const token = crypto.randomUUID();
-            setDevSessionToken(token);
-            const existing2 = getDevSessionToken();
-        }
-    }, [googleAuthed, pinVerified, router]);
+        if (!getDevSessionToken()) setDevSessionToken(crypto.randomUUID());
+    }, [googleAuthed, pinVerified]);
 
     useEffect(() => {
-        const existing = getDevSessionToken();
-        if (existing && pinVerified) {
-            router.replace("/authview");
-        }
+        if (getDevSessionToken() && pinVerified) router.replace("/authview");
     }, [googleAuthed, pinVerified, router]);
-    return (
-        <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-6 py-12 text-zinc-950 dark:bg-black dark:text-zinc-50">
-            <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900">
-                <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
-                        /gate
-                    </p>
-                    <h1 className="text-2xl font-semibold">Sign in with Google and enter your PIN</h1>
-                </div>
 
-                <div className="space-y-4">
+    return (
+        <div style={{ fontFamily: ff, minHeight: "100vh", display: "flex", backgroundImage: "none", backgroundColor: "#fff" }}>
+            {/* Left Side */}
+            <div style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)", padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <div style={{ width: 48, height: 48, background: "rgba(255,255,255,0.2)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontSize: "1.5rem" }}>✨</span>
+                    </div>
                     <div>
-                        <p className="text-sm font-medium">Google sign-in</p>
-                        <div id="google-signin" className="mt-2 min-h-[44px]" />
-                        {googleError ? <p className="mt-2 text-xs text-rose-500">{googleError}</p> : null}
-                        {googleAuthed ? (
-                            <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
-                                Signed in as {googleUserId}
+                        <div style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 600, fontFamily: ff }}>Fashion AI</div>
+                        <div style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.875rem", fontFamily: ff }}>Seu estilista pessoal</div>
+                    </div>
+                </div>
+                <div>
+                    <div style={{ fontSize: "2.25rem", fontWeight: 600, color: "#fff", marginBottom: "1.5rem", lineHeight: 1.3, fontFamily: ff }}>
+                        Acesso restrito<br />aos desenvolvedores
+                    </div>
+                    <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1.125rem", marginBottom: "2rem", fontFamily: ff }}>
+                        Esta área é exclusiva para a equipe de desenvolvimento do Fashion AI.
+                    </p>
+                    {[["🔒", "Autenticação via Google"], ["🔑", "Verificação de PIN"], ["🛡️", "Acesso seguro ao sistema"]].map(([icon, text]) => (
+                        <div key={text} style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                            <div style={{ width: 40, height: 40, background: "rgba(255,255,255,0.2)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <span style={{ fontSize: "1.25rem" }}>{icon}</span>
                             </div>
-                        ) : null}
+                            <p style={{ color: "rgba(255,255,255,0.9)", fontFamily: ff }}>{text}</p>
+                        </div>
+                    ))}
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem", fontFamily: ff }}>© 2026 Fashion AI. Todos os direitos reservados.</div>
+            </div>
+
+            {/* Right Side */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#fff" }}>
+                <div style={{ width: "100%", maxWidth: 448 }}>
+                    <div style={{ marginBottom: "2rem" }}>
+                        <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Acesso de desenvolvedor</h2>
+                        <p style={{ color: "#6b7280", fontFamily: ff }}>Faça login com Google e insira seu PIN para continuar</p>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">PIN password</label>
-                        <input
-                            type="password"
-                            value={pinInput}
-                            onChange={(e) => setPinInput(e.target.value)}
-                            className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
-                            placeholder="Enter your PIN"
-                        />
-                        {pinError ? <p className="text-xs text-rose-500">{pinError}</p> : null}
-                        {pinVerified ? <p className="text-xs text-emerald-500">PIN verified.</p> : null}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                        {/* Google */}
+                        <div style={{ padding: "1.5rem", backgroundColor: "#f9fafb", borderRadius: 12, border: "1px solid #e5e7eb" }}>
+                            <p style={{ fontSize: "0.875rem", fontWeight: 500, color: "#374151", marginBottom: "0.75rem", fontFamily: ff }}>1. Login com Google</p>
+                            <div id="google-signin" style={{ minHeight: 44 }} />
+                            {googleError && <p style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#ef4444", fontFamily: ff }}>{googleError}</p>}
+                            {googleAuthed && (
+                                <div style={{ marginTop: "0.5rem", padding: "0.5rem 0.75rem", backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, fontSize: "0.75rem", fontWeight: 600, color: "#15803d", fontFamily: ff }}>
+                                    ✓ Conectado como {googleUserId}
+                                </div>
+                            )}
+                        </div>
 
-                        <button
-                            type="button"
-                            onClick={verifyPin}
-                            disabled={!pinInput.trim() || pinLocked}
-                            className="w-full rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:bg-zinc-400 dark:bg-zinc-50 dark:text-zinc-900"
-                        >
-                            Verify PIN
-                        </button>
+                        {/* PIN */}
+                        <div style={{ padding: "1.5rem", backgroundColor: "#f9fafb", borderRadius: 12, border: "1px solid #e5e7eb" }}>
+                            <p style={{ fontSize: "0.875rem", fontWeight: 500, color: "#374151", marginBottom: "0.75rem", fontFamily: ff }}>2. Verificação de PIN</p>
+                            <input
+                                type="password"
+                                value={pinInput}
+                                onChange={(e) => setPinInput(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && verifyPin()}
+                                placeholder="Digite seu PIN"
+                                style={{ width: "100%", padding: "12px 16px", backgroundColor: "#fff", borderRadius: 8, border: "1px solid #e5e7eb", outline: "none", color: "#111827", fontSize: "1rem", fontFamily: ff, boxSizing: "border-box" }}
+                            />
+                            {pinError && <p style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#ef4444", fontFamily: ff }}>{pinError}</p>}
+                            {pinVerified && <p style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#15803d", fontFamily: ff }}>✓ PIN verificado</p>}
+                            <button
+                                type="button"
+                                onClick={verifyPin}
+                                disabled={!pinInput.trim() || pinLocked}
+                                style={{ marginTop: "0.75rem", width: "100%", background: !pinInput.trim() || pinLocked ? "#e5e7eb" : "linear-gradient(to right, #7c3aed, #ec4899)", color: !pinInput.trim() || pinLocked ? "#9ca3af" : "#fff", padding: "10px", borderRadius: 8, border: "none", cursor: !pinInput.trim() || pinLocked ? "not-allowed" : "pointer", fontSize: "0.875rem", fontWeight: 500, fontFamily: ff }}
+                            >
+                                Verificar PIN
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
