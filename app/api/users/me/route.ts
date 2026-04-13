@@ -3,6 +3,22 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const USERS_COLLECTION = 'users';
 
+export async function GET(request: NextRequest) {
+  try {
+    const userId = request.nextUrl.searchParams.get('userId')?.trim();
+    if (!userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+
+    const db = getAdminFirestore();
+    const snapshot = await db.collection(USERS_COLLECTION).doc(userId).get();
+
+    if (!snapshot.exists) return NextResponse.json({ ok: true, profile: null });
+
+    return NextResponse.json({ ok: true, profile: snapshot.data() ?? null });
+  } catch {
+    return NextResponse.json({ error: 'Unable to load profile.' }, { status: 500 });
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   try {
     const body = (await request.json()) as { userId?: string; displayName?: string; username?: string; email?: string; bio?: string; avatarUrl?: string };

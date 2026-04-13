@@ -11,11 +11,19 @@ interface Payload {
   avatarUrl?: string;
 }
 
+interface ProfileResponse {
+  name?: string;
+  username?: string;
+  email?: string;
+  bio?: string;
+  photo_url?: string;
+}
+
 export function useProfileUpdate() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const updateProfile = async (payload: Payload) => {
+  const updateProfile = async (payload: Payload): Promise<ProfileResponse | null> => {
     setSaving(true);
     setError(null);
     const response = await fetch('/api/users/me', {
@@ -28,10 +36,11 @@ export function useProfileUpdate() {
     if (!response.ok) {
       const data = await response.json().catch(() => ({ error: 'Unable to update profile.' }));
       setError(data.error || 'Unable to update profile.');
-      return false;
+      return null;
     }
 
-    return true;
+    const data = (await response.json().catch(() => null)) as { profile?: ProfileResponse } | null;
+    return data?.profile ?? null;
   };
 
   return { saving, error, updateProfile };

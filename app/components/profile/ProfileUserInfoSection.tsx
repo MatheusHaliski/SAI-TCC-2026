@@ -1,8 +1,9 @@
 'use client';
 
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import { useProfileUpdate } from '@/app/hooks/useProfileUpdate';
+import { getAuthSessionProfile, setAuthSessionProfile } from '@/app/lib/authSession';
 
 interface ProfileUserInfoSectionProps {
   userId: string;
@@ -12,15 +13,18 @@ interface ProfileUserInfoSectionProps {
 }
 
 export default function ProfileUserInfoSection({ userId, displayName, username, email }: ProfileUserInfoSectionProps) {
-  const initial = {
+  const defaultBio = 'Fashion-tech creator focused on premium essentials and elevated streetwear.';
+  const defaultForm = {
     displayName,
     username,
     email,
-    bio: 'Fashion-tech creator focused on premium essentials and elevated streetwear.',
+    bio: defaultBio,
     avatarUrl: '',
   };
 
-  const [form, setForm] = useState(initial);
+  const [initial, setInitial] = useState(defaultForm);
+  const [form, setForm] = useState(defaultForm);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const { saving, error, updateProfile } = useProfileUpdate();
 
@@ -35,6 +39,35 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
     reader.onload = () => setForm((prev) => ({ ...prev, avatarUrl: typeof reader.result === 'string' ? reader.result : prev.avatarUrl }));
     reader.readAsDataURL(file);
   };
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      if (!userId) return;
+      setLoadingProfile(true);
+      try {
+        const response = await fetch(`/api/users/me?userId=${encodeURIComponent(userId)}`);
+        if (!response.ok) return;
+        const data = (await response.json().catch(() => null)) as { profile?: { name?: string; username?: string; email?: string; bio?: string; photo_url?: string } } | null;
+        const profile = data?.profile;
+        if (!profile) return;
+        const loaded = {
+          displayName: profile.name?.trim() || displayName,
+          username: profile.username?.trim() || username,
+          email: profile.email?.trim() || email,
+          bio: profile.bio?.trim() || defaultBio,
+          avatarUrl: profile.photo_url?.trim() || '',
+        };
+        setInitial(loaded);
+        setForm(loaded);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    loadCurrentUser().catch(() => {
+      setLoadingProfile(false);
+    });
+  }, [defaultBio, displayName, email, userId, username]);
 
   return (
     <SectionBlock title="User Info" subtitle="Edit your profile identity and public creator metadata.">
@@ -62,11 +95,34 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
           className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           disabled={!dirty || saving || !userId}
           onClick={async () => {
-            const ok = await updateProfile({ userId, ...form });
-            setToast(ok ? 'Profile updated successfully.' : 'Unable to save profile.');
+            const profile = await updateProfile({ userId, ...form });
+            if (!profile) {
+              setToast('Unable to save profile.');
+              return;
+            }
+
+            const synced = {
+              displayName: profile.name?.trim() || form.displayName,
+              username: profile.username?.trim() || form.username,
+              email: profile.email?.trim() || form.email,
+              bio: profile.bio?.trim() || form.bio,
+              avatarUrl: profile.photo_url?.trim() || form.avatarUrl,
+            };
+
+            setInitial(synced);
+            setForm(synced);
+
+            const authProfile = getAuthSessionProfile();
+            setAuthSessionProfile({
+              ...authProfile,
+              name: synced.displayName,
+              email: synced.email,
+            });
+
+            setToast('Profile updated successfully.');
           }}
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? 'Saving...' : loadingProfile ? 'Loading...' : 'Save Changes'}
         </button>
         <button type="button" className="rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm" disabled={!dirty || saving} onClick={() => setForm(initial)}>
           Cancel
