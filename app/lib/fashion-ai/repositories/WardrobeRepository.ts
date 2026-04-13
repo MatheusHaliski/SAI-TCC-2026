@@ -4,6 +4,23 @@ import { WardrobeFitProfile, WardrobeItemDocument } from '@/app/lib/fashion-ai/t
 const COLLECTION = 'sai-wardrobeItems';
 
 export class WardrobeRepository {
+  async listAll(): Promise<WardrobeItemDocument[]> {
+    const snap = await getAdminFirestore().collection(COLLECTION).get();
+    return snap.docs.map((doc) => {
+      const data = doc.data() as Record<string, unknown>;
+      return {
+        id: doc.id,
+        name: String(data.name ?? ''),
+        image_url: String(data.image_url ?? ''),
+        piece_type: typeof data.piece_type === 'string' ? data.piece_type : undefined,
+        gender: typeof data.gender === 'string' ? data.gender : undefined,
+        createdAt: typeof data.created_at === 'string' ? data.created_at : undefined,
+        updatedAt: typeof data.updated_at === 'string' ? data.updated_at : undefined,
+        fitProfile: (data.fitProfile as WardrobeFitProfile | undefined) ?? undefined,
+      };
+    });
+  }
+
   async getById(pieceId: string): Promise<WardrobeItemDocument | null> {
     const snap = await getAdminFirestore().collection(COLLECTION).doc(pieceId).get();
     if (!snap.exists) return null;
