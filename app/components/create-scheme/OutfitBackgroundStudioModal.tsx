@@ -723,37 +723,42 @@ function buildEditorialLogoComposition(referenceImage: string, context: PresetCo
   const editorialLogoField = asDataUri(
     `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
       <defs>
-        <linearGradient id='base' x1='0%' y1='0%' x2='100%' y2='100%'>
-          <stop offset='0%' stop-color='#1e3a8a'/>
-          <stop offset='58%' stop-color='#2563eb'/>
-          <stop offset='100%' stop-color='#facc15'/>
+        <linearGradient id='editorialTint' x1='0%' y1='0%' x2='100%' y2='100%'>
+          <stop offset='0%' stop-color='rgba(15,23,42,0.16)'/>
+          <stop offset='55%' stop-color='rgba(30,64,175,0.12)'/>
+          <stop offset='100%' stop-color='rgba(15,23,42,0.28)'/>
         </linearGradient>
-        <radialGradient id='fabric' cx='18%' cy='20%' r='68%'>
-          <stop offset='0%' stop-color='rgba(250,204,21,0.35)'/>
-          <stop offset='100%' stop-color='rgba(30,58,138,0.02)'/>
+        <radialGradient id='vignette' cx='50%' cy='46%' r='70%'>
+          <stop offset='45%' stop-color='rgba(15,23,42,0)'/>
+          <stop offset='100%' stop-color='rgba(15,23,42,0.56)'/>
         </radialGradient>
-        <filter id='soft' x='-20%' y='-20%' width='140%' height='140%'>
-          <feGaussianBlur stdDeviation='16'/>
+        <filter id='softShadow' x='-20%' y='-20%' width='140%' height='140%'>
+          <feGaussianBlur stdDeviation='14'/>
         </filter>
       </defs>
-      <rect width='1200' height='800' fill='url(#base)'/>
-      <path d='M0,116 C220,18 462,98 640,188 C782,258 970,286 1200,220 V0 H0 Z' fill='rgba(250,204,21,0.24)'/>
-      <rect width='1200' height='800' fill='url(#fabric)'/>
-      <ellipse cx='920' cy='564' rx='340' ry='198' fill='rgba(2,6,23,0.38)' filter='url(#soft)'/>
-      <text x='126' y='126' font-size='66' font-family='Arial Black, Arial, sans-serif' fill='rgba(255,255,255,0.16)'>${safeBrand}</text>
-      <g transform='translate(698 176)'>
-        <rect x='0' y='0' width='354' height='448' rx='38' fill='rgba(255,255,255,0.08)'/>
-        <rect x='20' y='20' width='314' height='408' rx='26' fill='rgba(15,23,42,0.3)'/>
-        <image href='${referenceImage}' x='42' y='58' width='270' height='292' preserveAspectRatio='xMidYMid meet'/>
-        <rect x='70' y='360' width='214' height='30' rx='15' fill='rgba(250,204,21,0.68)'/>
+      <image href='${referenceImage}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice'/>
+      <rect width='1200' height='800' fill='url(#editorialTint)'/>
+      <rect width='1200' height='800' fill='url(#vignette)'/>
+      <path d='M0,640 C210,560 420,700 730,620 C900,576 1040,500 1200,410 V800 H0 Z' fill='rgba(15,23,42,0.34)'/>
+      <text x='94' y='122' font-size='62' font-family='Arial Black, Arial, sans-serif' fill='rgba(248,250,252,0.25)'>${safeBrand}</text>
+      <g transform='translate(720 140)' filter='url(#softShadow)'>
+        <rect x='0' y='0' width='344' height='500' rx='38' fill='rgba(15,23,42,0.46)'/>
+        <rect x='16' y='16' width='312' height='468' rx='30' fill='rgba(226,232,240,0.07)'/>
+        <image href='${referenceImage}' x='34' y='34' width='276' height='396' preserveAspectRatio='xMidYMid slice' opacity='0.96'/>
+        <rect x='78' y='446' width='188' height='24' rx='12' fill='rgba(148,163,184,0.46)'/>
       </g>
     </svg>`,
   );
   return {
     background_mode: 'ai_artwork',
     ai_artwork: { prompt: `${context.brandName} editorial logo composition from uploaded reference`, image_url: editorialLogoField, generation_status: 'done' },
-    gradient: GRADIENT_PRESETS[5].config.gradient,
-    shape: 'orb',
+    gradient: {
+      type: 'linear',
+      angle: 132,
+      intensity: 95,
+      stops: [{ color: '#020617', position: 0 }, { color: '#1e3a8a', position: 56 }, { color: '#334155', position: 100 }],
+    },
+    shape: 'none',
   };
 }
 
