@@ -17,14 +17,7 @@ export default function AuthViewClient() {
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const pathname = usePathname();
-    useEffect(() => {
-        const t = getDevSessionToken();
-        if (!t) {
-        router.replace("/devauthgate");
-        }
-        console.log(t);
-        ensureSharedAccessToken();
-    }, [router]);
+    
 
     useEffect(() => {
         if (pathname !== "/authview") return;

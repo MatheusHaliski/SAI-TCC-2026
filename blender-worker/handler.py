@@ -5,6 +5,7 @@ import logging
 import os
 import threading
 import time
+import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -112,7 +113,7 @@ class JobResponse(BaseModel):
 
 
 class LbRequest(BaseModel):
-    input: JobRequest
+    input: dict[str, Any]
 
 
 def now_iso() -> str:
@@ -131,14 +132,14 @@ def build_preflight_response(request: Request) -> Response:
     return Response(status_code=204, headers=headers)
 
 
-def register_job(job_id: str, payload: JobRequest) -> None:
+def register_job(job_id: str, payload: dict[str, Any]) -> None:
     with jobs_lock:
         jobs[job_id] = {
             "jobId": job_id,
             "status": "queued",
             "createdAt": now_iso(),
             "updatedAt": now_iso(),
-            "request": payload.model_dump(),
+            "request": payload,
             "artifacts": {},
             "metrics": {},
             "error": None,
@@ -168,8 +169,14 @@ def build_artifact_url(output_path: Path, job_id: str) -> str:
     return output_path.as_uri()
 
 
-def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
-    logger.info("job_started jobId=%s jobType=%s", job_id, payload.jobType)
+def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
+    image_url = str(payload.get("imageUrl", "")).strip()
+    job_type = str(payload.get("jobType", "blender_uv_pipeline") or "blender_uv_pipeline")
+    options = payload.get("options", {})
+    if not isinstance(options, dict):
+        options = {}
+
+    logger.info("job_started jobId=%s jobType=%s", job_id, job_type)
     update_job(job_id, status="in_progress")
     started = time.perf_counter()
 
@@ -183,13 +190,13 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
 
     debug: dict[str, Any] = {
         "jobId": job_id,
-        "originalImageUrl": payload.imageUrl,
+        "originalImageUrl": image_url,
         "pipeline": "hybrid_meshy_blender",
         "timestamps": {"startedAt": now_iso()},
     }
 
     try:
-        fetch_image(payload.imageUrl, original_path)
+        fetch_image(image_url, original_path)
         validation = validate_input_image(original_path)
         debug["validation"] = {
             "accepted": validation.accepted,
@@ -205,8 +212,8 @@ def run_3d_pipeline(job_id: str, payload: JobRequest) -> None:
         debug["preprocess"] = preprocess_meta
         debug["qualityReport"] = quality_report
 
-        prompt = build_meshy_prompt(preprocess_meta, payload.options)
-        meshy_meta = generate_base_glb_with_meshy(cleaned_path, base_glb_path, prompt, payload.options)
+        prompt = build_meshy_prompt(preprocess_meta, options)
+        meshy_meta = generate_base_glb_with_meshy(cleaned_path, base_glb_path, prompt, options)
         debug["meshy"] = meshy_meta
 
         blender_meta = run_blender_refinement(base_glb_path, refined_glb_path, job_dir)
@@ -340,21 +347,59 @@ def preflight(rest_of_path: str, request: Request) -> Response:
     return build_preflight_response(request)
 
 
-@app.post("/jobs", response_model=JobResponse)
-def create_job(payload: JobRequest) -> dict[str, str]:
-    if not payload.imageUrl.strip():
+def _submit_job(payload: dict[str, Any]) -> dict[str, str]:
+    if not str(payload.get("imageUrl", "")).strip():
         raise HTTPException(status_code=400, detail={"code": "VALIDATION_ERROR", "message": "imageUrl is required"})
-
     job_id = str(uuid.uuid4())
     register_job(job_id, payload)
-    logger.info("job_created jobId=%s jobType=%s", job_id, payload.jobType)
+    logger.info("job_created jobId=%s jobType=%s", job_id, payload.get("jobType", "blender_uv_pipeline"))
     executor.submit(run_3d_pipeline, job_id, payload)
     return {"jobId": job_id, "status": "queued"}
 
 
+@app.post("/jobs", response_model=JobResponse)
+async def create_job(request: Request) -> dict[str, str]:
+    try:
+        print("\n🚀 ===== NEW JOB REQUEST =====")
+        raw_body = await request.body()
+        print("📦 RAW BODY:", raw_body)
+
+        try:
+            payload = await request.json()
+            print("📦 PARSED JSON:", payload)
+        except Exception as exc:
+            print("❌ JSON PARSE ERROR:", str(exc))
+            raise HTTPException(status_code=400, detail="Invalid JSON") from exc
+
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="JSON body must be an object")
+
+        normalized_payload = {
+            "modelUrl": payload.get("modelUrl"),
+            "imageUrl": payload.get("imageUrl", ""),
+            "jobType": payload.get("jobType", "blender_uv_pipeline"),
+            "options": payload.get("options", {}),
+        }
+
+        print("👉 ENTERING PIPELINE")
+        result = _submit_job(normalized_payload)
+        print("✅ JOB SUCCESS")
+        return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print("\n🔥🔥🔥 JOB FAILED 🔥🔥🔥")
+        print("ERROR:", str(exc))
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail={"error": str(exc), "type": type(exc).__name__},
+        ) from exc
+
+
 @app.post("/")
 def create_job_lb(payload: LbRequest) -> dict[str, str]:
-    created = create_job(payload.input)
+    created = _submit_job(payload.input)
     return {
         "id": created["jobId"],
         "jobId": created["jobId"],
