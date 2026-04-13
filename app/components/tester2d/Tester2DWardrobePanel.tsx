@@ -13,18 +13,19 @@ export interface Tester2DWardrobeItem {
 interface Props {
   items: Tester2DWardrobeItem[];
   onApply: (item: Tester2DWardrobeItem) => void;
+  onProcessNow?: (pieceId: string) => void;
 }
 
 const statusLabel = (status?: WardrobeFitProfile['preparationStatus']) => {
   if (status === 'ready') return 'READY FOR TRY-ON';
   if (status === 'processing') return 'PROCESSING';
-  if (status === 'pending') return 'PROCESSING REQUIRED';
+  if (status === 'pending') return 'PENDING';
   if (status === 'preview_only') return 'PREVIEW ONLY';
   if (status === 'failed') return 'FAILED';
   return 'PROCESSING REQUIRED';
 };
 
-export default function Tester2DWardrobePanel({ items, onApply }: Props) {
+export default function Tester2DWardrobePanel({ items, onApply, onProcessNow }: Props) {
   return (
     <div className="grid max-h-[720px] gap-2 overflow-y-auto pr-1">
       {items.map((item) => {
@@ -45,8 +46,25 @@ export default function Tester2DWardrobePanel({ items, onApply }: Props) {
             <div>
               <p className="text-sm font-semibold text-white">{item.name}</p>
               <p className="text-[11px] uppercase tracking-[0.18em] text-white/65">
-                {slot} · {gender} · {statusLabel(fit?.preparationStatus)}
+                {slot === 'unknown' ? 'UNKNOWN' : slot} · {gender.toUpperCase()} · {statusLabel(fit?.preparationStatus)}
               </p>
+              {process.env.NODE_ENV !== 'production' ? (
+                <p className="text-[10px] text-white/45">
+                  {fit ? `debug: fitProfile ${fit.preparationStatus}` : 'debug: fitProfile missing, fallback label applied'}
+                </p>
+              ) : null}
+              {process.env.NODE_ENV !== 'production' && onProcessNow ? (
+                <button
+                  type="button"
+                  className="mt-1 rounded-md border border-white/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-white/80 hover:bg-white/10"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onProcessNow(item.pieceId);
+                  }}
+                >
+                  Process Now
+                </button>
+              ) : null}
             </div>
           </button>
         );

@@ -221,6 +221,12 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     try {
       let workerSubmitError: string | null = null;
       let localFitPreparationStatus: string | null = null;
+      console.debug('[add-piece] create start', {
+        name: form.name,
+        piece_type: form.piece_type,
+        gender: form.gender,
+        hasImageUrl: Boolean(form.image_url),
+      });
       const response = await fetch('/api/add-piece', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -243,15 +249,27 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         | { wardrobe_item_id?: string }
         | null;
       const createdWardrobeItemId = createdPiece?.wardrobe_item_id?.trim();
+      console.debug('[add-piece] create success', {
+        createdWardrobeItemId,
+      });
       if (createdWardrobeItemId) {
+        console.debug('[add-piece] process-piece call', { pieceId: createdWardrobeItemId });
         const processResponse = await fetch('/api/wardrobe/process-piece', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pieceId: createdWardrobeItemId }),
         });
         const processPayload = (await processResponse.json().catch(() => null)) as
-          | { preparationStatus?: string }
+          | { preparationStatus?: string; error?: string }
           | null;
+        console.debug('[add-piece] process-piece response', {
+          pieceId: createdWardrobeItemId,
+          status: processResponse.status,
+          body: processPayload,
+        });
+        if (!processResponse.ok) {
+          setAlertMessage(`Piece created, but 2D processing failed (${processPayload?.error ?? 'unknown_error'}).`);
+        }
         localFitPreparationStatus = processPayload?.preparationStatus ?? 'failed';
       }
 
@@ -294,6 +312,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
       setSubmitProgress(100);
       setAlertMessage(workerSubmitError ?? `Piece added to your wardrobe successfully. 2D prep status: ${localFitPreparationStatus ?? 'unknown'}.`);
+      console.debug('[add-piece] ui refresh requested', { hasOnPieceCreated: Boolean(onPieceCreated) });
       onPieceCreated?.();
       setForm((prev) => ({
         ...prev,

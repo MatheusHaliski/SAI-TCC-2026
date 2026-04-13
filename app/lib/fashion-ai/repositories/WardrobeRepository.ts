@@ -21,9 +21,18 @@ export class WardrobeRepository {
     };
   }
 
-  async updateFitProfile(pieceId: string, fitProfile: WardrobeFitProfile): Promise<void> {
+  async updateFitProfile(
+    pieceId: string,
+    fitProfile: WardrobeFitProfile,
+    debugMeta?: {
+      lastProcessingAttemptAt?: string;
+      lastProcessingSource?: string;
+      lastProcessingVersion?: string;
+    },
+  ): Promise<void> {
     await getAdminFirestore().collection(COLLECTION).doc(pieceId).set({
       fitProfile,
+      ...(debugMeta ?? {}),
       updated_at: new Date().toISOString(),
     }, { merge: true });
   }

@@ -37,17 +37,45 @@ export default function DressTesterView() {
 
   const refreshData = useCallback(async () => {
     setLoading(true);
+    console.debug('[dress-tester] bootstrap fetch:start');
     const response = await fetch('/api/dress-tester/bootstrap');
     const payload = (await response.json()) as BootstrapPayload;
+    console.debug('[dress-tester] bootstrap fetch:done', {
+      status: response.status,
+      mannequins: payload.mannequins?.length ?? 0,
+      pieces: payload.pieces?.length ?? 0,
+    });
 
     setMannequins(payload.mannequins ?? []);
     setPieces(
-      (payload.pieces ?? []).map((piece) => ({
-        pieceId: piece.pieceId,
-        name: piece.name,
-        imageUrl: piece.imageUrl,
-        fitProfile: piece.fitProfile ?? null,
-      })),
+      (payload.pieces ?? []).map((piece) => {
+        const fitProfile = piece.fitProfile ?? null;
+        const labelReason = !fitProfile
+          ? 'fitProfile_missing'
+          : fitProfile.preparationStatus === 'pending'
+            ? 'fitProfile_pending'
+            : fitProfile.preparationStatus === 'processing'
+              ? 'fitProfile_processing'
+              : fitProfile.preparationStatus === 'ready'
+                ? 'fitProfile_ready'
+                : fitProfile.preparationStatus;
+
+        console.debug('[dress-tester] item mapping', {
+          pieceId: piece.pieceId,
+          name: piece.name,
+          hasFitProfile: Boolean(fitProfile),
+          fitProfileStatus: fitProfile?.preparationStatus ?? 'missing',
+          targetGender: fitProfile?.targetGender ?? 'fallback-unisex',
+          labelReason,
+        });
+
+        return {
+          pieceId: piece.pieceId,
+          name: piece.name,
+          imageUrl: piece.imageUrl,
+          fitProfile,
+        };
+      }),
     );
     setLoading(false);
   }, []);
@@ -99,6 +127,26 @@ export default function DressTesterView() {
     setEquipped((prev) => ({ ...prev, [fitProfile.pieceType]: fitProfile }));
   };
 
+  const processPieceNow = async (pieceId: string) => {
+    console.debug('[dress-tester] process-now:start', { pieceId });
+    const response = await fetch('/api/wardrobe/process-piece', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pieceId }),
+    });
+    const payload = await response.json().catch(() => null);
+    console.debug('[dress-tester] process-now:done', {
+      pieceId,
+      status: response.status,
+      payload,
+    });
+    if (!response.ok) {
+      setMessage(`Process piece failed for ${pieceId}.`);
+      return;
+    }
+    await refreshData();
+  };
+
   if (loading) return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Loading Tester 2D...</div>;
   if (!mannequin) return <div className="p-6 text-sm text-white/70">No mannequin profiles found.</div>;
 
@@ -138,7 +186,7 @@ export default function DressTesterView() {
         </SectionBlock>
 
         <SectionBlock title="Wardrobe 2D Library" subtitle="Prepared pipeline status and mannequin-compatible fitting">
-          <Tester2DWardrobePanel items={pieces} onApply={applyPiece} />
+          <Tester2DWardrobePanel items={pieces} onApply={applyPiece} onProcessNow={processPieceNow} />
         </SectionBlock>
       </div>
     </div>
