@@ -1,16 +1,17 @@
 'use client';
 
-import { TESTER_2D_MANNEQUINS, Tester2DMannequin } from '@/app/config/tester2dMannequins';
+import { MannequinProfile } from '@/app/lib/fashion-ai/types/mannequin';
 
 interface Props {
-  selectedId: Tester2DMannequin['id'];
-  onChange: (id: Tester2DMannequin['id']) => void;
+  mannequins: MannequinProfile[];
+  selectedId: MannequinProfile['id'];
+  onChange: (id: MannequinProfile['id']) => void;
 }
 
-export default function Tester2DMannequinSelector({ selectedId, onChange }: Props) {
+export default function Tester2DMannequinSelector({ mannequins, selectedId, onChange }: Props) {
   return (
     <div className="flex flex-wrap gap-2">
-      {TESTER_2D_MANNEQUINS.map((mannequin) => (
+      {mannequins.map((mannequin) => (
         <button
           key={mannequin.id}
           onClick={() => onChange(mannequin.id)}
