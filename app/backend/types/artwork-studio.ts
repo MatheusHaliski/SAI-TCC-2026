@@ -18,6 +18,7 @@ export type ArtworkStudioInput = {
   stylePreset: ArtworkStylePreset;
   paletteMode: ArtworkPaletteMode;
   shapeLanguage: ArtworkShapeLanguage;
+  generationMode?: 'preset_assisted' | 'hybrid' | 'text_prompt_pure';
   density?: number;
   contrastLevel?: ArtworkContrastLevel;
   blurStrength?: number;
