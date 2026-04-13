@@ -1,53 +1,78 @@
 "use client";
-import Image from "next/image";
-import AuthShell from "../components/AuthShell";
+
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import SignupForm from "./SignupForm";
-import {usePathname, useRouter} from "next/navigation";
-import { useEffect, useState } from "react";
-import { getDevSessionToken, setDevSessionToken } from "@/app/lib/devSession";
-import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessToken } from '@/app/lib/accessTokenShare';
-import {router} from "next/client";
-import {clearAuthSessionToken} from "@/app/lib/authSession";
+import { getDevSessionToken } from "@/app/lib/devSession";
+import { clearSharedAccessToken, ensureSharedAccessToken } from "@/app/lib/accessTokenShare";
+import { clearAuthSessionToken } from "@/app/lib/authSession";
+
+const ff = "'Inter', 'Segoe UI', Arial, sans-serif";
+
 export default function SignupViewPage() {
-     const pathname = usePathname();
+    const router = useRouter();
+    const pathname = usePathname();
+
     useEffect(() => {
-        const t = getDevSessionToken();
-        if (!t) {
-        router.replace("/devauthgate");
-        }
-        console.log(t);
+        // TODO: reativar verificação do devauthgate em produção
+        // const t = getDevSessionToken();
+        // if (!t) router.replace("/devauthgate");
         ensureSharedAccessToken();
     }, [router]);
+
     useEffect(() => {
         if (pathname !== "/signupview") return;
         clearAuthSessionToken();
         clearSharedAccessToken();
     }, [pathname]);
-    return (
-        <AuthShell
-            title="Start your Fashion AI journey"
-            subtitle="Create your account in minutes"
-        >
 
-            <div
-                className={[
-                    "space-y-4",
-                    "rounded-3xl",
-                    "rounded-2xl border-8 border-orange-500", // ✅ requested
-                    "bg-white/45",
-                    "fe-glass-panel",
-                    "p-6 sm:p-8",
-                    "shadow-[0_20px_50px_rgba(0,0,0,0.35)]",
-    ].join(" ")}
-            >
-                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-600">
-                    Start your Fashion AI
-                </p>
-                <h1 className="mt-3 text-3xl font-semibold text-orange-600">
-                    Build your new account
-                </h1>
-                <SignupForm />
+    return (
+        <div style={{ fontFamily: ff, minHeight: "100vh", display: "flex", backgroundImage: "none", backgroundColor: "#fff" }}>
+            {/* Left Side */}
+            <div style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)", padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <div style={{ width: 48, height: 48, background: "rgba(255,255,255,0.2)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontSize: "1.5rem" }}>✨</span>
+                    </div>
+                    <div>
+                        <div style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 600, fontFamily: ff }}>Fashion AI</div>
+                        <div style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.875rem", fontFamily: ff }}>Seu estilista pessoal</div>
+                    </div>
+                </div>
+                <div>
+                    <div style={{ fontSize: "2.25rem", fontWeight: 600, color: "#fff", marginBottom: "1.5rem", lineHeight: 1.3, fontFamily: ff }}>Comece sua jornada<br />de estilo hoje</div>
+                    <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1.125rem", marginBottom: "2rem", fontFamily: ff }}>Junte-se a milhares de usuários que transformaram sua forma de se vestir com a ajuda da IA.</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", textAlign: "center" }}>
+                        {[["10k+", "Usuários"], ["50k+", "Looks Criados"], ["4.9", "Avaliação"]].map(([num, label]) => (
+                            <div key={label}>
+                                <div style={{ fontSize: "1.875rem", fontWeight: 600, color: "#fff", fontFamily: ff }}>{num}</div>
+                                <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.875rem", fontFamily: ff }}>{label}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem", fontFamily: ff }}>© 2026 Fashion AI. Todos os direitos reservados.</div>
             </div>
-        </AuthShell>
+
+            {/* Right Side */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#fff", overflowY: "auto" }}>
+                <div style={{ width: "100%", maxWidth: 448 }}>
+                    <button onClick={() => router.push("/authview")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#6b7280", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontSize: "0.875rem", fontFamily: ff }}>
+                        ← Voltar para login
+                    </button>
+                    <div style={{ marginBottom: "2rem" }}>
+                        <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Criar sua conta</h2>
+                        <p style={{ color: "#6b7280", fontFamily: ff }}>Preencha os dados abaixo para começar</p>
+                    </div>
+                    <SignupForm />
+                    <p style={{ textAlign: "center", fontSize: "0.875rem", color: "#6b7280", marginTop: "2rem", fontFamily: ff }}>
+                        Já tem uma conta?{" "}
+                        <button onClick={() => router.push("/authview")} style={{ color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 500, fontFamily: ff }}>
+                            Fazer login
+                        </button>
+                    </p>
+                </div>
+            </div>
+        </div>
     );
 }

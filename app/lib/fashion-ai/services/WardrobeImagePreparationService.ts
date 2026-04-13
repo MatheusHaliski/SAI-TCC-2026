@@ -3,6 +3,16 @@ import { WardrobeFitProfile, WardrobeItemDocument, WardrobePieceType, WardrobeTa
 import { estimateGarmentAnchors } from '@/app/lib/fashion-ai/utils/garment-anchors';
 
 const PROCESSING_VERSION = 'mvp-fitprofile-v1';
+const MALE_GENDER_TOKENS = ['male', 'masculino', 'man', 'men', 'masc'];
+const FEMALE_GENDER_TOKENS = ['female', 'feminino', 'woman', 'women', 'fem'];
+
+function escapeRegexToken(token: string): string {
+  return token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function containsBoundedToken(text: string, token: string): boolean {
+  return new RegExp(`(^|[^a-z])${escapeRegexToken(token)}([^a-z]|$)`, 'i').test(text);
+}
 
 type PreparationDebugInfo = {
   pieceId: string;
@@ -139,12 +149,12 @@ export class WardrobeImagePreparationService {
 
   inferTargetGenderFromWardrobeItem(piece: Pick<WardrobeItemDocument, 'gender' | 'name'>): WardrobeTargetGender {
     const genderText = String(piece.gender ?? '').toLowerCase();
-    if (genderText.includes('masc') || genderText.includes('male') || genderText.includes('man')) return 'male';
-    if (genderText.includes('fem') || genderText.includes('female') || genderText.includes('woman')) return 'female';
+    if (FEMALE_GENDER_TOKENS.some((token) => containsBoundedToken(genderText, token))) return 'female';
+    if (MALE_GENDER_TOKENS.some((token) => containsBoundedToken(genderText, token))) return 'male';
 
     const nameText = String(piece.name ?? '').toLowerCase();
-    if (nameText.includes('masc') || nameText.includes('male') || nameText.includes('man') || nameText.includes('masculino')) return 'male';
-    if (nameText.includes('fem') || nameText.includes('female') || nameText.includes('woman') || nameText.includes('feminino')) return 'female';
+    if (FEMALE_GENDER_TOKENS.some((token) => containsBoundedToken(nameText, token))) return 'female';
+    if (MALE_GENDER_TOKENS.some((token) => containsBoundedToken(nameText, token))) return 'male';
 
     return 'unisex';
   }
