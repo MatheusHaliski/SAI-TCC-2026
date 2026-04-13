@@ -714,58 +714,36 @@ function buildSurfaceFromRecipe(
     };
   }
   if (recipe.presetId === 'selection_luxury_fabric_monogram') {
-    // TODO: replace this procedural SVG with higher-fidelity material synthesis when image generation pipeline supports deterministic layering.
-    console.info('[background-studio] applying luxury fabric monogram', { presetId: recipe.presetId, hasReferenceImage: Boolean(safeReferenceImage) });
-    const monogramLayer = safeReferenceImage
-      ? Array.from({ length: 6 }).map((_, row) =>
-          Array.from({ length: 9 }).map((__, col) => {
-            const x = col * 138 + (row % 2 ? 58 : 8);
-            const y = row * 128 + 20;
-            return `<image href='${safeReferenceImage}' x='${x}' y='${y}' width='78' height='78' opacity='0.085' preserveAspectRatio='xMidYMid meet'/>`;
-          }).join(''),
-        ).join('')
-      : '';
-    const glassSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-      <defs>
-        <linearGradient id='glassBase' x1='0%' y1='0%' x2='100%' y2='100%'>
-          <stop offset='0%' stop-color='#c8dcff'/>
-          <stop offset='42%' stop-color='#8cb4f4'/>
-          <stop offset='100%' stop-color='#5b7fb8'/>
-        </linearGradient>
-        <radialGradient id='edgeGlow' cx='15%' cy='12%' r='86%'>
-          <stop offset='0%' stop-color='rgba(255,255,255,0.42)'/>
-          <stop offset='100%' stop-color='rgba(255,255,255,0)'/>
-        </radialGradient>
-      </defs>
-      <image href='${LUXURY_MONOGRAM_BACKGROUND_IMAGE}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.72'/>
-      <rect width='1200' height='800' fill='url(#glassBase)' opacity='0.8'/>
-      <rect x='40' y='38' width='1120' height='724' rx='56' fill='rgba(255,255,255,0.12)' stroke='rgba(255,255,255,0.26)' stroke-width='2'/>
-      <path d='M-40,590 C170,458 450,678 720,612 C982,544 1140,356 1290,300 V800 H-40 Z' fill='rgba(215,234,255,0.3)'/>
-      <path d='M70,120 C360,18 860,58 1130,200 C930,270 560,300 240,244 Z' fill='rgba(255,255,255,0.22)'/>
-      <rect width='1200' height='800' fill='url(#edgeGlow)'/>
-      ${monogramLayer}
-      <rect x='28' y='24' width='1144' height='752' rx='60' fill='none' stroke='rgba(234,245,255,0.5)' stroke-width='1.3'/>
-    </svg>`;
-    return buildImageSurface(glassSvg, 'none', {
-      presetId: 'selection_luxury_fabric_monogram',
-      family: 'pattern_surface',
-      styleMode: 'glass_monogram',
-      material: 'translucent_glass',
-      paletteMode: 'cool_luxury',
-      referenceImageUrl: safeReferenceImage,
-      overlays: [
-        { type: 'glass_reflection', opacity: 0.2, density: 'low', blendMode: 'screen' },
-        { type: 'glow', opacity: 0.18, density: 'low', blendMode: 'screen' },
-        { type: 'monogram', opacity: 0.08, density: 'low', blendMode: 'soft-light' },
-      ],
-      metadata: {
-        monogramMode: safeReferenceImage ? 'embedded_soft_repeat' : 'no_reference_fallback_glass_only',
-        reflectionSweep: true,
-        edgeHighlight: true,
-        blurStrength: 0.22,
-        backgroundImageSrc: LUXURY_MONOGRAM_BACKGROUND_IMAGE,
+    return {
+      background_mode: 'ai_artwork',
+      ai_artwork: {
+        prompt: `${context.brandName} selection luxury fabric monogram premium surface`,
+        image_url: LUXURY_MONOGRAM_BACKGROUND_IMAGE,
+        generation_status: 'done',
       },
-    });
+      gradient: {
+        type: 'linear',
+        angle: 132,
+        intensity: 104,
+        stops: [
+          { color: '#c8dcff', position: 0 },
+          { color: '#8cb4f4', position: 48 },
+          { color: '#5b7fb8', position: 100 },
+        ],
+      },
+      shape: 'mesh',
+      studioStyleConfig: {
+        presetId: 'selection_luxury_fabric_monogram',
+        family: 'pattern_surface',
+        styleMode: 'luxury_fabric_image_base',
+        material: 'premium_fabric',
+        paletteMode: 'cool_luxury',
+        referenceImageUrl: safeReferenceImage,
+        metadata: {
+          backgroundImageSrc: LUXURY_MONOGRAM_BACKGROUND_IMAGE,
+        },
+      },
+    };
   }
   if (recipe.presetId === 'selection_soft_premium_minimal') {
     // TODO: evolve this preset into physically based brushed-metal rendering once premium texture generator is available.
