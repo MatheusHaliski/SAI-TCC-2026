@@ -710,6 +710,9 @@ function buildSurfaceFromRecipe(
         material: 'tonal_panel',
         paletteMode: 'cool_luxury',
         referenceImageUrl: safeReferenceImage,
+        metadata: {
+          backgroundImageSrc: TONAL_GEOMETRY_BACKGROUND_IMAGE,
+        },
       },
     };
   }
