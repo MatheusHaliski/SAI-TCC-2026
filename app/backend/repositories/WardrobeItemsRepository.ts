@@ -239,6 +239,7 @@ export class WardrobeItemsRepository extends BaseRepository {
     material: string;
     style_tags: string[];
     occasion_tags: string[];
+    fitProfile?: Record<string, unknown>;
   }): Promise<{ wardrobe_item_id: string }> {
     const now = new Date().toISOString();
     const payload = {
