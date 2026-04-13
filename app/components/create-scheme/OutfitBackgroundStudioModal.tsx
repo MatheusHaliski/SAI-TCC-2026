@@ -184,7 +184,6 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
     ).join('')}
   </svg>`,
 )}`;
-const LUXURY_MONOGRAM_BACKGROUND_IMAGE = `/${encodeURIComponent('Firefly_Flux_Consegue adicionar quebras de linha tech ao gradiente (adicionar ranhuras) 3787887.jpg')}`;
 const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const NEON_MOTION_GRID_IMAGE = '/neongrid.png';
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
@@ -910,6 +909,83 @@ function buildTechAmberEnergyConfig(context: PresetContext, referenceImage?: str
   };
 }
 
+function buildTonalGeometryPreset(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
+  return buildTonalGeometryConfig(context, referenceImage);
+}
+
+function buildTechAmberEnergyPreset(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
+  return buildTechAmberEnergyConfig(context, referenceImage);
+}
+
+function buildNeonMotionGridPreset(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
+  return buildNeonMotionGridConfig(context, referenceImage);
+}
+
+function buildLuxuryFabricMonogramPreset(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
+  const safeReferenceImage = referenceImage || context.brandLogoUrl || null;
+  const monogramRaw = context.brandName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((token) => token[0] || '')
+    .join('')
+    .toUpperCase() || 'SL';
+  const monogram = escapeSvgAttribute(monogramRaw);
+  const composedMonogram = asDataUri(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <defs>
+        <pattern id='mono' width='220' height='180' patternUnits='userSpaceOnUse'>
+          <rect width='220' height='180' fill='rgba(8,47,73,0)'/>
+          <text x='26' y='122' font-size='82' letter-spacing='5' font-family='Times New Roman, Georgia, serif' fill='rgba(191,219,254,0.2)'>${monogram}</text>
+          <path d='M20 28 H200 M20 154 H200' stroke='rgba(186,230,253,0.18)' stroke-width='1.8'/>
+        </pattern>
+        <linearGradient id='fabricBase' x1='6%' y1='8%' x2='94%' y2='92%'>
+          <stop offset='0%' stop-color='#0f172a'/>
+          <stop offset='52%' stop-color='#1e3a8a'/>
+          <stop offset='100%' stop-color='#0c4a6e'/>
+        </linearGradient>
+      </defs>
+      <rect width='1200' height='800' fill='url(#fabricBase)'/>
+      <rect width='1200' height='800' fill='url(#mono)'/>
+      <rect width='1200' height='800' fill='rgba(15,23,42,0.24)'/>
+      <path d='M0,610 C220,548 470,676 780,610 C960,568 1080,496 1200,430 V800 H0 Z' fill='rgba(2,6,23,0.34)'/>
+      ${safeReferenceImage ? `<image href='${safeReferenceImage}' x='780' y='148' width='292' height='404' preserveAspectRatio='xMidYMid meet' opacity='0.86'/>` : ''}
+      ${safeReferenceImage ? `<rect x='760' y='126' width='334' height='446' rx='34' fill='none' stroke='rgba(191,219,254,0.5)' stroke-width='2.5'/>` : ''}
+      <text x='80' y='718' font-size='56' fill='rgba(219,234,254,0.82)' font-family='Arial Black,Arial,sans-serif'>${escapeSvgAttribute(context.brandName)} MONOGRAM</text>
+    </svg>`,
+  );
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: `${context.brandName} luxury fabric monogram branded surface`,
+      image_url: composedMonogram,
+      generation_status: 'done',
+    },
+    gradient: {
+      type: 'linear',
+      angle: 132,
+      intensity: 104,
+      stops: [
+        { color: '#0f172a', position: 0 },
+        { color: '#1e3a8a', position: 56 },
+        { color: '#0c4a6e', position: 100 },
+      ],
+    },
+    shape: 'mesh',
+    studioStyleConfig: {
+      presetId: 'selection_luxury_fabric_monogram',
+      family: 'pattern_surface',
+      styleMode: 'luxury_fabric_monogram',
+      material: 'premium_fabric',
+      paletteMode: 'cool_luxury',
+      referenceImageUrl: safeReferenceImage,
+      metadata: {
+        monogram,
+      },
+    },
+  };
+}
+
 function buildNeonMotionGridConfig(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
   const safeReferenceImage = referenceImage || context.brandLogoUrl || '';
   const composedNeonGrid = asDataUri(
@@ -970,39 +1046,10 @@ function buildSurfaceFromRecipe(
   if (recipe.presetId === 'selection_tiled_motif' && safeReferenceImage) return buildTiledMotifFromReference(safeReferenceImage, context, 1, commonGradient);
   if (recipe.presetId === 'selection_editorial_logo' && safeReferenceImage) return buildEditorialLogoComposition(safeReferenceImage, context);
   if (recipe.presetId === 'selection_tonal_geometry') {
-    return buildTonalGeometryConfig(context, safeReferenceImage);
+    return buildTonalGeometryPreset(context, safeReferenceImage);
   }
   if (recipe.presetId === 'selection_luxury_fabric_monogram') {
-    return {
-      background_mode: 'ai_artwork',
-      ai_artwork: {
-        prompt: `${context.brandName} selection luxury fabric monogram premium surface`,
-        image_url: LUXURY_MONOGRAM_BACKGROUND_IMAGE,
-        generation_status: 'done',
-      },
-      gradient: {
-        type: 'linear',
-        angle: 132,
-        intensity: 104,
-        stops: [
-          { color: '#c8dcff', position: 0 },
-          { color: '#8cb4f4', position: 48 },
-          { color: '#5b7fb8', position: 100 },
-        ],
-      },
-      shape: 'mesh',
-      studioStyleConfig: {
-        presetId: 'selection_luxury_fabric_monogram',
-        family: 'pattern_surface',
-        styleMode: 'luxury_fabric_image_base',
-        material: 'premium_fabric',
-        paletteMode: 'cool_luxury',
-        referenceImageUrl: safeReferenceImage,
-        metadata: {
-          backgroundImageSrc: LUXURY_MONOGRAM_BACKGROUND_IMAGE,
-        },
-      },
-    };
+    return buildLuxuryFabricMonogramPreset(context, safeReferenceImage);
   }
   if (recipe.presetId === 'selection_soft_premium_minimal') {
     // TODO: evolve this preset into physically based brushed-metal rendering once premium texture generator is available.
@@ -1040,7 +1087,7 @@ function buildSurfaceFromRecipe(
     });
   }
 
-  const generators: Record<Exclude<BackgroundPresetId, 'selection_tiled_motif' | 'selection_editorial_logo' | 'selection_tonal_geometry'>, () => OutfitBackgroundConfig> = {
+  const generators: Partial<Record<BackgroundPresetId, () => OutfitBackgroundConfig>> = {
     selection_logo_image_fusion: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#020617'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.58'/><path d='M0,640 C250,560 520,730 860,620 C1030,565 1130,500 1200,440 V800 H0 Z' fill='rgba(15,23,42,0.64)'/><image href='${safeReferenceImage || ''}' x='730' y='120' width='350' height='430' preserveAspectRatio='xMidYMid meet' opacity='0.88'/><text x='90' y='690' font-size='74' font-family='Arial Black,Arial,sans-serif' fill='rgba(255,255,255,0.86)'>${brand}</text></svg>`, 'orb'),
     selection_tech_amber_energy: () => buildTechAmberEnergyConfig(context, safeReferenceImage),
     selection_metallic_sport_identity: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='metal' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='42%' stop-color='#374151'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#metal)'/><path d='M0,560 L1200,190 L1200,380 L0,760 Z' fill='rgba(148,163,184,0.24)'/><image href='${safeReferenceImage || ''}' x='100' y='120' width='420' height='420' opacity='0.22' preserveAspectRatio='xMidYMid meet'/><image href='${safeReferenceImage || ''}' x='760' y='170' width='330' height='330' opacity='0.92' preserveAspectRatio='xMidYMid meet'/><rect x='742' y='150' width='366' height='366' rx='34' fill='none' stroke='rgba(226,232,240,0.62)' stroke-width='4'/><text x='84' y='716' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>METALLIC SPORT IDENTITY</text></svg>`, 'diamond'),
@@ -1049,21 +1096,41 @@ function buildSurfaceFromRecipe(
     selection_editorial_collage: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#111827'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='620' height='800' opacity='0.66' preserveAspectRatio='xMidYMid slice'/><image href='${safeReferenceImage || ''}' x='540' y='110' width='610' height='540' opacity='0.84' preserveAspectRatio='xMidYMid slice'/><rect x='520' y='90' width='640' height='570' fill='none' stroke='rgba(248,250,252,0.32)' stroke-width='3'/><text x='560' y='706' font-size='58' fill='rgba(248,250,252,0.9)' font-family='Arial Black,Arial,sans-serif'>EDITORIAL COLLAGE</text></svg>`, 'mesh'),
     selection_soft_premium_minimal: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#e2c28c'/></svg>`, 'none'),
   };
-  return generators[recipe.presetId as keyof typeof generators]();
+  const generator = generators[recipe.presetId];
+  if (generator) return generator();
+  return buildImageSurface(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#0f172a'/><text x='80' y='700' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>${brand}</text></svg>`,
+    'none',
+  );
+}
+
+function buildRecommendedPresetConfig(
+  presetId: BackgroundPresetId,
+  context: PresetContext,
+  recipe: CompositionRecipe,
+  uploadedReferenceImage?: string | null,
+): OutfitBackgroundConfig {
+  const safeReferenceImage = uploadedReferenceImage || context.brandLogoUrl || null;
+  if (presetId === 'selection_tonal_geometry') return buildTonalGeometryPreset(context, safeReferenceImage);
+  if (presetId === 'selection_tech_amber_energy') return buildTechAmberEnergyPreset(context, safeReferenceImage);
+  if (presetId === 'selection_neon_motion_grid') return buildNeonMotionGridPreset(context, safeReferenceImage);
+  if (presetId === 'selection_luxury_fabric_monogram') return buildLuxuryFabricMonogramPreset(context, safeReferenceImage);
+  if (presetId === 'selection_editorial_logo' && safeReferenceImage) return buildEditorialLogoComposition(safeReferenceImage, context);
+  return buildSurfaceFromRecipe(recipe, context, safeReferenceImage);
 }
 
 function getRecommendedPresets(outfitMetadata?: OutfitMetadata): RecommendedPreset[] {
   const allPresets: RecommendedPreset[] = [
-    { id: 'selection_tiled_motif', category: 'pattern_surface', label: 'Selection tiled motif', description: 'Turns the uploaded logo into a repeated premium motif surface.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Selection luxury fabric monogram', description: 'Builds a refined fashion surface with repeated branded monogram texture.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || null) },
-    { id: 'selection_tonal_geometry', category: 'pattern_surface', label: 'Selection tonal geometry', description: 'Combines tonal palette extraction with subtle geometric paneling.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_editorial_logo', category: 'editorial_branding', label: 'Selection editorial logo', description: 'Uses the uploaded logo as a hero element in a clean campaign-style composition.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_editorial_collage', category: 'editorial_branding', label: 'Selection editorial collage', description: 'Fuses cropped logo and treated imagery into a depth-rich editorial card.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_soft_premium_minimal', category: 'editorial_branding', label: 'Selection soft premium minimal', description: 'Minimal, high-readability premium composition with restrained visual weight.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || null) },
-    { id: 'selection_tech_amber_energy', category: 'tech_energy', label: 'Selection tech amber energy', description: 'Fuses uploaded logo with high-energy amber/orange AI-tech visual treatment.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_neon_motion_grid', category: 'tech_energy', label: 'Selection neon motion grid', description: 'Adds diagonal neon movement, digital grid rhythm, and logo anchoring.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_metallic_sport_identity', category: 'tech_energy', label: 'Selection metallic sport identity', description: 'Applies silver/graphite highlights for premium sport-tech brand identity.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_logo_image_fusion', category: 'hybrid_fusion', label: 'Selection logo + stylized image fusion', description: 'Blends uploaded logo with stylized image composition for richer hero surfaces.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_tiled_motif', category: 'pattern_surface', label: 'Selection tiled motif', description: 'Turns the uploaded logo into a repeated premium motif surface.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_tiled_motif', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Selection luxury fabric monogram', description: 'Builds a refined fashion surface with repeated branded monogram texture.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_luxury_fabric_monogram', ctx, recipe, uploaded || null) },
+    { id: 'selection_tonal_geometry', category: 'pattern_surface', label: 'Selection tonal geometry', description: 'Combines tonal palette extraction with subtle geometric paneling.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_tonal_geometry', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_editorial_logo', category: 'editorial_branding', label: 'Selection editorial logo', description: 'Uses the uploaded logo as a hero element in a clean campaign-style composition.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_editorial_logo', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_editorial_collage', category: 'editorial_branding', label: 'Selection editorial collage', description: 'Fuses cropped logo and treated imagery into a depth-rich editorial card.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_editorial_collage', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_soft_premium_minimal', category: 'editorial_branding', label: 'Selection soft premium minimal', description: 'Minimal, high-readability premium composition with restrained visual weight.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_soft_premium_minimal', ctx, recipe, uploaded || null) },
+    { id: 'selection_tech_amber_energy', category: 'tech_energy', label: 'Selection tech amber energy', description: 'Fuses uploaded logo with high-energy amber/orange AI-tech visual treatment.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_tech_amber_energy', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_neon_motion_grid', category: 'tech_energy', label: 'Selection neon motion grid', description: 'Adds diagonal neon movement, digital grid rhythm, and logo anchoring.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_neon_motion_grid', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_metallic_sport_identity', category: 'tech_energy', label: 'Selection metallic sport identity', description: 'Applies silver/graphite highlights for premium sport-tech brand identity.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_metallic_sport_identity', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_logo_image_fusion', category: 'hybrid_fusion', label: 'Selection logo + stylized image fusion', description: 'Blends uploaded logo with stylized image composition for richer hero surfaces.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_logo_image_fusion', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
   ];
   const isTechSportDirection = [outfitMetadata?.style, outfitMetadata?.occasion, outfitMetadata?.mood, outfitMetadata?.title]
     .filter(Boolean)
@@ -1232,7 +1299,20 @@ export default function OutfitBackgroundStudioModal({
     if (detectLogoLikeSubject(uploadedReferenceImage)) {
       recipe = { ...recipe, logoWeight: Math.min(1, recipe.logoWeight + 0.08) };
     }
-    let config = preset.recipe(context, recipe, uploadedReferenceImage);
+    let config: OutfitBackgroundConfig;
+    if (presetId === 'selection_tonal_geometry') {
+      config = buildTonalGeometryPreset(context, uploadedReferenceImage || context.brandLogoUrl || FLOWER_PICKER_IMAGE);
+    } else if (presetId === 'selection_tech_amber_energy') {
+      config = buildTechAmberEnergyPreset(context, uploadedReferenceImage || context.brandLogoUrl || FLOWER_PICKER_IMAGE);
+    } else if (presetId === 'selection_neon_motion_grid') {
+      config = buildNeonMotionGridPreset(context, uploadedReferenceImage || context.brandLogoUrl || FLOWER_PICKER_IMAGE);
+    } else if (presetId === 'selection_luxury_fabric_monogram') {
+      config = buildLuxuryFabricMonogramPreset(context, uploadedReferenceImage || context.brandLogoUrl || null);
+    } else if (presetId === 'selection_editorial_logo' && (uploadedReferenceImage || context.brandLogoUrl)) {
+      config = buildEditorialLogoComposition(uploadedReferenceImage || context.brandLogoUrl || FLOWER_PICKER_IMAGE, context);
+    } else {
+      config = buildRecommendedPresetConfig(presetId, context, recipe, uploadedReferenceImage);
+    }
     if (presetId === 'selection_tiled_motif' && uploadedReferenceImage) {
       try {
         config = await buildTiledMotifFromReferenceImage(uploadedReferenceImage, context, draft.gradient);
@@ -1892,7 +1972,12 @@ export default function OutfitBackgroundStudioModal({
                     referenceIntent: analyzeReferenceIntent(uploadedReferenceImage),
                     gradient: draft.gradient,
                   });
-                  const previewConfig = preset.recipe(presetContext, previewRecipe, uploadedReferenceImage);
+                  const previewConfig = buildRecommendedPresetConfig(
+                    preset.id,
+                    presetContext,
+                    previewRecipe,
+                    uploadedReferenceImage,
+                  );
                   return (
                     <button
                       key={preset.id}
