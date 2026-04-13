@@ -5,7 +5,7 @@ import time
 from typing import Any
 from urllib.parse import urlparse
 
-import httpx
+import requests
 from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -98,9 +98,19 @@ def root() -> dict[str, str]:
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    worker_reachable = False
+    if RUNNING_AS_ORCHESTRATOR and GPU_WORKER_URL:
+        try:
+            response = requests.get(f"{GPU_WORKER_URL}/ping", timeout=5)
+            worker_reachable = response.status_code == 200
+        except requests.exceptions.RequestException:
+            worker_reachable = False
+
     return {
         "status": "ok",
-        "workerBaseUrl": GPU_WORKER_URL,
+        "mode": "orchestrator" if RUNNING_AS_ORCHESTRATOR else "worker",
+        "worker_url": GPU_WORKER_URL,
+        "worker_reachable": worker_reachable,
         "requestTimeoutMs": REQUEST_TIMEOUT_MS,
     }
 
@@ -116,15 +126,14 @@ def validate_worker():
         return
 
     try:
-        with httpx.Client(timeout=5) as client:
-            res = client.get(f"{GPU_WORKER_URL}/ping")
-            print("[startup] worker ping:", res.status_code)
+        res = requests.get(f"{GPU_WORKER_URL}/ping", timeout=5)
+        print("[startup] worker ping:", res.status_code)
     except Exception as exc:
         print("[startup] WARNING: worker not reachable:", str(exc))
 
 
 def _worker_headers() -> dict[str, str]:
-    headers = {"Content-Type": "application/json"}
+    headers: dict[str, str] = {}
     if GPU_WORKER_TOKEN:
         headers["Authorization"] = f"Bearer {GPU_WORKER_TOKEN}"
     return headers
@@ -139,25 +148,6 @@ def _require_orchestrator_mode() -> None:
                 "message": "GPU_WORKER_URL is not configured; orchestrator endpoints are unavailable in worker mode.",
             },
         )
-
-
-def _post_with_retry(
-    client: httpx.Client,
-    url: str,
-    json: dict[str, Any],
-    headers: dict[str, str],
-    retries: int = 3,
-) -> httpx.Response:
-    last_exc: Exception | None = None
-    for i in range(retries):
-        try:
-            return client.post(url, json=json, headers=headers)
-        except Exception as exc:
-            last_exc = exc
-            time.sleep(1.5 * (i + 1))
-    if last_exc is None:
-        raise RuntimeError("Failed to submit request and no exception was captured.")
-    raise last_exc
 
 
 def _normalize_status_payload(job_id: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -192,35 +182,31 @@ def submit(payload: JobRequest, authorization: str | None = Header(default=None)
         raise HTTPException(status_code=400, detail={"code": "VALIDATION_ERROR", "message": "imageUrl is required."})
 
     started = time.perf_counter()
-    try:
-        print(f"[orchestrator] forwarding request to worker: {GPU_WORKER_URL}/jobs")
-        with httpx.Client(timeout=REQUEST_TIMEOUT_MS / 1000) as client:
-            response = _post_with_retry(
-                client=client,
-                url=f"{GPU_WORKER_URL}/jobs",
-                json=payload.model_dump(),
-                headers=_worker_headers(),
-            )
-    except Exception as exc:
-        print(f"[orchestrator] worker request failed: {str(exc)}")
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "WORKER_UNREACHABLE",
-                "message": "Failed to reach GPU worker",
-                "workerUrl": GPU_WORKER_URL,
-                "error": str(exc),
-            },
-        ) from exc
+    if not GPU_WORKER_TOKEN:
+        raise HTTPException(status_code=500, detail="GPU_WORKER_TOKEN is required")
 
-    if response.status_code >= 400:
+    print(f"[ORCHESTRATOR] sending job to {GPU_WORKER_URL}")
+    try:
+        response = requests.post(
+            f"{GPU_WORKER_URL}/jobs",
+            json=payload.model_dump(),
+            headers=_worker_headers(),
+            timeout=15,
+        )
+    except requests.exceptions.Timeout as exc:
+        raise HTTPException(status_code=504, detail="Worker timeout") from exc
+    except requests.exceptions.ConnectionError as exc:
+        raise HTTPException(status_code=502, detail="Worker unreachable") from exc
+    except requests.exceptions.RequestException as exc:
+        raise HTTPException(status_code=502, detail={"message": "Worker request error", "error": str(exc)}) from exc
+
+    if response.status_code != 200:
         raise HTTPException(
-            status_code=502,
+            status_code=response.status_code,
             detail={
-                "code": "WORKER_SUBMIT_FAILED",
-                "message": "GPU worker rejected submit request.",
-                "workerStatus": response.status_code,
-                "workerBody": response.text[:1200],
+                "message": "Worker error",
+                "worker_status": response.status_code,
+                "worker_body": response.text[:1200],
             },
         )
 
@@ -243,24 +229,27 @@ def submit_lb(payload: LbSubmitRequest) -> dict[str, str]:
 @app.get("/status/{job_id}")
 def status(job_id: str) -> dict[str, Any]:
     _require_orchestrator_mode()
+    if not GPU_WORKER_TOKEN:
+        raise HTTPException(status_code=500, detail="GPU_WORKER_TOKEN is required")
+
     try:
-        with httpx.Client(timeout=REQUEST_TIMEOUT_MS / 1000) as client:
-            response = client.get(f"{GPU_WORKER_URL}/jobs/{job_id}", headers=_worker_headers())
-    except Exception as exc:
-        raise HTTPException(
-            status_code=503,
-            detail={"code": "WORKER_UNREACHABLE", "message": f"Unable to reach GPU worker: {exc}"},
-        ) from exc
+        response = requests.get(f"{GPU_WORKER_URL}/jobs/{job_id}", headers=_worker_headers(), timeout=15)
+    except requests.exceptions.Timeout as exc:
+        raise HTTPException(status_code=504, detail="Worker timeout") from exc
+    except requests.exceptions.ConnectionError as exc:
+        raise HTTPException(status_code=502, detail="Worker unreachable") from exc
+    except requests.exceptions.RequestException as exc:
+        raise HTTPException(status_code=502, detail={"message": "Worker request error", "error": str(exc)}) from exc
 
     if response.status_code == 404:
         raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": "Job not found."})
     if response.status_code >= 400:
         raise HTTPException(
-            status_code=502,
+            status_code=response.status_code,
             detail={
-                "code": "WORKER_STATUS_FAILED",
-                "message": "GPU worker status request failed.",
-                "workerStatus": response.status_code,
+                "message": "Worker error",
+                "worker_status": response.status_code,
+                "worker_body": response.text[:1200],
             },
         )
 
@@ -292,11 +281,10 @@ def diagnostics() -> dict[str, Any]:
         return diagnostics_payload
 
     try:
-        with httpx.Client(timeout=REQUEST_TIMEOUT_MS / 1000) as client:
-            response = client.get(f"{GPU_WORKER_URL}/health", headers=_worker_headers())
-            diagnostics_payload["workerHealthStatus"] = response.status_code
-            diagnostics_payload["workerHealthBody"] = response.json() if response.headers.get("content-type", "").startswith("application/json") else response.text[:300]
-    except Exception as exc:
+        response = requests.get(f"{GPU_WORKER_URL}/health", headers=_worker_headers(), timeout=15)
+        diagnostics_payload["workerHealthStatus"] = response.status_code
+        diagnostics_payload["workerHealthBody"] = response.json() if str(response.headers.get("content-type", "")).startswith("application/json") else response.text[:300]
+    except requests.exceptions.RequestException as exc:
         diagnostics_payload["workerHealthStatus"] = None
         diagnostics_payload["workerHealthError"] = str(exc)
 
