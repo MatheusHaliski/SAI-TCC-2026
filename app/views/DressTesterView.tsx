@@ -11,6 +11,7 @@ import { Tester2DRenderService } from '@/app/lib/fashion-ai/services/Tester2DRen
 import { MannequinProfile } from '@/app/lib/fashion-ai/types/mannequin';
 import { WardrobeFitProfile } from '@/app/lib/fashion-ai/types/wardrobe-fit';
 import { isPieceCompatibleWithMannequin } from '@/app/lib/fashion-ai/utils/garment-compatibility';
+import { getDevSessionToken } from '@/app/lib/devSession';
 
 interface BootstrapPayload {
   mannequins: MannequinProfile[];
@@ -31,7 +32,8 @@ export default function DressTesterView() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [backfillRunning, setBackfillRunning] = useState(false);
   const [backfillSummary, setBackfillSummary] = useState<string | null>(null);
-  const isDevToolsEnabled = process.env.NODE_ENV !== 'production';
+  const [hasDevSession] = useState(() => Boolean(getDevSessionToken()));
+  const isDevToolsEnabled = process.env.NODE_ENV !== 'production' || hasDevSession;
 
   const mannequin = useMemo(
     () => mannequins.find((item) => item.id === selectedMannequin) ?? mannequins[0],
@@ -222,7 +224,7 @@ export default function DressTesterView() {
         </SectionBlock>
 
         <SectionBlock title="Wardrobe 2D Library" subtitle="Prepared pipeline status and mannequin-compatible fitting">
-          <Tester2DWardrobePanel items={pieces} onApply={applyPiece} onProcessNow={processPieceNow} />
+          <Tester2DWardrobePanel items={pieces} onApply={applyPiece} onProcessNow={processPieceNow} showProcessingActions={isDevToolsEnabled} />
         </SectionBlock>
       </div>
     </div>
