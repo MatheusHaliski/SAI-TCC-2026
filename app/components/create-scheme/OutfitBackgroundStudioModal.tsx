@@ -1119,21 +1119,6 @@ function buildRecommendedPresetConfig(
   return buildSurfaceFromRecipe(recipe, context, safeReferenceImage);
 }
 
-function buildRecommendedPresetConfig(
-  presetId: BackgroundPresetId,
-  context: PresetContext,
-  recipe: CompositionRecipe,
-  uploadedReferenceImage?: string | null,
-): OutfitBackgroundConfig {
-  const safeReferenceImage = uploadedReferenceImage || context.brandLogoUrl || null;
-  if (presetId === 'selection_tonal_geometry') return buildTonalGeometryPreset(context, safeReferenceImage);
-  if (presetId === 'selection_tech_amber_energy') return buildTechAmberEnergyPreset(context, safeReferenceImage);
-  if (presetId === 'selection_neon_motion_grid') return buildNeonMotionGridPreset(context, safeReferenceImage);
-  if (presetId === 'selection_luxury_fabric_monogram') return buildLuxuryFabricMonogramPreset(context, safeReferenceImage);
-  if (presetId === 'selection_editorial_logo' && safeReferenceImage) return buildEditorialLogoComposition(safeReferenceImage, context);
-  return buildSurfaceFromRecipe(recipe, context, safeReferenceImage);
-}
-
 function getRecommendedPresets(outfitMetadata?: OutfitMetadata): RecommendedPreset[] {
   const allPresets: RecommendedPreset[] = [
     { id: 'selection_tiled_motif', category: 'pattern_surface', label: 'Selection tiled motif', description: 'Turns the uploaded logo into a repeated premium motif surface.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_tiled_motif', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
