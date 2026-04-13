@@ -29,6 +29,9 @@ export default function DressTesterView() {
   const [zoom, setZoom] = useState(1);
   const [showDebug, setShowDebug] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [backfillRunning, setBackfillRunning] = useState(false);
+  const [backfillSummary, setBackfillSummary] = useState<string | null>(null);
+  const isDevToolsEnabled = process.env.NODE_ENV !== 'production';
 
   const mannequin = useMemo(
     () => mannequins.find((item) => item.id === selectedMannequin) ?? mannequins[0],
@@ -147,6 +150,26 @@ export default function DressTesterView() {
     await refreshData();
   };
 
+  const processMissingPieces = async () => {
+    setBackfillRunning(true);
+    setBackfillSummary(null);
+    console.info('[dress-tester] process-missing:start');
+    const response = await fetch('/api/wardrobe/process-missing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ limit: 50, dryRun: false, onlyMissing: false }),
+    });
+    const payload = await response.json().catch(() => null);
+    console.info('[dress-tester] process-missing:done', { status: response.status, payload });
+    setBackfillRunning(false);
+    if (!response.ok || !payload?.ok) {
+      setBackfillSummary('Process Missing Pieces failed. Check console logs for details.');
+      return;
+    }
+    setBackfillSummary(`Processed ${payload.processed} · failed ${payload.failed} · matched ${payload.matched}.`);
+    await refreshData();
+  };
+
   if (loading) return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Loading Tester 2D...</div>;
   if (!mannequin) return <div className="p-6 text-sm text-white/70">No mannequin profiles found.</div>;
 
@@ -176,6 +199,19 @@ export default function DressTesterView() {
             showDebug={showDebug}
             onToggleDebug={() => setShowDebug((prev) => !prev)}
           />
+          {isDevToolsEnabled ? (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-amber-300/60 bg-amber-400/20 px-3 py-2 text-xs font-semibold text-amber-50 disabled:opacity-60"
+                onClick={() => void processMissingPieces()}
+                disabled={backfillRunning}
+              >
+                {backfillRunning ? 'Processing Missing Pieces...' : 'Process Missing Pieces'}
+              </button>
+              {backfillSummary ? <p className="text-xs text-amber-100">{backfillSummary}</p> : null}
+            </div>
+          ) : null}
           {message ? <p className="text-xs text-white/70">{message}</p> : null}
         </div>
       </SectionBlock>
