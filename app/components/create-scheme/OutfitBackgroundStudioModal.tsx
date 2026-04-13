@@ -26,6 +26,7 @@ import { applyArtworkToOutfitCard } from '@/app/lib/artwork-studio';
 import FancySelect from '@/app/components/ui/fancy-select';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
+type GeometryFamily = 'arrows' | 'waves' | 'diamond' | 'mesh' | 'circles' | 'triangles' | 'stars' | 'flowers' | 'beams' | 'panels' | 'mixed';
 type BackgroundPresetId =
   | 'selection_tiled_motif'
   | 'selection_editorial_logo'
@@ -185,6 +186,7 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 )}`;
 const LUXURY_MONOGRAM_BACKGROUND_IMAGE = `/${encodeURIComponent('Firefly_Flux_Consegue adicionar quebras de linha tech ao gradiente (adicionar ranhuras) 3787887.jpg')}`;
 const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
+const NEON_MOTION_GRID_IMAGE = '/neongrid.png';
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
   'none',
   'orb',
@@ -200,10 +202,21 @@ const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>>
 ];
 
 const STYLE_PRESETS: ArtworkStylePreset[] = ['editorial_fashion', 'luxury_minimal', 'futuristic_sport', 'streetwear', 'monochrome_premium'];
+const STYLE_PRESET_DESCRIPTIONS: Record<ArtworkStylePreset, string> = {
+  editorial_fashion: 'Creates a campaign/editorial fashion composition',
+  luxury_minimal: 'Keeps the card elegant, minimal, and premium',
+  futuristic_sport: 'Adds motion, tech energy, and performance-driven styling',
+  streetwear: 'Creates a bolder, layered, urban visual direction',
+  monochrome_premium: 'Focuses on restrained luxury with a controlled tonal palette',
+};
 const PALETTE_MODES: ArtworkPaletteMode[] = ['monochrome', 'cool_luxury', 'warm_neutral', 'custom'];
-const SHAPE_LANGUAGES: ArtworkShapeLanguage[] = ['diamond', 'orb', 'mesh', 'panels', 'mixed'];
 const COMPOSITION_TYPES: Array<ArtworkStudioInput['compositionType']> = ['background', 'shape_pack', 'overlay', 'frame'];
 const CONTRAST_LEVELS: ArtworkContrastLevel[] = ['low', 'medium', 'high'];
+const CONTRAST_LEVEL_DESCRIPTIONS: Record<ArtworkContrastLevel, string> = {
+  low: 'Soft contrast with subtle transitions',
+  medium: 'Balanced contrast for readability and depth',
+  high: 'Strong contrast with bold highlights and separation',
+};
 const COLOR_INTENTS: Array<{ value: ArtworkColorIntent; label: string }> = [
   { value: 'prompt_driven', label: 'Prompt driven' },
   { value: 'cool_blue', label: 'Cool blue' },
@@ -217,6 +230,89 @@ const AI_GENERATION_MODES: Array<{ value: BackgroundGenerationMode; label: strin
   { value: 'hybrid', label: 'Hybrid' },
   { value: 'text_prompt_pure', label: 'Text Prompt (Pure AI Mode)' },
 ];
+const AI_GENERATION_MODE_DESCRIPTIONS: Record<BackgroundGenerationMode, string> = {
+  preset_assisted: 'Uses preset logic with AI refinement',
+  hybrid: 'Combines preset structure with prompt-driven composition',
+  text_prompt_pure: 'Uses the written prompt as the main creative driver',
+};
+const GEOMETRY_DESCRIPTION_MAP: Record<GeometryFamily, string> = {
+  arrows: 'Directional motifs and chevrons with motion guidance',
+  waves: 'Flowing curved bands with elegant rhythm',
+  diamond: 'Rhombus-based premium angular patterning',
+  mesh: 'Tech lattice or woven net-like geometry',
+  circles: 'Orbital circular nodes and ring accents',
+  triangles: 'Angular triangular tessellation',
+  stars: 'Premium star motifs and constellation accents',
+  flowers: 'Decorative floral and petal-based patterning',
+  beams: 'Linear streaks and luminous directional bars',
+  panels: 'Segmented editorial framing blocks',
+  mixed: 'Curated multi-geometry composition',
+};
+const GEOMETRY_PROMPT_MAP: Record<GeometryFamily, string> = {
+  arrows: 'directional arrows, chevrons, premium sport vector flows, editorial guidance markers',
+  waves: 'flowing wave bands, elegant ripple contours, current-like motion lines, layered drapery curves',
+  diamond: 'diamond grid, rhombus tessellation, angular luxury pattern blocks',
+  mesh: 'tech mesh, woven lattice, net-like geometric structure, performance fabric geometry',
+  circles: 'circular nodes, ring clusters, orbital round accents',
+  triangles: 'triangular tiling, angular shards, structured tessellation',
+  stars: 'star field accents, luxury constellation geometry, refined celestial motifs',
+  flowers: 'floral tile repetition, petal motifs, decorative bloom patterning',
+  beams: 'light beams, luminous streak bars, directional editorial bars',
+  panels: 'segmented editorial panels, magazine-like rectangular framing',
+  mixed: 'controlled combination of two or three compatible geometry systems with premium spacing',
+};
+const GEOMETRY_NEGATIVE_PROMPT_MAP: Record<GeometryFamily, string> = {
+  arrows: 'avoid wave bands, floral curves, soft ripple lines',
+  waves: 'avoid arrowheads, rigid chevrons, diamond tiling',
+  diamond: 'avoid soft waves, floral petals, random circular blobs',
+  mesh: 'avoid floral petals, soft ribbons, starbursts',
+  circles: 'avoid chevrons, rigid triangles, diamond tiling',
+  triangles: 'avoid rounded ripple bands, floral motifs, circle clusters',
+  stars: 'avoid heavy mesh nets, floral petals, rigid chevrons',
+  flowers: 'avoid arrows, hard-edged chevrons, rigid grid shards',
+  beams: 'avoid floral motifs, wave drapery lines, circular bubble clusters',
+  panels: 'avoid organic wave ribbons, floral petals, random star clutter',
+  mixed: 'avoid random clutter and incompatible geometry stacking',
+};
+const GEOMETRY_VARIATION_MAP: Record<GeometryFamily, string[]> = {
+  arrows: ['layered sport arrows', 'angular chevrons', 'editorial directional markers', 'premium velocity vectors'],
+  waves: ['soft luxury wave bands', 'rippling contour lines', 'ocean-current fashion curves', 'layered motion drapery lines'],
+  diamond: ['monogram-like rhombus pattern', 'luxury diamond tessellation', 'subtle beveled diamond grid', 'sharp editorial diamond structure'],
+  mesh: ['metallic mesh', 'woven performance mesh', 'luminous tech lattice', 'sport net geometry'],
+  circles: ['orbital ring stacks', 'premium node halos', 'circular pulse clusters', 'editorial radial circles'],
+  triangles: ['triangular panel shards', 'premium tessellated facets', 'angular sport triangles', 'structured pyramid tiling'],
+  stars: ['constellation clusters', 'premium star trails', 'subtle luxury star accents', 'editorial celestial dots'],
+  flowers: ['petal tile repeat', 'fashion bloom surface', 'ornamental floral geometry', 'soft decorative petals'],
+  beams: ['diagonal light streaks', 'vertical luminous bars', 'editorial beam framing', 'premium glow beams'],
+  panels: ['offset editorial blocks', 'magazine segmentation', 'rectangular framing grids', 'modular premium panels'],
+  mixed: ['diamond + beams', 'mesh + circles', 'panels + arrows'],
+};
+const GEOMETRY_TO_SHAPE_LANGUAGE: Record<GeometryFamily, ArtworkShapeLanguage> = {
+  arrows: 'panels',
+  waves: 'orb',
+  diamond: 'diamond',
+  mesh: 'mesh',
+  circles: 'orb',
+  triangles: 'diamond',
+  stars: 'mixed',
+  flowers: 'mixed',
+  beams: 'panels',
+  panels: 'panels',
+  mixed: 'mixed',
+};
+const GEOMETRY_TO_BACKGROUND_SHAPE: Record<GeometryFamily, NonNullable<OutfitBackgroundConfig['shape']>> = {
+  arrows: 'arrows',
+  waves: 'waves',
+  diamond: 'diamond',
+  mesh: 'mesh',
+  circles: 'circles',
+  triangles: 'triangles',
+  stars: 'stars',
+  flowers: 'flowers',
+  beams: 'beams',
+  panels: 'none',
+  mixed: 'none',
+};
 
 const DEFAULT_BACKGROUND: OutfitBackgroundConfig = {
   background_mode: 'gradient',
@@ -244,6 +340,61 @@ function getRelativeLuminance(hexColor: string) {
   });
 
   return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+}
+
+function detectGeometryFromPrompt(prompt: string): GeometryFamily | null {
+  const normalized = prompt.toLowerCase();
+  const entries: Array<{ geometry: GeometryFamily; aliases: string[] }> = [
+    { geometry: 'arrows', aliases: ['arrow', 'arrows', 'chevron', 'chevrons'] },
+    { geometry: 'waves', aliases: ['wave', 'waves', 'ripple', 'ripples'] },
+    { geometry: 'diamond', aliases: ['diamond', 'rhombus', 'rhombus'] },
+    { geometry: 'mesh', aliases: ['mesh', 'lattice', 'net'] },
+    { geometry: 'circles', aliases: ['circle', 'circles', 'orbital', 'ring'] },
+    { geometry: 'triangles', aliases: ['triangle', 'triangles'] },
+    { geometry: 'stars', aliases: ['star', 'stars', 'constellation'] },
+    { geometry: 'flowers', aliases: ['flower', 'flowers', 'petal', 'floral'] },
+    { geometry: 'beams', aliases: ['beam', 'beams', 'streak', 'streaks'] },
+    { geometry: 'panels', aliases: ['panel', 'panels', 'editorial block', 'segmented'] },
+    { geometry: 'mixed', aliases: ['mixed', 'hybrid geometry'] },
+  ];
+  const match = entries.find((entry) => entry.aliases.some((alias) => normalized.includes(alias)));
+  return match?.geometry || null;
+}
+
+function buildGeometryPreviewSvg(geometry: GeometryFamily, baseColor: string) {
+  const base = `<rect width='1200' height='800' fill='#0b1120'/><rect width='1200' height='800' fill='${baseColor}' opacity='0.22'/>`;
+  const geometryMarkup: Record<GeometryFamily, string> = {
+    arrows: Array.from({ length: 8 }).map((_, i) => `<path d='M${70 + i * 140},90 L${190 + i * 140},200 L${70 + i * 140},310' stroke='rgba(248,250,252,0.48)' stroke-width='20' fill='none'/>`).join(''),
+    waves: Array.from({ length: 7 }).map((_, i) => `<path d='M-40,${120 + i * 92} C180,${80 + i * 92} 360,${170 + i * 92} 560,${132 + i * 92} C760,${95 + i * 92} 950,${186 + i * 92} 1240,${142 + i * 92}' stroke='rgba(226,232,240,0.45)' stroke-width='12' fill='none'/>`).join(''),
+    diamond: Array.from({ length: 6 }).map((_, row) => Array.from({ length: 9 }).map((__, col) => `<path d='M${65 + col * 132},${86 + row * 118} L${118 + col * 132},${142 + row * 118} L${65 + col * 132},${198 + row * 118} L${12 + col * 132},${142 + row * 118} Z' fill='rgba(226,232,240,0.24)'/>`).join('')).join(''),
+    mesh: Array.from({ length: 18 }).map((_, i) => `<line x1='${i * 70}' y1='0' x2='${i * 70 + 200}' y2='800' stroke='rgba(148,163,184,0.3)'/>`).join('') + Array.from({ length: 10 }).map((_, i) => `<line x1='0' y1='${i * 90}' x2='1200' y2='${i * 90 + 90}' stroke='rgba(226,232,240,0.24)'/>`).join(''),
+    circles: Array.from({ length: 18 }).map((_, i) => `<circle cx='${80 + (i % 6) * 200}' cy='${90 + Math.floor(i / 6) * 220}' r='${32 + (i % 3) * 14}' fill='none' stroke='rgba(226,232,240,0.45)' stroke-width='5'/>`).join(''),
+    triangles: Array.from({ length: 7 }).map((_, row) => Array.from({ length: 10 }).map((__, col) => `<path d='M${30 + col * 120},${190 + row * 90} L${90 + col * 120},${70 + row * 90} L${150 + col * 120},${190 + row * 90} Z' fill='rgba(203,213,225,0.3)'/>`).join('')).join(''),
+    stars: Array.from({ length: 24 }).map((_, i) => `<path d='M${95 + (i % 8) * 140},${80 + Math.floor(i / 8) * 220} l14,38 h38 l-30,22 10,40 -32,-24 -32,24 10,-40 -30,-22 h38 Z' fill='rgba(248,250,252,0.38)'/>`).join(''),
+    flowers: Array.from({ length: 12 }).map((_, i) => `<g transform='translate(${80 + (i % 4) * 280} ${96 + Math.floor(i / 4) * 220})'><circle cx='50' cy='52' r='14' fill='rgba(253,230,138,0.8)'/><ellipse cx='50' cy='24' rx='14' ry='24' fill='rgba(244,114,182,0.48)'/><ellipse cx='78' cy='52' rx='14' ry='24' fill='rgba(244,114,182,0.48)' transform='rotate(90 78 52)'/><ellipse cx='50' cy='80' rx='14' ry='24' fill='rgba(244,114,182,0.48)'/><ellipse cx='22' cy='52' rx='14' ry='24' fill='rgba(244,114,182,0.48)' transform='rotate(90 22 52)'/></g>`).join(''),
+    beams: Array.from({ length: 12 }).map((_, i) => `<rect x='${i * 110}' y='0' width='24' height='800' fill='rgba(56,189,248,0.25)' transform='rotate(11 ${i * 110} 0)'/>`).join(''),
+    panels: Array.from({ length: 8 }).map((_, i) => `<rect x='${40 + (i % 4) * 280}' y='${70 + Math.floor(i / 4) * 330}' width='240' height='300' rx='24' fill='rgba(226,232,240,0.2)' stroke='rgba(226,232,240,0.42)'/>`).join(''),
+    mixed: `<g opacity='0.72'>${Array.from({ length: 8 }).map((_, i) => `<line x1='${i * 150}' y1='0' x2='${i * 150 + 150}' y2='800' stroke='rgba(56,189,248,0.22)'/>`).join('')}${Array.from({ length: 8 }).map((_, i) => `<circle cx='${120 + i * 130}' cy='${220 + ((i % 3) * 120)}' r='26' stroke='rgba(248,250,252,0.42)' fill='none'/>`).join('')}</g>`,
+  };
+  return asDataUri(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>${base}${geometryMarkup[geometry]}<rect width='1200' height='800' fill='rgba(2,6,23,0.2)'/></svg>`);
+}
+
+function buildGeometryPreviewConfig(geometry: GeometryFamily, heroColor: string): OutfitBackgroundConfig {
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: `${geometry} deterministic preview`,
+      image_url: buildGeometryPreviewSvg(geometry, heroColor),
+      generation_status: 'done',
+    },
+    gradient: {
+      type: 'linear',
+      angle: 130,
+      intensity: 100,
+      stops: [{ color: '#0f172a', position: 0 }, { color: heroColor, position: 100 }],
+    },
+    shape: GEOMETRY_TO_BACKGROUND_SHAPE[geometry],
+  };
 }
 
 type RepeatedImagePatternOptions = {
@@ -658,6 +809,135 @@ function buildCompositionRecipe(input: {
   return recipeByPreset[input.presetId];
 }
 
+function buildTonalGeometryConfig(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
+  const tonalReferenceImage = referenceImage || context.brandLogoUrl || null;
+  const composedTonalGeometry = tonalReferenceImage
+    ? asDataUri(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+          <rect width='1200' height='800' fill='#0f172a'/>
+          <image href='${TONAL_GEOMETRY_BACKGROUND_IMAGE}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice'/>
+          <rect width='1200' height='800' fill='rgba(15,23,42,0.28)'/>
+          <g transform='translate(710 128)'>
+            <rect x='0' y='0' width='368' height='508' rx='38' fill='rgba(15,23,42,0.42)'/>
+            <rect x='16' y='16' width='336' height='476' rx='28' fill='rgba(226,232,240,0.08)'/>
+            <image href='${tonalReferenceImage}' x='28' y='32' width='312' height='438' preserveAspectRatio='xMidYMid slice' opacity='0.9'/>
+          </g>
+          <path d='M0,540 C240,500 430,630 680,578 C850,542 980,462 1200,384 V800 H0 Z' fill='rgba(15,23,42,0.28)'/>
+        </svg>`,
+      )
+    : TONAL_GEOMETRY_BACKGROUND_IMAGE;
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: `${context.brandName} selection tonal geometry premium surface`,
+      image_url: composedTonalGeometry,
+      generation_status: 'done',
+    },
+    gradient: {
+      type: 'linear',
+      angle: 130,
+      intensity: 102,
+      stops: [
+        { color: '#1e293b', position: 0 },
+        { color: '#334155', position: 52 },
+        { color: '#64748b', position: 100 },
+      ],
+    },
+    shape: 'none',
+    studioStyleConfig: {
+      presetId: 'selection_tonal_geometry',
+      family: 'geometry',
+      styleMode: 'tonal_geometry_image_base',
+      material: 'tonal_panel',
+      paletteMode: 'cool_luxury',
+      referenceImageUrl: tonalReferenceImage,
+      metadata: {
+        backgroundImageSrc: TONAL_GEOMETRY_BACKGROUND_IMAGE,
+        composedWithReferenceImage: Boolean(tonalReferenceImage),
+      },
+    },
+  };
+}
+
+function buildTechAmberEnergyConfig(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
+  const safeReferenceImage = referenceImage || context.brandLogoUrl || '';
+  const amberSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    <defs>
+      <linearGradient id='amberPremium' x1='4%' y1='8%' x2='96%' y2='92%'>
+        <stop offset='0%' stop-color='#2b1606'/>
+        <stop offset='35%' stop-color='#8a4b0f'/>
+        <stop offset='68%' stop-color='#f59e0b'/>
+        <stop offset='100%' stop-color='#fde68a'/>
+      </linearGradient>
+      <filter id='amberGlow'>
+        <feGaussianBlur stdDeviation='8'/>
+      </filter>
+    </defs>
+    <rect width='1200' height='800' fill='url(#amberPremium)'/>
+    <rect width='1200' height='800' fill='rgba(17,24,39,0.24)'/>
+    <g stroke='rgba(253,230,138,0.34)' stroke-width='1.8'>
+      ${Array.from({ length: 12 }).map((_, i) => `<line x1='${i * 115}' y1='-20' x2='${i * 115 + 240}' y2='820'/>`).join('')}
+    </g>
+    <circle cx='340' cy='260' r='188' fill='rgba(251,191,36,0.36)' filter='url(#amberGlow)'/>
+    ${safeReferenceImage ? `<image href='${safeReferenceImage}' x='760' y='132' width='308' height='436' opacity='0.92' preserveAspectRatio='xMidYMid slice'/>` : ''}
+    ${safeReferenceImage ? `<rect x='736' y='108' width='356' height='486' rx='36' fill='none' stroke='rgba(254,243,199,0.62)' stroke-width='3'/>` : ''}
+    <text x='82' y='712' font-size='54' fill='rgba(17,24,39,0.74)' font-family='Arial Black,Arial,sans-serif'>${escapeSvgAttribute(context.brandName)} · TECH AMBER ENERGY</text>
+  </svg>`;
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: `${context.brandName} amber energy premium tech treatment`,
+      image_url: asDataUri(amberSvg),
+      generation_status: 'done',
+    },
+    gradient: {
+      type: 'linear',
+      angle: 128,
+      intensity: 108,
+      stops: [
+        { color: '#2b1606', position: 0 },
+        { color: '#8a4b0f', position: 40 },
+        { color: '#f59e0b', position: 76 },
+        { color: '#fde68a', position: 100 },
+      ],
+    },
+    shape: 'none',
+  };
+}
+
+function buildNeonMotionGridConfig(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
+  const safeReferenceImage = referenceImage || context.brandLogoUrl || '';
+  const composedNeonGrid = asDataUri(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <rect width='1200' height='800' fill='#020617'/>
+      <image href='${NEON_MOTION_GRID_IMAGE}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice'/>
+      <rect width='1200' height='800' fill='rgba(15,23,42,0.22)'/>
+      <path d='M0,620 C220,540 460,690 760,598 C930,546 1090,458 1200,396 V800 H0 Z' fill='rgba(2,6,23,0.36)'/>
+      ${safeReferenceImage ? `<image href='${safeReferenceImage}' x='760' y='140' width='316' height='420' preserveAspectRatio='xMidYMid slice' opacity='0.9'/>` : ''}
+      ${safeReferenceImage ? `<rect x='738' y='116' width='360' height='466' rx='36' fill='none' stroke='rgba(56,189,248,0.5)' stroke-width='2.5'/>` : ''}
+    </svg>`,
+  );
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: `${context.brandName} neon motion grid premium tech rhythm`,
+      image_url: composedNeonGrid,
+      generation_status: 'done',
+    },
+    gradient: {
+      type: 'linear',
+      angle: 132,
+      intensity: 100,
+      stops: [
+        { color: '#020617', position: 0 },
+        { color: '#0f172a', position: 58 },
+        { color: '#1d4ed8', position: 100 },
+      ],
+    },
+    shape: 'none',
+  };
+}
+
 function buildSurfaceFromRecipe(
   recipe: CompositionRecipe,
   context: PresetContext,
@@ -685,36 +965,7 @@ function buildSurfaceFromRecipe(
   if (recipe.presetId === 'selection_tiled_motif' && safeReferenceImage) return buildTiledMotifFromReference(safeReferenceImage, context, 1, commonGradient);
   if (recipe.presetId === 'selection_editorial_logo' && safeReferenceImage) return buildEditorialLogoComposition(safeReferenceImage, context);
   if (recipe.presetId === 'selection_tonal_geometry') {
-    return {
-      background_mode: 'ai_artwork',
-      ai_artwork: {
-        prompt: `${context.brandName} selection tonal geometry premium surface`,
-        image_url: TONAL_GEOMETRY_BACKGROUND_IMAGE,
-        generation_status: 'done',
-      },
-      gradient: {
-        type: 'linear',
-        angle: 132,
-        intensity: 104,
-        stops: [
-          { color: context.heroColor, position: 0 },
-          { color: '#0f172a', position: 52 },
-          { color: '#1f2937', position: 100 },
-        ],
-      },
-      shape: 'mesh',
-      studioStyleConfig: {
-        presetId: 'selection_tonal_geometry',
-        family: 'geometry',
-        styleMode: 'tonal_geometry_image_base',
-        material: 'tonal_panel',
-        paletteMode: 'cool_luxury',
-        referenceImageUrl: safeReferenceImage,
-        metadata: {
-          backgroundImageSrc: TONAL_GEOMETRY_BACKGROUND_IMAGE,
-        },
-      },
-    };
+    return buildTonalGeometryConfig(context, safeReferenceImage);
   }
   if (recipe.presetId === 'selection_luxury_fabric_monogram') {
     return {
@@ -786,9 +1037,9 @@ function buildSurfaceFromRecipe(
 
   const generators: Record<Exclude<BackgroundPresetId, 'selection_tiled_motif' | 'selection_editorial_logo' | 'selection_tonal_geometry'>, () => OutfitBackgroundConfig> = {
     selection_logo_image_fusion: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#020617'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.58'/><path d='M0,640 C250,560 520,730 860,620 C1030,565 1130,500 1200,440 V800 H0 Z' fill='rgba(15,23,42,0.64)'/><image href='${safeReferenceImage || ''}' x='730' y='120' width='350' height='430' preserveAspectRatio='xMidYMid meet' opacity='0.88'/><text x='90' y='690' font-size='74' font-family='Arial Black,Arial,sans-serif' fill='rgba(255,255,255,0.86)'>${brand}</text></svg>`, 'orb'),
-    selection_tech_amber_energy: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='amber' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#2b1202'/><stop offset='46%' stop-color='#f97316'/><stop offset='100%' stop-color='#fde047'/></linearGradient><filter id='glow'><feGaussianBlur stdDeviation='8'/></filter></defs><rect width='1200' height='800' fill='url(#amber)'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='1200' height='800' opacity='0.18' preserveAspectRatio='xMidYMid slice'/><g stroke='rgba(255,214,10,0.45)' stroke-width='2'>${Array.from({ length: 10 }).map((_, i) => `<line x1='${i * 130}' y1='0' x2='${i * 130 + 220}' y2='800'/>`).join('')}</g><rect x='730' y='120' width='360' height='460' rx='34' fill='rgba(15,23,42,0.45)'/><image href='${safeReferenceImage || ''}' x='760' y='150' width='300' height='330' opacity='0.94' preserveAspectRatio='xMidYMid meet'/><circle cx='360' cy='320' r='170' fill='rgba(255,224,110,0.32)' filter='url(#glow)'/><text x='80' y='716' font-size='56' fill='rgba(17,24,39,0.78)' font-family='Arial Black,Arial,sans-serif'>${brand} · TECH AMBER ENERGY</text></svg>`, 'beams'),
+    selection_tech_amber_energy: () => buildTechAmberEnergyConfig(context, safeReferenceImage),
     selection_metallic_sport_identity: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='metal' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='42%' stop-color='#374151'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#metal)'/><path d='M0,560 L1200,190 L1200,380 L0,760 Z' fill='rgba(148,163,184,0.24)'/><image href='${safeReferenceImage || ''}' x='100' y='120' width='420' height='420' opacity='0.22' preserveAspectRatio='xMidYMid meet'/><image href='${safeReferenceImage || ''}' x='760' y='170' width='330' height='330' opacity='0.92' preserveAspectRatio='xMidYMid meet'/><rect x='742' y='150' width='366' height='366' rx='34' fill='none' stroke='rgba(226,232,240,0.62)' stroke-width='4'/><text x='84' y='716' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>METALLIC SPORT IDENTITY</text></svg>`, 'diamond'),
-    selection_neon_motion_grid: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='neon' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='55%' stop-color='#0f172a'/><stop offset='100%' stop-color='#1d4ed8'/></linearGradient></defs><rect width='1200' height='800' fill='url(#neon)'/>${Array.from({ length: 12 }).map((_, i) => `<line x1='${i * 110}' y1='-50' x2='${i * 110 + 320}' y2='850' stroke='rgba(34,211,238,0.22)' stroke-width='2'/>`).join('')}<image href='${safeReferenceImage || ''}' x='720' y='150' width='370' height='430' opacity='0.88' preserveAspectRatio='xMidYMid meet'/><rect x='702' y='132' width='406' height='466' rx='36' fill='none' stroke='rgba(56,189,248,0.64)' stroke-width='3'/></svg>`, 'arrows'),
+    selection_neon_motion_grid: () => buildNeonMotionGridConfig(context, safeReferenceImage),
     selection_luxury_fabric_monogram: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#1f2937'/></svg>`, 'none'),
     selection_editorial_collage: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#111827'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='620' height='800' opacity='0.66' preserveAspectRatio='xMidYMid slice'/><image href='${safeReferenceImage || ''}' x='540' y='110' width='610' height='540' opacity='0.84' preserveAspectRatio='xMidYMid slice'/><rect x='520' y='90' width='640' height='570' fill='none' stroke='rgba(248,250,252,0.32)' stroke-width='3'/><text x='560' y='706' font-size='58' fill='rgba(248,250,252,0.9)' font-family='Arial Black,Arial,sans-serif'>EDITORIAL COLLAGE</text></svg>`, 'mesh'),
     selection_soft_premium_minimal: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#e2c28c'/></svg>`, 'none'),
@@ -796,8 +1047,8 @@ function buildSurfaceFromRecipe(
   return generators[recipe.presetId as keyof typeof generators]();
 }
 
-function getRecommendedPresets(): RecommendedPreset[] {
-  return [
+function getRecommendedPresets(outfitMetadata?: OutfitMetadata): RecommendedPreset[] {
+  const allPresets: RecommendedPreset[] = [
     { id: 'selection_tiled_motif', category: 'pattern_surface', label: 'Selection tiled motif', description: 'Turns the uploaded logo into a repeated premium motif surface.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
     { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Selection luxury fabric monogram', description: 'Builds a refined fashion surface with repeated branded monogram texture.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || null) },
     { id: 'selection_tonal_geometry', category: 'pattern_surface', label: 'Selection tonal geometry', description: 'Combines tonal palette extraction with subtle geometric paneling.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
@@ -809,6 +1060,24 @@ function getRecommendedPresets(): RecommendedPreset[] {
     { id: 'selection_metallic_sport_identity', category: 'tech_energy', label: 'Selection metallic sport identity', description: 'Applies silver/graphite highlights for premium sport-tech brand identity.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
     { id: 'selection_logo_image_fusion', category: 'hybrid_fusion', label: 'Selection logo + stylized image fusion', description: 'Blends uploaded logo with stylized image composition for richer hero surfaces.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
   ];
+  const isTechSportDirection = [outfitMetadata?.style, outfitMetadata?.occasion, outfitMetadata?.mood, outfitMetadata?.title]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+    .match(/tech|sport|athle|performance|futur|street|active/);
+
+  if (isTechSportDirection) {
+    return allPresets
+      .filter((preset) => ['selection_tonal_geometry', 'selection_tech_amber_energy', 'selection_neon_motion_grid'].includes(preset.id))
+      .slice(0, 3);
+  }
+
+  const pickFirstByCategory = (category: PresetCategory) => allPresets.find((preset) => preset.category === category);
+  return [
+    pickFirstByCategory('pattern_surface'),
+    pickFirstByCategory('editorial_branding'),
+    pickFirstByCategory('tech_energy'),
+  ].filter(Boolean).slice(0, 3) as RecommendedPreset[];
 }
 
 const EMERALD_LUXURY_ASSET_CANDIDATES = ['png', 'jpg', 'jpeg', 'webp'].map((ext) => `/${encodeURIComponent(`Sem título (25).${ext}`)}`);
@@ -892,14 +1161,10 @@ export default function OutfitBackgroundStudioModal({
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiStylePreset, setAiStylePreset] = useState<ArtworkStylePreset>('editorial_fashion');
   const [aiPaletteMode, setAiPaletteMode] = useState<ArtworkPaletteMode>('cool_luxury');
-  const [aiShapeLanguage, setAiShapeLanguage] = useState<ArtworkShapeLanguage>('mesh');
+  const [aiGeometry, setAiGeometry] = useState<GeometryFamily>('mesh');
   const [aiCompositionType, setAiCompositionType] = useState<ArtworkStudioInput['compositionType']>('background');
-  const [aiDensity, setAiDensity] = useState(50);
   const [aiContrast, setAiContrast] = useState<ArtworkContrastLevel>('medium');
   const [aiColorIntent, setAiColorIntent] = useState<ArtworkColorIntent>('prompt_driven');
-  const [aiBlur, setAiBlur] = useState(24);
-  const [aiGlow, setAiGlow] = useState(40);
-  const [aiLayerDepth, setAiLayerDepth] = useState(5);
   const [aiSafeArea, setAiSafeArea] = useState(true);
   const [aiReferenceImageUrl, setAiReferenceImageUrl] = useState('');
   const [aiReferenceImageDataUrl, setAiReferenceImageDataUrl] = useState('');
@@ -924,13 +1189,7 @@ export default function OutfitBackgroundStudioModal({
       : '#1d4ed8';
     return { brandName, brandLogoUrl, heroColor };
   }, [outfitMetadata, previewCardData]);
-  const recommendedPresets = useMemo(() => getRecommendedPresets(), []);
-  const groupedPresets = useMemo(() => ({
-    pattern_surface: recommendedPresets.filter((item) => item.category === 'pattern_surface'),
-    editorial_branding: recommendedPresets.filter((item) => item.category === 'editorial_branding'),
-    tech_energy: recommendedPresets.filter((item) => item.category === 'tech_energy'),
-    hybrid_fusion: recommendedPresets.filter((item) => item.category === 'hybrid_fusion'),
-  }), [recommendedPresets]);
+  const recommendedPresets = useMemo(() => getRecommendedPresets(outfitMetadata), [outfitMetadata]);
   const isUploadedReferenceImage = (value: string) => value.startsWith('data:image/') || value.startsWith('blob:');
   const getUploadedReferenceImage = () => (isUploadedReferenceImage(aiReferenceImageUrl) ? aiReferenceImageUrl : null);
   const getReferenceImageForApi = () => {
@@ -1094,20 +1353,33 @@ export default function OutfitBackgroundStudioModal({
       return;
     }
 
+    const typedGeometry = detectGeometryFromPrompt(aiPrompt);
+    const effectiveGeometry = aiGeometry;
+    const geometryVariation = GEOMETRY_VARIATION_MAP[effectiveGeometry][Date.now() % GEOMETRY_VARIATION_MAP[effectiveGeometry].length];
+    const geometryPrompt = GEOMETRY_PROMPT_MAP[effectiveGeometry];
+    const geometryNegativePrompt = GEOMETRY_NEGATIVE_PROMPT_MAP[effectiveGeometry];
+    const userPrompt = aiPrompt.trim() || 'premium fashion background';
+    const normalizedPrompt = [
+      userPrompt,
+      `Preserve geometry family: ${effectiveGeometry}.`,
+      `Primary geometry direction: ${geometryPrompt}.`,
+      `Premium variation direction: ${geometryVariation}.`,
+      typedGeometry && typedGeometry !== effectiveGeometry ? `User text mentioned ${typedGeometry}, but keep ${effectiveGeometry} as dominant geometry.` : '',
+    ].filter(Boolean).join(' ');
+    const negativePrompt = `Avoid geometry drift. ${geometryNegativePrompt}.`;
+
     const studioInput: ArtworkStudioInput = {
       user_id: previewCardData.creatorId || 'anonymous',
-      prompt: aiPrompt.trim() || 'premium editorial fashion artwork',
+      prompt: normalizedPrompt,
+      negativePrompt,
       compositionType: aiCompositionType,
       stylePreset: aiStylePreset,
       paletteMode: aiPaletteMode,
-      shapeLanguage: aiShapeLanguage,
-      density: aiDensity,
+      shapeLanguage: GEOMETRY_TO_SHAPE_LANGUAGE[effectiveGeometry],
       contrastLevel: aiContrast,
       colorIntent: aiColorIntent,
-      blurStrength: aiBlur,
-      glowIntensity: aiGlow,
-      layeringDepth: aiLayerDepth,
       safeAreaMode: aiSafeArea,
+      generationMode: aiGenerationMode,
       referenceImageUrl: getReferenceImageForApi(),
       variationCount: 4,
     };
@@ -1153,12 +1425,12 @@ export default function OutfitBackgroundStudioModal({
       ...applyArtworkToOutfitCard({
         artwork_id: variation.variation_id,
         user_id: previewCardData.creatorId || 'anonymous',
-        prompt: aiPrompt,
-        normalized_prompt: aiPrompt.toLowerCase(),
+        prompt: aiPrompt.trim() || GEOMETRY_PROMPT_MAP[aiGeometry],
+        normalized_prompt: (aiPrompt.trim() || GEOMETRY_PROMPT_MAP[aiGeometry]).toLowerCase(),
         composition_type: aiCompositionType,
         style_preset: aiStylePreset,
         palette_mode: aiPaletteMode,
-        shape_language: aiShapeLanguage,
+        shape_language: GEOMETRY_TO_SHAPE_LANGUAGE[aiGeometry],
         provider: variation.provider,
         provider_model: variation.provider_model ?? null,
         preview_url: variation.preview_url,
@@ -1391,15 +1663,69 @@ export default function OutfitBackgroundStudioModal({
 
             {activeTab === 'ai_artwork' ? (
               <div className="space-y-3">
-                <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder="Premium editorial fashion background with geometric layers and elegant negative space." className="min-h-24 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm" />
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <FancySelect value={aiCompositionType} onChange={(value) => setAiCompositionType(value as ArtworkStudioInput['compositionType'])} placeholder="Composition type" options={COMPOSITION_TYPES.map((option) => ({ value: option, label: option.replaceAll('_', ' ') }))} />
-                  <FancySelect value={aiStylePreset} onChange={(value) => setAiStylePreset(value as ArtworkStylePreset)} placeholder="Style preset" options={STYLE_PRESETS.map((option) => ({ value: option, label: option.replaceAll('_', ' ') }))} />
-                  <FancySelect value={aiPaletteMode} onChange={(value) => setAiPaletteMode(value as ArtworkPaletteMode)} placeholder="Palette mode" options={PALETTE_MODES.map((option) => ({ value: option, label: option.replaceAll('_', ' ') }))} />
-                  <FancySelect value={aiShapeLanguage} onChange={(value) => setAiShapeLanguage(value as ArtworkShapeLanguage)} placeholder="Shape language" options={SHAPE_LANGUAGES.map((option) => ({ value: option, label: option }))} />
-                  <FancySelect value={aiContrast} onChange={(value) => setAiContrast(value as ArtworkContrastLevel)} placeholder="Contrast" options={CONTRAST_LEVELS.map((option) => ({ value: option, label: option }))} />
-                  <FancySelect value={aiColorIntent} onChange={(value) => setAiColorIntent(value as ArtworkColorIntent)} placeholder="Color intent" options={COLOR_INTENTS.map((option) => ({ value: option.value, label: option.label }))} />
-                  <label className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-[11px] text-white/80">
+                <div className="rounded-xl border border-white/15 bg-white/5 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-white/80">Visual Direction</p>
+                  <p className="mt-1 text-[11px] text-white/65">Define composition and style behavior before generating.</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold text-white/85">Prompt</p>
+                      <p className="mb-1 text-[10px] text-white/60">Use brand and mood details. Geometry control below has priority for structure.</p>
+                      <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder="Premium editorial fashion background with geometric layers and elegant negative space." className="min-h-20 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold text-white/85">Composition Type</p>
+                      <p className="mb-1 text-[10px] text-white/60">Changes whether AI prioritizes full background, frame, overlay, or shape-pack output.</p>
+                      <FancySelect value={aiCompositionType} onChange={(value) => setAiCompositionType(value as ArtworkStudioInput['compositionType'])} placeholder="Composition type" options={COMPOSITION_TYPES.map((option) => ({ value: option, label: option.replaceAll('_', ' '), hint: 'Changes generation layout strategy' }))} />
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold text-white/85">Style Preset</p>
+                      <p className="mb-1 text-[10px] text-white/60">Controls campaign direction and visual tone.</p>
+                      <FancySelect value={aiStylePreset} onChange={(value) => setAiStylePreset(value as ArtworkStylePreset)} placeholder="Style preset" options={STYLE_PRESETS.map((option) => ({ value: option, label: option.replaceAll('_', ' '), hint: STYLE_PRESET_DESCRIPTIONS[option] }))} />
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold text-white/85">Palette Mode</p>
+                      <p className="mb-1 text-[10px] text-white/60">Controls the dominant color family in generated artwork.</p>
+                      <FancySelect value={aiPaletteMode} onChange={(value) => setAiPaletteMode(value as ArtworkPaletteMode)} placeholder="Palette mode" options={PALETTE_MODES.map((option) => ({ value: option, label: option.replaceAll('_', ' '), hint: 'Controls palette family used during generation' }))} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-white/15 bg-white/5 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-white/80">Color & Contrast</p>
+                  <p className="mt-1 text-[11px] text-white/65">All controls below are wired to the generation payload.</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold text-white/85">Contrast</p>
+                      <p className="mb-1 text-[10px] text-white/60">{CONTRAST_LEVEL_DESCRIPTIONS[aiContrast]}</p>
+                      <FancySelect value={aiContrast} onChange={(value) => setAiContrast(value as ArtworkContrastLevel)} placeholder="Contrast" options={CONTRAST_LEVELS.map((option) => ({ value: option, label: option, hint: CONTRAST_LEVEL_DESCRIPTIONS[option] }))} />
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold text-white/85">Color Intent</p>
+                      <p className="mb-1 text-[10px] text-white/60">Applies color direction to the prompt and generation model.</p>
+                      <FancySelect value={aiColorIntent} onChange={(value) => setAiColorIntent(value as ArtworkColorIntent)} placeholder="Color intent" options={COLOR_INTENTS.map((option) => ({ value: option.value, label: option.label, hint: 'Applies this color direction to generation input' }))} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-white/15 bg-white/5 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-white/80">Geometry</p>
+                  <p className="mt-1 text-[11px] text-white/65">Selected geometry always wins if typed prompt conflicts.</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold text-white/85">Geometry Family</p>
+                      <p className="mb-1 text-[10px] text-white/60">{GEOMETRY_DESCRIPTION_MAP[aiGeometry]}</p>
+                      <FancySelect
+                        value={aiGeometry}
+                        onChange={(value) => {
+                          const next = value as GeometryFamily;
+                          setAiGeometry(next);
+                          setDraft((prev) => ({ ...prev, ...buildGeometryPreviewConfig(next, presetContext.heroColor) }));
+                        }}
+                        placeholder="Geometry"
+                        options={(Object.keys(GEOMETRY_DESCRIPTION_MAP) as GeometryFamily[]).map((option) => ({ value: option, label: option, hint: GEOMETRY_DESCRIPTION_MAP[option] }))}
+                      />
+                    </div>
+                    <label className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-[11px] text-white/80">
                     <span className="block pb-1 text-[10px] uppercase tracking-[0.08em] text-white/60">Reference image (upload)</span>
                     <input
                       type="file"
@@ -1441,17 +1767,20 @@ export default function OutfitBackgroundStudioModal({
                       }}
                     />
                     {aiReferenceFileName ? <span className="mt-1 block truncate text-[10px] text-cyan-100">{aiReferenceFileName}</span> : null}
-                  </label>
+                    </label>
+                  </div>
                 </div>
-                <label className="text-xs">Density ({aiDensity})</label>
-                <input type="range" min={0} max={100} value={aiDensity} onChange={(event) => setAiDensity(Number(event.target.value))} />
-                <label className="text-xs">Blur ({aiBlur})</label>
-                <input type="range" min={0} max={100} value={aiBlur} onChange={(event) => setAiBlur(Number(event.target.value))} />
-                <label className="text-xs">Glow ({aiGlow})</label>
-                <input type="range" min={0} max={100} value={aiGlow} onChange={(event) => setAiGlow(Number(event.target.value))} />
-                <label className="text-xs">Layering depth ({aiLayerDepth})</label>
-                <input type="range" min={1} max={10} value={aiLayerDepth} onChange={(event) => setAiLayerDepth(Number(event.target.value))} />
-                <FancySelect value={aiGenerationMode} onChange={(value) => setAiGenerationMode(value as BackgroundGenerationMode)} placeholder="Generation mode" options={AI_GENERATION_MODES.map((option) => ({ value: option.value, label: option.label }))} />
+
+                <div className="rounded-xl border border-white/15 bg-white/5 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-white/80">Generation Mode</p>
+                  <p className="mt-1 text-[11px] text-white/65">{AI_GENERATION_MODE_DESCRIPTIONS[aiGenerationMode]}</p>
+                  <FancySelect value={aiGenerationMode} onChange={(value) => setAiGenerationMode(value as BackgroundGenerationMode)} placeholder="Generation mode" options={AI_GENERATION_MODES.map((option) => ({ value: option.value, label: option.label, hint: AI_GENERATION_MODE_DESCRIPTIONS[option.value] }))} />
+                </div>
+                <div className="rounded-xl border border-white/15 bg-white/5 p-2 text-[11px] text-white/75">
+                  <p><span className="font-semibold text-white/85">Style preset:</span> {STYLE_PRESET_DESCRIPTIONS[aiStylePreset]}</p>
+                  <p className="mt-1"><span className="font-semibold text-white/85">Contrast:</span> {CONTRAST_LEVEL_DESCRIPTIONS[aiContrast]}</p>
+                  <p className="mt-1"><span className="font-semibold text-white/85">Geometry:</span> {GEOMETRY_DESCRIPTION_MAP[aiGeometry]}</p>
+                </div>
                 <label className="flex items-center gap-2 text-xs">
                   <input type="checkbox" checked={aiSafeArea} onChange={(event) => setAiSafeArea(event.target.checked)} />
                   Safe area mode for text and subject
@@ -1522,13 +1851,9 @@ export default function OutfitBackgroundStudioModal({
                           compositionType: aiCompositionType,
                           stylePreset: aiStylePreset,
                           paletteMode: aiPaletteMode,
-                          shapeLanguage: aiShapeLanguage,
-                          density: aiDensity,
+                          shapeLanguage: GEOMETRY_TO_SHAPE_LANGUAGE[aiGeometry],
                           contrastLevel: aiContrast,
                           colorIntent: aiColorIntent,
-                          blurStrength: aiBlur,
-                          glowIntensity: aiGlow,
-                          layeringDepth: aiLayerDepth,
                           safeAreaMode: aiSafeArea,
                           referenceImageUrl: getReferenceImageForApi(),
                         },
@@ -1552,47 +1877,36 @@ export default function OutfitBackgroundStudioModal({
 
             <section className="rounded-xl border border-white/20 bg-white/10 p-3">
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Recommended presets based on current outfit</p>
-              <div className="mt-2 space-y-3">
-                {([
-                  { key: 'pattern_surface' as const, label: 'Pattern / Surface', presets: groupedPresets.pattern_surface },
-                  { key: 'editorial_branding' as const, label: 'Editorial / Branding', presets: groupedPresets.editorial_branding },
-                  { key: 'tech_energy' as const, label: 'Tech / Energy', presets: groupedPresets.tech_energy },
-                  { key: 'hybrid_fusion' as const, label: 'Hybrid / Fusion', presets: groupedPresets.hybrid_fusion },
-                ]).map((group) => (
-                  <div key={group.key}>
-                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">{group.label}</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {group.presets.map((preset) => {
-                        const uploadedReferenceImage = getUploadedReferenceImage();
-                        const requiresUploadedReference = preset.id === 'selection_tiled_motif';
-                        const isDisabled = requiresUploadedReference && !uploadedReferenceImage;
-                        const previewRecipe = buildCompositionRecipe({
-                          presetId: preset.id,
-                          referenceIntent: analyzeReferenceIntent(uploadedReferenceImage),
-                          gradient: draft.gradient,
-                        });
-                        const previewConfig = preset.recipe(presetContext, previewRecipe, uploadedReferenceImage);
-                        return (
-                          <button
-                            key={preset.id}
-                            type="button"
-                            disabled={isDisabled}
-                            className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)] disabled:cursor-not-allowed disabled:opacity-50"
-                            onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
-                          >
-                            <p className="text-xs font-semibold">{preset.label}</p>
-                            <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
-                            {isDisabled ? <p className="mt-1 text-[10px] text-amber-200">Requires REFERENCE IMAGE UPLOAD</p> : null}
-                            <span
-                              className="mt-2 block h-9 rounded-lg border border-white/15"
-                              style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig))}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                {recommendedPresets.map((preset) => {
+                  const uploadedReferenceImage = getUploadedReferenceImage();
+                  const requiresUploadedReference = preset.id === 'selection_tiled_motif';
+                  const isDisabled = requiresUploadedReference && !uploadedReferenceImage;
+                  const previewRecipe = buildCompositionRecipe({
+                    presetId: preset.id,
+                    referenceIntent: analyzeReferenceIntent(uploadedReferenceImage),
+                    gradient: draft.gradient,
+                  });
+                  const previewConfig = preset.recipe(presetContext, previewRecipe, uploadedReferenceImage);
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      disabled={isDisabled}
+                      className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)] disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
+                    >
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-white/60">{preset.category.replaceAll('_', ' / ')}</p>
+                      <p className="text-xs font-semibold">{preset.label}</p>
+                      <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
+                      {isDisabled ? <p className="mt-1 text-[10px] text-amber-200">Requires REFERENCE IMAGE UPLOAD</p> : null}
+                      <span
+                        className="mt-2 block h-9 rounded-lg border border-white/15"
+                        style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig))}
+                      />
+                    </button>
+                  );
+                })}
               </div>
             </section>
           </section>
