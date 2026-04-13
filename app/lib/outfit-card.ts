@@ -18,6 +18,29 @@ export type OutfitMetaBadge = {
 
 export type OutfitBackgroundMode = 'solid' | 'gradient' | 'ai_artwork';
 export type OutfitGradientType = 'linear' | 'radial' | 'conic';
+export type BackgroundStudioFamily = 'pattern_surface' | 'minimal_luxury' | 'editorial_branding' | 'geometry' | 'custom';
+export type BackgroundStudioOverlayType = 'monogram' | 'glass_reflection' | 'linework' | 'glow' | 'gradient_sweep';
+
+export type BackgroundStudioStyleConfig = {
+  presetId?: string | null;
+  family?: BackgroundStudioFamily;
+  styleMode?: string | null;
+  material?: string | null;
+  paletteMode?: string | null;
+  gradient?: {
+    colors: string[];
+    angle?: number;
+  } | null;
+  overlays?: Array<{
+    type: BackgroundStudioOverlayType;
+    opacity?: number;
+    density?: string;
+    blendMode?: string;
+  }>;
+  referenceImageUrl?: string | null;
+  shapeMode?: string | null;
+  metadata?: Record<string, unknown>;
+};
 
 export type OutfitBackgroundConfig = {
   background_mode: OutfitBackgroundMode;
@@ -42,6 +65,7 @@ export type OutfitBackgroundConfig = {
   };
   texture_overlay?: boolean;
   shape?: 'none' | 'orb' | 'diamond' | 'mesh' | 'stars' | 'circles' | 'triangles' | 'waves' | 'beams' | 'flowers' | 'arrows';
+  studioStyleConfig?: BackgroundStudioStyleConfig;
 };
 
 export type OutfitCardData = {

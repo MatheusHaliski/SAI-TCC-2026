@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import {
+  BackgroundStudioStyleConfig,
   OutfitBackgroundConfig,
   OutfitCardData,
   buildBackgroundCssStyle,
@@ -182,6 +183,8 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
     ).join('')}
   </svg>`,
 )}`;
+const LUXURY_MONOGRAM_BACKGROUND_IMAGE = `/${encodeURIComponent('Firefly_Flux_Consegue adicionar quebras de linha tech ao gradiente (adicionar ranhuras) 3787887.jpg')}`;
+const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
   'none',
   'orb',
@@ -603,47 +606,6 @@ function buildEditorialLogoComposition(referenceImage: string, context: PresetCo
   };
 }
 
-function buildTonalGeometryComposition(referenceImage: string, context: PresetContext): OutfitBackgroundConfig {
-  const tonalField = asDataUri(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-      <defs>
-        <linearGradient id='tone' x1='0%' y1='0%' x2='100%' y2='100%'>
-          <stop offset='0%' stop-color='${context.heroColor}'/>
-          <stop offset='60%' stop-color='#0f172a'/>
-          <stop offset='100%' stop-color='#020617'/>
-        </linearGradient>
-        <filter id='blurSoft'><feGaussianBlur stdDeviation='9'/></filter>
-      </defs>
-      <rect width='1200' height='800' fill='url(#tone)'/>
-      ${Array.from({ length: 3 }).map((_, idx) => {
-        const opacity = 0.13 - idx * 0.03;
-        const size = 440 - idx * 70;
-        const x = 220 + idx * 210;
-        const y = 160 + idx * 70;
-        return `<image href='${referenceImage}' x='${x}' y='${y}' width='${size}' height='${size}' preserveAspectRatio='xMidYMid meet' opacity='${opacity.toFixed(2)}' filter='url(#blurSoft)'/>`;
-      }).join('')}
-      <path d='M0,630 C230,560 410,720 648,650 C842,592 1000,470 1200,520 V800 H0 Z' fill='rgba(148,163,184,0.12)'/>
-      ${Array.from({ length: 8 }).map((_, idx) => `<line x1='${idx * 170}' y1='0' x2='${idx * 170 + 180}' y2='800' stroke='rgba(255,255,255,0.04)' stroke-width='1'/>`).join('')}
-    </svg>`,
-  );
-
-  return {
-    background_mode: 'ai_artwork',
-    ai_artwork: { prompt: `${context.brandName} tonal geometry from uploaded reference`, image_url: tonalField, generation_status: 'done' },
-    gradient: {
-      type: 'linear',
-      angle: 132,
-      intensity: 104,
-      stops: [
-        { color: context.heroColor, position: 0 },
-        { color: '#0f172a', position: 52 },
-        { color: '#1f2937', position: 100 },
-      ],
-    },
-    shape: 'mesh',
-  };
-}
-
 function analyzeReferenceIntent(referenceImage?: string | null): ReferenceIntent {
   if (!referenceImage) return 'logo_pure';
   if (referenceImage.includes('logo') || referenceImage.includes('brand')) return 'logo_pure';
@@ -699,7 +661,7 @@ function buildCompositionRecipe(input: {
 function buildSurfaceFromRecipe(
   recipe: CompositionRecipe,
   context: PresetContext,
-  referenceImage: string,
+  referenceImage?: string | null,
 ): OutfitBackgroundConfig {
   const brand = escapeSvgAttribute(context.brandName);
   const commonGradient = {
@@ -708,24 +670,147 @@ function buildSurfaceFromRecipe(
     intensity: 105,
     stops: [{ color: '#0b1120', position: 0 }, { color: context.heroColor, position: 54 }, { color: '#f8fafc', position: 100 }],
   };
-  const buildImageSurface = (svg: string, shape: NonNullable<OutfitBackgroundConfig['shape']> = 'mesh'): OutfitBackgroundConfig => ({
+  const buildImageSurface = (
+    svg: string,
+    shape: NonNullable<OutfitBackgroundConfig['shape']> = 'mesh',
+    studioStyleConfig?: BackgroundStudioStyleConfig,
+  ): OutfitBackgroundConfig => ({
     background_mode: 'ai_artwork',
     ai_artwork: { prompt: `${context.brandName} ${recipe.presetId} composition`, image_url: asDataUri(svg), generation_status: 'done' },
     gradient: commonGradient,
     shape,
+    studioStyleConfig,
   });
-  if (recipe.presetId === 'selection_tiled_motif') return buildTiledMotifFromReference(referenceImage, context, 1, commonGradient);
-  if (recipe.presetId === 'selection_editorial_logo') return buildEditorialLogoComposition(referenceImage, context);
-  if (recipe.presetId === 'selection_tonal_geometry') return buildTonalGeometryComposition(referenceImage, context);
+  const safeReferenceImage = referenceImage || context.brandLogoUrl || null;
+  if (recipe.presetId === 'selection_tiled_motif' && safeReferenceImage) return buildTiledMotifFromReference(safeReferenceImage, context, 1, commonGradient);
+  if (recipe.presetId === 'selection_editorial_logo' && safeReferenceImage) return buildEditorialLogoComposition(safeReferenceImage, context);
+  if (recipe.presetId === 'selection_tonal_geometry') {
+    return {
+      background_mode: 'ai_artwork',
+      ai_artwork: {
+        prompt: `${context.brandName} selection tonal geometry premium surface`,
+        image_url: TONAL_GEOMETRY_BACKGROUND_IMAGE,
+        generation_status: 'done',
+      },
+      gradient: {
+        type: 'linear',
+        angle: 132,
+        intensity: 104,
+        stops: [
+          { color: context.heroColor, position: 0 },
+          { color: '#0f172a', position: 52 },
+          { color: '#1f2937', position: 100 },
+        ],
+      },
+      shape: 'mesh',
+      studioStyleConfig: {
+        presetId: 'selection_tonal_geometry',
+        family: 'geometry',
+        styleMode: 'tonal_geometry_image_base',
+        material: 'tonal_panel',
+        paletteMode: 'cool_luxury',
+        referenceImageUrl: safeReferenceImage,
+      },
+    };
+  }
+  if (recipe.presetId === 'selection_luxury_fabric_monogram') {
+    // TODO: replace this procedural SVG with higher-fidelity material synthesis when image generation pipeline supports deterministic layering.
+    console.info('[background-studio] applying luxury fabric monogram', { presetId: recipe.presetId, hasReferenceImage: Boolean(safeReferenceImage) });
+    const monogramLayer = safeReferenceImage
+      ? Array.from({ length: 6 }).map((_, row) =>
+          Array.from({ length: 9 }).map((__, col) => {
+            const x = col * 138 + (row % 2 ? 58 : 8);
+            const y = row * 128 + 20;
+            return `<image href='${safeReferenceImage}' x='${x}' y='${y}' width='78' height='78' opacity='0.085' preserveAspectRatio='xMidYMid meet'/>`;
+          }).join(''),
+        ).join('')
+      : '';
+    const glassSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <defs>
+        <linearGradient id='glassBase' x1='0%' y1='0%' x2='100%' y2='100%'>
+          <stop offset='0%' stop-color='#c8dcff'/>
+          <stop offset='42%' stop-color='#8cb4f4'/>
+          <stop offset='100%' stop-color='#5b7fb8'/>
+        </linearGradient>
+        <radialGradient id='edgeGlow' cx='15%' cy='12%' r='86%'>
+          <stop offset='0%' stop-color='rgba(255,255,255,0.42)'/>
+          <stop offset='100%' stop-color='rgba(255,255,255,0)'/>
+        </radialGradient>
+      </defs>
+      <image href='${LUXURY_MONOGRAM_BACKGROUND_IMAGE}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.72'/>
+      <rect width='1200' height='800' fill='url(#glassBase)' opacity='0.8'/>
+      <rect x='40' y='38' width='1120' height='724' rx='56' fill='rgba(255,255,255,0.12)' stroke='rgba(255,255,255,0.26)' stroke-width='2'/>
+      <path d='M-40,590 C170,458 450,678 720,612 C982,544 1140,356 1290,300 V800 H-40 Z' fill='rgba(215,234,255,0.3)'/>
+      <path d='M70,120 C360,18 860,58 1130,200 C930,270 560,300 240,244 Z' fill='rgba(255,255,255,0.22)'/>
+      <rect width='1200' height='800' fill='url(#edgeGlow)'/>
+      ${monogramLayer}
+      <rect x='28' y='24' width='1144' height='752' rx='60' fill='none' stroke='rgba(234,245,255,0.5)' stroke-width='1.3'/>
+    </svg>`;
+    return buildImageSurface(glassSvg, 'none', {
+      presetId: 'selection_luxury_fabric_monogram',
+      family: 'pattern_surface',
+      styleMode: 'glass_monogram',
+      material: 'translucent_glass',
+      paletteMode: 'cool_luxury',
+      referenceImageUrl: safeReferenceImage,
+      overlays: [
+        { type: 'glass_reflection', opacity: 0.2, density: 'low', blendMode: 'screen' },
+        { type: 'glow', opacity: 0.18, density: 'low', blendMode: 'screen' },
+        { type: 'monogram', opacity: 0.08, density: 'low', blendMode: 'soft-light' },
+      ],
+      metadata: {
+        monogramMode: safeReferenceImage ? 'embedded_soft_repeat' : 'no_reference_fallback_glass_only',
+        reflectionSweep: true,
+        edgeHighlight: true,
+        blurStrength: 0.22,
+        backgroundImageSrc: LUXURY_MONOGRAM_BACKGROUND_IMAGE,
+      },
+    });
+  }
+  if (recipe.presetId === 'selection_soft_premium_minimal') {
+    // TODO: evolve this preset into physically based brushed-metal rendering once premium texture generator is available.
+    console.info('[background-studio] applying soft premium minimal', { presetId: recipe.presetId, hasReferenceImage: Boolean(safeReferenceImage) });
+    const goldenSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+      <defs>
+        <linearGradient id='goldBase' x1='0%' y1='10%' x2='100%' y2='90%'>
+          <stop offset='0%' stop-color='#f6ead1'/>
+          <stop offset='44%' stop-color='#e6c894'/>
+          <stop offset='100%' stop-color='#b98754'/>
+        </linearGradient>
+      </defs>
+      <rect width='1200' height='800' fill='url(#goldBase)'/>
+      <path d='M-20,560 C260,510 560,620 880,560 C1030,532 1140,474 1220,430 V800 H-20 Z' fill='rgba(121,72,34,0.16)'/>
+      ${Array.from({ length: 10 }).map((_, i) => `<line x1='0' y1='${96 + i * 54}' x2='1200' y2='${96 + i * 54}' stroke='rgba(255,252,244,0.13)' stroke-width='1'/>`).join('')}
+      <rect width='1200' height='800' fill='rgba(17,12,8,0.06)'/>
+    </svg>`;
+    return buildImageSurface(goldenSvg, 'none', {
+      presetId: 'selection_soft_premium_minimal',
+      family: 'minimal_luxury',
+      styleMode: 'golden_minimal',
+      material: 'soft_metallic_gradient',
+      paletteMode: 'authview_gold',
+      referenceImageUrl: safeReferenceImage,
+      overlays: [
+        { type: 'gradient_sweep', opacity: 0.2, density: 'minimal', blendMode: 'soft-light' },
+        { type: 'linework', opacity: 0.12, density: 'minimal', blendMode: 'overlay' },
+      ],
+      metadata: {
+        linework: 'refined_horizontal',
+        glowIntensity: 0.05,
+        blurStrength: 0.08,
+        density: 'minimal',
+      },
+    });
+  }
 
   const generators: Record<Exclude<BackgroundPresetId, 'selection_tiled_motif' | 'selection_editorial_logo' | 'selection_tonal_geometry'>, () => OutfitBackgroundConfig> = {
-    selection_logo_image_fusion: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#020617'/><image href='${referenceImage}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.58'/><path d='M0,640 C250,560 520,730 860,620 C1030,565 1130,500 1200,440 V800 H0 Z' fill='rgba(15,23,42,0.64)'/><image href='${referenceImage}' x='730' y='120' width='350' height='430' preserveAspectRatio='xMidYMid meet' opacity='0.88'/><text x='90' y='690' font-size='74' font-family='Arial Black,Arial,sans-serif' fill='rgba(255,255,255,0.86)'>${brand}</text></svg>`, 'orb'),
-    selection_tech_amber_energy: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='amber' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#2b1202'/><stop offset='46%' stop-color='#f97316'/><stop offset='100%' stop-color='#fde047'/></linearGradient><filter id='glow'><feGaussianBlur stdDeviation='8'/></filter></defs><rect width='1200' height='800' fill='url(#amber)'/><image href='${referenceImage}' x='0' y='0' width='1200' height='800' opacity='0.18' preserveAspectRatio='xMidYMid slice'/><g stroke='rgba(255,214,10,0.45)' stroke-width='2'>${Array.from({ length: 10 }).map((_, i) => `<line x1='${i * 130}' y1='0' x2='${i * 130 + 220}' y2='800'/>`).join('')}</g><rect x='730' y='120' width='360' height='460' rx='34' fill='rgba(15,23,42,0.45)'/><image href='${referenceImage}' x='760' y='150' width='300' height='330' opacity='0.94' preserveAspectRatio='xMidYMid meet'/><circle cx='360' cy='320' r='170' fill='rgba(255,224,110,0.32)' filter='url(#glow)'/><text x='80' y='716' font-size='56' fill='rgba(17,24,39,0.78)' font-family='Arial Black,Arial,sans-serif'>${brand} · TECH AMBER ENERGY</text></svg>`, 'beams'),
-    selection_metallic_sport_identity: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='metal' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='42%' stop-color='#374151'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#metal)'/><path d='M0,560 L1200,190 L1200,380 L0,760 Z' fill='rgba(148,163,184,0.24)'/><image href='${referenceImage}' x='100' y='120' width='420' height='420' opacity='0.22' preserveAspectRatio='xMidYMid meet'/><image href='${referenceImage}' x='760' y='170' width='330' height='330' opacity='0.92' preserveAspectRatio='xMidYMid meet'/><rect x='742' y='150' width='366' height='366' rx='34' fill='none' stroke='rgba(226,232,240,0.62)' stroke-width='4'/><text x='84' y='716' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>METALLIC SPORT IDENTITY</text></svg>`, 'diamond'),
-    selection_neon_motion_grid: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='neon' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='55%' stop-color='#0f172a'/><stop offset='100%' stop-color='#1d4ed8'/></linearGradient></defs><rect width='1200' height='800' fill='url(#neon)'/>${Array.from({ length: 12 }).map((_, i) => `<line x1='${i * 110}' y1='-50' x2='${i * 110 + 320}' y2='850' stroke='rgba(34,211,238,0.22)' stroke-width='2'/>`).join('')}<image href='${referenceImage}' x='720' y='150' width='370' height='430' opacity='0.88' preserveAspectRatio='xMidYMid meet'/><rect x='702' y='132' width='406' height='466' rx='36' fill='none' stroke='rgba(56,189,248,0.64)' stroke-width='3'/></svg>`, 'arrows'),
-    selection_luxury_fabric_monogram: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#1f2937'/>${Array.from({ length: 8 }).map((_, row) => Array.from({ length: 12 }).map((__, col) => `<image href='${referenceImage}' x='${col * 98 + (row % 2 ? 16 : 0)}' y='${row * 96 + 10}' width='64' height='64' opacity='0.24' preserveAspectRatio='xMidYMid meet'/>`).join('')).join('')}<rect width='1200' height='800' fill='rgba(245,158,11,0.08)'/><text x='84' y='720' font-size='52' fill='rgba(243,244,246,0.88)' font-family='Times New Roman,serif'>${brand} MONOGRAM FABRIC</text></svg>`, 'none'),
-    selection_editorial_collage: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#111827'/><image href='${referenceImage}' x='0' y='0' width='620' height='800' opacity='0.66' preserveAspectRatio='xMidYMid slice'/><image href='${referenceImage}' x='540' y='110' width='610' height='540' opacity='0.84' preserveAspectRatio='xMidYMid slice'/><rect x='520' y='90' width='640' height='570' fill='none' stroke='rgba(248,250,252,0.32)' stroke-width='3'/><text x='560' y='706' font-size='58' fill='rgba(248,250,252,0.9)' font-family='Arial Black,Arial,sans-serif'>EDITORIAL COLLAGE</text></svg>`, 'mesh'),
-    selection_soft_premium_minimal: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='soft' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#f8fafc'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#soft)'/><circle cx='230' cy='200' r='180' fill='rgba(148,163,184,0.18)'/><rect x='720' y='210' width='310' height='380' rx='30' fill='rgba(15,23,42,0.08)'/><image href='${referenceImage}' x='760' y='252' width='230' height='290' preserveAspectRatio='xMidYMid meet' opacity='0.72'/><text x='84' y='710' font-size='48' fill='rgba(30,41,59,0.7)' font-family='Inter,Arial,sans-serif'>${brand}</text></svg>`, 'none'),
+    selection_logo_image_fusion: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#020617'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.58'/><path d='M0,640 C250,560 520,730 860,620 C1030,565 1130,500 1200,440 V800 H0 Z' fill='rgba(15,23,42,0.64)'/><image href='${safeReferenceImage || ''}' x='730' y='120' width='350' height='430' preserveAspectRatio='xMidYMid meet' opacity='0.88'/><text x='90' y='690' font-size='74' font-family='Arial Black,Arial,sans-serif' fill='rgba(255,255,255,0.86)'>${brand}</text></svg>`, 'orb'),
+    selection_tech_amber_energy: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='amber' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#2b1202'/><stop offset='46%' stop-color='#f97316'/><stop offset='100%' stop-color='#fde047'/></linearGradient><filter id='glow'><feGaussianBlur stdDeviation='8'/></filter></defs><rect width='1200' height='800' fill='url(#amber)'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='1200' height='800' opacity='0.18' preserveAspectRatio='xMidYMid slice'/><g stroke='rgba(255,214,10,0.45)' stroke-width='2'>${Array.from({ length: 10 }).map((_, i) => `<line x1='${i * 130}' y1='0' x2='${i * 130 + 220}' y2='800'/>`).join('')}</g><rect x='730' y='120' width='360' height='460' rx='34' fill='rgba(15,23,42,0.45)'/><image href='${safeReferenceImage || ''}' x='760' y='150' width='300' height='330' opacity='0.94' preserveAspectRatio='xMidYMid meet'/><circle cx='360' cy='320' r='170' fill='rgba(255,224,110,0.32)' filter='url(#glow)'/><text x='80' y='716' font-size='56' fill='rgba(17,24,39,0.78)' font-family='Arial Black,Arial,sans-serif'>${brand} · TECH AMBER ENERGY</text></svg>`, 'beams'),
+    selection_metallic_sport_identity: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='metal' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='42%' stop-color='#374151'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#metal)'/><path d='M0,560 L1200,190 L1200,380 L0,760 Z' fill='rgba(148,163,184,0.24)'/><image href='${safeReferenceImage || ''}' x='100' y='120' width='420' height='420' opacity='0.22' preserveAspectRatio='xMidYMid meet'/><image href='${safeReferenceImage || ''}' x='760' y='170' width='330' height='330' opacity='0.92' preserveAspectRatio='xMidYMid meet'/><rect x='742' y='150' width='366' height='366' rx='34' fill='none' stroke='rgba(226,232,240,0.62)' stroke-width='4'/><text x='84' y='716' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>METALLIC SPORT IDENTITY</text></svg>`, 'diamond'),
+    selection_neon_motion_grid: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='neon' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='55%' stop-color='#0f172a'/><stop offset='100%' stop-color='#1d4ed8'/></linearGradient></defs><rect width='1200' height='800' fill='url(#neon)'/>${Array.from({ length: 12 }).map((_, i) => `<line x1='${i * 110}' y1='-50' x2='${i * 110 + 320}' y2='850' stroke='rgba(34,211,238,0.22)' stroke-width='2'/>`).join('')}<image href='${safeReferenceImage || ''}' x='720' y='150' width='370' height='430' opacity='0.88' preserveAspectRatio='xMidYMid meet'/><rect x='702' y='132' width='406' height='466' rx='36' fill='none' stroke='rgba(56,189,248,0.64)' stroke-width='3'/></svg>`, 'arrows'),
+    selection_luxury_fabric_monogram: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#1f2937'/></svg>`, 'none'),
+    selection_editorial_collage: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#111827'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='620' height='800' opacity='0.66' preserveAspectRatio='xMidYMid slice'/><image href='${safeReferenceImage || ''}' x='540' y='110' width='610' height='540' opacity='0.84' preserveAspectRatio='xMidYMid slice'/><rect x='520' y='90' width='640' height='570' fill='none' stroke='rgba(248,250,252,0.32)' stroke-width='3'/><text x='560' y='706' font-size='58' fill='rgba(248,250,252,0.9)' font-family='Arial Black,Arial,sans-serif'>EDITORIAL COLLAGE</text></svg>`, 'mesh'),
+    selection_soft_premium_minimal: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#e2c28c'/></svg>`, 'none'),
   };
   return generators[recipe.presetId as keyof typeof generators]();
 }
@@ -733,11 +818,11 @@ function buildSurfaceFromRecipe(
 function getRecommendedPresets(): RecommendedPreset[] {
   return [
     { id: 'selection_tiled_motif', category: 'pattern_surface', label: 'Selection tiled motif', description: 'Turns the uploaded logo into a repeated premium motif surface.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Selection luxury fabric monogram', description: 'Builds a refined fashion surface with repeated branded monogram texture.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Selection luxury fabric monogram', description: 'Builds a refined fashion surface with repeated branded monogram texture.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || null) },
     { id: 'selection_tonal_geometry', category: 'pattern_surface', label: 'Selection tonal geometry', description: 'Combines tonal palette extraction with subtle geometric paneling.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
     { id: 'selection_editorial_logo', category: 'editorial_branding', label: 'Selection editorial logo', description: 'Uses the uploaded logo as a hero element in a clean campaign-style composition.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
     { id: 'selection_editorial_collage', category: 'editorial_branding', label: 'Selection editorial collage', description: 'Fuses cropped logo and treated imagery into a depth-rich editorial card.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_soft_premium_minimal', category: 'editorial_branding', label: 'Selection soft premium minimal', description: 'Minimal, high-readability premium composition with restrained visual weight.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_soft_premium_minimal', category: 'editorial_branding', label: 'Selection soft premium minimal', description: 'Minimal, high-readability premium composition with restrained visual weight.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || null) },
     { id: 'selection_tech_amber_energy', category: 'tech_energy', label: 'Selection tech amber energy', description: 'Fuses uploaded logo with high-energy amber/orange AI-tech visual treatment.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
     { id: 'selection_neon_motion_grid', category: 'tech_energy', label: 'Selection neon motion grid', description: 'Adds diagonal neon movement, digital grid rhythm, and logo anchoring.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
     { id: 'selection_metallic_sport_identity', category: 'tech_energy', label: 'Selection metallic sport identity', description: 'Applies silver/graphite highlights for premium sport-tech brand identity.', recipe: (ctx, recipe, uploaded) => buildSurfaceFromRecipe(recipe, ctx, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
@@ -885,6 +970,7 @@ export default function OutfitBackgroundStudioModal({
     uploadedReferenceImage: string | null,
     context: PresetContext,
   ) => {
+    console.info('[background-studio] preset selected', { presetId, hasReferenceImage: Boolean(uploadedReferenceImage) });
     setPresetRequirementMessage(null);
     const preset = recommendedPresets.find((item) => item.id === presetId);
     if (!preset) return;
@@ -893,6 +979,10 @@ export default function OutfitBackgroundStudioModal({
       return;
     }
     const referenceIntent = analyzeReferenceIntent(uploadedReferenceImage);
+    if (uploadedReferenceImage) {
+      console.info('[background-studio] reference image detected', { presetId, referenceIntent });
+    }
+    console.info('[background-studio] building preview config', { presetId, referenceIntent });
     let recipe = buildCompositionRecipe({ presetId, referenceIntent, gradient: draft.gradient });
     if (detectLogoLikeSubject(uploadedReferenceImage)) {
       recipe = { ...recipe, logoWeight: Math.min(1, recipe.logoWeight + 0.08) };
@@ -911,6 +1001,12 @@ export default function OutfitBackgroundStudioModal({
       ...prev,
       ...config,
     }));
+    console.info('[background-studio] applied to card', {
+      presetId,
+      hasReferenceImage: Boolean(uploadedReferenceImage),
+      previewUpdated: true,
+      studioStyleConfig: config.studioStyleConfig ?? null,
+    });
   };
 
   const previewData: OutfitCardData = {
@@ -952,6 +1048,25 @@ export default function OutfitBackgroundStudioModal({
 
   const addRecentColor = (color: string) => {
     setRecentColors((prev) => [color, ...prev.filter((item) => item !== color)].slice(0, 6));
+  };
+
+  const applyDraftToCard = () => {
+    console.info('[background-studio] applied to card', {
+      presetId: draft.studioStyleConfig?.presetId ?? selectedRecommendedPreset ?? null,
+      hasReferenceImage: Boolean(getUploadedReferenceImage()),
+      styleConfig: draft.studioStyleConfig ?? null,
+      previewUpdated: true,
+    });
+    onApply(draft);
+  };
+
+  const saveBackgroundConfig = () => {
+    console.info('[background-studio] saving background config', {
+      presetId: draft.studioStyleConfig?.presetId ?? selectedRecommendedPreset ?? null,
+      hasReferenceImage: Boolean(getUploadedReferenceImage()),
+      styleConfig: draft.studioStyleConfig ?? null,
+    });
+    onApply(draft);
   };
 
   const generateAiBackground = async () => {
@@ -1563,8 +1678,8 @@ export default function OutfitBackgroundStudioModal({
         <footer className="mt-2 flex flex-wrap justify-end gap-2 border-t border-white/15 pt-4">
           <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancel / Close</button>
           <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Reset</button>
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => onApply(draft)}>Save Background</button>
-          <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={() => onApply(draft)}>Apply to Card · {draft.shape || 'none'}</button>
+          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={saveBackgroundConfig}>Save Background</button>
+          <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={applyDraftToCard}>Apply to Card · {draft.shape || 'none'}</button>
         </footer>
       </div>
     </div>
