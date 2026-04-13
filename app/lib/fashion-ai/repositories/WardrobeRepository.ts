@@ -1,24 +1,43 @@
 import { getAdminFirestore } from '@/app/lib/firebaseAdmin';
 import { WardrobeFitProfile, WardrobeItemDocument } from '@/app/lib/fashion-ai/types/wardrobe-fit';
+import { FieldPath } from 'firebase-admin/firestore';
 
 const COLLECTION = 'sai-wardrobeItems';
 
 export class WardrobeRepository {
+  private mapDoc(doc: FirebaseFirestore.QueryDocumentSnapshot): WardrobeItemDocument {
+    const data = doc.data() as Record<string, unknown>;
+    return {
+      id: doc.id,
+      name: String(data.name ?? ''),
+      image_url: String(data.image_url ?? ''),
+      piece_type: typeof data.piece_type === 'string' ? data.piece_type : undefined,
+      gender: typeof data.gender === 'string' ? data.gender : undefined,
+      createdAt: typeof data.created_at === 'string' ? data.created_at : undefined,
+      updatedAt: typeof data.updated_at === 'string' ? data.updated_at : undefined,
+      fitProfile: (data.fitProfile as WardrobeFitProfile | undefined) ?? undefined,
+    };
+  }
+
   async listAll(): Promise<WardrobeItemDocument[]> {
     const snap = await getAdminFirestore().collection(COLLECTION).get();
-    return snap.docs.map((doc) => {
-      const data = doc.data() as Record<string, unknown>;
-      return {
-        id: doc.id,
-        name: String(data.name ?? ''),
-        image_url: String(data.image_url ?? ''),
-        piece_type: typeof data.piece_type === 'string' ? data.piece_type : undefined,
-        gender: typeof data.gender === 'string' ? data.gender : undefined,
-        createdAt: typeof data.created_at === 'string' ? data.created_at : undefined,
-        updatedAt: typeof data.updated_at === 'string' ? data.updated_at : undefined,
-        fitProfile: (data.fitProfile as WardrobeFitProfile | undefined) ?? undefined,
-      };
-    });
+    return snap.docs.map((doc) => this.mapDoc(doc));
+  }
+
+  async listPage(params?: { limit?: number; startAfterId?: string }): Promise<WardrobeItemDocument[]> {
+    const pageSize = Math.max(1, Math.floor(params?.limit ?? 100));
+    const db = getAdminFirestore();
+    let query: FirebaseFirestore.Query = db
+      .collection(COLLECTION)
+      .orderBy(FieldPath.documentId())
+      .limit(pageSize);
+
+    if (params?.startAfterId) {
+      query = query.startAfter(params.startAfterId);
+    }
+
+    const snap = await query.get();
+    return snap.docs.map((doc) => this.mapDoc(doc));
   }
 
   async getById(pieceId: string): Promise<WardrobeItemDocument | null> {
