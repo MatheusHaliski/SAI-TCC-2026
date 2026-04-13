@@ -183,6 +183,8 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
     ).join('')}
   </svg>`,
 )}`;
+const LUXURY_MONOGRAM_BACKGROUND_IMAGE = `/${encodeURIComponent('Firefly_Flux_Consegue adicionar quebras de linha tech ao gradiente (adicionar ranhuras) 3787887.jpg')}`;
+const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
   'none',
   'orb',
@@ -604,47 +606,6 @@ function buildEditorialLogoComposition(referenceImage: string, context: PresetCo
   };
 }
 
-function buildTonalGeometryComposition(referenceImage: string, context: PresetContext): OutfitBackgroundConfig {
-  const tonalField = asDataUri(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-      <defs>
-        <linearGradient id='tone' x1='0%' y1='0%' x2='100%' y2='100%'>
-          <stop offset='0%' stop-color='${context.heroColor}'/>
-          <stop offset='60%' stop-color='#0f172a'/>
-          <stop offset='100%' stop-color='#020617'/>
-        </linearGradient>
-        <filter id='blurSoft'><feGaussianBlur stdDeviation='9'/></filter>
-      </defs>
-      <rect width='1200' height='800' fill='url(#tone)'/>
-      ${Array.from({ length: 3 }).map((_, idx) => {
-        const opacity = 0.13 - idx * 0.03;
-        const size = 440 - idx * 70;
-        const x = 220 + idx * 210;
-        const y = 160 + idx * 70;
-        return `<image href='${referenceImage}' x='${x}' y='${y}' width='${size}' height='${size}' preserveAspectRatio='xMidYMid meet' opacity='${opacity.toFixed(2)}' filter='url(#blurSoft)'/>`;
-      }).join('')}
-      <path d='M0,630 C230,560 410,720 648,650 C842,592 1000,470 1200,520 V800 H0 Z' fill='rgba(148,163,184,0.12)'/>
-      ${Array.from({ length: 8 }).map((_, idx) => `<line x1='${idx * 170}' y1='0' x2='${idx * 170 + 180}' y2='800' stroke='rgba(255,255,255,0.04)' stroke-width='1'/>`).join('')}
-    </svg>`,
-  );
-
-  return {
-    background_mode: 'ai_artwork',
-    ai_artwork: { prompt: `${context.brandName} tonal geometry from uploaded reference`, image_url: tonalField, generation_status: 'done' },
-    gradient: {
-      type: 'linear',
-      angle: 132,
-      intensity: 104,
-      stops: [
-        { color: context.heroColor, position: 0 },
-        { color: '#0f172a', position: 52 },
-        { color: '#1f2937', position: 100 },
-      ],
-    },
-    shape: 'mesh',
-  };
-}
-
 function analyzeReferenceIntent(referenceImage?: string | null): ReferenceIntent {
   if (!referenceImage) return 'logo_pure';
   if (referenceImage.includes('logo') || referenceImage.includes('brand')) return 'logo_pure';
@@ -723,7 +684,35 @@ function buildSurfaceFromRecipe(
   const safeReferenceImage = referenceImage || context.brandLogoUrl || null;
   if (recipe.presetId === 'selection_tiled_motif' && safeReferenceImage) return buildTiledMotifFromReference(safeReferenceImage, context, 1, commonGradient);
   if (recipe.presetId === 'selection_editorial_logo' && safeReferenceImage) return buildEditorialLogoComposition(safeReferenceImage, context);
-  if (recipe.presetId === 'selection_tonal_geometry' && safeReferenceImage) return buildTonalGeometryComposition(safeReferenceImage, context);
+  if (recipe.presetId === 'selection_tonal_geometry') {
+    return {
+      background_mode: 'ai_artwork',
+      ai_artwork: {
+        prompt: `${context.brandName} selection tonal geometry premium surface`,
+        image_url: TONAL_GEOMETRY_BACKGROUND_IMAGE,
+        generation_status: 'done',
+      },
+      gradient: {
+        type: 'linear',
+        angle: 132,
+        intensity: 104,
+        stops: [
+          { color: context.heroColor, position: 0 },
+          { color: '#0f172a', position: 52 },
+          { color: '#1f2937', position: 100 },
+        ],
+      },
+      shape: 'mesh',
+      studioStyleConfig: {
+        presetId: 'selection_tonal_geometry',
+        family: 'geometry',
+        styleMode: 'tonal_geometry_image_base',
+        material: 'tonal_panel',
+        paletteMode: 'cool_luxury',
+        referenceImageUrl: safeReferenceImage,
+      },
+    };
+  }
   if (recipe.presetId === 'selection_luxury_fabric_monogram') {
     // TODO: replace this procedural SVG with higher-fidelity material synthesis when image generation pipeline supports deterministic layering.
     console.info('[background-studio] applying luxury fabric monogram', { presetId: recipe.presetId, hasReferenceImage: Boolean(safeReferenceImage) });
@@ -748,7 +737,8 @@ function buildSurfaceFromRecipe(
           <stop offset='100%' stop-color='rgba(255,255,255,0)'/>
         </radialGradient>
       </defs>
-      <rect width='1200' height='800' fill='url(#glassBase)'/>
+      <image href='${LUXURY_MONOGRAM_BACKGROUND_IMAGE}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.72'/>
+      <rect width='1200' height='800' fill='url(#glassBase)' opacity='0.8'/>
       <rect x='40' y='38' width='1120' height='724' rx='56' fill='rgba(255,255,255,0.12)' stroke='rgba(255,255,255,0.26)' stroke-width='2'/>
       <path d='M-40,590 C170,458 450,678 720,612 C982,544 1140,356 1290,300 V800 H-40 Z' fill='rgba(215,234,255,0.3)'/>
       <path d='M70,120 C360,18 860,58 1130,200 C930,270 560,300 240,244 Z' fill='rgba(255,255,255,0.22)'/>
@@ -773,6 +763,7 @@ function buildSurfaceFromRecipe(
         reflectionSweep: true,
         edgeHighlight: true,
         blurStrength: 0.22,
+        backgroundImageSrc: LUXURY_MONOGRAM_BACKGROUND_IMAGE,
       },
     });
   }
