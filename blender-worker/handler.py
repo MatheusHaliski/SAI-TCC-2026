@@ -18,20 +18,6 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
-from pipeline import (
-    DEFAULT_BLUR_THRESHOLD,
-    DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE,
-    DEFAULT_EDGE_DENSITY_LOW_TEXTURE,
-    DEFAULT_EDGE_DENSITY_MIN,
-    PipelineError,
-    build_meshy_prompt,
-    fetch_image,
-    generate_base_glb_with_meshy,
-    preprocess_garment,
-    run_blender_refinement,
-    score_cleaned_image,
-    validate_input_image,
-)
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -39,6 +25,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger("stylistai.worker")
 logger.info("worker_module_loaded entrypoint=handler.py")
+
+
+pipeline = None
+pipeline_load_error: str | None = None
+
+
+def get_pipeline():
+    global pipeline, pipeline_load_error
+    if pipeline is None:
+        try:
+            import pipeline as p
+
+            pipeline = p
+            pipeline_load_error = None
+            print("[PIPELINE] loaded successfully")
+        except Exception as e:
+            pipeline_load_error = str(e)
+            print("❌ Pipeline load failed:", pipeline_load_error)
+            pipeline = None
+    return pipeline
+
+
+def _pipeline_constant(name: str, fallback: float) -> float:
+    p = get_pipeline()
+    return float(getattr(p, name, fallback)) if p is not None else fallback
+
 
 app = FastAPI(title="StylistAI GPU Worker", version="2.0.0")
 
@@ -84,10 +96,10 @@ def _runtime_diagnostics() -> dict[str, Any]:
         "buildSha": os.getenv("BUILD_SHA", "").strip() or "unknown",
         "validationMode": os.getenv("VALIDATION_MODE", "production").strip() or "production",
         "minInputShortestSide": int(os.getenv("MIN_INPUT_SHORTEST_SIDE", "256")),
-        "blurThresholdDefault": _get_env_float("BLUR_THRESHOLD", _get_env_float("GARMENT_BLUR_THRESHOLD_DEFAULT", DEFAULT_BLUR_THRESHOLD)),
-        "blurThresholdLowTexture": _get_env_float("BLUR_THRESHOLD_LOW_TEXTURE", _get_env_float("GARMENT_BLUR_THRESHOLD_LOW_TEXTURE", DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE)),
-        "edgeDensityMin": _get_env_float("EDGE_DENSITY_MIN", _get_env_float("GARMENT_EDGE_DENSITY_MIN", DEFAULT_EDGE_DENSITY_MIN)),
-        "edgeDensityLowTexture": _get_env_float("EDGE_DENSITY_LOW_TEXTURE", _get_env_float("GARMENT_EDGE_DENSITY_LOW_TEXTURE", DEFAULT_EDGE_DENSITY_LOW_TEXTURE)),
+        "blurThresholdDefault": _get_env_float("BLUR_THRESHOLD", _get_env_float("GARMENT_BLUR_THRESHOLD_DEFAULT", _pipeline_constant("DEFAULT_BLUR_THRESHOLD", 100.0))),
+        "blurThresholdLowTexture": _get_env_float("BLUR_THRESHOLD_LOW_TEXTURE", _get_env_float("GARMENT_BLUR_THRESHOLD_LOW_TEXTURE", _pipeline_constant("DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE", 80.0))),
+        "edgeDensityMin": _get_env_float("EDGE_DENSITY_MIN", _get_env_float("GARMENT_EDGE_DENSITY_MIN", _pipeline_constant("DEFAULT_EDGE_DENSITY_MIN", 0.01))),
+        "edgeDensityLowTexture": _get_env_float("EDGE_DENSITY_LOW_TEXTURE", _get_env_float("GARMENT_EDGE_DENSITY_LOW_TEXTURE", _pipeline_constant("DEFAULT_EDGE_DENSITY_LOW_TEXTURE", 0.008))),
         "qualityScoreMin": _get_env_float("QUALITY_SCORE_MIN", 0.35),
         "enablePersonDetection": os.getenv("ENABLE_PERSON_DETECTION", "false").strip().lower() in {"1", "true", "yes", "on"},
     }
@@ -98,6 +110,7 @@ executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
 JobState = Literal["queued", "submitted", "in_progress", "completed", "failed", "cancelled"]
 jobs: dict[str, dict[str, Any]] = {}
+job_queue: list[str] = []
 
 
 class JobRequest(BaseModel):
@@ -134,6 +147,7 @@ def build_preflight_response(request: Request) -> Response:
 
 def register_job(job_id: str, payload: dict[str, Any]) -> None:
     with jobs_lock:
+        job_queue.append(job_id)
         jobs[job_id] = {
             "jobId": job_id,
             "status": "queued",
@@ -170,13 +184,23 @@ def build_artifact_url(output_path: Path, job_id: str) -> str:
 
 
 def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
+    p = get_pipeline()
+    if p is None:
+        print(f"[JOB] error id={job_id} err=Pipeline not available")
+        update_job(job_id, status="failed", error={"code": "pipeline_unavailable", "message": "Pipeline not available"})
+        return
+
     image_url = str(payload.get("imageUrl", "")).strip()
     job_type = str(payload.get("jobType", "blender_uv_pipeline") or "blender_uv_pipeline")
     options = payload.get("options", {})
     if not isinstance(options, dict):
         options = {}
 
+    print(f"[JOB] start id={job_id}")
     logger.info("job_started jobId=%s jobType=%s", job_id, job_type)
+    with jobs_lock:
+        if job_id in job_queue:
+            job_queue.remove(job_id)
     update_job(job_id, status="in_progress")
     started = time.perf_counter()
 
@@ -196,8 +220,8 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
     }
 
     try:
-        fetch_image(image_url, original_path)
-        validation = validate_input_image(original_path)
+        p.fetch_image(image_url, original_path)
+        validation = p.validate_input_image(original_path)
         debug["validation"] = {
             "accepted": validation.accepted,
             "code": validation.code,
@@ -205,18 +229,18 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
             "metadata": validation.metadata,
         }
         if not validation.accepted:
-            raise PipelineError(validation.code or "invalid_input", validation.message or "Input rejected", {"qualityReport": validation.metadata})
+            raise p.PipelineError(validation.code or "invalid_input", validation.message or "Input rejected", {"qualityReport": validation.metadata})
 
-        preprocess_meta = preprocess_garment(original_path, cleaned_path)
-        quality_report = score_cleaned_image(cleaned_path)
+        preprocess_meta = p.preprocess_garment(original_path, cleaned_path)
+        quality_report = p.score_cleaned_image(cleaned_path)
         debug["preprocess"] = preprocess_meta
         debug["qualityReport"] = quality_report
 
-        prompt = build_meshy_prompt(preprocess_meta, options)
-        meshy_meta = generate_base_glb_with_meshy(cleaned_path, base_glb_path, prompt, options)
+        prompt = p.build_meshy_prompt(preprocess_meta, options)
+        meshy_meta = p.generate_base_glb_with_meshy(cleaned_path, base_glb_path, prompt, options)
         debug["meshy"] = meshy_meta
 
-        blender_meta = run_blender_refinement(base_glb_path, refined_glb_path, job_dir)
+        blender_meta = p.run_blender_refinement(base_glb_path, refined_glb_path, job_dir)
         debug["blender"] = blender_meta
 
         duration_ms = int((time.perf_counter() - started) * 1000)
@@ -239,11 +263,13 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
             debug=debug,
             error=None,
         )
+        print(f"[JOB] success id={job_id}")
         logger.info("job_completed jobId=%s durationMs=%s", job_id, duration_ms)
-    except PipelineError as exc:
+    except p.PipelineError as exc:
         debug["error"] = {"code": exc.code, "message": exc.message, "details": exc.details or {}}
         debug["timestamps"]["failedAt"] = now_iso()
         debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
+        print(f"[JOB] error id={job_id} err={exc.message}")
         logger.warning("job_failed jobId=%s code=%s message=%s", job_id, exc.code, exc.message)
         update_job(
             job_id,
@@ -253,6 +279,7 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
             debug=debug,
         )
     except Exception as exc:
+        print(f"[JOB] error id={job_id} err={str(exc)}")
         logger.exception("job_failed jobId=%s", job_id)
         debug["error"] = {"code": "processing_error", "message": str(exc), "type": exc.__class__.__name__}
         debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
@@ -295,6 +322,9 @@ def health() -> dict[str, Any]:
     runtime = _runtime_diagnostics()
     return {
         "status": "ok",
+        "queue_size": len(job_queue),
+        "active_jobs": len(jobs),
+        "pipeline_loaded": get_pipeline() is not None,
         "service": "stylistai-gpu-worker",
         "outputDir": str(OUTPUT_DIR),
         "maxWorkers": MAX_WORKERS,
@@ -333,7 +363,7 @@ async def auth_middleware(request: Request, call_next):
 
     expected_token = os.getenv("BLENDER_WORKER_TOKEN", "").strip()
     if not expected_token:
-        return await call_next(request)
+        return JSONResponse(status_code=500, content={"detail": "Worker auth token is not configured", "message": "Set BLENDER_WORKER_TOKEN"})
 
     authorization = request.headers.get("authorization", "")
     if authorization != f"Bearer {expected_token}":
@@ -348,11 +378,16 @@ def preflight(rest_of_path: str, request: Request) -> Response:
 
 
 def _submit_job(payload: dict[str, Any]) -> dict[str, str]:
+    p = get_pipeline()
+    if p is None:
+        raise HTTPException(status_code=500, detail="Pipeline not available")
+
     if not str(payload.get("imageUrl", "")).strip():
         raise HTTPException(status_code=400, detail={"code": "VALIDATION_ERROR", "message": "imageUrl is required"})
     job_id = str(uuid.uuid4())
     register_job(job_id, payload)
     logger.info("job_created jobId=%s jobType=%s", job_id, payload.get("jobType", "blender_uv_pipeline"))
+    print(f"[JOB] queued id={job_id}")
     executor.submit(run_3d_pipeline, job_id, payload)
     return {"jobId": job_id, "status": "queued"}
 
@@ -381,9 +416,7 @@ async def create_job(request: Request) -> dict[str, str]:
             "options": payload.get("options", {}),
         }
 
-        print("👉 ENTERING PIPELINE")
         result = _submit_job(normalized_payload)
-        print("✅ JOB SUCCESS")
         return result
     except HTTPException:
         raise
