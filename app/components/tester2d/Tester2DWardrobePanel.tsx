@@ -14,6 +14,7 @@ interface Props {
   items: Tester2DWardrobeItem[];
   onApply: (item: Tester2DWardrobeItem) => void;
   onProcessNow?: (pieceId: string) => void;
+  showProcessingActions?: boolean;
 }
 
 const statusLabel = (status?: WardrobeFitProfile['preparationStatus']) => {
@@ -25,7 +26,7 @@ const statusLabel = (status?: WardrobeFitProfile['preparationStatus']) => {
   return 'PROCESSING REQUIRED';
 };
 
-export default function Tester2DWardrobePanel({ items, onApply, onProcessNow }: Props) {
+export default function Tester2DWardrobePanel({ items, onApply, onProcessNow, showProcessingActions = false }: Props) {
   return (
     <div className="grid max-h-[720px] gap-2 overflow-y-auto pr-1">
       {items.map((item) => {
@@ -48,12 +49,12 @@ export default function Tester2DWardrobePanel({ items, onApply, onProcessNow }: 
               <p className="text-[11px] uppercase tracking-[0.18em] text-white/65">
                 {slot === 'unknown' ? 'UNKNOWN' : slot} · {gender.toUpperCase()} · {statusLabel(fit?.preparationStatus)}
               </p>
-              {process.env.NODE_ENV !== 'production' ? (
+              {showProcessingActions ? (
                 <p className="text-[10px] text-white/45">
                   {fit ? `debug: fitProfile ${fit.preparationStatus}` : 'debug: fitProfile missing, fallback label applied'}
                 </p>
               ) : null}
-              {process.env.NODE_ENV !== 'production' && onProcessNow ? (
+              {showProcessingActions && onProcessNow ? (
                 <button
                   type="button"
                   className="mt-1 rounded-md border border-white/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-white/80 hover:bg-white/10"
