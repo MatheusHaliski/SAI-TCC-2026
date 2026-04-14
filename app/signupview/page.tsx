@@ -4,11 +4,11 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import SignupForm from "./SignupForm";
-import { getDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken } from "@/app/lib/accessTokenShare";
 import { clearAuthSessionToken } from "@/app/lib/authSession";
 
 const ff = "'Inter', 'Segoe UI', Arial, sans-serif";
+const metallicGradient = "linear-gradient(135deg, #f7e7b2 0%, #d4af37 28%, #f4f4f5 52%, #a3a3a3 74%, #fff5cf 100%)";
 
 export default function SignupViewPage() {
     const router = useRouter();
@@ -30,7 +30,7 @@ export default function SignupViewPage() {
     return (
         <div style={{ fontFamily: ff, minHeight: "100vh", display: "flex", backgroundImage: "none", backgroundColor: "#fff" }}>
             {/* Left Side */}
-            <div style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)", padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
+            <div style={{ background: metallicGradient, padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1rem", textAlign: "center" }}>
                     <div style={{ width: 168, height: 168, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255,255,255,0.35)" }}>
                         <Image
@@ -61,8 +61,15 @@ export default function SignupViewPage() {
             </div>
 
             {/* Right Side */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#fff", overflowY: "auto" }}>
-                <div style={{ width: "100%", maxWidth: 448 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#f8fafc", position: "relative", overflow: "hidden", backgroundImage: "url(/Firefly_Gemini Flash_Crie ideias de background muito bons para um novo website de moda, usando uma rede de 3787887.png)", backgroundSize: "cover", backgroundPosition: "center" }}>
+                <Image
+                    src="/Fart.png"
+                    alt="Fashion AI network background"
+                    fill
+                    priority
+                    style={{ objectFit: "cover" }}
+                />
+                <div style={{ width: "100%", maxWidth: 448, position: "relative", zIndex: 1 }}>
                     <button onClick={() => router.push("/authview")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#6b7280", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontSize: "0.875rem", fontFamily: ff }}>
                         ← Voltar para login
                     </button>
