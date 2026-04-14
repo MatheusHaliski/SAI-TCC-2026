@@ -29,14 +29,6 @@ function readPath(source: PieceLikeRecord, path: string[]): unknown {
   }, source);
 }
 
-export function resolveWorkerBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_BLENDER_WORKER_URL?.trim() ?? '';
-  if (!raw) {
-    throw new Error('Missing NEXT_PUBLIC_BLENDER_WORKER_URL configuration.');
-  }
-  return raw.replace(/\/+$/, '');
-}
-
 export function resolvePieceImageUrl(piece: PieceLikeRecord): string | null {
   const candidatePaths = [
     ['imageUrl'],
@@ -104,10 +96,7 @@ export function buildBlenderWorkerSubmitPayload(piece: PieceLikeRecord): Blender
 }
 
 export async function submitBlenderWorkerJob(payload: BlenderWorkerJobPayload): Promise<Record<string, unknown>> {
-  const workerBaseUrl = resolveWorkerBaseUrl();
-  const requestUrl = `${workerBaseUrl}/jobs`;
-
-  const response = await fetch(requestUrl, {
+  const response = await fetch('/api/3d-worker/submit', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -125,10 +114,7 @@ export async function submitBlenderWorkerJob(payload: BlenderWorkerJobPayload): 
 }
 
 export async function pollBlenderWorkerJob(jobId: string): Promise<Record<string, unknown>> {
-  const workerBaseUrl = resolveWorkerBaseUrl();
-  const requestUrl = `${workerBaseUrl}/jobs/${encodeURIComponent(jobId)}`;
-
-  const response = await fetch(requestUrl, {
+  const response = await fetch(`/api/3d-worker/jobs/${encodeURIComponent(jobId)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
