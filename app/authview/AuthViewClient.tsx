@@ -221,11 +221,12 @@ export default function AuthViewClient() {
                     style={{ objectFit: "cover", opacity: 0.55 }}
                 />
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,0.62), rgba(255,255,255,0.72))" }} />
-                <div style={{ width: "100%", maxWidth: 448, position: "relative", zIndex: 1 }}>
-                    <div style={{ marginBottom: "2rem" }}>
-                        <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Bem-vindo de volta</h2>
-                        <p style={{ color: "#6b7280", fontFamily: ff }}>Entre com suas credenciais para acessar sua conta</p>
-                    </div>
+                <div style={{ width: "100%", maxWidth: 520, position: "relative", zIndex: 1 }}>
+                    <div style={{ background: "rgba(255,255,255,0.28)", border: "2px solid #000", borderRadius: 24, padding: "2rem", backdropFilter: "blur(14px) saturate(155%)", WebkitBackdropFilter: "blur(14px) saturate(155%)", boxShadow: "0 16px 40px rgba(15, 23, 42, 0.22)" }}>
+                        <div style={{ marginBottom: "2rem" }}>
+                            <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Bem-vindo de volta</h2>
+                            <p style={{ color: "#6b7280", fontFamily: ff }}>Entre com suas credenciais para acessar sua conta</p>
+                        </div>
 
                     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                         <div>
@@ -274,12 +275,13 @@ export default function AuthViewClient() {
                         </div>
                     </form>
 
-                    <p style={{ textAlign: "center", fontSize: "0.875rem", color: "#6b7280", marginTop: "2rem", fontFamily: ff }}>
-                        Não tem uma conta?{" "}
-                        <button onClick={() => router.push("/signupview")} style={{ color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 500, fontFamily: ff }}>
-                            Criar conta
-                        </button>
-                    </p>
+                        <p style={{ textAlign: "center", fontSize: "0.875rem", color: "#6b7280", marginTop: "2rem", fontFamily: ff }}>
+                            Não tem uma conta?{" "}
+                            <button onClick={() => router.push("/signupview")} style={{ color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 500, fontFamily: ff }}>
+                                Criar conta
+                            </button>
+                        </p>
+                    </div>
                 </div>
             </div>
 
