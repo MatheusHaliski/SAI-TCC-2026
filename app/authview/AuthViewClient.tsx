@@ -183,7 +183,7 @@ export default function AuthViewClient() {
                             alt="Logo metálico oficial da FAI"
                             width={168}
                             height={168}
-                            style={{ width: "250%", height: "250%", objectFit: "cover" }}
+                            style={{ width: "100%", maxWidth: 280, height: "auto", objectFit: "contain" }}
                         />
                     <div>
                         <div style={{ color: "#fff", fontSize: "2.4rem", fontWeight: 700, fontFamily: ff, lineHeight: 1.1, maxWidth: 360, textAlign: "center" }}>
