@@ -1284,8 +1284,32 @@ export default function OutfitBackgroundStudioModal({
   onClose,
   onApply,
 }: OutfitBackgroundStudioModalProps) {
+  const buildNoMaterialConfig = (baseColor: string): FabricMaterialConfig => ({
+    ...buildFabricPresetConfig(baseColor),
+    type: 'none',
+    stitchBorder: false,
+    premium: false,
+  });
+
+  const deriveMaterialConfigFromDraft = (source: OutfitBackgroundConfig): FabricMaterialConfig => {
+    const baseColor = source.solid_color || source.gradient?.stops?.[0]?.color || '#334155';
+    if (source.materialLayer?.type !== 'embroidered_fabric') return buildNoMaterialConfig(baseColor);
+    return buildFabricPresetConfig(baseColor, {
+      type: 'embroidered_fabric',
+      density: source.materialLayer.density,
+      threadDirection: source.materialLayer.threadDirection,
+      threadThickness: source.materialLayer.threadThickness,
+      embossIntensity: source.materialLayer.embossIntensity,
+      surfaceContrast: source.materialLayer.surfaceContrast,
+      finish: source.materialLayer.finish,
+      scope: source.materialLayer.scope,
+      stitchBorder: source.decorativeOverlayLayer?.stitchBorder,
+      stitchColor: source.decorativeOverlayLayer?.stitchColor,
+    });
+  };
+
   const [activeTab, setActiveTab] = useState<StudioTab>('color');
-  const [draft, setDraft] = useState<OutfitBackgroundConfig>(resolveOutfitBackgroundForRender(value));
+  const [draft, setDraft] = useState<OutfitBackgroundConfig>(() => resolveOutfitBackgroundForRender(value));
   const [recentColors, setRecentColors] = useState<string[]>([]);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiStylePreset, setAiStylePreset] = useState<ArtworkStylePreset>('editorial_fashion');
@@ -1308,13 +1332,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiError, setAiError] = useState<string | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
   const [presetRequirementMessage, setPresetRequirementMessage] = useState<string | null>(null);
-  const [materialConfig, setMaterialConfig] = useState<FabricMaterialConfig>(() =>
-    buildFabricPresetConfig(
-      resolveOutfitBackgroundForRender(value).solid_color
-      || resolveOutfitBackgroundForRender(value).gradient?.stops?.[0]?.color
-      || '#334155',
-    ),
-  );
+  const [materialConfig, setMaterialConfig] = useState<FabricMaterialConfig>(() => deriveMaterialConfigFromDraft(resolveOutfitBackgroundForRender(value)));
   const showPresetToastError = (message: string) => {
     void Swal.fire({
       toast: true,
