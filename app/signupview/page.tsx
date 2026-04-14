@@ -75,17 +75,19 @@ export default function SignupViewPage() {
                     <button onClick={() => router.push("/authview")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#6b7280", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontSize: "0.875rem", fontFamily: ff }}>
                         ← Voltar para login
                     </button>
-                    <div style={{ marginBottom: "2rem" }}>
-                        <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Criar sua conta</h2>
-                        <p style={{ color: "#6b7280", fontFamily: ff }}>Preencha os dados abaixo para começar</p>
+                    <div style={{ background: "#fff", border: "2px solid #000", borderRadius: 24, padding: "2rem" }}>
+                        <div style={{ marginBottom: "2rem" }}>
+                            <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Criar sua conta</h2>
+                            <p style={{ color: "#6b7280", fontFamily: ff }}>Preencha os dados abaixo para começar</p>
+                        </div>
+                        <SignupForm />
+                        <p style={{ textAlign: "center", fontSize: "0.875rem", color: "#6b7280", marginTop: "2rem", fontFamily: ff }}>
+                            Já tem uma conta?{" "}
+                            <button onClick={() => router.push("/authview")} style={{ color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 500, fontFamily: ff }}>
+                                Fazer login
+                            </button>
+                        </p>
                     </div>
-                    <SignupForm />
-                    <p style={{ textAlign: "center", fontSize: "0.875rem", color: "#6b7280", marginTop: "2rem", fontFamily: ff }}>
-                        Já tem uma conta?{" "}
-                        <button onClick={() => router.push("/authview")} style={{ color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 500, fontFamily: ff }}>
-                            Fazer login
-                        </button>
-                    </p>
                 </div>
             </div>
         </div>
