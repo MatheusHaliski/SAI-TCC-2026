@@ -46,7 +46,7 @@ export default function HomeShell() {
   }
 
   return (
-    <div className="sa-home-shell flex min-h-screen text-white">
+    <div className="sa-home-shell flex min-h-screen text-[color:var(--shell-foreground)]">
       <SidebarNav
         activeRoute={activeRoute}
         onRouteChange={(route) => {

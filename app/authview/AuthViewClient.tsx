@@ -10,7 +10,8 @@ import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
 import { signInWithFacebook, signInWithGoogle } from "@/app/auth";
 
-const ff = `${shareTechMono.style.fontFamily}, 'Inter', 'Segoe UI', Arial, sans-serif`;
+const ff = `${shareTechMono.style.fontFamily}, 'Inter', 'Segoe UI', Arial, sans-serif`
+const metallicGradient = 'linear-gradient(135deg, #f7e7b2 0%, #d4af37 28%, #f4f4f5 52%, #a3a3a3 74%, #fff5cf 100%)';
 
 const EyeIcon = ({ open }: { open: boolean }) => open ? (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -176,35 +177,37 @@ export default function AuthViewClient() {
     return (
         <div style={{ fontFamily: ff, minHeight: "100vh", display: "flex", backgroundImage: "none", backgroundColor: "#fff" }}>
             {/* Left - Branding */}
-            <div style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)", padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1.5rem", minHeight: 220, textAlign: "center" }}>
-                        <Image
-                            src="/FAI-removebg-preview.png"
-                            alt="Logo metálico oficial da FAI"
-                            width={168}
-                            height={168}
-                            style={{ width: "100%", maxWidth: 280, height: "auto", objectFit: "contain" }}
-                        />
-                    <div>
-                        <div style={{ color: "#fff", fontSize: "2.4rem", fontWeight: 700, fontFamily: ff, lineHeight: 1.1, maxWidth: 360, textAlign: "center" }}>
-                            Welcome back to Fashion AI!
-                        </div>
-                        <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "1.05rem", marginTop: "0.45rem", fontFamily: ff, textAlign: "center" }}>
-                            Seu estilista pessoal
+            <div style={{ background: metallicGradient, padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
+                <div style={{ border: "2px solid rgba(255,255,255,0.92)", borderRadius: 24, background: "rgba(255,255,255,0.06)", padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1.5rem", minHeight: 220, textAlign: "center" }}>
+                            <Image
+                                src="/FAI-removebg-preview.png"
+                                alt="Logo metálico oficial da FAI"
+                                width={168}
+                                height={168}
+                                style={{ width: "100%", maxWidth: 280, height: "auto", objectFit: "contain" }}
+                            />
+                        <div>
+                            <div style={{ color: "#fff", fontSize: "2.4rem", fontWeight: 700, fontFamily: ff, lineHeight: 1.1, maxWidth: 360, textAlign: "center" }}>
+                                Welcome back to Fashion AI!
+                            </div>
+                            <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "1.05rem", marginTop: "0.45rem", fontFamily: ff, textAlign: "center" }}>
+                                Seu estilista pessoal
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div>
-                    <div style={{ fontSize: "2.25rem", fontWeight: 600, color: "#fff", marginBottom: "1.5rem", lineHeight: 1.3, fontFamily: ff }}>Organize seu estilo<br />com inteligência artificial</div>
-                    <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1.125rem", marginBottom: "2rem", fontFamily: ff }}>Crie combinações perfeitas, gerencie seu guarda-roupa e descubra seu estilo único com a ajuda da IA.</p>
-                    {[["✨", "Sugestões inteligentes de looks"], ["👔", "Guarda-roupa digital organizado"], ["🎨", "Visualização em manequim 3D"]].map(([icon, text]) => (
-                        <div key={text} style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-                            <div style={{ width: 40, height: 40, background: "rgba(255,255,255,0.2)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                <span style={{ fontSize: "1.25rem" }}>{icon}</span>
+                    <div>
+                        <div style={{ fontSize: "2.25rem", fontWeight: 600, color: "#fff", marginBottom: "1.5rem", lineHeight: 1.3, fontFamily: ff }}>Organize seu estilo<br />com inteligência artificial</div>
+                        <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1.125rem", marginBottom: "2rem", fontFamily: ff }}>Crie combinações perfeitas, gerencie seu guarda-roupa e descubra seu estilo único com a ajuda da IA.</p>
+                        {[["✨", "Sugestões inteligentes de looks"], ["👔", "Guarda-roupa digital organizado"], ["🎨", "Visualização em manequim 3D"]].map(([icon, text]) => (
+                            <div key={text} style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                                <div style={{ width: 40, height: 40, background: "rgba(255,255,255,0.2)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <span style={{ fontSize: "1.25rem" }}>{icon}</span>
+                                </div>
+                                <p style={{ color: "rgba(255,255,255,0.9)", fontFamily: ff }}>{text}</p>
                             </div>
-                            <p style={{ color: "rgba(255,255,255,0.9)", fontFamily: ff }}>{text}</p>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
                 <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem", fontFamily: ff }}>© 2026 Fashion AI. Todos os direitos reservados.</div>
             </div>
