@@ -377,11 +377,32 @@ html.dark-mode body textarea::placeholder {
   color: var(--shell-foreground);
 }
 
-:root[data-theme='light'] .sa-home-shell::before {
-  opacity: 0.64;
+:root[data-theme='light'][data-home-shape='none'] .sa-home-shell::before {
+  opacity: 0;
+  background: none;
+}
+
+:root[data-theme='light'][data-home-shape='orb'] .sa-home-shell::before {
+  opacity: 0.56;
   background:
-    radial-gradient(circle at 18% 26%, rgba(255, 255, 255, 0.88), transparent 44%),
-    radial-gradient(circle at 84% 74%, rgba(224, 236, 255, 0.64), transparent 40%);
+    radial-gradient(circle at 18% 30%, rgba(255, 255, 255, 0.88), transparent 44%),
+    radial-gradient(circle at 80% 70%, rgba(214, 231, 255, 0.68), transparent 38%);
+}
+
+:root[data-theme='light'][data-home-shape='diamond'] .sa-home-shell::before {
+  opacity: 0.52;
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.28) 12%, transparent 12%),
+    linear-gradient(-45deg, rgba(206, 226, 255, 0.22) 12%, transparent 12%);
+  background-size: 130px 130px;
+}
+
+:root[data-theme='light'][data-home-shape='mesh'] .sa-home-shell::before {
+  opacity: 0.48;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 221, 255, 0.26) 1px, transparent 1px);
+  background-size: 44px 44px;
 }
 
 :root[data-theme='light'] .sa-home-shell {
