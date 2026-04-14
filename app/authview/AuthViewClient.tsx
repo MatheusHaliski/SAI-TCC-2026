@@ -178,13 +178,14 @@ export default function AuthViewClient() {
             {/* Left - Branding */}
             <div style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)", padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1.5rem", minHeight: 220, textAlign: "center" }}>
-                    <div style={{ width: 168, height: 168, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255,255,255,0.35)" }}>
+                    <div style={{ width: 168, height: 168, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255,255,255,0.35)", background: "transparent"  }}>
                         <Image
                             src="/FAI.png"
                             alt="Logo metálico oficial da FAI"
                             width={168}
                             height={168}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            style={{ width: "150%", height: "150%", objectFit: "cover" }}
+                            display= "block"
                         />
                     </div>
                     <div>
