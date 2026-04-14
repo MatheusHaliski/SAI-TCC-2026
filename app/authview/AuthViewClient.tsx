@@ -9,6 +9,7 @@ import { clearAuthSessionToken, setAuthSessionProfile, setAuthSessionToken } fro
 import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
 import { signInWithFacebook, signInWithGoogle } from "@/app/auth";
+import { ensureSavedPageBackgroundConfig } from "@/app/lib/pageBackground";
 
 const ff = `${shareTechMono.style.fontFamily}, 'Inter', 'Segoe UI', Arial, sans-serif`
 const metallicGradient = 'linear-gradient(135deg, #f7e7b2 0%, #d4af37 28%, #f4f4f5 52%, #a3a3a3 74%, #fff5cf 100%)';
@@ -83,6 +84,7 @@ export default function AuthViewClient() {
             setAuthSessionProfile(profile);
             setDevSessionToken(token);
             setSharedAccessData({ token, profile });
+            ensureSavedPageBackgroundConfig();
             router.replace("/home");
         } catch {
             void VSModalPaged({ title: "Unexpected error", messages: ["Unable to verify credentials right now."], tone: "error" });
@@ -162,6 +164,7 @@ export default function AuthViewClient() {
             setAuthSessionProfile(profile);
             setDevSessionToken(token);
             setSharedAccessData({ token, profile });
+            ensureSavedPageBackgroundConfig();
             router.replace("/home");
         } catch {
             void VSModalPaged({

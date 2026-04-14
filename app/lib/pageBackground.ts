@@ -8,7 +8,7 @@ export interface PageBackgroundConfig {
 }
 
 const PAGE_BACKGROUND_KEY = 'sai_page_background_config';
-const DEFAULT_SHELL_BACKGROUND_IMAGE = '/Fart.png';
+export const DEFAULT_SHELL_BACKGROUND_IMAGE = '/Fart.png';
 export const GOLDEN_BACKGROUND_ASSET = '/Firefly_Consegue adicionar quebras de linha tech ao gradiente (adicionar ranhuras) 3787887.jpg';
 export const OFFICIAL_WEBSITE_BACKGROUND_GRADIENT = `url("data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000'>
@@ -64,17 +64,19 @@ const isGoldenBackground = (gradient: string): boolean => gradient.includes(GOLD
 const withDefaultBackgroundFallback = (gradient: string): string =>
   gradient.includes(DEFAULT_SHELL_BACKGROUND_IMAGE) ? gradient : `${gradient}, url('${DEFAULT_SHELL_BACKGROUND_IMAGE}')`;
 
+const normalizePageBackgroundConfig = (candidate?: Partial<PageBackgroundConfig> | null): PageBackgroundConfig => ({
+  gradient: withDefaultBackgroundFallback(candidate?.gradient || DEFAULT_PAGE_BACKGROUND_CONFIG.gradient),
+  shape: (candidate?.shape as PageBackgroundShape) || DEFAULT_PAGE_BACKGROUND_CONFIG.shape,
+});
+
 export const readPageBackgroundConfig = (): PageBackgroundConfig => {
   const raw = getLS(PAGE_BACKGROUND_KEY);
-  if (!raw) return DEFAULT_PAGE_BACKGROUND_CONFIG;
+  if (!raw) return normalizePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
   try {
     const parsed = JSON.parse(raw) as Partial<PageBackgroundConfig>;
-    return {
-      gradient: parsed.gradient || DEFAULT_PAGE_BACKGROUND_CONFIG.gradient,
-      shape: (parsed.shape as PageBackgroundShape) || DEFAULT_PAGE_BACKGROUND_CONFIG.shape,
-    };
+    return normalizePageBackgroundConfig(parsed);
   } catch {
-    return DEFAULT_PAGE_BACKGROUND_CONFIG;
+    return normalizePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
   }
 };
 
@@ -91,6 +93,27 @@ export const applyPageBackgroundConfig = (config: PageBackgroundConfig): void =>
 };
 
 export const savePageBackgroundConfig = (config: PageBackgroundConfig): void => {
-  setLS(PAGE_BACKGROUND_KEY, JSON.stringify(config));
-  applyPageBackgroundConfig(config);
+  const normalized = normalizePageBackgroundConfig(config);
+  setLS(PAGE_BACKGROUND_KEY, JSON.stringify(normalized));
+  applyPageBackgroundConfig(normalized);
+};
+
+export const ensureSavedPageBackgroundConfig = (): PageBackgroundConfig => {
+  const raw = getLS(PAGE_BACKGROUND_KEY);
+  if (!raw) {
+    savePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
+    return normalizePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<PageBackgroundConfig>;
+    const normalized = normalizePageBackgroundConfig(parsed);
+    if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
+      setLS(PAGE_BACKGROUND_KEY, JSON.stringify(normalized));
+    }
+    return normalized;
+  } catch {
+    savePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
+    return normalizePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
+  }
 };

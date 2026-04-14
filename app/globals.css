@@ -203,6 +203,17 @@ body {
 .sa-liquid-glass-premium {
   border: 1px solid var(--liquid-glass-border);
   background-image: var(--liquid-glass-gradient);
+  background-color: transparent;
+  backdrop-filter: var(--liquid-glass-blur);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  box-shadow: var(--liquid-glass-shadow);
+}
+
+.sa-liquid-glass-token {
+  border-color: var(--liquid-glass-border) !important;
+  background-image: var(--liquid-glass-gradient) !important;
+  background-color: transparent !important;
+  color: #000000 !important;
   backdrop-filter: var(--liquid-glass-blur);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   box-shadow: var(--liquid-glass-shadow);
@@ -454,7 +465,7 @@ html.dark-mode body textarea::placeholder {
 :root[data-theme='light'] .sa-glass {
   border-color: var(--liquid-glass-border) !important;
   background-image: var(--liquid-glass-gradient);
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: transparent !important;
   color: #000000 !important;
   backdrop-filter: var(--liquid-glass-blur);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
@@ -523,11 +534,12 @@ html.dark-mode body textarea::placeholder {
   .sa-apply-background,
   .sa-card,
   .sa-panel,
-  .sa-glass
+  .sa-glass,
+  .sa-liquid-glass-token
 ) {
   border-color: var(--liquid-glass-border) !important;
   background-image: var(--liquid-glass-gradient) !important;
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: transparent !important;
   backdrop-filter: var(--liquid-glass-blur);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   box-shadow: var(--liquid-glass-shadow);
