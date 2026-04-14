@@ -22,7 +22,7 @@ interface WardrobeItem {
   wardrobe_item_id: string;
   name: string;
   image_url: string;
-  image_assets?: { raw_upload_image_url?: string | null; segmented_png_url?: string | null; normalized_2d_preview_url?: string | null; approved_catalog_2d_url?: string | null; model_3d_url?: string | null };
+  image_assets?: { raw_upload_image_url?: string | null; segmented_png_url?: string | null; cleaned_png_url?: string | null; normalized_2d_preview_url?: string | null; approved_catalog_2d_url?: string | null; model_3d_url?: string | null };
   image_analysis?: { catalog_readiness_score?: number; recommended_action?: string };
   model_3d_url?: string | null;
   model_preview_url?: string | null;
@@ -30,6 +30,7 @@ interface WardrobeItem {
   model_branded_3d_url?: string | null;
   model_status?: string;
   model_generation_error?: string | null;
+  fitProfile?: { preparationStatus?: string };
   brand: string;
   season: string;
   gender: string;
@@ -58,8 +59,13 @@ function mapItemState(item: WardrobeItem): 'ready' | 'failed' | 'queued' | 'gene
   return 'not_started';
 }
 
-function stateLabel(state: ReturnType<typeof mapItemState>, status?: string) {
+function stateLabel(state: ReturnType<typeof mapItemState>, status?: string, item?: WardrobeItem) {
+  const normalizedError = String(item?.model_generation_error ?? '').trim().toLowerCase();
+  const fitReady = String(item?.fitProfile?.preparationStatus ?? '').trim().toLowerCase() === 'ready';
   if (state === 'ready') return 'Ready for 3D Viewer';
+  if (state === 'failed' && fitReady && (normalizedError.includes('low_quality') || normalizedError.includes('too dark') || normalizedError.includes('low contrast'))) {
+    return 'Ready for 2D try-on · 3D generation failed: cleaned garment too dark/low contrast';
+  }
   if (state === 'queued') return 'Queue pending';
   if (state === 'generating') return 'Generating asset';
   if (state === 'failed') return 'Failed (tap to retry)';
@@ -200,7 +206,7 @@ export default function MyWardrobeView() {
                       brand={item.brand}
                       pieceType={item.piece_type}
                       state={cardState}
-                      statusLabel={stateLabel(cardState, item.model_status)}
+                      statusLabel={stateLabel(cardState, item.model_status, item)}
                       onClick={() => setModalItem(item)}
                       onAvailable={() => setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'available' }))}
                       onUnavailable={() => setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'unavailable' }))}

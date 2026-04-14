@@ -26,6 +26,24 @@ function findUrlInArtifacts(artifacts: Record<string, unknown> | null): string |
   return null;
 }
 
+function findCleanedPngUrlInArtifacts(artifacts: Record<string, unknown> | null): string | null {
+  if (!artifacts) return null;
+  const candidates = [
+    artifacts.cleaned_png_url,
+    artifacts.cleanedPngUrl,
+    artifacts.cleaned_image_url,
+    artifacts.cleanedImageUrl,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
 export class BlenderPipelineService {
   constructor(
     private readonly pipelineJobsRepository = new PipelineJobsRepository(),
@@ -109,6 +127,7 @@ export class BlenderPipelineService {
 
       if (submittedStatus === 'completed') {
         const artifactUrl = findUrlInArtifacts(runpodSubmitted.artifacts);
+        const cleanedPngUrl = findCleanedPngUrlInArtifacts(runpodSubmitted.artifacts);
         await this.wardrobeItemsRepository.updatePipelineStatus(wardrobe_item_id, 'done', null, {
           stage: 'uv_pipeline_completed_inline',
           pipeline_job_id: created.pipeline_job_id,
@@ -119,6 +138,9 @@ export class BlenderPipelineService {
 
         if (artifactUrl) {
           await this.wardrobeItemsRepository.updateModel3dUrl(wardrobe_item_id, artifactUrl);
+        }
+        if (cleanedPngUrl) {
+          await this.wardrobeItemsRepository.updateCleanedPngUrl(wardrobe_item_id, cleanedPngUrl);
         }
       }
 
@@ -185,6 +207,7 @@ export class BlenderPipelineService {
     }
 
     const remote = await this.blenderCloudService.getBlenderCloudJobStatus(job.cloud_job_id, job.metrics?.runpodSubmitResponse as Record<string, unknown> | undefined);
+    const cleanedPngUrl = findCleanedPngUrlInArtifacts(remote.artifacts);
     const mergedMetrics = {
       ...(job.metrics ?? {}),
       ...(remote.metrics ?? {}),
@@ -216,6 +239,9 @@ export class BlenderPipelineService {
       if (resolvedModelUrl) {
         await this.wardrobeItemsRepository.updateModel3dUrl(job.wardrobe_item_id, resolvedModelUrl);
       }
+      if (cleanedPngUrl) {
+        await this.wardrobeItemsRepository.updateCleanedPngUrl(job.wardrobe_item_id, cleanedPngUrl);
+      }
     } else if (remote.status === 'failed' || remote.status === 'cancelled') {
       const failureMessage = remote.errorMessage ?? (remote.status === 'cancelled' ? 'RunPod Blender job was cancelled.' : 'RunPod Blender job failed.');
       await this.pipelineJobsRepository.update(pipelineJobId, {
@@ -233,6 +259,9 @@ export class BlenderPipelineService {
         cloud_job_id: job.cloud_job_id,
         provider: 'runpod',
       });
+      if (cleanedPngUrl) {
+        await this.wardrobeItemsRepository.updateCleanedPngUrl(job.wardrobe_item_id, cleanedPngUrl);
+      }
     } else {
       await this.pipelineJobsRepository.update(pipelineJobId, {
         status: remote.status === 'submitted' ? 'submitted' : remote.status === 'in_progress' ? 'in_progress' : 'queued',

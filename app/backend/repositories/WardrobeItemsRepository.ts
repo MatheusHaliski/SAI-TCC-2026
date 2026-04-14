@@ -65,6 +65,7 @@ export class WardrobeItemsRepository extends BaseRepository {
         image_assets: {
           raw_upload_image_url: String(item.raw_upload_image_url ?? item.image_url ?? ''),
           segmented_png_url: (item.segmented_png_url as string | null) ?? null,
+          cleaned_png_url: (item.cleaned_png_url as string | null) ?? null,
           normalized_2d_preview_url: (item.normalized_2d_preview_url as string | null) ?? null,
           approved_catalog_2d_url: (item.approved_catalog_2d_url as string | null) ?? null,
           model_3d_url: model3dUrl,
@@ -94,6 +95,7 @@ export class WardrobeItemsRepository extends BaseRepository {
         pipeline_stage_details: (item.pipeline_stage_details as Record<string, unknown> | null) ?? null,
         model_status: normalizedStatus,
         model_generation_error: (item.model_generation_error as string | null) ?? null,
+        fitProfile: (item.fitProfile as WardrobeViewItem['fitProfile'] | undefined) ?? undefined,
         brand: brandMap.get(String(item.brand_id ?? '')) ?? (item.brand_id === 'default' ? 'Default brand' : 'Unknown'),
         brand_detection_confidence: Number(item.brand_detection_confidence ?? 0) || null,
         brand_detection_source: (item.brand_detection_source as WardrobeViewItem['brand_detection_source']) ?? null,
@@ -143,6 +145,7 @@ export class WardrobeItemsRepository extends BaseRepository {
         image_assets: {
           raw_upload_image_url: String(item.raw_upload_image_url ?? item.image_url ?? ''),
           segmented_png_url: (item.segmented_png_url as string | null) ?? null,
+          cleaned_png_url: (item.cleaned_png_url as string | null) ?? null,
           normalized_2d_preview_url: (item.normalized_2d_preview_url as string | null) ?? null,
           approved_catalog_2d_url: (item.approved_catalog_2d_url as string | null) ?? null,
           model_3d_url: model3dUrl,
@@ -320,6 +323,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       image_assets: {
         raw_upload_image_url: String(item.raw_upload_image_url ?? item.image_url ?? ''),
         segmented_png_url: (item.segmented_png_url as string | null) ?? null,
+        cleaned_png_url: (item.cleaned_png_url as string | null) ?? null,
         normalized_2d_preview_url: (item.normalized_2d_preview_url as string | null) ?? null,
         approved_catalog_2d_url: (item.approved_catalog_2d_url as string | null) ?? null,
         model_3d_url: model3dUrl,
@@ -399,6 +403,16 @@ export class WardrobeItemsRepository extends BaseRepository {
       model_3d_url: normalized,
       model_status: 'completed',
       model_generation_error: null,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  async updateCleanedPngUrl(wardrobeItemId: string, cleanedPngUrl: string): Promise<void> {
+    const normalized = cleanedPngUrl.trim();
+    if (!normalized) return;
+
+    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
+      cleaned_png_url: normalized,
       updated_at: new Date().toISOString(),
     });
   }

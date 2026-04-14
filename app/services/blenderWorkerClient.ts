@@ -6,6 +6,14 @@ export interface BlenderWorkerJobPayload {
   options: {
     prompt: string;
     type: string;
+    mode?: 'model_generation';
+    cleanedImagePreprocess?: {
+      enabled: boolean;
+      autoBrightnessContrast: boolean;
+      maxBrightnessGain: number;
+      maxContrastGain: number;
+      keepQualityGateStrict: boolean;
+    };
   };
   modelUrl?: string;
 }
@@ -36,10 +44,10 @@ export function resolvePieceImageUrl(piece: PieceLikeRecord): string | null {
     ['imagemUrl'],
     ['photoUrl'],
     ['thumbnailUrl'],
-    ['image_assets', 'raw_upload_image_url'],
     ['image_assets', 'segmented_png_url'],
     ['image_assets', 'normalized_2d_preview_url'],
     ['image_assets', 'approved_catalog_2d_url'],
+    ['image_assets', 'raw_upload_image_url'],
   ];
 
   for (const path of candidatePaths) {
@@ -85,6 +93,14 @@ export function buildBlenderWorkerSubmitPayload(piece: PieceLikeRecord): Blender
     options: {
       prompt,
       type,
+      mode: 'model_generation',
+      cleanedImagePreprocess: {
+        enabled: true,
+        autoBrightnessContrast: true,
+        maxBrightnessGain: 0.16,
+        maxContrastGain: 0.14,
+        keepQualityGateStrict: true,
+      },
     },
   };
 

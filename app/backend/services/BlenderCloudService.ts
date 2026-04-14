@@ -155,6 +155,26 @@ function isErrorLikeText(value: string): boolean {
 
 function extractErrorMessage(payload: Record<string, unknown>): string | null {
   const output = toRecord(payload.output);
+  const topLevelError = toRecord(payload.error);
+  const outputError = toRecord(output.error);
+  const mergedError = { ...outputError, ...topLevelError };
+  const errorCode = readString(mergedError.code);
+  if (errorCode === 'invalid_input_low_quality') {
+    const qualityReport = toRecord(mergedError.qualityReport ?? payload.qualityReport ?? output.qualityReport);
+    const brightness = Number(qualityReport.brightness ?? NaN);
+    const contrast = Number(qualityReport.contrast ?? NaN);
+    const qualityScore = Number(qualityReport.qualityScore ?? payload.qualityScore ?? NaN);
+    const threshold = Number(mergedError.qualityThreshold ?? payload.cleanedQualityThreshold ?? NaN);
+    const bits = [
+      'Cleaned garment image did not meet quality threshold.',
+      Number.isFinite(threshold) ? `threshold=${threshold.toFixed(2)}` : null,
+      Number.isFinite(brightness) ? `brightness=${brightness.toFixed(3)}` : null,
+      Number.isFinite(contrast) ? `contrast=${contrast.toFixed(3)}` : null,
+      Number.isFinite(qualityScore) ? `qualityScore=${qualityScore.toFixed(3)}` : null,
+    ].filter((value): value is string => Boolean(value));
+    return bits.join(' ');
+  }
+
   const candidates: unknown[] = [
     payload.error,
     output.error,
