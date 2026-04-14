@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+import { shareTechMono } from "@/app/fonts";
 import { VSModalPaged } from "@/app/lib/authAlerts";
 import { clearAuthSessionToken, setAuthSessionProfile, setAuthSessionToken } from "@/app/lib/authSession";
 import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
 import { signInWithFacebook, signInWithGoogle } from "@/app/auth";
 
-const ff = "'Inter', 'Segoe UI', Arial, sans-serif";
+const ff = `${shareTechMono.style.fontFamily}, 'Inter', 'Segoe UI', Arial, sans-serif`;
 
 const EyeIcon = ({ open }: { open: boolean }) => open ? (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -176,21 +177,21 @@ export default function AuthViewClient() {
         <div style={{ fontFamily: ff, minHeight: "100vh", display: "flex", backgroundImage: "none", backgroundColor: "#fff" }}>
             {/* Left - Branding */}
             <div style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)", padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5rem", minHeight: 220 }}>
-                    <div style={{ width: 112, height: 112, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255,255,255,0.35)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1.5rem", minHeight: 220, textAlign: "center" }}>
+                    <div style={{ width: 168, height: 168, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255,255,255,0.35)" }}>
                         <Image
                             src="/Firefly_Gemini Flash_Consegue melhorar o logo da bolsa FAI para que fique com gradiente metalico do logo S 3787887.png"
                             alt="Logo metálico oficial da FAI"
-                            width={112}
-                            height={112}
+                            width={168}
+                            height={168}
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         />
                     </div>
                     <div>
-                        <div style={{ color: "#fff", fontSize: "2.4rem", fontWeight: 700, fontFamily: ff, lineHeight: 1.1, maxWidth: 360 }}>
+                        <div style={{ color: "#fff", fontSize: "2.4rem", fontWeight: 700, fontFamily: ff, lineHeight: 1.1, maxWidth: 360, textAlign: "center" }}>
                             Welcome back to Fashion AI!
                         </div>
-                        <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "1.05rem", marginTop: "0.45rem", fontFamily: ff }}>
+                        <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "1.05rem", marginTop: "0.45rem", fontFamily: ff, textAlign: "center" }}>
                             Seu estilista pessoal
                         </div>
                     </div>
@@ -211,15 +212,15 @@ export default function AuthViewClient() {
             </div>
 
             {/* Right - Form */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#fff", position: "relative", overflow: "hidden" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#f8fafc", position: "relative", overflow: "hidden", backgroundImage: "url(/Firefly_Gemini Flash_Crie ideias de background muito bons para um novo website de moda, usando uma rede de 3787887.png)", backgroundSize: "cover", backgroundPosition: "center" }}>
                 <Image
                     src="/Firefly_Gemini Flash_Crie ideias de background muito bons para um novo website de moda, usando uma rede de 3787887.png"
                     alt="Fashion AI network background"
                     fill
                     priority
-                    style={{ objectFit: "cover", opacity: 0.18 }}
+                    style={{ objectFit: "cover", opacity: 0.55 }}
                 />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.96))" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,0.62), rgba(255,255,255,0.72))" }} />
                 <div style={{ width: "100%", maxWidth: 448, position: "relative", zIndex: 1 }}>
                     <div style={{ marginBottom: "2rem" }}>
                         <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Bem-vindo de volta</h2>
