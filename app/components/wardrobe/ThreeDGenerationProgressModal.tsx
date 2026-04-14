@@ -28,6 +28,7 @@ export default function ThreeDGenerationProgressModal({ open, status, progressPe
 
   const ui = STATUS_COPY[status];
   const isFailed = status === 'failed' || status === 'timed_out' || status === 'cancelled';
+  const isLowQualityFailure = String(error ?? '').toLowerCase().includes('too dark/low contrast');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -54,7 +55,12 @@ export default function ThreeDGenerationProgressModal({ open, status, progressPe
           </div>
         ) : null}
 
-        {isFailed ? <p className="mt-4 text-sm text-rose-200">{error ?? '3D generation failed. Please retry.'}</p> : null}
+        {isFailed ? (
+          <div className="mt-4 space-y-1 text-sm">
+            {isLowQualityFailure ? <p className="text-emerald-200">Ready for 2D try-on</p> : null}
+            <p className="text-rose-200">{error ?? '3D generation failed. Please retry.'}</p>
+          </div>
+        ) : null}
 
         <div className="mt-5 flex items-center justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg border border-white/25 px-3 py-1.5 text-sm text-white/90">Cancel</button>

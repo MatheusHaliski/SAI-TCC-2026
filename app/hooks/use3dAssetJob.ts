@@ -49,6 +49,35 @@ function extractArtifactUrl(payload: unknown): string | null {
   return url.length > 0 ? url : null;
 }
 
+function extractErrorMessage(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const source = payload as Record<string, unknown>;
+  const error = source.error;
+  if (typeof error === 'string' && error.trim()) return error.trim();
+
+  if (error && typeof error === 'object') {
+    const structured = error as Record<string, unknown>;
+    const code = typeof structured.code === 'string' ? structured.code.trim() : '';
+    const message = typeof structured.message === 'string' ? structured.message.trim() : '';
+    if (code === 'invalid_input_low_quality') {
+      return '3D generation failed: cleaned garment too dark/low contrast. Ready for 2D try-on.';
+    }
+    if (message) return message;
+  }
+
+  const diagnostics = source.diagnostics && typeof source.diagnostics === 'object'
+    ? (source.diagnostics as Record<string, unknown>)
+    : null;
+  const brightness = Number(diagnostics?.brightness ?? NaN);
+  const contrast = Number(diagnostics?.contrast ?? NaN);
+  const score = Number(diagnostics?.qualityScore ?? NaN);
+  if (Number.isFinite(brightness) || Number.isFinite(contrast) || Number.isFinite(score)) {
+    return '3D generation failed: cleaned garment too dark/low contrast. Ready for 2D try-on.';
+  }
+
+  return null;
+}
+
 function extractJobId(payload: unknown): string | null {
   if (!payload || typeof payload !== 'object') return null;
   const source = payload as Record<string, unknown>;
@@ -145,8 +174,7 @@ export function use3dAssetJob(options?: Use3dAssetJobOptions) {
         }
 
         if (polledStatus === 'failed') {
-          const payloadError = (payload as Record<string, unknown>)?.error;
-          failJob('failed', typeof payloadError === 'string' && payloadError.trim() ? payloadError : '3D generation failed.');
+          failJob('failed', extractErrorMessage(payload) ?? '3D generation failed.');
           return;
         }
 

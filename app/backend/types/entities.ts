@@ -87,6 +87,7 @@ export interface PieceItem {
 export interface WardrobeImageAssets {
   raw_upload_image_url: string | null;
   segmented_png_url: string | null;
+  cleaned_png_url?: string | null;
   normalized_2d_preview_url: string | null;
   approved_catalog_2d_url: string | null;
   model_3d_url: string | null;
@@ -198,6 +199,9 @@ export interface WardrobeViewItem {
   pipeline_stage_details?: Record<string, unknown> | null;
   model_status?: ModelGenerationStatus;
   model_generation_error?: string | null;
+  fitProfile?: {
+    preparationStatus?: 'pending' | 'processing' | 'ready' | 'preview_only' | 'failed' | string;
+  };
   brand: string;
   brand_detection_confidence?: number | null;
   brand_detection_source?: BrandDetectionSource | null;
