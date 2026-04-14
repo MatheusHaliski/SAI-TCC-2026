@@ -214,7 +214,7 @@ export default function AuthViewClient() {
             {/* Right - Form */}
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#f8fafc", position: "relative", overflow: "hidden", backgroundImage: "url(/Firefly_Gemini Flash_Crie ideias de background muito bons para um novo website de moda, usando uma rede de 3787887.png)", backgroundSize: "cover", backgroundPosition: "center" }}>
                 <Image
-                    src="/FAI.png"
+                    src="/Fart.png"
                     alt="Fashion AI network background"
                     fill
                     priority
