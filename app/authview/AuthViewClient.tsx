@@ -218,7 +218,6 @@ export default function AuthViewClient() {
                     priority
                     style={{ objectFit: "cover" }}
                 />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,0.62), rgba(255,255,255,0.72))" }} />
                 <div style={{ width: "100%", maxWidth: 520, position: "relative", zIndex: 1 }}>
                     <div style={{ background: "rgba(255,255,255,0.28)", border: "2px solid #000", borderRadius: 24, padding: "2rem", backdropFilter: "blur(14px) saturate(155%)", WebkitBackdropFilter: "blur(14px) saturate(155%)", boxShadow: "0 16px 40px rgba(15, 23, 42, 0.22)" }}>
                         <div style={{ marginBottom: "2rem" }}>
