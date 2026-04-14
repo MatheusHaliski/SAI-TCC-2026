@@ -125,7 +125,7 @@ const DEFAULT_PLAN: BackgroundGenerationPlan = {
 };
 
 const SHAPE_KEYWORDS: Array<{ words: string[]; shape: BackgroundShapeLanguage }> = [
-  { words: ['flower', 'flowers', 'floral', 'petal', 'nature', 'leaf'], shape: 'organic_floral' },
+  { words: ['flower', 'flowers', 'floral', 'petal', 'nature', 'leaf', 'flores', 'flor'], shape: 'organic_floral' },
   { words: ['triangle', 'triangles'], shape: 'triangular' },
   { words: ['fruit', 'fruits', 'orb', 'sphere', 'circle', 'circles', 'dots', 'points'], shape: 'circles_orbs' },
   { words: ['line', 'lines', 'stroke', 'stripes'], shape: 'strokes_stripes' },
@@ -152,6 +152,10 @@ const FLOWER_VARIATION_IMAGES = [
   `/${encodeURIComponent('Sem título (35).png')}`,
   `/${encodeURIComponent('Sem título (36).png')}`,
   `/${encodeURIComponent('Sem título (37).png')}`,
+] as const;
+const FASHION_EDITORIAL_VARIATION_IMAGES = [
+  `/${encodeURIComponent('Firefly_Gemini Flash_Crie ideias de background muito bons para um novo website de moda, usando uma rede de 3787887.png')}`,
+  `/${encodeURIComponent('Sem título (38).png')}`,
 ] as const;
 
 function clamp(value: number, min: number, max: number) {
@@ -186,8 +190,8 @@ function mixHex(base: string, target: string, ratio: number) {
 function detectTightPattern(plan: BackgroundGenerationPlan): TightPatternKind {
   const keywords = plan.detected_keywords;
   const hasArrow = keywords.some((w) => ['arrow', 'arrows', 'chevron', 'chevrons'].includes(w));
-  const hasWave = keywords.some((w) => ['wave', 'waves', 'audio', 'sound', 'frequency'].includes(w));
-  const hasFlower = keywords.some((w) => ['flower', 'flowers', 'floral'].includes(w));
+  const hasWave = keywords.some((w) => ['wave', 'waves'].includes(w));
+  const hasFlower = keywords.some((w) => ['flower', 'flowers', 'floral', 'flores', 'flor'].includes(w));
   const hasStar = keywords.some((w) => ['star', 'stars'].includes(w));
   const hasCircle = keywords.some((w) => ['circle', 'circles', 'circule', 'circules', 'orb', 'orbs', 'dots', 'points'].includes(w));
   const hasTriangle = keywords.some((w) => ['triangle', 'triangles'].includes(w));
@@ -226,7 +230,7 @@ function detectColors(words: string[]) {
 }
 
 export function inferCompositionFromPrompt(keywords: string[], shape: BackgroundShapeLanguage): BackgroundCompositionType {
-  if (keywords.some((word) => ['flower', 'flowers', 'floral', 'petal', 'nature'].includes(word))) return 'radial_floral_cluster';
+  if (keywords.some((word) => ['flower', 'flowers', 'floral', 'petal', 'nature', 'flores', 'flor'].includes(word))) return 'radial_floral_cluster';
   if (keywords.some((word) => ['smoke', 'fog', 'mist', 'haze'].includes(word))) return 'layered_fog';
   if (keywords.some((word) => ['triangle', 'triangles', 'geometric', 'grid', 'structured'].includes(word))) return 'geometric_scatter';
   if (keywords.some((word) => ['wave', 'waves', 'flow', 'fluid', 'motion'].includes(word))) return 'wave_motion';
@@ -862,6 +866,20 @@ export function generateBackgroundVariations(plan: BackgroundGenerationPlan, pro
         seed: baseSeed + idx * 7919,
       };
     }
+  }
+
+  const shouldUseFashionEditorialImages = plan.detected_keywords.some((word) =>
+    ['fashion', 'moda', 'editorial', 'website', 'background', 'site'].includes(word),
+  );
+  if (shouldUseFashionEditorialImages && tightPattern !== 'waves' && tightPattern !== 'flowers' && variations.length >= 2) {
+    variations[0] = {
+      ...variations[0],
+      image: FASHION_EDITORIAL_VARIATION_IMAGES[0],
+    };
+    variations[1] = {
+      ...variations[1],
+      image: FASHION_EDITORIAL_VARIATION_IMAGES[1],
+    };
   }
 
   return variations;

@@ -117,7 +117,6 @@ export default function AuthViewClient() {
                     messages: [data?.error ?? "We could not send a reset link right now."],
                     tone: "error",
                 });
-                setSubmittingForgot(false);
                 return;
             }
 
@@ -126,7 +125,6 @@ export default function AuthViewClient() {
                 messages: ["We sent a redefinition link to your inbox. Follow it to reset your password."],
                 tone: "success",
             });
-            setSubmittingForgot(false);
             setShowForgotModal(false);
             setForgotEmail("");
         } catch (error) {
@@ -136,6 +134,7 @@ export default function AuthViewClient() {
                 messages: ["Unable to send the reset email right now."],
                 tone: "error",
             });
+        } finally {
             setSubmittingForgot(false);
         }
     };
