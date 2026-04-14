@@ -32,6 +32,7 @@ interface ProfileSectionRendererProps {
   username: string;
   displayName: string;
   email: string;
+  canEdit: boolean;
   wardrobeItems: WardrobeItem[];
   schemes: SchemeItem[];
   posts: UserPostRecord[];
@@ -43,12 +44,13 @@ export default function ProfileSectionRenderer({
   username,
   displayName,
   email,
+  canEdit,
   wardrobeItems,
   schemes,
   posts,
 }: ProfileSectionRendererProps) {
   if (section === 'wardrobe') return <ProfileWardrobeSection items={wardrobeItems} />;
-  if (section === 'user-info') return <ProfileUserInfoSection userId={userId} displayName={displayName} username={username} email={email} />;
+  if (section === 'user-info') return <ProfileUserInfoSection userId={userId} displayName={displayName} username={username} email={email} canEdit={canEdit} />;
   if (section === 'my-schemes') return <ProfileMySchemesSection userId={userId} schemes={schemes} />;
   if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} schemes={schemes.slice(0, 8)} />;
   if (section === 'my-posts') return <ProfileMyPostsSection posts={posts} />;

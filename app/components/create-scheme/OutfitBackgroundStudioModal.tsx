@@ -727,30 +727,20 @@ function buildEditorialLogoComposition(referenceImage: string, context: PresetCo
   const editorialLogoField = asDataUri(
     `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
       <defs>
-        <linearGradient id='editorialTint' x1='0%' y1='0%' x2='100%' y2='100%'>
-          <stop offset='0%' stop-color='rgba(15,23,42,0.16)'/>
-          <stop offset='55%' stop-color='rgba(30,64,175,0.12)'/>
-          <stop offset='100%' stop-color='rgba(15,23,42,0.28)'/>
-        </linearGradient>
-        <radialGradient id='vignette' cx='50%' cy='46%' r='70%'>
-          <stop offset='45%' stop-color='rgba(15,23,42,0)'/>
-          <stop offset='100%' stop-color='rgba(15,23,42,0.56)'/>
-        </radialGradient>
-        <filter id='softShadow' x='-20%' y='-20%' width='140%' height='140%'>
-          <feGaussianBlur stdDeviation='14'/>
+        <filter id='softShadow' x='-18%' y='-18%' width='136%' height='136%'>
+          <feGaussianBlur stdDeviation='10'/>
         </filter>
       </defs>
-      <image href='${referenceImage}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice'/>
-      <rect width='1200' height='800' fill='url(#editorialTint)'/>
-      <rect width='1200' height='800' fill='url(#vignette)'/>
-      <path d='M0,640 C210,560 420,700 730,620 C900,576 1040,500 1200,410 V800 H0 Z' fill='rgba(15,23,42,0.34)'/>
-      <text x='94' y='122' font-size='62' font-family='Arial Black, Arial, sans-serif' fill='rgba(248,250,252,0.25)'>${safeBrand}</text>
-      <g transform='translate(720 140)' filter='url(#softShadow)'>
-        <rect x='0' y='0' width='344' height='500' rx='38' fill='rgba(15,23,42,0.46)'/>
-        <rect x='16' y='16' width='312' height='468' rx='30' fill='rgba(226,232,240,0.07)'/>
-        <image href='${referenceImage}' x='34' y='34' width='276' height='396' preserveAspectRatio='xMidYMid slice' opacity='0.96'/>
-        <rect x='78' y='446' width='188' height='24' rx='12' fill='rgba(148,163,184,0.46)'/>
+      <rect width='1200' height='800' fill='#ffffff'/>
+      <image href='${TONAL_GEOMETRY_BACKGROUND_IMAGE}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.34'/>
+      <rect width='1200' height='800' fill='rgba(255,255,255,0.54)'/>
+      <g transform='translate(726 140)' filter='url(#softShadow)'>
+        <rect x='0' y='0' width='332' height='486' rx='32' fill='rgba(255,255,255,0.90)'/>
+        <rect x='18' y='18' width='296' height='450' rx='24' fill='rgba(148,163,184,0.10)'/>
+        <image href='${referenceImage}' x='32' y='34' width='268' height='392' preserveAspectRatio='xMidYMid meet' opacity='0.94'/>
+        <rect x='72' y='442' width='188' height='18' rx='9' fill='rgba(15,23,42,0.20)'/>
       </g>
+      <text x='88' y='120' font-size='54' font-family='Arial Black, Arial, sans-serif' fill='rgba(15,23,42,0.30)'>${safeBrand}</text>
     </svg>`,
   );
   return {
@@ -758,9 +748,9 @@ function buildEditorialLogoComposition(referenceImage: string, context: PresetCo
     ai_artwork: { prompt: `${context.brandName} editorial logo composition from uploaded reference`, image_url: editorialLogoField, generation_status: 'done' },
     gradient: {
       type: 'linear',
-      angle: 132,
-      intensity: 95,
-      stops: [{ color: '#020617', position: 0 }, { color: '#1e3a8a', position: 56 }, { color: '#334155', position: 100 }],
+      angle: 135,
+      intensity: 100,
+      stops: [{ color: '#ffffff', position: 0 }, { color: '#ffffff', position: 100 }],
     },
     shape: 'none',
   };
