@@ -31,30 +31,32 @@ export default function SignupViewPage() {
         <div style={{ fontFamily: ff, minHeight: "100vh", display: "flex", backgroundImage: "none", backgroundColor: "#fff" }}>
             {/* Left Side */}
             <div style={{ background: metallicGradient, padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1rem", textAlign: "center" }}>
-                    <div style={{ width: 168, height: 168, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255,255,255,0.35)" }}>
-                        <Image
-                            src="/FAI.png"
-                            alt="Logo metálico oficial da FAI"
-                            width={168}
-                            height={168}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        />
+                <div style={{ border: "2px solid rgba(255,255,255,0.92)", borderRadius: 24, background: "rgba(255,255,255,0.06)", padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1rem", textAlign: "center" }}>
+                        <div style={{ width: 168, height: 168, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255,255,255,0.35)" }}>
+                            <Image
+                                src="/Firefly_Gemini Flash_Consegue melhorar o logo da bolsa FAI para que fique com gradiente metalico do logo S 3787887.png"
+                                alt="Logo metálico oficial da FAI"
+                                width={168}
+                                height={168}
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                        </div>
+                        <div>
+                            <div style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 600, fontFamily: ff }}>Create a new account in minutes!</div>
+                        </div>
                     </div>
                     <div>
-                        <div style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 600, fontFamily: ff }}>Create a new account in minutes!</div>
-                    </div>
-                </div>
-                <div>
-                    <div style={{ fontSize: "2.25rem", fontWeight: 600, color: "#fff", marginBottom: "1.5rem", lineHeight: 1.3, fontFamily: ff }}>Comece sua jornada<br />de estilo hoje</div>
-                    <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1.125rem", marginBottom: "2rem", fontFamily: ff }}>Junte-se a milhares de usuários que transformaram sua forma de se vestir com a ajuda da IA.</p>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", textAlign: "center" }}>
-                        {[["10k+", "Usuários"], ["50k+", "Looks Criados"], ["4.9", "Avaliação"]].map(([num, label]) => (
-                            <div key={label}>
-                                <div style={{ fontSize: "1.875rem", fontWeight: 600, color: "#fff", fontFamily: ff }}>{num}</div>
-                                <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.875rem", fontFamily: ff }}>{label}</div>
-                            </div>
-                        ))}
+                        <div style={{ fontSize: "2.25rem", fontWeight: 600, color: "#fff", marginBottom: "1.5rem", lineHeight: 1.3, fontFamily: ff }}>Comece sua jornada<br />de estilo hoje</div>
+                        <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1.125rem", marginBottom: "2rem", fontFamily: ff }}>Junte-se a milhares de usuários que transformaram sua forma de se vestir com a ajuda da IA.</p>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", textAlign: "center" }}>
+                            {[["10k+", "Usuários"], ["50k+", "Looks Criados"], ["4.9", "Avaliação"]].map(([num, label]) => (
+                                <div key={label}>
+                                    <div style={{ fontSize: "1.875rem", fontWeight: 600, color: "#fff", fontFamily: ff }}>{num}</div>
+                                    <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.875rem", fontFamily: ff }}>{label}</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
                 <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem", fontFamily: ff }}>© 2026 Fashion AI. Todos os direitos reservados.</div>
