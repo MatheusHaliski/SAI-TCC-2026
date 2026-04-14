@@ -185,7 +185,6 @@ export default function AuthViewClient() {
                             width={168}
                             height={168}
                             style={{ width: "150%", height: "150%", objectFit: "cover" }}
-                            display= "block"
                         />
                     </div>
                     <div>
