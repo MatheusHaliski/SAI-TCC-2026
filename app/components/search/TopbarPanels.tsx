@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  GOLDEN_WEBSITE_BACKGROUND_GRADIENT,
   OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
   PageBackgroundConfig,
   PageBackgroundShape,
@@ -57,10 +56,6 @@ function PageBackgroundStudio({
     gradient: OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
     shape: 'orb',
   };
-  const goldenConfig: PageBackgroundConfig = {
-    gradient: GOLDEN_WEBSITE_BACKGROUND_GRADIENT,
-    shape: 'diamond',
-  };
   return (
     <div className="sa-page-studio space-y-3 rounded-xl border border-emerald-100/30 bg-emerald-950/40 p-3">
       <p className="text-xs uppercase tracking-[0.12em] text-emerald-100/80">Page Background Studio</p>
@@ -87,16 +82,6 @@ function PageBackgroundStudio({
           </button>
         ))}
       </div>
-      <button
-        type="button"
-        className="sa-apply-background w-full rounded-lg border border-emerald-200/70 bg-emerald-400/20 px-3 py-2 text-sm font-semibold"
-        onClick={() => {
-          onChange(goldenConfig);
-          onApply(goldenConfig);
-        }}
-      >
-        APPLY WEBSITE GOLDEN BACKGROUND
-      </button>
       <button
         type="button"
         className="w-full rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em]"
@@ -177,7 +162,7 @@ export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; a
 
 export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   const router = useRouter();
-  const [darkMode, setDarkMode] = useState<boolean>(readSavedTheme() === 'dark');
+  const [lightMode, setLightMode] = useState<boolean>(readSavedTheme() === 'light');
   const [backgroundDraft, setBackgroundDraft] = useState<PageBackgroundConfig>(() => readPageBackgroundConfig());
 
   const profile = useMemo(() => getAuthSessionProfile(), []);
@@ -186,9 +171,9 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   const email = profile.email?.trim() || 'user@sai.app';
   const photoUrl = profile.photo_url?.trim() || '';
 
-  const setTheme = (isDark: boolean) => {
-    setDarkMode(isDark);
-    applyTheme(isDark ? 'dark' : 'light');
+  const setTheme = (isLight: boolean) => {
+    setLightMode(isLight);
+    applyTheme(isLight ? 'light' : 'dark');
   };
 
   const handleLogout = () => {
@@ -201,7 +186,7 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
 
   const actionItems = [
     { label: 'View Profile', icon: '👤', onClick: () => { onClose(); router.push(userId ? `/profile/${userId}` : '/profile'); } },
-    { label: darkMode ? 'Dark Mode: On' : 'Dark Mode: Off', icon: '🌗', onClick: () => setTheme(!darkMode) },
+    { label: lightMode ? 'Light Mode: On' : 'Light Mode: Off', icon: '🌗', onClick: () => setTheme(!lightMode) },
     { label: 'Account Settings', icon: '⚙️', onClick: () => { onClose(); router.push('/profile?section=settings'); } },
     { label: 'Logout', icon: '🚪', onClick: handleLogout },
   ];
