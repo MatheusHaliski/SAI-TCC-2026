@@ -28,6 +28,9 @@ export default function AuthViewClient() {
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [showForgotModal, setShowForgotModal] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState("");
+    const [submittingForgot, setSubmittingForgot] = useState(false);
     const [socialSubmitting, setSocialSubmitting] = useState<"google" | "facebook" | null>(null);
     const pathname = usePathname();
 
