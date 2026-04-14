@@ -178,8 +178,8 @@ export default function AuthViewClient() {
         <div style={{ fontFamily: ff, minHeight: "100vh", display: "flex", backgroundImage: "none", backgroundColor: "#fff" }}>
             {/* Left - Branding */}
             <div style={{ background: metallicGradient, padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
-                <div style={{ border: "2px solid rgba(255,255,255,0.92)", borderRadius: 24, background: "rgba(255,255,255,0.06)", padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1.5rem", minHeight: 220, textAlign: "center" }}>
+                <div style={{ border: "2px solid rgba(255,255,255,0.92)", borderRadius: 24, background: "rgba(255,255,255,0.06)", padding: "2rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1.5rem", minHeight: 220, textAlign: "center", background: "linear-gradient(145deg, rgba(30,30,30,0.55), rgba(10,10,10,0.35))", border: "1px solid rgba(255,255,255,0.28)", borderRadius: 18, padding: "1.5rem" }}>
                             <Image
                                 src="/FAI-removebg-preview.png"
                                 alt="Logo metálico oficial da FAI"
@@ -196,15 +196,15 @@ export default function AuthViewClient() {
                             </div>
                         </div>
                     </div>
-                    <div>
-                        <div style={{ fontSize: "2.25rem", fontWeight: 600, color: "#fff", marginBottom: "1.5rem", lineHeight: 1.3, fontFamily: ff }}>Organize seu estilo<br />com inteligência artificial</div>
-                        <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1.125rem", marginBottom: "2rem", fontFamily: ff }}>Crie combinações perfeitas, gerencie seu guarda-roupa e descubra seu estilo único com a ajuda da IA.</p>
+                    <div style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.88), rgba(245,245,245,0.72))", border: "1px solid rgba(17,24,39,0.16)", borderRadius: 18, padding: "1.5rem" }}>
+                        <div style={{ fontSize: "2.25rem", fontWeight: 600, color: "#111827", marginBottom: "1.5rem", lineHeight: 1.3, fontFamily: ff }}>Organize seu estilo<br />com inteligência artificial</div>
+                        <p style={{ color: "rgba(17,24,39,0.82)", fontSize: "1.125rem", marginBottom: "2rem", fontFamily: ff }}>Crie combinações perfeitas, gerencie seu guarda-roupa e descubra seu estilo único com a ajuda da IA.</p>
                         {[["✨", "Sugestões inteligentes de looks"], ["👔", "Guarda-roupa digital organizado"], ["🎨", "Visualização em manequim 3D"]].map(([icon, text]) => (
                             <div key={text} style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-                                <div style={{ width: 40, height: 40, background: "rgba(255,255,255,0.2)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <div style={{ width: 40, height: 40, background: "rgba(17,24,39,0.08)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                     <span style={{ fontSize: "1.25rem" }}>{icon}</span>
                                 </div>
-                                <p style={{ color: "rgba(255,255,255,0.9)", fontFamily: ff }}>{text}</p>
+                                <p style={{ color: "rgba(17,24,39,0.9)", fontFamily: ff }}>{text}</p>
                             </div>
                         ))}
                     </div>
