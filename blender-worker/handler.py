@@ -29,21 +29,29 @@ logger.info("worker_module_loaded entrypoint=handler.py")
 
 pipeline = None
 pipeline_load_error: str | None = None
+pipeline_lock = threading.Lock()
 
 
 def get_pipeline():
     global pipeline, pipeline_load_error
-    if pipeline is None:
+    if pipeline is not None:
+        return pipeline
+
+    with pipeline_lock:
+        if pipeline is not None:
+            return pipeline
         try:
             import pipeline as p
 
             pipeline = p
             pipeline_load_error = None
+            logger.info("pipeline_loaded successfully")
             print("[PIPELINE] loaded successfully")
         except Exception as e:
             pipeline_load_error = str(e)
-            print("❌ Pipeline load failed:", pipeline_load_error)
             pipeline = None
+            logger.exception("pipeline_load_failed error=%s", pipeline_load_error)
+            print("❌ Pipeline load failed:", pipeline_load_error)
     return pipeline
 
 
@@ -395,7 +403,19 @@ def _submit_job(payload: dict[str, Any]) -> dict[str, str]:
     register_job(job_id, payload)
     logger.info("job_created jobId=%s jobType=%s", job_id, payload.get("jobType", "blender_uv_pipeline"))
     print(f"[JOB] queued id={job_id}")
-    executor.submit(run_3d_pipeline, job_id, payload)
+    try:
+        executor.submit(run_3d_pipeline, job_id, payload)
+    except Exception as exc:
+        logger.exception("executor_submit_failed jobId=%s", job_id)
+        update_job(
+            job_id,
+            status="failed",
+            error={"code": "executor_submit_failed", "message": "Failed to submit job to worker executor"},
+        )
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "EXECUTOR_SUBMIT_FAILED", "message": "Failed to submit job to worker executor"},
+        ) from exc
     return {"jobId": job_id, "status": "queued"}
 
 
