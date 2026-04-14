@@ -16,7 +16,8 @@ import { applyTheme, readSavedTheme } from '@/app/lib/theme';
 
 export default function HomeShell() {
   const pathname = usePathname();
-  const currentRoute = PATH_TO_ROUTE[pathname] ?? 'my-wardrobe';
+  const currentRoute = PATH_TO_ROUTE[pathname]
+    ?? (pathname.startsWith('/profile/') ? (pathname.endsWith('/settings') ? 'profile-settings' : 'profile') : 'my-wardrobe');
   const [activeRoute, setActiveRoute] = useState<AppRoute>(currentRoute);
   const [mobileOpen, setMobileOpen] = useState(false);
   const router = useRouter();
