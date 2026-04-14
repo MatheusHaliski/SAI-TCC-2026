@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
-  params: {
-    jobId?: string;
-  };
+  params: Promise<{
+    jobId: string;
+  }>;
 }
 
 function resolveWorkerConfig() {
@@ -20,13 +20,14 @@ function resolveWorkerConfig() {
   };
 }
 
-export async function GET(_req: Request, context: RouteContext) {
+export async function GET(_req: NextRequest, context: RouteContext) {
   const config = resolveWorkerConfig();
   if (!config) {
     return NextResponse.json({ error: 'Worker not configured' }, { status: 500 });
   }
 
-  const jobId = String(context.params.jobId ?? '').trim();
+  const params = await context.params;
+  const jobId = String(params.jobId ?? '').trim();
   if (!jobId) {
     return NextResponse.json({ error: 'Missing jobId' }, { status: 400 });
   }
