@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import { VSModalPaged } from "@/app/lib/authAlerts";
 import { clearAuthSessionToken, setAuthSessionProfile, setAuthSessionToken } from "@/app/lib/authSession";
-import { getDevSessionToken, setDevSessionToken } from "@/app/lib/devSession";
+import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
+import { signInWithFacebook, signInWithGoogle } from "@/app/auth";
 
 const ff = "'Inter', 'Segoe UI', Arial, sans-serif";
 
@@ -26,6 +28,7 @@ export default function AuthViewClient() {
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [socialSubmitting, setSocialSubmitting] = useState<"google" | "facebook" | null>(null);
     const pathname = usePathname();
 
     useEffect(() => {
@@ -88,17 +91,55 @@ export default function AuthViewClient() {
         fontFamily: ff, boxSizing: "border-box",
     };
 
+    const handleSocialSignIn = async (provider: "google" | "facebook") => {
+        if (socialSubmitting) return;
+        setSocialSubmitting(provider);
+        try {
+            const credential = provider === "google" ? await signInWithGoogle() : await signInWithFacebook();
+            const user = credential.user;
+            const token = crypto.randomUUID();
+            const profile = {
+                user_id: user.uid,
+                name: user.displayName?.trim() || "Usuário",
+                email: user.email?.trim().toLowerCase() || "",
+            };
+            setAuthSessionToken(token);
+            setAuthSessionProfile(profile);
+            setDevSessionToken(token);
+            setSharedAccessData({ token, profile });
+            router.replace("/home");
+        } catch {
+            void VSModalPaged({
+                title: "Falha no login social",
+                messages: ["Não foi possível autenticar com o provedor selecionado. Verifique a configuração do Firebase Auth e tente novamente."],
+                tone: "error",
+            });
+        } finally {
+            setSocialSubmitting(null);
+        }
+    };
+
     return (
         <div style={{ fontFamily: ff, minHeight: "100vh", display: "flex", backgroundImage: "none", backgroundColor: "#fff" }}>
             {/* Left - Branding */}
             <div style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)", padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <div style={{ width: 48, height: 48, background: "rgba(255,255,255,0.2)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ fontSize: "1.5rem" }}>✨</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5rem", minHeight: 220 }}>
+                    <div style={{ width: 112, height: 112, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255,255,255,0.35)" }}>
+                        <Image
+                            src="/Firefly_Gemini Flash_Consegue melhorar o logo da bolsa FAI para que fique com gradiente metalico do logo S 3787887.png"
+                            alt="Logo metálico oficial da FAI"
+                            width={112}
+                            height={112}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
                     </div>
                     <div>
-                        <div style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 600, fontFamily: ff }}>Fashion AI</div>
-                        <div style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.875rem", fontFamily: ff }}>Seu estilista pessoal</div>
+                        <div style={{ color: "#fff", fontSize: "2.4rem", fontWeight: 700, fontFamily: ff, lineHeight: 1.1, maxWidth: 360 }}>
+                            Welcome back to Fashion AI!
+                        </div>
+                        <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "1.05rem", marginTop: "0.45rem", fontFamily: ff }}>
+                            Seu estilista pessoal
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -117,8 +158,16 @@ export default function AuthViewClient() {
             </div>
 
             {/* Right - Form */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#fff" }}>
-                <div style={{ width: "100%", maxWidth: 448 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#fff", position: "relative", overflow: "hidden" }}>
+                <Image
+                    src="/Firefly_Gemini Flash_Crie ideias de background muito bons para um novo website de moda, usando uma rede de 3787887.png"
+                    alt="Fashion AI network background"
+                    fill
+                    priority
+                    style={{ objectFit: "cover", opacity: 0.18 }}
+                />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.96))" }} />
+                <div style={{ width: "100%", maxWidth: 448, position: "relative", zIndex: 1 }}>
                     <div style={{ marginBottom: "2rem" }}>
                         <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Bem-vindo de volta</h2>
                         <p style={{ color: "#6b7280", fontFamily: ff }}>Entre com suas credenciais para acessar sua conta</p>
@@ -160,13 +209,13 @@ export default function AuthViewClient() {
                         </div>
 
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                            <button type="button" style={{ padding: "12px 16px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", color: "#374151", fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: ff }}>
+                            <button type="button" onClick={() => void handleSocialSignIn("google")} disabled={Boolean(socialSubmitting)} style={{ padding: "12px 16px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", color: "#374151", fontSize: "1rem", fontWeight: 500, cursor: socialSubmitting ? "not-allowed" : "pointer", fontFamily: ff, opacity: socialSubmitting === "google" ? 0.6 : 1 }}>
                                 <svg style={{ width: 20, height: 20 }} viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                                Google
+                                {socialSubmitting === "google" ? "Entrando..." : "Google"}
                             </button>
-                            <button type="button" style={{ padding: "12px 16px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", color: "#1877F2", fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: ff }}>
+                            <button type="button" onClick={() => void handleSocialSignIn("facebook")} disabled={Boolean(socialSubmitting)} style={{ padding: "12px 16px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", color: "#1877F2", fontSize: "1rem", fontWeight: 500, cursor: socialSubmitting ? "not-allowed" : "pointer", fontFamily: ff, opacity: socialSubmitting === "facebook" ? 0.6 : 1 }}>
                                 <svg style={{ width: 20, height: 20 }} fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                                Facebook
+                                {socialSubmitting === "facebook" ? "Entrando..." : "Facebook"}
                             </button>
                         </div>
                     </form>
