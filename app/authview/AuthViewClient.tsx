@@ -218,7 +218,7 @@ export default function AuthViewClient() {
                     alt="Fashion AI network background"
                     fill
                     priority
-                    style={{ objectFit: "cover", opacity: 0.55 }}
+                    style={{ objectFit: "cover" }}
                 />
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,0.62), rgba(255,255,255,0.72))" }} />
                 <div style={{ width: "100%", maxWidth: 520, position: "relative", zIndex: 1 }}>
