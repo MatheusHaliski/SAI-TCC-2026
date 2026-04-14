@@ -384,10 +384,11 @@ html.dark-mode body textarea::placeholder {
     radial-gradient(circle at 84% 74%, rgba(226, 237, 255, 0.58), transparent 40%);
 }
 
-:root[data-theme='light'] .sa-home-shell :where(h1, h2, h3, h4, h5, h6, p, span, a, li, label, button) {
+:root[data-theme='light'] .sa-home-shell {
   color: #0f172a;
 }
 
+:root[data-theme='light'] .sa-right-drawer,
 :root[data-theme='light'] .sa-right-drawer .sa-drawer-card,
 :root[data-theme='light'] .sa-right-drawer .sa-drawer-action,
 :root[data-theme='light'] .sa-right-drawer .sa-page-studio,
@@ -417,6 +418,8 @@ html.dark-mode body textarea::placeholder {
 :root[data-theme='light'] .sa-topbar-search input::placeholder,
 :root[data-theme='light'] .sa-right-drawer p,
 :root[data-theme='light'] .sa-right-drawer span,
-:root[data-theme='light'] .sa-right-drawer button {
+:root[data-theme='light'] .sa-right-drawer button,
+:root[data-theme='light'] .sa-right-drawer a,
+:root[data-theme='light'] .sa-topbar-search svg {
   color: #0f172a !important;
 }
