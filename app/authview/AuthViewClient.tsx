@@ -85,6 +85,57 @@ export default function AuthViewClient() {
         }
     };
 
+    const handleForgotSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (submittingForgot) return;
+        const normalizedEmail = forgotEmail.trim().toLowerCase();
+        if (!normalizedEmail) {
+            void VSModalPaged({
+                title: "Email required",
+                messages: ["Please enter your email address to continue."],
+                tone: "error",
+            });
+            return;
+        }
+
+        setSubmittingForgot(true);
+        try {
+            const response = await fetch("/api/auth/reset", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: normalizedEmail }),
+            });
+
+            if (!response.ok) {
+                const data = (await response.json().catch(() => null)) as { error?: string } | null;
+                void VSModalPaged({
+                    title: "Reset failed",
+                    messages: [data?.error ?? "We could not send a reset link right now."],
+                    tone: "error",
+                });
+                setSubmittingForgot(false);
+                return;
+            }
+
+            void VSModalPaged({
+                title: "Check your email",
+                messages: ["We sent a redefinition link to your inbox. Follow it to reset your password."],
+                tone: "success",
+            });
+            setSubmittingForgot(false);
+            setShowForgotModal(false);
+            setForgotEmail("");
+        } catch (error) {
+            console.error("[ForgetPassword] Failed to request reset:", error);
+            void VSModalPaged({
+                title: "Unexpected error",
+                messages: ["Unable to send the reset email right now."],
+                tone: "error",
+            });
+            setSubmittingForgot(false);
+        }
+    };
+
     const inputStyle: React.CSSProperties = {
         width: "100%", padding: "12px 16px", backgroundColor: "#f9fafb", borderRadius: 8,
         border: "1px solid #e5e7eb", outline: "none", color: "#111827", fontSize: "1rem",
@@ -123,19 +174,23 @@ export default function AuthViewClient() {
         <div style={{ fontFamily: ff, minHeight: "100vh", display: "flex", backgroundImage: "none", backgroundColor: "#fff" }}>
             {/* Left - Branding */}
             <div style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)", padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 10px 20px rgba(15, 23, 42, 0.35)", border: "1px solid rgba(255,255,255,0.3)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5rem", minHeight: 220 }}>
+                    <div style={{ width: 112, height: 112, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255,255,255,0.35)" }}>
                         <Image
                             src="/Firefly_Gemini Flash_Consegue melhorar o logo da bolsa FAI para que fique com gradiente metalico do logo S 3787887.png"
                             alt="Logo metálico oficial da FAI"
-                            width={52}
-                            height={52}
+                            width={112}
+                            height={112}
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         />
                     </div>
                     <div>
-                        <div style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 600, fontFamily: ff }}>Fashion AI</div>
-                        <div style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.875rem", fontFamily: ff }}>Seu estilista pessoal</div>
+                        <div style={{ color: "#fff", fontSize: "2.4rem", fontWeight: 700, fontFamily: ff, lineHeight: 1.1, maxWidth: 360 }}>
+                            Welcome back to Fashion AI!
+                        </div>
+                        <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "1.05rem", marginTop: "0.45rem", fontFamily: ff }}>
+                            Seu estilista pessoal
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -154,8 +209,16 @@ export default function AuthViewClient() {
             </div>
 
             {/* Right - Form */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#fff" }}>
-                <div style={{ width: "100%", maxWidth: 448 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#fff", position: "relative", overflow: "hidden" }}>
+                <Image
+                    src="/Firefly_Gemini Flash_Crie ideias de background muito bons para um novo website de moda, usando uma rede de 3787887.png"
+                    alt="Fashion AI network background"
+                    fill
+                    priority
+                    style={{ objectFit: "cover", opacity: 0.18 }}
+                />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.96))" }} />
+                <div style={{ width: "100%", maxWidth: 448, position: "relative", zIndex: 1 }}>
                     <div style={{ marginBottom: "2rem" }}>
                         <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Bem-vindo de volta</h2>
                         <p style={{ color: "#6b7280", fontFamily: ff }}>Entre com suas credenciais para acessar sua conta</p>
@@ -182,7 +245,7 @@ export default function AuthViewClient() {
                                 <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: 16, height: 16 }} />
                                 <span style={{ fontSize: "0.875rem", color: "#4b5563", fontFamily: ff }}>Lembrar de mim</span>
                             </label>
-                            <button type="button" onClick={() => router.push("/forgetpasswordview")} style={{ fontSize: "0.875rem", color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 500, fontFamily: ff }}>
+                            <button type="button" onClick={() => setShowForgotModal(true)} style={{ fontSize: "0.875rem", color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 500, fontFamily: ff }}>
                                 Esqueceu a senha?
                             </button>
                         </div>
@@ -216,6 +279,158 @@ export default function AuthViewClient() {
                     </p>
                 </div>
             </div>
+
+            {showForgotModal ? (
+                <div
+                    onClick={() => setShowForgotModal(false)}
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        backgroundColor: "rgba(15,23,42,0.5)",
+                        zIndex: 50,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "1rem",
+                    }}
+                >
+                    <div
+                        onClick={(event) => event.stopPropagation()}
+                        style={{
+                            width: "100%",
+                            maxWidth: 740,
+                            minHeight: 330,
+                            borderRadius: 20,
+                            overflow: "hidden",
+                            backgroundColor: "#ffffff",
+                            boxShadow: "0 24px 60px rgba(30, 64, 175, 0.2)",
+                            border: "1px solid rgba(147, 197, 253, 0.45)",
+                            display: "flex",
+                        }}
+                    >
+                        <div
+                            className="hidden md:flex"
+                            style={{
+                                width: "44%",
+                                flexDirection: "column",
+                                justifyContent: "space-between",
+                                gap: "1.25rem",
+                                padding: "1.7rem",
+                                color: "#ffffff",
+                                background: "linear-gradient(165deg, #1d4ed8 0%, #2563eb 45%, #38bdf8 100%)",
+                            }}
+                        >
+                            <div>
+                                <div style={{ fontSize: "2rem", fontWeight: 700 }}>Fashion AI</div>
+                                <p style={{ fontSize: "1.2rem", color: "rgba(255,255,255,0.9)", marginTop: "0.5rem" }}>
+                                    Secure account recovery with a quick reset link.
+                                </p>
+                            </div>
+                            <div style={{ display: "grid", gap: "0.75rem" }}>
+                                {["Account protection", "One-click reset", "Fast inbox delivery"].map((item) => (
+                                    <div
+                                        key={item}
+                                        style={{
+                                            borderRadius: 10,
+                                            backgroundColor: "rgba(255,255,255,0.16)",
+                                            border: "1px solid rgba(255,255,255,0.3)",
+                                            padding: "0.6rem 0.8rem",
+                                            fontSize: "1rem",
+                                        }}
+                                    >
+                                        {item}
+                                    </div>
+                                ))}
+                            </div>
+                            <p style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.76)", margin: 0 }}>
+                                © 2026 Fashion AI
+                            </p>
+                        </div>
+
+                        <div
+                            style={{
+                                flex: 1,
+                                backgroundColor: "#ffffff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "1.5rem",
+                            }}
+                        >
+                            <form onSubmit={handleForgotSubmit} style={{ width: "100%", maxWidth: 360, display: "grid", gap: "1rem" }}>
+                                <label style={{ display: "grid", gap: "0.5rem", color: "#1e3a8a", fontWeight: 600, fontSize: "0.95rem" }}>
+                                    Email address
+                                    <input
+                                        type="email"
+                                        value={forgotEmail}
+                                        onChange={(event) => setForgotEmail(event.target.value)}
+                                        placeholder="you@example.com"
+                                        className="w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-base text-blue-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-300/70"
+                                    />
+                                </label>
+
+                                <button
+                                    type="submit"
+                                    disabled={submittingForgot}
+                                    style={{
+                                        width: "100%",
+                                        border: "none",
+                                        borderRadius: 12,
+                                        padding: "0.8rem 1rem",
+                                        fontSize: "0.95rem",
+                                        fontWeight: 600,
+                                        color: "#ffffff",
+                                        cursor: submittingForgot ? "not-allowed" : "pointer",
+                                        opacity: submittingForgot ? 0.7 : 1,
+                                        background: "linear-gradient(90deg, #1d4ed8 0%, #2563eb 50%, #38bdf8 100%)",
+                                    }}
+                                >
+                                    {submittingForgot ? "Sending..." : "Email the reset link"}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowForgotModal(false)}
+                                    style={{
+                                        width: "100%",
+                                        borderRadius: 12,
+                                        border: "1px solid #bfdbfe",
+                                        padding: "0.75rem 1rem",
+                                        fontSize: "0.92rem",
+                                        fontWeight: 600,
+                                        color: "#1d4ed8",
+                                        backgroundColor: "#eff6ff",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    Return
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowForgotModal(false);
+                                        router.push("/signupview");
+                                    }}
+                                    style={{
+                                        width: "100%",
+                                        borderRadius: 12,
+                                        border: "1px solid #bfdbfe",
+                                        padding: "0.75rem 1rem",
+                                        fontSize: "0.92rem",
+                                        fontWeight: 600,
+                                        color: "#1d4ed8",
+                                        backgroundColor: "#ffffff",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    Create an account
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </div>
     );
 }
