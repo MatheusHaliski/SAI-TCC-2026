@@ -24,6 +24,7 @@ export type AuthSessionProfile = {
     user_id?: string;
     name?: string;
     email?: string;
+    photo_url?: string;
 };
 
 export const getAuthSessionToken = (): string => {

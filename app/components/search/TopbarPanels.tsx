@@ -2,6 +2,7 @@
 
 import { ReactNode, useMemo, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   GOLDEN_WEBSITE_BACKGROUND_GRADIENT,
@@ -183,6 +184,7 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   const userId = profile.user_id?.trim() || '';
   const username = profile.name?.trim() || 'SAI User';
   const email = profile.email?.trim() || 'user@sai.app';
+  const photoUrl = profile.photo_url?.trim() || '';
 
   const setTheme = (isDark: boolean) => {
     setDarkMode(isDark);
@@ -207,8 +209,21 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   return (
     <RightDrawer title="Account" onClose={onClose}>
       <article className="sa-drawer-card rounded-xl border border-emerald-100/30 bg-white/10 p-3">
-        <p className="text-sm font-semibold">{username}</p>
-        <p className="text-xs text-emerald-50/80">@{email.split('@')[0]} · {email}</p>
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 overflow-hidden rounded-full border border-emerald-100/40 bg-emerald-950/40">
+            {photoUrl ? (
+              <Image src={photoUrl} alt={`${username} avatar`} width={48} height={48} className="h-full w-full object-cover" unoptimized />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-emerald-100">
+                {username.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{username}</p>
+            <p className="truncate text-xs text-emerald-50/80">@{email.split('@')[0]} · {email}</p>
+          </div>
+        </div>
       </article>
       <div className="space-y-2">
         {actionItems.map((action) => (

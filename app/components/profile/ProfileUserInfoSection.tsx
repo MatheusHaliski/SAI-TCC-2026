@@ -1,6 +1,7 @@
 'use client';
 
 import { ChangeEvent, useEffect, useState } from 'react';
+import Image from 'next/image';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import { useProfileUpdate } from '@/app/hooks/useProfileUpdate';
 import { getAuthSessionProfile, setAuthSessionProfile } from '@/app/lib/authSession';
@@ -30,7 +31,7 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
 
   const dirty = JSON.stringify(form) !== JSON.stringify(initial);
 
-  const inputClassName = 'w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-sm text-white';
+  const inputClassName = 'w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/45';
 
   const onAvatarUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -71,23 +72,46 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
 
   return (
     <SectionBlock title="User Info" subtitle="Edit your profile identity and public creator metadata.">
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <label className="text-xs text-white/80">Display name
-          <input className={inputClassName} value={form.displayName} onChange={(e) => setForm((prev) => ({ ...prev, displayName: e.target.value }))} />
-        </label>
-        <label className="text-xs text-white/80">Username
-          <input className={inputClassName} value={form.username} onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value }))} />
-        </label>
-        <label className="text-xs text-white/80">Email
-          <input className={inputClassName} value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} />
-        </label>
-        <label className="text-xs text-white/80">Avatar
-          <input type="file" onChange={onAvatarUpload} className={`${inputClassName} file:mr-3 file:rounded-md file:border-0 file:bg-white/20 file:px-2 file:py-1 file:text-xs file:text-white`} />
-        </label>
-        <label className="text-xs text-white/80 md:col-span-2">Bio
-          <textarea rows={3} className={inputClassName} value={form.bio} onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))} />
-        </label>
-      </div>
+      <article className="mt-4 overflow-hidden rounded-3xl border border-white/20 bg-[linear-gradient(145deg,rgba(249,115,22,0.88),rgba(234,88,12,0.9))] shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
+        <div className="relative h-56 w-full border-b border-white/20 bg-black/20">
+          {form.avatarUrl ? (
+            <Image src={form.avatarUrl} alt={`${form.displayName || form.username} profile`} fill className="object-cover" sizes="(max-width: 768px) 100vw, 60vw" unoptimized />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.25),rgba(0,0,0,0.35))]">
+              <span className="inline-flex h-24 w-24 items-center justify-center rounded-full border border-white/40 bg-white/15 text-4xl font-semibold text-white">
+                {(form.displayName || form.username || 'U').charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-5 py-4">
+            <p className="text-lg font-semibold text-white">{form.displayName || 'Unnamed User'}</p>
+            <p className="text-sm text-white/80">@{form.username || 'username'}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 p-4 md:grid-cols-2">
+          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Display name
+            <input className={`${inputClassName} mt-2`} value={form.displayName} onChange={(e) => setForm((prev) => ({ ...prev, displayName: e.target.value }))} />
+          </label>
+
+          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Username
+            <input className={`${inputClassName} mt-2`} value={form.username} onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value }))} />
+          </label>
+
+          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Email
+            <input className={`${inputClassName} mt-2`} value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} />
+          </label>
+
+          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Upload photo
+            <input type="file" accept="image/*" onChange={onAvatarUpload} className={`${inputClassName} mt-2 file:mr-3 file:rounded-md file:border-0 file:bg-white/20 file:px-2 file:py-1 file:text-xs file:text-white`} />
+          </label>
+
+          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80 md:col-span-2">Bio
+            <textarea rows={3} className={`${inputClassName} mt-2`} value={form.bio} onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))} />
+          </label>
+        </div>
+      </article>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <button
@@ -117,6 +141,7 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
               ...authProfile,
               name: synced.displayName,
               email: synced.email,
+              photo_url: synced.avatarUrl,
             });
 
             setToast('Profile updated successfully.');
