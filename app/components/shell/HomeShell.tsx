@@ -11,7 +11,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { getAuthSessionToken } from '@/app/lib/authSession';
 import AddPieceModal from '@/app/components/pieces/AddPieceModal';
-import { applyPageBackgroundConfig, readPageBackgroundConfig } from '@/app/lib/pageBackground';
+import { applyPageBackgroundConfig, ensureSavedPageBackgroundConfig } from '@/app/lib/pageBackground';
 import { applyTheme, readSavedTheme } from '@/app/lib/theme';
 
 export default function HomeShell() {
@@ -36,7 +36,7 @@ export default function HomeShell() {
   }, [hasAccess, router]);
 
   useEffect(() => {
-    applyPageBackgroundConfig(readPageBackgroundConfig());
+    applyPageBackgroundConfig(ensureSavedPageBackgroundConfig());
     applyTheme(readSavedTheme());
   }, []);
 
