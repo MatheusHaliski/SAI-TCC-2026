@@ -929,7 +929,7 @@ export default function CreateMySchemeView() {
 
         <div className="space-y-6">
           <PageHeader
-            title="Create My Scheme"
+            title="Create my Outfit Card"
             subtitle="Premium manual and AI generation paths for outfit cards."
           />
 

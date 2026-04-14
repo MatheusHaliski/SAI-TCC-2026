@@ -36,12 +36,6 @@ type SchemePieceSnapshot = {
 
 type UserPreview = { user_id: string; name: string; username: string; descriptor: string; avatarUrl?: string };
 
-const mockUsers: UserPreview[] = [
-  { user_id: 'u1', name: 'Alice Couto', username: 'alicefits', descriptor: 'Editorial streetwear curator' },
-  { user_id: 'u2', name: 'Bruno Lima', username: 'brunowear', descriptor: 'Tailored casual and monochrome looks' },
-  { user_id: 'u3', name: 'Camila Voss', username: 'camila.styles', descriptor: 'Daily luxe + sporty layering' },
-];
-
 const SLOT_PREVIEW_DEFAULTS: Record<
   SlotKey,
   { pieceType: string; category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare'; wearstyles: string[] }
@@ -56,6 +50,7 @@ export default function SearchItemsView() {
   const router = useRouter();
   const { query, debouncedQuery, setQuery } = useDiscoverySearch();
   const [schemes, setSchemes] = useState<PublicScheme[]>([]);
+  const [users, setUsers] = useState<UserPreview[]>([]);
   const [selectedOutfit, setSelectedOutfit] = useState<OutfitCardData | null>(null);
 
   useEffect(() => {
@@ -63,6 +58,11 @@ export default function SearchItemsView() {
       .then((res) => res.json())
       .then((data) => setSchemes(Array.isArray(data) ? data : []))
       .catch(() => setSchemes([]));
+
+    fetch('/api/users/public')
+      .then((res) => res.json())
+      .then((payload) => setUsers(Array.isArray(payload?.users) ? payload.users : []))
+      .catch(() => setUsers([]));
   }, []);
 
   const queryNorm = debouncedQuery.trim().toLowerCase();
@@ -114,7 +114,7 @@ export default function SearchItemsView() {
   }, [schemes]);
 
   const groupedSearch = useMemo(() => {
-    const users = mockUsers.filter((user) => {
+    const filteredUsers = users.filter((user) => {
       if (!queryNorm) return true;
       const blob = `${user.name} ${user.username} ${user.descriptor}`.toLowerCase();
       return blob.includes(queryNorm);
@@ -129,8 +129,8 @@ export default function SearchItemsView() {
       return blob.includes(queryNorm);
     });
 
-    return { users, outfits, brands: [], wardrobeItems: [], styles: [] };
-  }, [outfitsById, queryNorm, schemes]);
+    return { users: filteredUsers, outfits, brands: [], wardrobeItems: [], styles: [] };
+  }, [outfitsById, queryNorm, schemes, users]);
 
   return (
     <div className="space-y-6">
@@ -161,14 +161,14 @@ export default function SearchItemsView() {
               username={user.username}
               descriptor={user.descriptor}
               avatarUrl={user.avatarUrl}
-              onOpenProfile={() => router.push(`/profile?username=${user.username}`)}
+              onOpenProfile={() => router.push(`/profile/${user.user_id}?section=user-info`)}
             />
           ))}
           {!groupedSearch.users.length ? <p className="text-sm text-white/70">No users found.</p> : null}
         </div>
       </SectionBlock>
 
-      <SectionBlock title={`Outfits (${groupedSearch.outfits.length})`} subtitle="Public outfits in compact Saved Outfits card mode.">
+      <SectionBlock title={`Outfits (${groupedSearch.outfits.length})`} subtitle="Public outfits in compact Saved Outfit Cards card mode.">
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groupedSearch.outfits.map((scheme) => {
             const cardData = outfitsById[scheme.scheme_id];

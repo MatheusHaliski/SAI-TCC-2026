@@ -39,7 +39,7 @@ export default function ProfileSavedSchemesSection({ userId, schemes }: ProfileS
 
   return (
     <>
-      <SectionBlock title="Saved Schemes" subtitle="Compact Saved Outfits card family with premium visual continuity.">
+      <SectionBlock title="Saved Schemes" subtitle="Compact Saved Outfit Cards card family with premium visual continuity.">
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
           {cards.map(({ scheme, data }) => (
             <OutfitCard

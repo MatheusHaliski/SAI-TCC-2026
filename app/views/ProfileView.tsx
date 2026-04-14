@@ -32,6 +32,14 @@ interface SchemeItem {
   updated_at?: string;
 }
 
+interface PublicProfile {
+  name?: string;
+  username?: string;
+  email?: string;
+  bio?: string;
+  photo_url?: string;
+}
+
 const parseSectionFromQuery = (value: string | null): ProfileSectionKey => {
   if (!value) return 'wardrobe';
   const normalized = value.trim().toLowerCase() as ProfileSectionKey;
@@ -39,40 +47,69 @@ const parseSectionFromQuery = (value: string | null): ProfileSectionKey => {
 };
 
 export default function ProfileView() {
-  const profile = getAuthSessionProfile();
+  const authProfile = getAuthSessionProfile();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
 
-  const [userId, setUserId] = useState(profile.user_id?.trim() || '');
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const publicUserFromPath = pathSegments[0] === 'profile' && pathSegments[1] && pathSegments[1] !== 'settings' ? pathSegments[1] : '';
+
+  const [authUserId, setAuthUserId] = useState(authProfile.user_id?.trim() || '');
+  const [userId, setUserId] = useState(publicUserFromPath || authProfile.user_id?.trim() || '');
+  const [viewedProfile, setViewedProfile] = useState<PublicProfile>({
+    name: authProfile.name?.trim() || '',
+    email: authProfile.email?.trim() || '',
+  });
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [schemes, setSchemes] = useState<SchemeItem[]>([]);
   const [posts, setPosts] = useState<UserPostRecord[]>([]);
 
-  const selectedSection = pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section'));
+  const isOwnerView = Boolean(authUserId) && Boolean(userId) && authUserId === userId;
+  const forcedPublicSection = publicUserFromPath && !isOwnerView ? 'user-info' : null;
+  const selectedSection = forcedPublicSection ?? (pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section')));
+  const allowedSections: ProfileSectionKey[] = isOwnerView || !publicUserFromPath
+    ? ALLOWED_SECTIONS
+    : ['user-info'];
 
   useEffect(() => {
     const loadProfileHubData = async () => {
       const localProfile = getAuthSessionProfile();
-      let resolvedUserId = localProfile.user_id?.trim() || '';
+      let resolvedAuthUserId = localProfile.user_id?.trim() || '';
 
-      if (!resolvedUserId) {
+      if (!resolvedAuthUserId) {
         const serverProfile = await getServerSession();
-        resolvedUserId = serverProfile?.user_id?.trim() || '';
+        resolvedAuthUserId = serverProfile?.user_id?.trim() || '';
       }
 
-      if (!resolvedUserId) {
+      const resolvedViewedUserId = publicUserFromPath || resolvedAuthUserId;
+      setAuthUserId(resolvedAuthUserId);
+      setUserId(resolvedViewedUserId);
+
+      if (!resolvedViewedUserId) {
+        setWardrobeItems([]);
+        setSchemes([]);
+        setPosts([]);
+        setViewedProfile({});
+        return;
+      }
+
+      const profileResponse = await fetch(`/api/users/me?userId=${encodeURIComponent(resolvedViewedUserId)}`);
+      const profileData = (await profileResponse.json().catch(() => null)) as { profile?: PublicProfile } | null;
+      const loadedProfile = profileData?.profile ?? {};
+      setViewedProfile(loadedProfile);
+
+      if (resolvedViewedUserId !== resolvedAuthUserId) {
         setWardrobeItems([]);
         setSchemes([]);
         setPosts([]);
         return;
       }
 
-      setUserId(resolvedUserId);
       const [wardrobeResponse, schemesResponse, postsResponse] = await Promise.all([
-        fetch(`/api/wardrobe-items/user/${resolvedUserId}`),
-        fetch(`/api/schemes/user/${resolvedUserId}`),
-        fetch(`/api/user-posts?user_id=${encodeURIComponent(resolvedUserId)}`),
+        fetch(`/api/wardrobe-items/user/${resolvedViewedUserId}`),
+        fetch(`/api/schemes/user/${resolvedViewedUserId}`),
+        fetch(`/api/user-posts?user_id=${encodeURIComponent(resolvedViewedUserId)}`),
       ]);
 
       const wardrobeData = await wardrobeResponse.json().catch(() => []);
@@ -89,14 +126,15 @@ export default function ProfileView() {
       setSchemes([]);
       setPosts([]);
     });
-  }, []);
+  }, [publicUserFromPath]);
 
-  const email = profile.email?.trim() || 'not-available@user.local';
-  const username = profile.name?.trim() || email.split('@')[0] || 'user';
+  const email = viewedProfile.email?.trim() || authProfile.email?.trim() || 'not-available@user.local';
+  const username = viewedProfile.username?.trim() || viewedProfile.name?.trim() || email.split('@')[0] || 'user';
+  const displayName = viewedProfile.name?.trim() || username;
 
   const activeSectionLabel = useMemo(() => {
     const map: Record<ProfileSectionKey, string> = {
-      wardrobe: 'My Wardrobe',
+      wardrobe: 'My Wardrobe Pieces',
       'user-info': 'User Info',
       'my-schemes': 'My Schemes',
       'saved-schemes': 'Saved Schemes',
@@ -107,22 +145,23 @@ export default function ProfileView() {
   }, [selectedSection]);
 
   const updateSection = (section: ProfileSectionKey) => {
+    const normalized = allowedSections.includes(section) ? section : allowedSections[0];
     const query = new URLSearchParams(searchParams.toString());
-    query.set('section', section);
+    query.set('section', normalized);
     router.replace(`${pathname}?${query.toString()}`);
   };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-      <ProfileContextMenu selectedSection={selectedSection} onSelectSection={updateSection} />
+      <ProfileContextMenu selectedSection={selectedSection} onSelectSection={updateSection} allowedSections={allowedSections} />
 
       <div className="space-y-6">
-        <PageHeader title="Profile" subtitle="Premium creator hub for wardrobe, schemes, publishing, and account controls." />
+        <PageHeader title={isOwnerView ? 'Profile' : `Creator Profile`} subtitle={isOwnerView ? 'Premium creator hub for wardrobe, schemes, publishing, and account controls.' : 'Public creator profile view.'} />
 
         <ProfileSummaryCard
           username={username}
           loginEmail={email}
-          loginStatus="Authenticated"
+          loginStatus={isOwnerView ? 'Authenticated' : 'Public Profile'}
           authSource="sai-usercontrol"
         />
 
@@ -134,8 +173,9 @@ export default function ProfileView() {
           section={selectedSection}
           userId={userId}
           username={username}
-          displayName={profile.name?.trim() || username}
+          displayName={displayName}
           email={email}
+          canEdit={isOwnerView}
           wardrobeItems={wardrobeItems}
           schemes={schemes}
           posts={posts}

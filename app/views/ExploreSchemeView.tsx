@@ -176,7 +176,7 @@ export default function ExploreSchemeView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Saved Outfits" subtitle="Manage outfits by occasion, preference, favorite, and availability." />
+      <PageHeader title="Saved Outfit Cards" subtitle="Manage outfits by occasion, preference, favorite, and availability." />
 
       {grouped.map(([occasion, occasionSchemes]) => (
         <SectionBlock key={occasion} title={`Occasion: ${occasion}`} subtitle="Outfits grouped by occasion.">
