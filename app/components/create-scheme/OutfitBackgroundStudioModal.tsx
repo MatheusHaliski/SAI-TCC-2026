@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Swal from 'sweetalert2';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import {
   BackgroundStudioStyleConfig,
@@ -46,7 +47,6 @@ type RecommendedPreset = {
   category: PresetCategory;
   label: string;
   description: string;
-  recipe: (context: PresetContext, recipe: CompositionRecipe, uploadedReferenceImage?: string | null) => OutfitBackgroundConfig;
 };
 
 type OutfitMetadata = {
@@ -65,6 +65,11 @@ type PresetContext = {
   brandName: string;
   brandLogoUrl: string | null;
   heroColor: string;
+};
+
+type PresetRuntimeState = {
+  hasReferenceImage: boolean;
+  hasBrandLogo: boolean;
 };
 
 type ReferenceIntent = 'logo_pure' | 'logo_with_background' | 'symbol_texture' | 'editorial_image' | 'product_photo' | 'abstract_image' | 'fabric_pattern';
@@ -913,14 +918,6 @@ function buildTonalGeometryPreset(context: PresetContext, referenceImage?: strin
   return buildTonalGeometryConfig(context, referenceImage);
 }
 
-function buildTechAmberEnergyPreset(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
-  return buildTechAmberEnergyConfig(context, referenceImage);
-}
-
-function buildNeonMotionGridPreset(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
-  return buildNeonMotionGridConfig(context, referenceImage);
-}
-
 function buildLuxuryFabricMonogramPreset(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
   const safeReferenceImage = referenceImage || context.brandLogoUrl || null;
   const monogramRaw = context.brandName
@@ -1104,34 +1101,102 @@ function buildSurfaceFromRecipe(
   );
 }
 
-function buildRecommendedPresetConfig(
+function getPresetAvailabilityReason(
   presetId: BackgroundPresetId,
   context: PresetContext,
-  recipe: CompositionRecipe,
-  uploadedReferenceImage?: string | null,
-): OutfitBackgroundConfig {
-  const safeReferenceImage = uploadedReferenceImage || context.brandLogoUrl || null;
-  if (presetId === 'selection_tonal_geometry') return buildTonalGeometryPreset(context, safeReferenceImage);
-  if (presetId === 'selection_tech_amber_energy') return buildTechAmberEnergyPreset(context, safeReferenceImage);
-  if (presetId === 'selection_neon_motion_grid') return buildNeonMotionGridPreset(context, safeReferenceImage);
-  if (presetId === 'selection_luxury_fabric_monogram') return buildLuxuryFabricMonogramPreset(context, safeReferenceImage);
-  if (presetId === 'selection_editorial_logo' && safeReferenceImage) return buildEditorialLogoComposition(safeReferenceImage, context);
-  return buildSurfaceFromRecipe(recipe, context, safeReferenceImage);
+  referenceImage?: string | null,
+): string | null {
+  const hasReferenceImage = Boolean(referenceImage);
+  const hasLogo = Boolean(context.brandLogoUrl);
+  if (presetId === 'selection_tiled_motif' && !hasReferenceImage) return 'Requires image';
+  if (presetId === 'selection_logo_image_fusion' && !hasReferenceImage) return 'Requires image';
+  if (presetId === 'selection_editorial_logo' && !hasReferenceImage && !hasLogo) return 'Requires logo or image';
+  return null;
 }
 
-function getRecommendedPresets(outfitMetadata?: OutfitMetadata): RecommendedPreset[] {
+function isPresetAvailable(
+  presetId: BackgroundPresetId,
+  context: PresetContext,
+  referenceImage?: string | null,
+): boolean {
+  return getPresetAvailabilityReason(presetId, context, referenceImage) === null;
+}
+
+function applyPresetPreview(params: {
+  presetId: BackgroundPresetId;
+  context: PresetContext;
+  referenceImage?: string | null;
+  gradient?: OutfitBackgroundConfig['gradient'];
+}): OutfitBackgroundConfig {
+  const safeReferenceImage = params.referenceImage || params.context.brandLogoUrl || null;
+  let recipe = buildCompositionRecipe({
+    presetId: params.presetId,
+    referenceIntent: analyzeReferenceIntent(safeReferenceImage),
+    gradient: params.gradient,
+  });
+  if (detectLogoLikeSubject(safeReferenceImage)) {
+    recipe = { ...recipe, logoWeight: Math.min(1, recipe.logoWeight + 0.08) };
+  }
+  return params.presetId === 'selection_tiled_motif' && safeReferenceImage
+    ? buildTiledMotifFromReference(safeReferenceImage, params.context, 1, params.gradient)
+    : buildSurfaceFromRecipe(recipe, params.context, safeReferenceImage);
+}
+
+async function applyPresetUnified(params: {
+  presetId: BackgroundPresetId;
+  context: PresetContext;
+  referenceImage?: string | null;
+  gradient?: OutfitBackgroundConfig['gradient'];
+}): Promise<OutfitBackgroundConfig> {
+  const availabilityReason = getPresetAvailabilityReason(params.presetId, params.context, params.referenceImage);
+  if (availabilityReason) throw new Error(availabilityReason);
+  const safeReferenceImage = params.referenceImage || params.context.brandLogoUrl || null;
+  let recipe = buildCompositionRecipe({
+    presetId: params.presetId,
+    referenceIntent: analyzeReferenceIntent(safeReferenceImage),
+    gradient: params.gradient,
+  });
+  if (detectLogoLikeSubject(safeReferenceImage)) {
+    recipe = { ...recipe, logoWeight: Math.min(1, recipe.logoWeight + 0.08) };
+  }
+  console.log('[Preset Apply]', {
+    presetId: params.presetId,
+    hasReferenceImage: Boolean(params.referenceImage),
+    hasLogo: Boolean(params.context.brandLogoUrl),
+    recipe,
+  });
+  const config = params.presetId === 'selection_tiled_motif' && safeReferenceImage
+    ? await buildTiledMotifFromReferenceImage(safeReferenceImage, params.context, params.gradient)
+    : buildSurfaceFromRecipe(recipe, params.context, safeReferenceImage);
+  return {
+    ...config,
+    background_mode: config.background_mode || 'ai_artwork',
+    gradient: config.gradient || DEFAULT_BACKGROUND.gradient,
+    shape: config.shape || 'none',
+  };
+}
+
+function getRecommendedPresets(outfitMetadata: OutfitMetadata | undefined, runtimeState: PresetRuntimeState): RecommendedPreset[] {
   const allPresets: RecommendedPreset[] = [
-    { id: 'selection_tiled_motif', category: 'pattern_surface', label: 'Selection tiled motif', description: 'Turns the uploaded logo into a repeated premium motif surface.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_tiled_motif', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Selection luxury fabric monogram', description: 'Builds a refined fashion surface with repeated branded monogram texture.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_luxury_fabric_monogram', ctx, recipe, uploaded || null) },
-    { id: 'selection_tonal_geometry', category: 'pattern_surface', label: 'Selection tonal geometry', description: 'Combines tonal palette extraction with subtle geometric paneling.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_tonal_geometry', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_editorial_logo', category: 'editorial_branding', label: 'Selection editorial logo', description: 'Uses the uploaded logo as a hero element in a clean campaign-style composition.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_editorial_logo', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_editorial_collage', category: 'editorial_branding', label: 'Selection editorial collage', description: 'Fuses cropped logo and treated imagery into a depth-rich editorial card.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_editorial_collage', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_soft_premium_minimal', category: 'editorial_branding', label: 'Selection soft premium minimal', description: 'Minimal, high-readability premium composition with restrained visual weight.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_soft_premium_minimal', ctx, recipe, uploaded || null) },
-    { id: 'selection_tech_amber_energy', category: 'tech_energy', label: 'Selection tech amber energy', description: 'Fuses uploaded logo with high-energy amber/orange AI-tech visual treatment.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_tech_amber_energy', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_neon_motion_grid', category: 'tech_energy', label: 'Selection neon motion grid', description: 'Adds diagonal neon movement, digital grid rhythm, and logo anchoring.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_neon_motion_grid', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_metallic_sport_identity', category: 'tech_energy', label: 'Selection metallic sport identity', description: 'Applies silver/graphite highlights for premium sport-tech brand identity.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_metallic_sport_identity', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
-    { id: 'selection_logo_image_fusion', category: 'hybrid_fusion', label: 'Selection logo + stylized image fusion', description: 'Blends uploaded logo with stylized image composition for richer hero surfaces.', recipe: (ctx, recipe, uploaded) => buildRecommendedPresetConfig('selection_logo_image_fusion', ctx, recipe, uploaded || (ctx.brandLogoUrl || FLOWER_PICKER_IMAGE)) },
+    { id: 'selection_tiled_motif', category: 'pattern_surface', label: 'Selection tiled motif', description: 'Turns the uploaded logo into a repeated premium motif surface.' },
+    { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Selection luxury fabric monogram', description: 'Builds a refined fashion surface with repeated branded monogram texture.' },
+    { id: 'selection_tonal_geometry', category: 'pattern_surface', label: 'Selection tonal geometry', description: 'Combines tonal palette extraction with subtle geometric paneling.' },
+    { id: 'selection_editorial_logo', category: 'editorial_branding', label: 'Selection editorial logo', description: 'Uses the uploaded logo as a hero element in a clean campaign-style composition.' },
+    { id: 'selection_editorial_collage', category: 'editorial_branding', label: 'Selection editorial collage', description: 'Fuses cropped logo and treated imagery into a depth-rich editorial card.' },
+    { id: 'selection_soft_premium_minimal', category: 'editorial_branding', label: 'Selection soft premium minimal', description: 'Minimal, high-readability premium composition with restrained visual weight.' },
+    { id: 'selection_tech_amber_energy', category: 'tech_energy', label: 'Selection tech amber energy', description: 'Fuses uploaded logo with high-energy amber/orange AI-tech visual treatment.' },
+    { id: 'selection_neon_motion_grid', category: 'tech_energy', label: 'Selection neon motion grid', description: 'Adds diagonal neon movement, digital grid rhythm, and logo anchoring.' },
+    { id: 'selection_metallic_sport_identity', category: 'tech_energy', label: 'Selection metallic sport identity', description: 'Applies silver/graphite highlights for premium sport-tech brand identity.' },
+    { id: 'selection_logo_image_fusion', category: 'hybrid_fusion', label: 'Selection logo + stylized image fusion', description: 'Blends uploaded logo with stylized image composition for richer hero surfaces.' },
   ];
+  const availablePresetIds = allPresets
+    .filter((preset) => {
+      if (preset.id === 'selection_tiled_motif') return runtimeState.hasReferenceImage;
+      if (preset.id === 'selection_logo_image_fusion') return runtimeState.hasReferenceImage;
+      if (preset.id === 'selection_editorial_logo') return runtimeState.hasReferenceImage || runtimeState.hasBrandLogo;
+      return true;
+    })
+    .map((preset) => preset.id);
   const isTechSportDirection = [outfitMetadata?.style, outfitMetadata?.occasion, outfitMetadata?.mood, outfitMetadata?.title]
     .filter(Boolean)
     .join(' ')
@@ -1140,11 +1205,12 @@ function getRecommendedPresets(outfitMetadata?: OutfitMetadata): RecommendedPres
 
   if (isTechSportDirection) {
     return allPresets
+      .filter((preset) => availablePresetIds.includes(preset.id))
       .filter((preset) => ['selection_tonal_geometry', 'selection_tech_amber_energy', 'selection_neon_motion_grid'].includes(preset.id))
       .slice(0, 3);
   }
 
-  const pickFirstByCategory = (category: PresetCategory) => allPresets.find((preset) => preset.category === category);
+  const pickFirstByCategory = (category: PresetCategory) => allPresets.find((preset) => preset.category === category && availablePresetIds.includes(preset.id));
   return [
     pickFirstByCategory('pattern_surface'),
     pickFirstByCategory('editorial_branding'),
@@ -1251,6 +1317,16 @@ export default function OutfitBackgroundStudioModal({
   const [aiError, setAiError] = useState<string | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
   const [presetRequirementMessage, setPresetRequirementMessage] = useState<string | null>(null);
+  const showPresetToastError = (message: string) => {
+    void Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'error',
+      title: message,
+      timer: 2600,
+      showConfirmButton: false,
+    });
+  };
 
   const presetContext = useMemo<PresetContext>(() => {
     const metadataBrand = outfitMetadata?.brandIdentity || outfitMetadata?.brands?.[0] || previewCardData.pieces?.[0]?.brand || 'SELECTION';
@@ -1261,9 +1337,17 @@ export default function OutfitBackgroundStudioModal({
       : '#1d4ed8';
     return { brandName, brandLogoUrl, heroColor };
   }, [outfitMetadata, previewCardData]);
-  const recommendedPresets = useMemo(() => getRecommendedPresets(outfitMetadata), [outfitMetadata]);
   const isUploadedReferenceImage = (value: string) => value.startsWith('data:image/') || value.startsWith('blob:');
   const getUploadedReferenceImage = () => (isUploadedReferenceImage(aiReferenceImageUrl) ? aiReferenceImageUrl : null);
+  const uploadedReferenceImage = getUploadedReferenceImage();
+  const runtimeState = useMemo<PresetRuntimeState>(
+    () => ({
+      hasReferenceImage: Boolean(uploadedReferenceImage),
+      hasBrandLogo: Boolean(presetContext.brandLogoUrl),
+    }),
+    [uploadedReferenceImage, presetContext.brandLogoUrl],
+  );
+  const recommendedPresets = useMemo(() => getRecommendedPresets(outfitMetadata, runtimeState), [outfitMetadata, runtimeState]);
   const getReferenceImageForApi = () => {
     const candidate = aiReferenceImageDataUrl.trim();
     if (!candidate) return undefined;
@@ -1286,40 +1370,25 @@ export default function OutfitBackgroundStudioModal({
     setPresetRequirementMessage(null);
     const preset = recommendedPresets.find((item) => item.id === presetId);
     if (!preset) return;
-    if (presetId === 'selection_tiled_motif' && !uploadedReferenceImage) {
-      setPresetRequirementMessage('Selection Tiled Motif requires a REFERENCE IMAGE UPLOAD to generate the repeated mosaic.');
+    if (!isPresetAvailable(presetId, context, uploadedReferenceImage)) {
+      const requirementMessage = getPresetAvailabilityReason(presetId, context, uploadedReferenceImage) || 'Preset unavailable for current state.';
+      if (presetId === 'selection_tiled_motif' && !uploadedReferenceImage) {
+        showPresetToastError('Upload a reference image to use Tiled Motif');
+      }
+      setPresetRequirementMessage(requirementMessage);
       return;
     }
-    const referenceIntent = analyzeReferenceIntent(uploadedReferenceImage);
-    if (uploadedReferenceImage) {
-      console.info('[background-studio] reference image detected', { presetId, referenceIntent });
-    }
-    console.info('[background-studio] building preview config', { presetId, referenceIntent });
-    let recipe = buildCompositionRecipe({ presetId, referenceIntent, gradient: draft.gradient });
-    if (detectLogoLikeSubject(uploadedReferenceImage)) {
-      recipe = { ...recipe, logoWeight: Math.min(1, recipe.logoWeight + 0.08) };
-    }
     let config: OutfitBackgroundConfig;
-    if (presetId === 'selection_tonal_geometry') {
-      config = buildTonalGeometryPreset(context, uploadedReferenceImage || context.brandLogoUrl || FLOWER_PICKER_IMAGE);
-    } else if (presetId === 'selection_tech_amber_energy') {
-      config = buildTechAmberEnergyPreset(context, uploadedReferenceImage || context.brandLogoUrl || FLOWER_PICKER_IMAGE);
-    } else if (presetId === 'selection_neon_motion_grid') {
-      config = buildNeonMotionGridPreset(context, uploadedReferenceImage || context.brandLogoUrl || FLOWER_PICKER_IMAGE);
-    } else if (presetId === 'selection_luxury_fabric_monogram') {
-      config = buildLuxuryFabricMonogramPreset(context, uploadedReferenceImage || context.brandLogoUrl || null);
-    } else if (presetId === 'selection_editorial_logo' && (uploadedReferenceImage || context.brandLogoUrl)) {
-      config = buildEditorialLogoComposition(uploadedReferenceImage || context.brandLogoUrl || FLOWER_PICKER_IMAGE, context);
-    } else {
-      config = buildRecommendedPresetConfig(presetId, context, recipe, uploadedReferenceImage);
-    }
-    if (presetId === 'selection_tiled_motif' && uploadedReferenceImage) {
-      try {
-        config = await buildTiledMotifFromReferenceImage(uploadedReferenceImage, context, draft.gradient);
-      } catch {
-        setPresetRequirementMessage('Unable to process the uploaded image for Selection Tiled Motif. Please upload a valid image and try again.');
-        return;
-      }
+    try {
+      config = await applyPresetUnified({
+        presetId,
+        context,
+        referenceImage: uploadedReferenceImage,
+        gradient: draft.gradient,
+      });
+    } catch {
+      setPresetRequirementMessage('Unable to apply preset. Please validate logo/reference image requirements and retry.');
+      return;
     }
     setSelectedRecommendedPreset(presetId);
     setDraft((prev) => ({
@@ -1404,6 +1473,7 @@ export default function OutfitBackgroundStudioModal({
     if (selectedRecommendedPreset === 'selection_tiled_motif') {
       if (!uploadedReferenceImage) {
         setAiLoading(false);
+        showPresetToastError('Upload a reference image to use Tiled Motif');
         setAiError('Selection Tiled Motif depends on REFERENCE IMAGE UPLOAD. Upload an image before generating.');
         return;
       }
@@ -1964,32 +2034,31 @@ export default function OutfitBackgroundStudioModal({
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Recommended presets based on current outfit</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-3">
                 {recommendedPresets.map((preset) => {
-                  const uploadedReferenceImage = getUploadedReferenceImage();
-                  const requiresUploadedReference = preset.id === 'selection_tiled_motif';
-                  const isDisabled = requiresUploadedReference && !uploadedReferenceImage;
-                  const previewRecipe = buildCompositionRecipe({
+                  const isAvailable = isPresetAvailable(preset.id, presetContext, uploadedReferenceImage);
+                  const availabilityReason = getPresetAvailabilityReason(preset.id, presetContext, uploadedReferenceImage);
+                  const previewConfig = applyPresetPreview({
                     presetId: preset.id,
-                    referenceIntent: analyzeReferenceIntent(uploadedReferenceImage),
+                    context: presetContext,
+                    referenceImage: uploadedReferenceImage,
                     gradient: draft.gradient,
                   });
-                  const previewConfig = buildRecommendedPresetConfig(
-                    preset.id,
-                    presetContext,
-                    previewRecipe,
-                    uploadedReferenceImage,
-                  );
+                  const badgeLabel = !isAvailable
+                    ? `🟡 ${availabilityReason}`
+                    : ['selection_tech_amber_energy', 'selection_neon_motion_grid', 'selection_metallic_sport_identity'].includes(preset.id)
+                      ? '🔵 AI enhanced'
+                      : '🟢 Ready';
                   return (
                     <button
                       key={preset.id}
                       type="button"
-                      disabled={isDisabled}
-                      className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)] disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={!isAvailable}
+                      className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)] disabled:cursor-not-allowed disabled:opacity-40"
                       onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
                     >
                       <p className="text-[10px] uppercase tracking-[0.12em] text-white/60">{preset.category.replaceAll('_', ' / ')}</p>
                       <p className="text-xs font-semibold">{preset.label}</p>
                       <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
-                      {isDisabled ? <p className="mt-1 text-[10px] text-amber-200">Requires REFERENCE IMAGE UPLOAD</p> : null}
+                      <p className={`mt-1 text-[10px] ${isAvailable ? 'text-emerald-200' : 'text-amber-200'}`}>{badgeLabel}</p>
                       <span
                         className="mt-2 block h-9 rounded-lg border border-white/15"
                         style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig))}
