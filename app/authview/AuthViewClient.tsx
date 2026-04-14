@@ -10,7 +10,8 @@ import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
 import { signInWithFacebook, signInWithGoogle } from "@/app/auth";
 
-const ff = `${shareTechMono.style.fontFamily}, 'Inter', 'Segoe UI', Arial, sans-serif`;
+const ff = `${shareTechMono.style.fontFamily}, 'Inter', 'Segoe UI', Arial, sans-serif`
+const metallicGradient = 'linear-gradient(135deg, #f7e7b2 0%, #d4af37 28%, #f4f4f5 52%, #a3a3a3 74%, #fff5cf 100%)';
 
 const EyeIcon = ({ open }: { open: boolean }) => open ? (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -176,7 +177,7 @@ export default function AuthViewClient() {
     return (
         <div style={{ fontFamily: ff, minHeight: "100vh", display: "flex", backgroundImage: "none", backgroundColor: "#fff" }}>
             {/* Left - Branding */}
-            <div style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)", padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
+            <div style={{ background: metallicGradient, padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1.5rem", minHeight: 220, textAlign: "center" }}>
                         <Image
                             src="/FAI-removebg-preview.png"
