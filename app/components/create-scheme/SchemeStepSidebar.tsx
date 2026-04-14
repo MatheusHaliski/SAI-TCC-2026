@@ -10,7 +10,7 @@ export default function SchemeStepSidebar({ steps, currentStep, completedSteps, 
 
   return (
     <aside className="sa-surface-context rounded-2xl border border-white/20 p-4 backdrop-blur-sm lg:sticky lg:top-0 lg:h-fit">
-      <p className="text-lg font-semibold text-white">Create My Scheme</p>
+      <p className="text-lg font-semibold text-white">Create my Outfit Card</p>
       <p className="mt-1 text-xs text-white/70">Progress {progress}%</p>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/20">
         <div className="h-full bg-gradient-to-r from-emerald-300 to-amber-300" style={{ width: `${progress}%` }} />

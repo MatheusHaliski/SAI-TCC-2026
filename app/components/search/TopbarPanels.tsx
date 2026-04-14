@@ -135,12 +135,12 @@ export function SystemInboxPanel({ onClose }: { onClose: () => void }) {
 
 export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; activePath: string }) {
   const links = [
-    { href: '/explore-scheme', label: 'Saved Outfits' },
-    { href: '/create-my-scheme', label: 'Create My Scheme' },
+    { href: '/explore-scheme', label: 'Saved Outfit Cards' },
+    { href: '/create-my-scheme', label: 'Create my Outfit Card' },
     { href: '/dress-tester', label: 'Dress Tester' },
     { href: '/search-items', label: 'Search' },
     { href: '/search-pieces', label: 'Search Pieces' },
-    { href: '/my-wardrobe', label: 'My Wardrobe' },
+    { href: '/my-wardrobe', label: 'My Wardrobe Pieces' },
     { href: '/profile', label: 'Settings' },
   ];
 

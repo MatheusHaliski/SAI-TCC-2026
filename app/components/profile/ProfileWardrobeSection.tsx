@@ -20,7 +20,7 @@ export default function ProfileWardrobeSection({ items }: ProfileWardrobeSection
   const router = useRouter();
 
   return (
-    <SectionBlock title="My Wardrobe" subtitle="Scan and manage your pieces with premium compact cards.">
+    <SectionBlock title="My Wardrobe Pieces" subtitle="Scan and manage your pieces with premium compact cards.">
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {items.map((item) => (
           <WardrobeCompactCard

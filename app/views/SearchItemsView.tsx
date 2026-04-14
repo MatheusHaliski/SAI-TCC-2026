@@ -168,7 +168,7 @@ export default function SearchItemsView() {
         </div>
       </SectionBlock>
 
-      <SectionBlock title={`Outfits (${groupedSearch.outfits.length})`} subtitle="Public outfits in compact Saved Outfits card mode.">
+      <SectionBlock title={`Outfits (${groupedSearch.outfits.length})`} subtitle="Public outfits in compact Saved Outfit Cards card mode.">
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groupedSearch.outfits.map((scheme) => {
             const cardData = outfitsById[scheme.scheme_id];

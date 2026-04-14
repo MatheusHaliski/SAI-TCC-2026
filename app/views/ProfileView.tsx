@@ -134,7 +134,7 @@ export default function ProfileView() {
 
   const activeSectionLabel = useMemo(() => {
     const map: Record<ProfileSectionKey, string> = {
-      wardrobe: 'My Wardrobe',
+      wardrobe: 'My Wardrobe Pieces',
       'user-info': 'User Info',
       'my-schemes': 'My Schemes',
       'saved-schemes': 'Saved Schemes',
