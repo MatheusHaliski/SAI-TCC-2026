@@ -162,7 +162,7 @@ export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; a
 
 export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   const router = useRouter();
-  const [lightMode, setLightMode] = useState<boolean>(readSavedTheme() === 'light');
+  const [liquidMode, setLiquidMode] = useState<boolean>(readSavedTheme() === 'light');
   const [backgroundDraft, setBackgroundDraft] = useState<PageBackgroundConfig>(() => readPageBackgroundConfig());
 
   const profile = useMemo(() => getAuthSessionProfile(), []);
@@ -172,7 +172,7 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   const photoUrl = profile.photo_url?.trim() || '';
 
   const setTheme = (isLight: boolean) => {
-    setLightMode(isLight);
+    setLiquidMode(isLight);
     applyTheme(isLight ? 'light' : 'dark');
   };
 
@@ -186,7 +186,7 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
 
   const actionItems = [
     { label: 'View Profile', icon: '👤', onClick: () => { onClose(); router.push(userId ? `/profile/${userId}` : '/profile'); } },
-    { label: lightMode ? 'Light Mode: On' : 'Light Mode: Off', icon: '🌗', onClick: () => setTheme(!lightMode) },
+    { label: liquidMode ? 'Liquid Mode: On' : 'Liquid Mode: Off', icon: '💧', onClick: () => setTheme(!liquidMode) },
     { label: 'Account Settings', icon: '⚙️', onClick: () => { onClose(); router.push('/profile?section=settings'); } },
     { label: 'Logout', icon: '🚪', onClick: handleLogout },
   ];

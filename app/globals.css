@@ -21,21 +21,21 @@
 }
 
 :root[data-theme='light'] {
-  --background: #f6f9ff;
-  --foreground: #0f172a;
+  --background: #eef3fb;
+  --foreground: #0b1220;
   --page-gradient:
-    radial-gradient(circle at 12% 16%, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.08) 48%),
-    radial-gradient(circle at 82% 8%, rgba(191, 219, 254, 0.42) 0%, rgba(191, 219, 254, 0) 44%),
-    linear-gradient(130deg, #f8fbff 0%, #eef4ff 45%, #f5f9ff 100%);
+    radial-gradient(circle at 12% 16%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.12) 48%),
+    radial-gradient(circle at 82% 8%, rgba(153, 194, 255, 0.38) 0%, rgba(191, 219, 254, 0) 44%),
+    linear-gradient(140deg, #f8fbff 0%, #ebf1fb 46%, #e6eef9 100%);
   --home-shell-bg:
-    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.1) 40%),
-    linear-gradient(140deg, #f9fcff 0%, #f0f5ff 55%, #ecf3ff 100%);
-  --sidebar-gradient: linear-gradient(160deg, rgba(255, 255, 255, 0.7), rgba(238, 246, 255, 0.56));
-  --sidebar-gradient-soft: linear-gradient(160deg, rgba(255, 255, 255, 0.7), rgba(238, 246, 255, 0.56));
-  --drawer-surface-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.66), rgba(236, 245, 255, 0.52));
-  --drawer-surface-border: rgba(148, 163, 184, 0.45);
-  --drawer-surface-shadow: 0 18px 44px rgba(15, 23, 42, 0.16);
-  --shell-foreground: #0f172a;
+    radial-gradient(circle at 16% 18%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.2) 42%),
+    linear-gradient(150deg, #f7faff 0%, #edf3fc 58%, #e8f0fb 100%);
+  --sidebar-gradient: linear-gradient(155deg, rgba(255, 255, 255, 0.72), rgba(247, 250, 255, 0.54), rgba(235, 243, 255, 0.48));
+  --sidebar-gradient-soft: linear-gradient(155deg, rgba(255, 255, 255, 0.74), rgba(246, 250, 255, 0.5), rgba(233, 242, 255, 0.44));
+  --drawer-surface-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.76), rgba(246, 250, 255, 0.58), rgba(232, 242, 255, 0.5));
+  --drawer-surface-border: rgba(255, 255, 255, 0.78);
+  --drawer-surface-shadow: 0 22px 55px rgba(15, 23, 42, 0.14);
+  --shell-foreground: #0b1220;
   --shell-theme-filter: none;
 }
 
@@ -378,14 +378,14 @@ html.dark-mode body textarea::placeholder {
 }
 
 :root[data-theme='light'] .sa-home-shell::before {
-  opacity: 0.5;
+  opacity: 0.64;
   background:
-    radial-gradient(circle at 18% 26%, rgba(255, 255, 255, 0.82), transparent 44%),
-    radial-gradient(circle at 84% 74%, rgba(226, 237, 255, 0.58), transparent 40%);
+    radial-gradient(circle at 18% 26%, rgba(255, 255, 255, 0.88), transparent 44%),
+    radial-gradient(circle at 84% 74%, rgba(224, 236, 255, 0.64), transparent 40%);
 }
 
 :root[data-theme='light'] .sa-home-shell {
-  color: #0f172a;
+  color: #0b1220;
 }
 
 :root[data-theme='light'] .sa-right-drawer,
@@ -405,13 +405,15 @@ html.dark-mode body textarea::placeholder {
 :root[data-theme='light'] .sa-card,
 :root[data-theme='light'] .sa-panel,
 :root[data-theme='light'] .sa-glass {
-  border-color: rgba(148, 163, 184, 0.45) !important;
-  background-image: linear-gradient(150deg, rgba(255, 255, 255, 0.72), rgba(244, 248, 255, 0.66), rgba(234, 243, 255, 0.58));
-  background-color: rgba(255, 255, 255, 0.52) !important;
-  color: #0f172a !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
+  border-color: rgba(255, 255, 255, 0.78) !important;
+  background-image: linear-gradient(155deg, rgba(255, 255, 255, 0.78), rgba(248, 251, 255, 0.68), rgba(236, 244, 255, 0.58));
+  background-color: rgba(255, 255, 255, 0.58) !important;
+  color: #0b1220 !important;
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow:
+    0 20px 46px rgba(15, 23, 42, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 :root[data-theme='light'] .sa-topbar-search input,
@@ -421,5 +423,5 @@ html.dark-mode body textarea::placeholder {
 :root[data-theme='light'] .sa-right-drawer button,
 :root[data-theme='light'] .sa-right-drawer a,
 :root[data-theme='light'] .sa-topbar-search svg {
-  color: #0f172a !important;
+  color: #0b1220 !important;
 }
