@@ -179,7 +179,7 @@ export default function AuthViewClient() {
             <div style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)", padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1.5rem", minHeight: 220, textAlign: "center" }}>
                         <Image
-                            src="/FAI.png"
+                            src="/FAI-removebg-preview.png"
                             alt="Logo metálico oficial da FAI"
                             width={168}
                             height={168}
