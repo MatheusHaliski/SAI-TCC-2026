@@ -220,51 +220,58 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
     }
 
     try:
-        p.fetch_image(image_url, original_path)
-        validation = p.validate_input_image(original_path)
-        debug["validation"] = {
-            "accepted": validation.accepted,
-            "code": validation.code,
-            "message": validation.message,
-            "metadata": validation.metadata,
-        }
-        if not validation.accepted:
-            raise p.PipelineError(validation.code or "invalid_input", validation.message or "Input rejected", {"qualityReport": validation.metadata})
+        try:
+            p.fetch_image(image_url, original_path)
+            validation = p.validate_input_image(original_path)
+            debug["validation"] = {
+                "accepted": validation.accepted,
+                "code": validation.code,
+                "message": validation.message,
+                "metadata": validation.metadata,
+            }
+            if not validation.accepted:
+                raise p.PipelineError(validation.code or "invalid_input", validation.message or "Input rejected", {"qualityReport": validation.metadata})
 
-        preprocess_meta = p.preprocess_garment(original_path, cleaned_path)
-        quality_report = p.score_cleaned_image(cleaned_path)
-        debug["preprocess"] = preprocess_meta
-        debug["qualityReport"] = quality_report
+            preprocess_meta = p.preprocess_garment(original_path, cleaned_path)
+            quality_report = p.score_cleaned_image(cleaned_path)
+            debug["preprocess"] = preprocess_meta
+            debug["qualityReport"] = quality_report
 
-        prompt = p.build_meshy_prompt(preprocess_meta, options)
-        meshy_meta = p.generate_base_glb_with_meshy(cleaned_path, base_glb_path, prompt, options)
-        debug["meshy"] = meshy_meta
+            prompt = p.build_meshy_prompt(preprocess_meta, options)
+            meshy_meta = p.generate_base_glb_with_meshy(cleaned_path, base_glb_path, prompt, options)
+            debug["meshy"] = meshy_meta
 
-        blender_meta = p.run_blender_refinement(base_glb_path, refined_glb_path, job_dir)
-        debug["blender"] = blender_meta
+            blender_meta = p.run_blender_refinement(base_glb_path, refined_glb_path, job_dir)
+            debug["blender"] = blender_meta
 
-        duration_ms = int((time.perf_counter() - started) * 1000)
-        debug["timestamps"]["finishedAt"] = now_iso()
-        debug["durationMs"] = duration_ms
-        debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
+            duration_ms = int((time.perf_counter() - started) * 1000)
+            debug["timestamps"]["finishedAt"] = now_iso()
+            debug["durationMs"] = duration_ms
+            debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
 
-        update_job(
-            job_id,
-            status="completed",
-            artifacts={
-                "model_3d_url": build_artifact_url(refined_glb_path, job_id),
-                "model_3d_path": str(refined_glb_path),
-                "cleaned_image_path": str(cleaned_path),
-                "base_glb_path": str(base_glb_path),
-                "debug_report_path": str(debug_path),
-            },
-            metrics={"durationMs": duration_ms},
-            qualityReport=quality_report,
-            debug=debug,
-            error=None,
-        )
-        print(f"[JOB] success id={job_id}")
-        logger.info("job_completed jobId=%s durationMs=%s", job_id, duration_ms)
+            update_job(
+                job_id,
+                status="completed",
+                artifacts={
+                    "model_3d_url": build_artifact_url(refined_glb_path, job_id),
+                    "model_3d_path": str(refined_glb_path),
+                    "cleaned_image_path": str(cleaned_path),
+                    "base_glb_path": str(base_glb_path),
+                    "debug_report_path": str(debug_path),
+                },
+                metrics={"durationMs": duration_ms},
+                qualityReport=quality_report,
+                debug=debug,
+                error=None,
+            )
+            print(f"[JOB] success id={job_id}")
+            logger.info("job_completed jobId=%s durationMs=%s", job_id, duration_ms)
+        except Exception as e:
+            print("\n🔥🔥🔥 PIPELINE ERROR 🔥🔥🔥")
+            print("ERROR:", str(e))
+            print("TRACE:")
+            traceback.print_exc()
+            raise
     except p.PipelineError as exc:
         debug["error"] = {"code": exc.code, "message": exc.message, "details": exc.details or {}}
         debug["timestamps"]["failedAt"] = now_iso()
