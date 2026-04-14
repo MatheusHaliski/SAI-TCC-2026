@@ -446,3 +446,18 @@ html.dark-mode body textarea::placeholder {
 :root[data-theme='light'] .sa-topbar-search svg {
   color: #0b1220 !important;
 }
+
+:root[data-theme='light'] .sa-surface-topbar .sa-topbar-title,
+:root[data-theme='light'] .sa-surface-sidebar .sa-sidebar-heading,
+:root[data-theme='light'] .sa-surface-sidebar .sa-sidebar-nav-item {
+  color: #0b1220 !important;
+}
+
+:root[data-theme='light'] .sa-surface-sidebar .sa-sidebar-nav-item .sa-sidebar-nav-helper,
+:root[data-theme='light'] .sa-surface-sidebar .sa-sidebar-nav-item svg {
+  color: rgba(11, 18, 32, 0.72) !important;
+}
+
+:root[data-theme='light'] .sa-surface-sidebar .sa-sidebar-nav-item:hover {
+  color: #0b1220 !important;
+}
