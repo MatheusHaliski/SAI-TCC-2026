@@ -193,11 +193,7 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const NEON_MOTION_GRID_IMAGE = '/neongrid.png';
 const CURATED_IMAGE_PICKER_OPTIONS = [
-  'Sem título (37).png',
-  'Sem título (36).png',
-  'Sem título (35).png',
-  'Fart.png',
-  'Sem título (25).png',
+  'Fart.png'
 ].map((fileName) => ({
   value: `image:${fileName}`,
   label: fileName,
