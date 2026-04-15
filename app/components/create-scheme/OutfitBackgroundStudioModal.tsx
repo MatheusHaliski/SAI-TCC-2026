@@ -25,6 +25,7 @@ import type {
 } from '@/app/backend/types/artwork-studio';
 import { applyArtworkToOutfitCard } from '@/app/lib/artwork-studio';
 import FancySelect from '@/app/components/ui/fancy-select';
+import { MATERIAL_PRESETS, applyFabricMaterialToCard, buildFabricPresetConfig, type FabricMaterialConfig } from '@/app/lib/materialPresets';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
 type GeometryFamily = 'arrows' | 'waves' | 'diamond' | 'mesh' | 'circles' | 'triangles' | 'stars' | 'flowers' | 'beams' | 'panels' | 'mixed';
@@ -191,6 +192,18 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 )}`;
 const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const NEON_MOTION_GRID_IMAGE = '/neongrid.png';
+const CURATED_IMAGE_PICKER_OPTIONS = [
+  { fileName: 'Sem título (37).png' },
+  { fileName: 'Sem título (36).png' },
+  { fileName: 'Sem título (35).png' },
+  { fileName: 'Fart.png', label: 'Premium Fashion Artwork' },
+  { fileName: 'Sem título (25).png' },
+].map(({ fileName, label }) => ({
+  value: `image:${fileName}`,
+  label: label || fileName,
+  hint: `Applies ${label || fileName} as artwork surface`,
+  imageUrl: `/${encodeURIComponent(fileName)}`,
+}));
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
   'none',
   'orb',
@@ -1283,8 +1296,32 @@ export default function OutfitBackgroundStudioModal({
   onClose,
   onApply,
 }: OutfitBackgroundStudioModalProps) {
+  const buildNoMaterialConfig = (baseColor: string): FabricMaterialConfig => ({
+    ...buildFabricPresetConfig(baseColor),
+    type: 'none',
+    stitchBorder: false,
+    premium: false,
+  });
+
+  const deriveMaterialConfigFromDraft = (source: OutfitBackgroundConfig): FabricMaterialConfig => {
+    const baseColor = source.solid_color || source.gradient?.stops?.[0]?.color || '#334155';
+    if (!source.materialLayer?.type || source.materialLayer.type === 'none') return buildNoMaterialConfig(baseColor);
+    return buildFabricPresetConfig(baseColor, {
+      type: 'embroidered_fabric',
+      density: source.materialLayer.density,
+      threadDirection: source.materialLayer.threadDirection,
+      threadThickness: source.materialLayer.threadThickness,
+      embossIntensity: source.materialLayer.embossIntensity,
+      surfaceContrast: source.materialLayer.surfaceContrast,
+      finish: source.materialLayer.finish,
+      scope: source.materialLayer.scope,
+      stitchBorder: source.decorativeOverlayLayer?.stitchBorder,
+      stitchColor: source.decorativeOverlayLayer?.stitchColor,
+    });
+  };
+
   const [activeTab, setActiveTab] = useState<StudioTab>('color');
-  const [draft, setDraft] = useState<OutfitBackgroundConfig>(resolveOutfitBackgroundForRender(value));
+  const [draft, setDraft] = useState<OutfitBackgroundConfig>(() => resolveOutfitBackgroundForRender(value));
   const [recentColors, setRecentColors] = useState<string[]>([]);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiStylePreset, setAiStylePreset] = useState<ArtworkStylePreset>('editorial_fashion');
@@ -1307,6 +1344,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiError, setAiError] = useState<string | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
   const [presetRequirementMessage, setPresetRequirementMessage] = useState<string | null>(null);
+  const [materialConfig, setMaterialConfig] = useState<FabricMaterialConfig>(() => deriveMaterialConfigFromDraft(resolveOutfitBackgroundForRender(value)));
   const showPresetToastError = (message: string) => {
     void Swal.fire({
       toast: true,
@@ -1350,6 +1388,12 @@ export default function OutfitBackgroundStudioModal({
       URL.revokeObjectURL(aiReferenceImageUrl);
     }
   }, [aiReferenceImageUrl]);
+
+  useEffect(() => {
+    if (materialConfig.type === 'none') return;
+    applyMaterialToDraft(materialConfig, draft);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.solid_color, draft.gradient?.stops?.[0]?.color]);
 
   const applyRecommendedPresetFromReferenceImage = async (
     presetId: BackgroundPresetId,
@@ -1432,6 +1476,26 @@ export default function OutfitBackgroundStudioModal({
 
   const addRecentColor = (color: string) => {
     setRecentColors((prev) => [color, ...prev.filter((item) => item !== color)].slice(0, 6));
+  };
+
+  const getMaterialBaseColor = (source: OutfitBackgroundConfig) =>
+    source.solid_color || source.gradient?.stops?.[0]?.color || '#334155';
+
+  const applyMaterialToDraft = (nextConfig: FabricMaterialConfig, source = draft) => {
+    if (nextConfig.type === 'none') {
+      setDraft((prev) => ({
+        ...prev,
+        materialLayer: undefined,
+        decorativeOverlayLayer: undefined,
+      }));
+      return;
+    }
+
+    const merged = applyFabricMaterialToCard(source, buildFabricPresetConfig(getMaterialBaseColor(source), nextConfig));
+    setDraft((prev) => ({
+      ...prev,
+      ...merged,
+    }));
   };
 
   const applyDraftToCard = () => {
@@ -2020,6 +2084,125 @@ export default function OutfitBackgroundStudioModal({
               </div>
             ) : null}
 
+            <section className="rounded-xl border border-indigo-200/30 bg-indigo-500/10 p-3">
+              <p className="text-xs uppercase tracking-[0.12em] text-indigo-100">Material Layer (Premium)</p>
+              <p className="mt-1 text-[11px] text-indigo-100/80">Separate layer for textile rendering on top of color/gradient and below decorative overlays.</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <FancySelect
+                  value={materialConfig.type}
+                  label="Material Type"
+                  onChange={(value) => {
+                    const preset = MATERIAL_PRESETS.find((item) => item.id === value);
+                    const baseColor = draft.solid_color || draft.gradient?.stops?.[0]?.color || '#334155';
+                    const next = preset && preset.id !== 'none'
+                      ? preset.buildConfig(baseColor)
+                      : { ...materialConfig, type: 'none' as const };
+                    setMaterialConfig(next);
+                    applyMaterialToDraft(next);
+                  }}
+                  options={MATERIAL_PRESETS.map((preset) => ({
+                    value: preset.id,
+                    label: preset.tier === 'premium' ? `${preset.label} · Premium` : preset.label,
+                    hint: preset.description,
+                  }))}
+                />
+                <FancySelect
+                  value={materialConfig.scope}
+                  label="Apply Scope"
+                  onChange={(value) => {
+                    const next = { ...materialConfig, scope: value as FabricMaterialConfig['scope'] };
+                    setMaterialConfig(next);
+                    applyMaterialToDraft(next);
+                  }}
+                  options={[
+                    { value: 'card', label: 'Whole Card', hint: 'Applies material to complete card surface' },
+                    { value: 'hero_block', label: 'Hero Block', hint: 'Applies material only on hero section' },
+                    { value: 'content_block', label: 'Content Block', hint: 'Applies material on lower content area' },
+                  ]}
+                />
+              </div>
+              {materialConfig.type !== 'none' ? (
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <label className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs">
+                    Fabric Density: {materialConfig.density}
+                    <input type="range" min={10} max={140} value={materialConfig.density} className="mt-1 w-full" onChange={(event) => {
+                      const next = { ...materialConfig, density: Number(event.target.value) };
+                      setMaterialConfig(next);
+                      applyMaterialToDraft(next);
+                    }} />
+                  </label>
+                  <label className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs">
+                    Thread Thickness: {materialConfig.threadThickness.toFixed(1)}
+                    <input type="range" min={0.4} max={5} step={0.1} value={materialConfig.threadThickness} className="mt-1 w-full" onChange={(event) => {
+                      const next = { ...materialConfig, threadThickness: Number(event.target.value) };
+                      setMaterialConfig(next);
+                      applyMaterialToDraft(next);
+                    }} />
+                  </label>
+                  <FancySelect
+                    value={materialConfig.threadDirection}
+                    label="Thread Direction"
+                    onChange={(value) => {
+                      const next = { ...materialConfig, threadDirection: value as FabricMaterialConfig['threadDirection'] };
+                      setMaterialConfig(next);
+                      applyMaterialToDraft(next);
+                    }}
+                    options={[
+                      { value: 'cross', label: 'Cross Weave', hint: 'Diagonal + counter weave for textile look' },
+                      { value: 'diagonal', label: 'Diagonal Weave', hint: 'Fashion-forward diagonal thread field' },
+                      { value: 'horizontal', label: 'Horizontal Weave', hint: 'Horizontal stitching emphasis' },
+                      { value: 'vertical', label: 'Vertical Weave', hint: 'Vertical stitching emphasis' },
+                    ]}
+                  />
+                  <FancySelect
+                    value={materialConfig.finish}
+                    label="Matte / Satin Finish"
+                    onChange={(value) => {
+                      const next = { ...materialConfig, finish: value as FabricMaterialConfig['finish'] };
+                      setMaterialConfig(next);
+                      applyMaterialToDraft(next);
+                    }}
+                    options={[
+                      { value: 'matte', label: 'Matte', hint: 'Soft low-sheen textile' },
+                      { value: 'satin', label: 'Satin', hint: 'Subtle highlights and richer sheen' },
+                    ]}
+                  />
+                  <label className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs">
+                    Emboss Intensity: {materialConfig.embossIntensity}
+                    <input type="range" min={0} max={100} value={materialConfig.embossIntensity} className="mt-1 w-full" onChange={(event) => {
+                      const next = { ...materialConfig, embossIntensity: Number(event.target.value) };
+                      setMaterialConfig(next);
+                      applyMaterialToDraft(next);
+                    }} />
+                  </label>
+                  <label className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs">
+                    Surface Contrast: {materialConfig.surfaceContrast}
+                    <input type="range" min={0} max={100} value={materialConfig.surfaceContrast} className="mt-1 w-full" onChange={(event) => {
+                      const next = { ...materialConfig, surfaceContrast: Number(event.target.value) };
+                      setMaterialConfig(next);
+                      applyMaterialToDraft(next);
+                    }} />
+                  </label>
+                  <label className="col-span-full flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs">
+                    <span>Stitch Border On/Off</span>
+                    <input type="checkbox" checked={materialConfig.stitchBorder} onChange={(event) => {
+                      const next = { ...materialConfig, stitchBorder: event.target.checked };
+                      setMaterialConfig(next);
+                      applyMaterialToDraft(next);
+                    }} />
+                  </label>
+                  <label className="col-span-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs">
+                    Stitch Color
+                    <input type="color" value={materialConfig.stitchColor} className="mt-1 h-9 w-full cursor-pointer rounded border border-white/20 bg-transparent" onChange={(event) => {
+                      const next = { ...materialConfig, stitchColor: event.target.value };
+                      setMaterialConfig(next);
+                      applyMaterialToDraft(next);
+                    }} />
+                  </label>
+                </div>
+              ) : null}
+            </section>
+
             <section className="rounded-xl border border-white/20 bg-white/10 p-3">
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Recommended presets based on current outfit</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-3">
@@ -2082,7 +2265,12 @@ export default function OutfitBackgroundStudioModal({
             }))}
           />
           <FancySelect
-            value={SEGMENTED_GRADIENT_OPTIONS.find((preset) => JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient))?.label ?? ''}
+            value={(() => {
+              const gradientLabel = SEGMENTED_GRADIENT_OPTIONS.find((preset) => JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient))?.label;
+              if (gradientLabel) return gradientLabel;
+              if (draft.ai_artwork?.image_url === FLOWER_PICKER_IMAGE) return 'Flower';
+              return CURATED_IMAGE_PICKER_OPTIONS.find((option) => option.imageUrl === draft.ai_artwork?.image_url)?.value ?? '';
+            })()}
             onChange={(value) => {
               if (value === 'Flower') {
                 setDraft((prev) => ({
@@ -2094,6 +2282,20 @@ export default function OutfitBackgroundStudioModal({
                     generation_status: 'done',
                   },
                   shape: 'flowers',
+                }));
+                return;
+              }
+              if (value.startsWith('image:')) {
+                const selectedImage = CURATED_IMAGE_PICKER_OPTIONS.find((option) => option.value === value);
+                if (!selectedImage) return;
+                setDraft((prev) => ({
+                  ...prev,
+                  background_mode: 'ai_artwork',
+                  ai_artwork: {
+                    prompt: `${selectedImage.label} curated artwork background`,
+                    image_url: selectedImage.imageUrl,
+                    generation_status: 'done',
+                  },
                 }));
                 return;
               }
@@ -2115,6 +2317,7 @@ export default function OutfitBackgroundStudioModal({
             options={[
               ...SEGMENTED_GRADIENT_OPTIONS.map((preset) => ({ value: preset.label, label: preset.label, hint: 'Applies gradient + geometry recipe' })),
               { value: 'Flower', label: 'Flower', hint: 'Applies flower motif artwork surface' },
+              ...CURATED_IMAGE_PICKER_OPTIONS,
             ]}
           />
         </div>

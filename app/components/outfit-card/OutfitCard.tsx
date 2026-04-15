@@ -1,3 +1,6 @@
+'use client';
+
+import { useMemo } from 'react';
 import OutfitHeroImage from '@/app/components/outfit-card/OutfitHeroImage';
 import OutfitHeader from '@/app/components/outfit-card/OutfitHeader';
 import OutfitPieceList from '@/app/components/outfit-card/OutfitPieceList';
@@ -9,6 +12,8 @@ import {
   resolveBrandLogoUrlByName,
   resolveOutfitBackgroundForRender,
 } from '@/app/lib/outfit-card';
+import { buildFabricScopeStyle, renderFabricTextureToCanvas } from '@/app/lib/fabricTextureRenderer';
+import { buildFabricPresetConfig } from '@/app/lib/materialPresets';
 
 interface GeneratedOutfitCardProps {
   data: OutfitCardData;
@@ -31,6 +36,30 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
 
   const resolvedBackground = resolveOutfitBackgroundForRender(data.outfitBackground);
   const backgroundStyle = buildBackgroundCssStyle(resolvedBackground);
+  const materialLayer = resolvedBackground.materialLayer;
+  const decorativeLayer = resolvedBackground.decorativeOverlayLayer;
+  const materialRender = useMemo(() => {
+    if (!materialLayer || materialLayer.type === 'none') return { textureDataUrl: null, decorativeDataUrl: null };
+    return renderFabricTextureToCanvas({
+      width: variant === 'compact' ? 540 : 820,
+      height: variant === 'compact' ? 700 : 980,
+      color: materialLayer.color || resolvedBackground.solid_color || resolvedBackground.gradient?.stops?.[0]?.color || '#374151',
+      material: buildFabricPresetConfig(
+        materialLayer.color || resolvedBackground.solid_color || '#334155',
+        {
+          density: materialLayer.density,
+          threadDirection: materialLayer.threadDirection,
+          threadThickness: materialLayer.threadThickness,
+          embossIntensity: materialLayer.embossIntensity,
+          surfaceContrast: materialLayer.surfaceContrast,
+          finish: materialLayer.finish,
+          scope: materialLayer.scope,
+          stitchBorder: decorativeLayer?.stitchBorder,
+          stitchColor: decorativeLayer?.stitchColor,
+        },
+      ),
+    });
+  }, [decorativeLayer?.stitchBorder, decorativeLayer?.stitchColor, materialLayer, resolvedBackground.gradient?.stops, resolvedBackground.solid_color, variant]);
 
   const brandBadges = data.pieces
     .map((piece) => ({
@@ -104,8 +133,33 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
       className={`relative overflow-hidden rounded-3xl border border-slate-200/70 shadow-[0_12px_45px_rgba(15,23,42,0.08)] ${variant === 'compact' ? 'space-y-3 p-3' : 'space-y-4 p-4 sm:p-6'}`}
       style={backgroundStyle}
     >
+      {materialRender.textureDataUrl ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute z-0 rounded-[inherit]"
+          style={{
+            ...buildFabricScopeStyle(materialLayer?.scope || 'card'),
+            backgroundImage: `url(${materialRender.textureDataUrl})`,
+            backgroundSize: 'cover',
+            backgroundBlendMode: 'multiply',
+            opacity: 0.84,
+          }}
+        />
+      ) : null}
       {shapeOverlayStyle ? (
         <div aria-hidden className="pointer-events-none absolute inset-0 opacity-95" style={shapeOverlayStyle} />
+      ) : null}
+      {materialRender.decorativeDataUrl ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute z-0 rounded-[inherit]"
+          style={{
+            ...buildFabricScopeStyle(materialLayer?.scope || 'card'),
+            backgroundImage: `url(${materialRender.decorativeDataUrl})`,
+            backgroundSize: 'cover',
+            opacity: decorativeLayer?.opacity ?? 0.72,
+          }}
+        />
       ) : null}
       <div className={`relative z-[1] ${variant === 'compact' ? 'space-y-3' : 'space-y-4'}`}>
         <OutfitHeroImage src={data.heroImageUrl} alt={`${data.outfitName} hero preview`} className={variant === 'compact' ? 'h-32 rounded-2xl' : ''} />
