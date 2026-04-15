@@ -146,7 +146,7 @@ export function useAuthGate(): UseAuthGateReturn  {
     }
   }
 
-  const clientId ="457209482063-s3q59rtck2dg6mcruuq2qbea1ee7ofe8.apps.googleusercontent.com";
+  const clientId ="457209482063-pebaf4naeu54cjic80k3svga46f6pvgv.apps.googleusercontent.com";
 
   console.log("IS:",clientId);
 
