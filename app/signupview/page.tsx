@@ -63,7 +63,7 @@ export default function SignupViewPage() {
             </div>
 
             {/* Right Side */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "#f8fafc", position: "relative", overflow: "hidden", backgroundImage: "url(/Firefly_Gemini Flash_Crie ideias de background muito bons para um novo website de moda, usando uma rede de 3787887.png)", backgroundSize: "cover", backgroundPosition: "center" }}>
+            <div style={{ flex: 1, backgroundColor: "#f8fafc", position: "relative", overflow: "hidden", backgroundImage: "url(/Firefly_Gemini Flash_Crie ideias de background muito bons para um novo website de moda, usando uma rede de 3787887.png)", backgroundSize: "cover", backgroundPosition: "center" }}>
                 <Image
                     src="/Fart.png"
                     alt="Fashion AI network background"
@@ -71,22 +71,37 @@ export default function SignupViewPage() {
                     priority
                     style={{ objectFit: "cover" }}
                 />
-                <div style={{ width: "100%", maxWidth: 448, position: "relative", zIndex: 1 }}>
-                    <button onClick={() => router.push("/authview")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#6b7280", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontSize: "0.875rem", fontFamily: ff }}>
-                        ← Voltar para login
-                    </button>
-                    <div style={{ background: "#fff", border: "2px solid #000", borderRadius: 24, padding: "2rem" }}>
-                        <div style={{ marginBottom: "2rem" }}>
-                            <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Criar sua conta</h2>
-                            <p style={{ color: "#6b7280", fontFamily: ff }}>Preencha os dados abaixo para começar</p>
+                <div
+                    style={{
+                        position: "relative",
+                        zIndex: 1,
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "2rem",
+                        overflowY: "auto",
+                        overflowX: "hidden",
+                    }}
+                >
+                    <div style={{ width: "100%", maxWidth: 448 }}>
+                        <button onClick={() => router.push("/authview")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#6b7280", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontSize: "0.875rem", fontFamily: ff }}>
+                            ← Voltar para login
+                        </button>
+                        <div style={{ background: "#fff", border: "2px solid #000", borderRadius: 24, padding: "2rem" }}>
+                            <div style={{ marginBottom: "2rem" }}>
+                                <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Criar sua conta</h2>
+                                <p style={{ color: "#6b7280", fontFamily: ff }}>Preencha os dados abaixo para começar</p>
+                            </div>
+                            <SignupForm />
+                            <p style={{ textAlign: "center", fontSize: "0.875rem", color: "#6b7280", marginTop: "2rem", fontFamily: ff }}>
+                                Já tem uma conta?{" "}
+                                <button onClick={() => router.push("/authview")} style={{ color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 500, fontFamily: ff }}>
+                                    Fazer login
+                                </button>
+                            </p>
                         </div>
-                        <SignupForm />
-                        <p style={{ textAlign: "center", fontSize: "0.875rem", color: "#6b7280", marginTop: "2rem", fontFamily: ff }}>
-                            Já tem uma conta?{" "}
-                            <button onClick={() => router.push("/authview")} style={{ color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 500, fontFamily: ff }}>
-                                Fazer login
-                            </button>
-                        </p>
                     </div>
                 </div>
             </div>
