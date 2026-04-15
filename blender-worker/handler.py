@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
+from controller import Fashion3DController
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -27,37 +28,7 @@ logger = logging.getLogger("stylistai.worker")
 logger.info("worker_module_loaded entrypoint=handler.py")
 
 
-pipeline = None
-pipeline_load_error: str | None = None
-pipeline_lock = threading.Lock()
-
-
-def get_pipeline():
-    global pipeline, pipeline_load_error
-    if pipeline is not None:
-        return pipeline
-
-    with pipeline_lock:
-        if pipeline is not None:
-            return pipeline
-        try:
-            import pipeline as p
-
-            pipeline = p
-            pipeline_load_error = None
-            logger.info("pipeline_loaded successfully")
-            print("[PIPELINE] loaded successfully")
-        except Exception as e:
-            pipeline_load_error = str(e)
-            pipeline = None
-            logger.exception("pipeline_load_failed error=%s", pipeline_load_error)
-            print("❌ Pipeline load failed:", pipeline_load_error)
-    return pipeline
-
-
-def _pipeline_constant(name: str, fallback: float) -> float:
-    p = get_pipeline()
-    return float(getattr(p, name, fallback)) if p is not None else fallback
+pipeline_controller = Fashion3DController()
 
 
 app = FastAPI(title="StylistAI GPU Worker", version="2.0.0")
@@ -102,14 +73,8 @@ def _runtime_diagnostics() -> dict[str, Any]:
         "appVersion": os.getenv("APP_VERSION", app.version).strip() or app.version,
         "imageTag": os.getenv("IMAGE_TAG", "").strip() or "unknown",
         "buildSha": os.getenv("BUILD_SHA", "").strip() or "unknown",
-        "validationMode": os.getenv("VALIDATION_MODE", "production").strip() or "production",
-        "minInputShortestSide": int(os.getenv("MIN_INPUT_SHORTEST_SIDE", "256")),
-        "blurThresholdDefault": _get_env_float("BLUR_THRESHOLD", _get_env_float("GARMENT_BLUR_THRESHOLD_DEFAULT", _pipeline_constant("DEFAULT_BLUR_THRESHOLD", 100.0))),
-        "blurThresholdLowTexture": _get_env_float("BLUR_THRESHOLD_LOW_TEXTURE", _get_env_float("GARMENT_BLUR_THRESHOLD_LOW_TEXTURE", _pipeline_constant("DEFAULT_BLUR_THRESHOLD_LOW_TEXTURE", 80.0))),
-        "edgeDensityMin": _get_env_float("EDGE_DENSITY_MIN", _get_env_float("GARMENT_EDGE_DENSITY_MIN", _pipeline_constant("DEFAULT_EDGE_DENSITY_MIN", 0.01))),
-        "edgeDensityLowTexture": _get_env_float("EDGE_DENSITY_LOW_TEXTURE", _get_env_float("GARMENT_EDGE_DENSITY_LOW_TEXTURE", _pipeline_constant("DEFAULT_EDGE_DENSITY_LOW_TEXTURE", 0.008))),
-        "qualityScoreMin": _get_env_float("QUALITY_SCORE_MIN", 0.35),
-        "enablePersonDetection": os.getenv("ENABLE_PERSON_DETECTION", "false").strip().lower() in {"1", "true", "yes", "on"},
+        "pipelineVersion": "fashion-ai-meshy-blender-v2",
+        "workerOutputDir": str(OUTPUT_DIR),
     }
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -192,12 +157,6 @@ def build_artifact_url(output_path: Path, job_id: str) -> str:
 
 
 def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
-    p = get_pipeline()
-    if p is None:
-        print(f"[JOB] error id={job_id} err=Pipeline not available")
-        update_job(job_id, status="failed", error={"code": "pipeline_unavailable", "message": "Pipeline not available"})
-        return
-
     image_url = str(payload.get("imageUrl", "")).strip()
     job_type = str(payload.get("jobType", "blender_uv_pipeline") or "blender_uv_pipeline")
     options = payload.get("options", {})
@@ -214,85 +173,49 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
 
     job_dir = OUTPUT_DIR / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
-    original_path = job_dir / "input_original"
-    cleaned_path = job_dir / "input_cleaned.png"
-    base_glb_path = job_dir / "base_meshy.glb"
-    refined_glb_path = OUTPUT_DIR / f"{job_id}.glb"
     debug_path = job_dir / "debug.json"
 
     debug: dict[str, Any] = {
         "jobId": job_id,
         "originalImageUrl": image_url,
-        "pipeline": "hybrid_meshy_blender",
+        "pipeline": "fashion-ai-meshy-blender-v2",
         "timestamps": {"startedAt": now_iso()},
     }
 
     try:
-        try:
-            p.fetch_image(image_url, original_path)
-            validation = p.validate_input_image(original_path)
-            debug["validation"] = {
-                "accepted": validation.accepted,
-                "code": validation.code,
-                "message": validation.message,
-                "metadata": validation.metadata,
-            }
-            if not validation.accepted:
-                raise p.PipelineError(validation.code or "invalid_input", validation.message or "Input rejected", {"qualityReport": validation.metadata})
-
-            preprocess_meta = p.preprocess_garment(original_path, cleaned_path)
-            quality_report = p.score_cleaned_image(cleaned_path)
-            debug["preprocess"] = preprocess_meta
-            debug["qualityReport"] = quality_report
-
-            prompt = p.build_meshy_prompt(preprocess_meta, options)
-            meshy_meta = p.generate_base_glb_with_meshy(cleaned_path, base_glb_path, prompt, options)
-            debug["meshy"] = meshy_meta
-
-            blender_meta = p.run_blender_refinement(base_glb_path, refined_glb_path, job_dir)
-            debug["blender"] = blender_meta
-
-            duration_ms = int((time.perf_counter() - started) * 1000)
-            debug["timestamps"]["finishedAt"] = now_iso()
-            debug["durationMs"] = duration_ms
-            debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
-
-            update_job(
-                job_id,
-                status="completed",
-                artifacts={
-                    "model_3d_url": build_artifact_url(refined_glb_path, job_id),
-                    "model_3d_path": str(refined_glb_path),
-                    "cleaned_image_path": str(cleaned_path),
-                    "base_glb_path": str(base_glb_path),
-                    "debug_report_path": str(debug_path),
-                },
-                metrics={"durationMs": duration_ms},
-                qualityReport=quality_report,
-                debug=debug,
-                error=None,
-            )
-            print(f"[JOB] success id={job_id}")
-            logger.info("job_completed jobId=%s durationMs=%s", job_id, duration_ms)
-        except Exception as e:
-            print("\n🔥🔥🔥 PIPELINE ERROR 🔥🔥🔥")
-            print("ERROR:", str(e))
-            print("TRACE:")
-            traceback.print_exc()
-            raise
-    except p.PipelineError as exc:
-        debug["error"] = {"code": exc.code, "message": exc.message, "details": exc.details or {}}
-        debug["timestamps"]["failedAt"] = now_iso()
+        piece_data = {
+            "piece_type": options.get("pieceType") or options.get("piece_type") or "garment",
+            "color": options.get("color"),
+            "material": options.get("material"),
+            "fabric_type": options.get("fabricType"),
+            "logo_url": options.get("logoUrl"),
+            "pattern_url": options.get("patternUrl"),
+            "reference_image_url": image_url or None,
+            "job_type": job_type,
+        }
+        result = pipeline_controller.run(job_id=job_id, piece_data=piece_data)
+        duration_ms = int((time.perf_counter() - started) * 1000)
+        debug.update(result.debug)
+        debug["timestamps"]["finishedAt"] = now_iso()
+        debug["durationMs"] = duration_ms
         debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
-        print(f"[JOB] error id={job_id} err={exc.message}")
-        logger.warning("job_failed jobId=%s code=%s message=%s", job_id, exc.code, exc.message)
+
+        artifacts = dict(result.artifacts)
+        model_path = Path(artifacts.get("model_3d_path", ""))
+        if model_path.exists():
+            artifacts["model_3d_url"] = build_artifact_url(model_path, job_id)
+        artifacts["debug_report_path"] = str(debug_path)
+
         update_job(
             job_id,
-            status="failed",
-            error={"code": exc.code, "message": exc.message, "details": exc.details or {}},
-            qualityReport=(exc.details or {}).get("qualityReport") or debug.get("qualityReport"),
+            status="completed",
+            artifacts=artifacts,
+            metrics=result.metrics,
             debug=debug,
+            error=None,
         )
+        print(f"[JOB] success id={job_id}")
+        logger.info("job_completed jobId=%s durationMs=%s", job_id, duration_ms)
     except Exception as exc:
         print(f"[JOB] error id={job_id} err={str(exc)}")
         logger.exception("job_failed jobId=%s", job_id)
@@ -313,13 +236,11 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
 @app.on_event("startup")
 def startup_log() -> None:
     runtime = _runtime_diagnostics()
-    adaptive_active = runtime["validationMode"].lower() == "adaptive"
     logger.info("app_loaded title=%s version=%s", app.title, app.version)
     logger.info("server_starting app=stylistai-worker host=0.0.0.0 port=%s", os.getenv("PORT", "8000"))
     logger.info("cors_allowed_origins origins=%s", ",".join(allowed_origins))
     logger.info("runtime_diagnostics %s", json.dumps(runtime, sort_keys=True))
-    logger.info("adaptive_garment_validation active=%s validationMode=%s", adaptive_active, runtime["validationMode"])
-    logger.info("server_ready output_dir=%s max_workers=%s", OUTPUT_DIR, MAX_WORKERS)
+    logger.info("server_ready output_dir=%s max_workers=%s pipeline=%s", OUTPUT_DIR, MAX_WORKERS, runtime["pipelineVersion"])
 
 
 @app.get("/")
@@ -339,18 +260,14 @@ def health() -> dict[str, Any]:
         "status": "ok",
         "queue_size": len(job_queue),
         "active_jobs": len(jobs),
-        "pipeline_loaded": get_pipeline() is not None,
+        "pipeline_loaded": True,
         "service": "stylistai-gpu-worker",
         "outputDir": str(OUTPUT_DIR),
         "maxWorkers": MAX_WORKERS,
         "appVersion": runtime["appVersion"],
         "imageTag": runtime["imageTag"],
         "buildSha": runtime["buildSha"],
-        "validationMode": runtime["validationMode"],
-        "blurThresholdDefault": runtime["blurThresholdDefault"],
-        "blurThresholdLowTexture": runtime["blurThresholdLowTexture"],
-        "edgeDensityMin": runtime["edgeDensityMin"],
-        "edgeDensityLowTexture": runtime["edgeDensityLowTexture"],
+        "pipelineVersion": runtime["pipelineVersion"],
     }
 
 
@@ -393,12 +310,10 @@ def preflight(rest_of_path: str, request: Request) -> Response:
 
 
 def _submit_job(payload: dict[str, Any]) -> dict[str, str]:
-    p = get_pipeline()
-    if p is None:
-        raise HTTPException(status_code=500, detail="Pipeline not available")
-
-    if not str(payload.get("imageUrl", "")).strip():
-        raise HTTPException(status_code=400, detail={"code": "VALIDATION_ERROR", "message": "imageUrl is required"})
+    options = payload.get("options", {})
+    has_piece_type = isinstance(options, dict) and bool(str(options.get("pieceType") or options.get("piece_type") or "").strip())
+    if not str(payload.get("imageUrl", "")).strip() and not has_piece_type:
+        raise HTTPException(status_code=400, detail={"code": "VALIDATION_ERROR", "message": "Provide imageUrl or options.pieceType"})
     job_id = str(uuid.uuid4())
     register_job(job_id, payload)
     logger.info("job_created jobId=%s jobType=%s", job_id, payload.get("jobType", "blender_uv_pipeline"))

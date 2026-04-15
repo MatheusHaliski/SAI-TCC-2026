@@ -8,6 +8,7 @@ export interface PageBackgroundConfig {
 }
 
 const PAGE_BACKGROUND_KEY = 'sai_page_background_config';
+export const DEFAULT_SHELL_BACKGROUND_IMAGE = '/Fart.png';
 export const GOLDEN_BACKGROUND_ASSET = '/Firefly_Consegue adicionar quebras de linha tech ao gradiente (adicionar ranhuras) 3787887.jpg';
 export const OFFICIAL_WEBSITE_BACKGROUND_GRADIENT = `url("data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000'>
@@ -43,7 +44,12 @@ export const GOLDEN_WEBSITE_BACKGROUND_GRADIENT = [
 ].join(', ');
 
 export const DEFAULT_PAGE_BACKGROUND_CONFIG: PageBackgroundConfig = {
-  gradient: OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
+  gradient: [
+    'radial-gradient(circle at 14% 14%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.04) 44%)',
+    'radial-gradient(circle at 84% 10%, rgba(191, 172, 255, 0.24) 0%, rgba(191, 172, 255, 0) 45%)',
+    'linear-gradient(130deg, rgba(235, 226, 255, 0.42) 0%, rgba(255, 214, 226, 0.34) 40%, rgba(206, 225, 255, 0.3) 72%, rgba(255, 234, 210, 0.26) 100%)',
+    `url('${DEFAULT_SHELL_BACKGROUND_IMAGE}')`,
+  ].join(', '),
   shape: 'orb',
 };
 
@@ -55,33 +61,59 @@ const withTechGrooves = (base: string, opacity = 0.1): string => [
 ].join(', ');
 
 const isGoldenBackground = (gradient: string): boolean => gradient.includes(GOLDEN_BACKGROUND_ASSET);
+const withDefaultBackgroundFallback = (gradient: string): string =>
+  gradient.includes(DEFAULT_SHELL_BACKGROUND_IMAGE) ? gradient : `${gradient}, url('${DEFAULT_SHELL_BACKGROUND_IMAGE}')`;
+
+const normalizePageBackgroundConfig = (candidate?: Partial<PageBackgroundConfig> | null): PageBackgroundConfig => ({
+  gradient: withDefaultBackgroundFallback(candidate?.gradient || DEFAULT_PAGE_BACKGROUND_CONFIG.gradient),
+  shape: (candidate?.shape as PageBackgroundShape) || DEFAULT_PAGE_BACKGROUND_CONFIG.shape,
+});
 
 export const readPageBackgroundConfig = (): PageBackgroundConfig => {
   const raw = getLS(PAGE_BACKGROUND_KEY);
-  if (!raw) return DEFAULT_PAGE_BACKGROUND_CONFIG;
+  if (!raw) return normalizePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
   try {
     const parsed = JSON.parse(raw) as Partial<PageBackgroundConfig>;
-    return {
-      gradient: parsed.gradient || DEFAULT_PAGE_BACKGROUND_CONFIG.gradient,
-      shape: (parsed.shape as PageBackgroundShape) || DEFAULT_PAGE_BACKGROUND_CONFIG.shape,
-    };
+    return normalizePageBackgroundConfig(parsed);
   } catch {
-    return DEFAULT_PAGE_BACKGROUND_CONFIG;
+    return normalizePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
   }
 };
 
 export const applyPageBackgroundConfig = (config: PageBackgroundConfig): void => {
   if (typeof document === 'undefined') return;
-  document.documentElement.style.setProperty('--home-shell-bg', config.gradient);
-  document.documentElement.style.setProperty('--sidebar-gradient', withTechGrooves(config.gradient, isGoldenBackground(config.gradient) ? 0.16 : 0.09));
-  document.documentElement.style.setProperty('--sidebar-gradient-soft', withTechGrooves(config.gradient, isGoldenBackground(config.gradient) ? 0.12 : 0.07));
-  document.documentElement.style.setProperty('--drawer-surface-bg', withTechGrooves(config.gradient, isGoldenBackground(config.gradient) ? 0.2 : 0.08));
-  document.documentElement.style.setProperty('--drawer-surface-border', isGoldenBackground(config.gradient) ? 'rgba(255, 220, 150, 0.5)' : 'rgba(255, 255, 255, 0.3)');
-  document.documentElement.style.setProperty('--drawer-surface-shadow', isGoldenBackground(config.gradient) ? '0 22px 50px rgba(92, 54, 8, 0.55)' : '0 22px 50px rgba(12, 24, 18, 0.45)');
+  const resolvedBackground = withDefaultBackgroundFallback(config.gradient);
+  document.documentElement.style.setProperty('--home-shell-bg', resolvedBackground);
+  document.documentElement.style.setProperty('--sidebar-gradient', withTechGrooves(resolvedBackground, isGoldenBackground(resolvedBackground) ? 0.16 : 0.09));
+  document.documentElement.style.setProperty('--sidebar-gradient-soft', withTechGrooves(resolvedBackground, isGoldenBackground(resolvedBackground) ? 0.12 : 0.07));
+  document.documentElement.style.setProperty('--drawer-surface-bg', withTechGrooves(resolvedBackground, isGoldenBackground(resolvedBackground) ? 0.2 : 0.08));
+  document.documentElement.style.setProperty('--drawer-surface-border', isGoldenBackground(resolvedBackground) ? 'rgba(255, 220, 150, 0.5)' : 'rgba(255, 255, 255, 0.3)');
+  document.documentElement.style.setProperty('--drawer-surface-shadow', isGoldenBackground(resolvedBackground) ? '0 22px 50px rgba(92, 54, 8, 0.55)' : '0 22px 50px rgba(12, 24, 18, 0.45)');
   document.documentElement.setAttribute('data-home-shape', config.shape);
 };
 
 export const savePageBackgroundConfig = (config: PageBackgroundConfig): void => {
-  setLS(PAGE_BACKGROUND_KEY, JSON.stringify(config));
-  applyPageBackgroundConfig(config);
+  const normalized = normalizePageBackgroundConfig(config);
+  setLS(PAGE_BACKGROUND_KEY, JSON.stringify(normalized));
+  applyPageBackgroundConfig(normalized);
+};
+
+export const ensureSavedPageBackgroundConfig = (): PageBackgroundConfig => {
+  const raw = getLS(PAGE_BACKGROUND_KEY);
+  if (!raw) {
+    savePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
+    return normalizePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<PageBackgroundConfig>;
+    const normalized = normalizePageBackgroundConfig(parsed);
+    if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
+      setLS(PAGE_BACKGROUND_KEY, JSON.stringify(normalized));
+    }
+    return normalized;
+  } catch {
+    savePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
+    return normalizePageBackgroundConfig(DEFAULT_PAGE_BACKGROUND_CONFIG);
+  }
 };
