@@ -198,6 +198,7 @@ const CURATED_IMAGE_PICKER_OPTIONS = [
   { fileName: 'Sem título (35).png' },
   { fileName: 'Fart.png', label: 'Premium Fashion Artwork' },
   { fileName: 'Sem título (25).png' },
+  { fileName: '208445B9-82BD-4AC7-863A-B177A4D187B0_4_5005_c.jpeg', label: 'LEGO Mini Logo' },
 ].map(({ fileName, label }) => ({
   value: `image:${fileName}`,
   label: label || fileName,
