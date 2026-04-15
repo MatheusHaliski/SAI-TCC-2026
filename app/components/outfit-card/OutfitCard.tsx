@@ -39,7 +39,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
   const materialLayer = resolvedBackground.materialLayer;
   const decorativeLayer = resolvedBackground.decorativeOverlayLayer;
   const materialRender = useMemo(() => {
-    if (!materialLayer || materialLayer.type !== 'embroidered_fabric') return { textureDataUrl: null, decorativeDataUrl: null };
+    if (!materialLayer || materialLayer.type === 'none') return { textureDataUrl: null, decorativeDataUrl: null };
     return renderFabricTextureToCanvas({
       width: variant === 'compact' ? 540 : 820,
       height: variant === 'compact' ? 700 : 980,

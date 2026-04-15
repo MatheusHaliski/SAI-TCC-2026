@@ -193,11 +193,11 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const NEON_MOTION_GRID_IMAGE = '/neongrid.png';
 const CURATED_IMAGE_PICKER_OPTIONS = [
-  'Fart.png'
-].map((fileName) => ({
+  { fileName: 'Fart.png', label: 'Premium Fashion Artwork' },
+].map(({ fileName, label }) => ({
   value: `image:${fileName}`,
-  label: fileName,
-  hint: `Applies ${fileName} as artwork surface`,
+  label: label || fileName,
+  hint: `Applies ${label || fileName} as artwork surface`,
   imageUrl: `/${encodeURIComponent(fileName)}`,
 }));
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
@@ -1301,7 +1301,7 @@ export default function OutfitBackgroundStudioModal({
 
   const deriveMaterialConfigFromDraft = (source: OutfitBackgroundConfig): FabricMaterialConfig => {
     const baseColor = source.solid_color || source.gradient?.stops?.[0]?.color || '#334155';
-    if (source.materialLayer?.type !== 'embroidered_fabric') return buildNoMaterialConfig(baseColor);
+    if (!source.materialLayer?.type || source.materialLayer.type === 'none') return buildNoMaterialConfig(baseColor);
     return buildFabricPresetConfig(baseColor, {
       type: 'embroidered_fabric',
       density: source.materialLayer.density,
@@ -1386,7 +1386,7 @@ export default function OutfitBackgroundStudioModal({
   }, [aiReferenceImageUrl]);
 
   useEffect(() => {
-    if (materialConfig.type !== 'embroidered_fabric') return;
+    if (materialConfig.type === 'none') return;
     applyMaterialToDraft(materialConfig, draft);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.solid_color, draft.gradient?.stops?.[0]?.color]);
@@ -2090,7 +2090,7 @@ export default function OutfitBackgroundStudioModal({
                   onChange={(value) => {
                     const preset = MATERIAL_PRESETS.find((item) => item.id === value);
                     const baseColor = draft.solid_color || draft.gradient?.stops?.[0]?.color || '#334155';
-                    const next = preset?.id === 'embroidered_fabric'
+                    const next = preset && preset.id !== 'none'
                       ? preset.buildConfig(baseColor)
                       : { ...materialConfig, type: 'none' as const };
                     setMaterialConfig(next);
@@ -2117,11 +2117,11 @@ export default function OutfitBackgroundStudioModal({
                   ]}
                 />
               </div>
-              {materialConfig.type === 'embroidered_fabric' ? (
+              {materialConfig.type !== 'none' ? (
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <label className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs">
                     Fabric Density: {materialConfig.density}
-                    <input type="range" min={20} max={100} value={materialConfig.density} className="mt-1 w-full" onChange={(event) => {
+                    <input type="range" min={10} max={140} value={materialConfig.density} className="mt-1 w-full" onChange={(event) => {
                       const next = { ...materialConfig, density: Number(event.target.value) };
                       setMaterialConfig(next);
                       applyMaterialToDraft(next);
@@ -2129,7 +2129,7 @@ export default function OutfitBackgroundStudioModal({
                   </label>
                   <label className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs">
                     Thread Thickness: {materialConfig.threadThickness.toFixed(1)}
-                    <input type="range" min={0.8} max={3.2} step={0.1} value={materialConfig.threadThickness} className="mt-1 w-full" onChange={(event) => {
+                    <input type="range" min={0.4} max={5} step={0.1} value={materialConfig.threadThickness} className="mt-1 w-full" onChange={(event) => {
                       const next = { ...materialConfig, threadThickness: Number(event.target.value) };
                       setMaterialConfig(next);
                       applyMaterialToDraft(next);

@@ -45,10 +45,10 @@ function drawThreadField(
   color: string,
   angle: number,
 ) {
-  const density = clamp(material.density, 20, 100);
+  const density = clamp(material.density, 10, 140);
   const spacing = Math.max(4, Math.round(26 - density * 0.2));
   const threadLength = Math.max(6, Math.round(spacing * 1.5));
-  const thickness = clamp(material.threadThickness, 0.8, 3.2);
+  const thickness = clamp(material.threadThickness, 0.4, 5);
   const emboss = clamp(material.embossIntensity, 0, 100) / 100;
 
   ctx.lineCap = 'round';
