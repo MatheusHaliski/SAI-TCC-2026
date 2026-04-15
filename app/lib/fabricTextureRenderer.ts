@@ -77,6 +77,67 @@ function drawThreadField(
   }
 }
 
+function drawLegoField(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  material: FabricMaterialConfig,
+  color: string,
+) {
+  const density = clamp(material.density, 10, 140);
+  const blockSize = clamp(Math.round(56 - density * 0.22), 22, 54);
+  const gap = Math.max(2, Math.round(blockSize * 0.08));
+  const emboss = clamp(material.embossIntensity, 0, 100) / 100;
+
+  for (let y = 0; y < height + blockSize; y += blockSize + gap) {
+    for (let x = 0; x < width + blockSize; x += blockSize + gap) {
+      const jitter = ((x * 17 + y * 11) % 6) - 3;
+      const bx = x + jitter * 0.35;
+      const by = y + jitter * 0.2;
+      const radius = Math.max(4, Math.round(blockSize * 0.15));
+
+      ctx.fillStyle = tint(color, 4 + jitter, 0.92);
+      ctx.beginPath();
+      ctx.roundRect(bx, by, blockSize, blockSize, radius);
+      ctx.fill();
+
+      ctx.strokeStyle = tint(color, -30, 0.32);
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.roundRect(bx + 0.8, by + 0.8, blockSize - 1.6, blockSize - 1.6, radius - 1);
+      ctx.stroke();
+
+      ctx.fillStyle = tint(color, 22, 0.34 + emboss * 0.2);
+      ctx.fillRect(bx + 2, by + 2, blockSize - 6, Math.max(2, Math.round(blockSize * 0.18)));
+
+      const studRadius = Math.max(3, Math.round(blockSize * 0.14));
+      const studOffset = blockSize / 3;
+      const studCenters = [
+        [bx + studOffset, by + studOffset],
+        [bx + blockSize - studOffset, by + studOffset],
+        [bx + studOffset, by + blockSize - studOffset],
+        [bx + blockSize - studOffset, by + blockSize - studOffset],
+      ];
+      studCenters.forEach(([cx, cy]) => {
+        const gradient = ctx.createRadialGradient(cx - studRadius * 0.35, cy - studRadius * 0.35, 1, cx, cy, studRadius + 1.5);
+        gradient.addColorStop(0, tint(color, 38, 0.86));
+        gradient.addColorStop(0.55, tint(color, 10, 0.9));
+        gradient.addColorStop(1, tint(color, -28, 0.78));
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(cx, cy, studRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = tint(color, -45, 0.42);
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.arc(cx, cy, studRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+    }
+  }
+}
+
 export function renderFabricTextureToCanvas(input: FabricTextureRenderInput): FabricTextureRenderResult {
   if (typeof document === 'undefined') {
     return { textureDataUrl: null, decorativeDataUrl: null };
@@ -105,10 +166,14 @@ export function renderFabricTextureToCanvas(input: FabricTextureRenderInput): Fa
     }
   }
 
-  const primaryAngle = directionToAngle(material.threadDirection);
-  drawThreadField(textureCtx, width, height, material, input.color, primaryAngle);
-  if (material.threadDirection === 'cross' || material.threadDirection === 'diagonal') {
-    drawThreadField(textureCtx, width, height, material, input.color, primaryAngle + Math.PI / 2.5);
+  if (material.type === 'lego_material') {
+    drawLegoField(textureCtx, width, height, material, input.color);
+  } else {
+    const primaryAngle = directionToAngle(material.threadDirection);
+    drawThreadField(textureCtx, width, height, material, input.color, primaryAngle);
+    if (material.threadDirection === 'cross' || material.threadDirection === 'diagonal') {
+      drawThreadField(textureCtx, width, height, material, input.color, primaryAngle + Math.PI / 2.5);
+    }
   }
 
   const finishGradient = textureCtx.createLinearGradient(0, 0, width, height);
