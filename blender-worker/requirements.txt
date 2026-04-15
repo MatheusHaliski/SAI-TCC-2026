@@ -7,3 +7,4 @@ Pillow==11.2.1
 requests==2.32.3
 rembg==2.0.67
 trimesh==4.6.8
+bpy==4.2.0
