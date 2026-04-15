@@ -125,13 +125,13 @@ const DEFAULT_PLAN: BackgroundGenerationPlan = {
 };
 
 const SHAPE_KEYWORDS: Array<{ words: string[]; shape: BackgroundShapeLanguage }> = [
-  { words: ['flower', 'flowers', 'floral', 'petal', 'nature', 'leaf'], shape: 'organic_floral' },
+  { words: ['flower', 'flowers', 'floral', 'petal', 'nature', 'leaf', 'flores', 'flor'], shape: 'organic_floral' },
   { words: ['triangle', 'triangles'], shape: 'triangular' },
   { words: ['fruit', 'fruits', 'orb', 'sphere', 'circle', 'circles', 'dots', 'points'], shape: 'circles_orbs' },
   { words: ['line', 'lines', 'stroke', 'stripes'], shape: 'strokes_stripes' },
   { words: ['star', 'stars', 'cosmic', 'galaxy'], shape: 'stars' },
   { words: ['diamond', 'diamonds', 'gem'], shape: 'diamonds' },
-  { words: ['wave', 'waves', 'flow', 'fluid'], shape: 'waves' },
+  { words: ['wave', 'waves'], shape: 'waves' },
   { words: ['beam', 'beams', 'light', 'streak'], shape: 'beams' },
 ];
 
@@ -144,6 +144,19 @@ type ShapeLayerVariant = {
 };
 
 type TightPatternKind = 'stars' | 'circles' | 'triangles' | 'arrows' | 'waves' | 'flowers' | null;
+
+const FLOWER_PROMPT_IMAGE = `/${encodeURIComponent('Sem título (33).png')}`;
+const FLOWER_VARIATION_IMAGES = [
+  FLOWER_PROMPT_IMAGE,
+  `/${encodeURIComponent('Sem título (34).png')}`,
+  `/${encodeURIComponent('Sem título (35).png')}`,
+  `/${encodeURIComponent('Sem título (36).png')}`,
+  `/${encodeURIComponent('Sem título (37).png')}`,
+] as const;
+const FASHION_EDITORIAL_VARIATION_IMAGES = [
+  `/${encodeURIComponent('Firefly_Gemini Flash_Crie ideias de background muito bons para um novo website de moda, usando uma rede de 3787887.png')}`,
+  `/${encodeURIComponent('Sem título (38).png')}`,
+] as const;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -177,14 +190,14 @@ function mixHex(base: string, target: string, ratio: number) {
 function detectTightPattern(plan: BackgroundGenerationPlan): TightPatternKind {
   const keywords = plan.detected_keywords;
   const hasArrow = keywords.some((w) => ['arrow', 'arrows', 'chevron', 'chevrons'].includes(w));
-  const hasWave = keywords.some((w) => ['wave', 'waves', 'audio', 'sound', 'frequency'].includes(w));
-  const hasFlower = keywords.some((w) => ['flower', 'flowers', 'floral'].includes(w));
+  const hasWave = keywords.some((w) => ['wave', 'waves'].includes(w));
+  const hasFlower = keywords.some((w) => ['flower', 'flowers', 'floral', 'flores', 'flor'].includes(w));
   const hasStar = keywords.some((w) => ['star', 'stars'].includes(w));
   const hasCircle = keywords.some((w) => ['circle', 'circles', 'circule', 'circules', 'orb', 'orbs', 'dots', 'points'].includes(w));
   const hasTriangle = keywords.some((w) => ['triangle', 'triangles'].includes(w));
-  if (hasArrow) return 'arrows';
-  if (hasWave || plan.shape_language === 'waves') return 'waves';
   if (hasFlower) return 'flowers';
+  if (hasArrow) return 'arrows';
+  if (hasWave) return 'waves';
   if (hasStar || plan.shape_language === 'stars') return 'stars';
   if (hasCircle || plan.shape_language === 'circles_orbs') return 'circles';
   if (hasTriangle || plan.shape_language === 'triangular') return 'triangles';
@@ -217,7 +230,7 @@ function detectColors(words: string[]) {
 }
 
 export function inferCompositionFromPrompt(keywords: string[], shape: BackgroundShapeLanguage): BackgroundCompositionType {
-  if (keywords.some((word) => ['flower', 'flowers', 'floral', 'petal', 'nature'].includes(word))) return 'radial_floral_cluster';
+  if (keywords.some((word) => ['flower', 'flowers', 'floral', 'petal', 'nature', 'flores', 'flor'].includes(word))) return 'radial_floral_cluster';
   if (keywords.some((word) => ['smoke', 'fog', 'mist', 'haze'].includes(word))) return 'layered_fog';
   if (keywords.some((word) => ['triangle', 'triangles', 'geometric', 'grid', 'structured'].includes(word))) return 'geometric_scatter';
   if (keywords.some((word) => ['wave', 'waves', 'flow', 'fluid', 'motion'].includes(word))) return 'wave_motion';
@@ -782,50 +795,6 @@ function buildWaveBarGridImage() {
   return toSvgDataUrl(svg);
 }
 
-function buildFlowerMonoGridImage() {
-  const flower = `<g transform='translate(40 40)'>
-    <ellipse cx='0' cy='-16' rx='11' ry='18' fill='#08090a'/>
-    <ellipse cx='13' cy='-5' rx='11' ry='18' transform='rotate(50 13 -5)' fill='#08090a'/>
-    <ellipse cx='9' cy='13' rx='11' ry='18' transform='rotate(104 9 13)' fill='#08090a'/>
-    <ellipse cx='-9' cy='13' rx='11' ry='18' transform='rotate(154 -9 13)' fill='#08090a'/>
-    <ellipse cx='-13' cy='-5' rx='11' ry='18' transform='rotate(206 -13 -5)' fill='#08090a'/>
-    <circle cx='0' cy='0' r='9.5' fill='#f3f4f6'/>
-  </g>`;
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-    <rect width='1200' height='800' fill='#e5e7eb'/>
-    ${Array.from({ length: 10 }).map((_, row) =>
-      Array.from({ length: 14 }).map((__, col) => {
-        const x = col * 90 + (row % 2 === 0 ? 0 : 8);
-        const y = row * 82 + 6;
-        return `<g transform='translate(${x} ${y})'>${flower}</g>`;
-      }).join('')
-    ).join('')}
-  </svg>`;
-  return toSvgDataUrl(svg);
-}
-
-function buildFlowerLavenderGridImage() {
-  const flower = `<g transform='translate(40 40)'>
-    <ellipse cx='0' cy='-16' rx='10' ry='17' fill='#b49cf1'/>
-    <ellipse cx='13' cy='-5' rx='10' ry='17' transform='rotate(50 13 -5)' fill='#b49cf1'/>
-    <ellipse cx='9' cy='13' rx='10' ry='17' transform='rotate(104 9 13)' fill='#b49cf1'/>
-    <ellipse cx='-9' cy='13' rx='10' ry='17' transform='rotate(154 -9 13)' fill='#b49cf1'/>
-    <ellipse cx='-13' cy='-5' rx='10' ry='17' transform='rotate(206 -13 -5)' fill='#b49cf1'/>
-    <circle cx='0' cy='0' r='8.5' fill='#f7d665'/>
-  </g>`;
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-    <rect width='1200' height='800' fill='#e5e7eb'/>
-    ${Array.from({ length: 10 }).map((_, row) =>
-      Array.from({ length: 14 }).map((__, col) => {
-        const x = col * 90 + (row % 2 === 0 ? 0 : 8);
-        const y = row * 82 + 6;
-        return `<g transform='translate(${x} ${y})'>${flower}</g>`;
-      }).join('')
-    ).join('')}
-  </svg>`;
-  return toSvgDataUrl(svg);
-}
-
 export function generateBackgroundVariations(plan: BackgroundGenerationPlan, prompt: string, count = 4) {
   const baseSeed = hashText(`${prompt}-${plan.shape_language}-${plan.composition_type}-${plan.palette.join('-')}`);
   const tightPattern = detectTightPattern(plan);
@@ -887,16 +856,29 @@ export function generateBackgroundVariations(plan: BackgroundGenerationPlan, pro
       seed: baseSeed + 7919,
     };
   }
-  if (tightPattern === 'flowers' && variations.length >= 2) {
+  if (tightPattern === 'flowers') {
+    for (let idx = 0; idx < variations.length; idx += 1) {
+      const image = FLOWER_VARIATION_IMAGES[idx % FLOWER_VARIATION_IMAGES.length] ?? FLOWER_PROMPT_IMAGE;
+      const gradientType = idx % 2 === 0 ? 'linear' : 'radial';
+      variations[idx] = {
+        image,
+        gradient: gradientFromPlan(plan, (baseSeed % 360) + 26 + idx * 17, gradientType),
+        seed: baseSeed + idx * 7919,
+      };
+    }
+  }
+
+  const shouldUseFashionEditorialImages = plan.detected_keywords.some((word) =>
+    ['fashion', 'moda', 'editorial', 'website', 'background', 'site'].includes(word),
+  );
+  if (shouldUseFashionEditorialImages && tightPattern !== 'waves' && tightPattern !== 'flowers' && variations.length >= 2) {
     variations[0] = {
-      image: buildFlowerMonoGridImage(),
-      gradient: gradientFromPlan(plan, (baseSeed % 360) + 26, 'linear'),
-      seed: baseSeed,
+      ...variations[0],
+      image: FASHION_EDITORIAL_VARIATION_IMAGES[0],
     };
     variations[1] = {
-      image: buildFlowerLavenderGridImage(),
-      gradient: gradientFromPlan(plan, (baseSeed % 360) + 86, 'radial'),
-      seed: baseSeed + 7919,
+      ...variations[1],
+      image: FASHION_EDITORIAL_VARIATION_IMAGES[1],
     };
   }
 
