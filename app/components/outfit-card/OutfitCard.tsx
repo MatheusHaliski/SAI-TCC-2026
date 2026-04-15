@@ -47,6 +47,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
       material: buildFabricPresetConfig(
         materialLayer.color || resolvedBackground.solid_color || '#334155',
         {
+          type: materialLayer.type,
           density: materialLayer.density,
           threadDirection: materialLayer.threadDirection,
           threadThickness: materialLayer.threadThickness,
