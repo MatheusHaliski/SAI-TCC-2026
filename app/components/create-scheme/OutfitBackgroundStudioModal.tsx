@@ -192,6 +192,18 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 )}`;
 const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const NEON_MOTION_GRID_IMAGE = '/neongrid.png';
+const CURATED_IMAGE_PICKER_OPTIONS = [
+  'Sem título (37).png',
+  'Sem título (36).png',
+  'Sem título (35).png',
+  'Fart.png',
+  'Sem título (25).png',
+].map((fileName) => ({
+  value: `image:${fileName}`,
+  label: fileName,
+  hint: `Applies ${fileName} as artwork surface`,
+  imageUrl: `/${encodeURIComponent(fileName)}`,
+}));
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
   'none',
   'orb',
@@ -2253,7 +2265,12 @@ export default function OutfitBackgroundStudioModal({
             }))}
           />
           <FancySelect
-            value={SEGMENTED_GRADIENT_OPTIONS.find((preset) => JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient))?.label ?? ''}
+            value={(() => {
+              const gradientLabel = SEGMENTED_GRADIENT_OPTIONS.find((preset) => JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient))?.label;
+              if (gradientLabel) return gradientLabel;
+              if (draft.ai_artwork?.image_url === FLOWER_PICKER_IMAGE) return 'Flower';
+              return CURATED_IMAGE_PICKER_OPTIONS.find((option) => option.imageUrl === draft.ai_artwork?.image_url)?.value ?? '';
+            })()}
             onChange={(value) => {
               if (value === 'Flower') {
                 setDraft((prev) => ({
@@ -2265,6 +2282,20 @@ export default function OutfitBackgroundStudioModal({
                     generation_status: 'done',
                   },
                   shape: 'flowers',
+                }));
+                return;
+              }
+              if (value.startsWith('image:')) {
+                const selectedImage = CURATED_IMAGE_PICKER_OPTIONS.find((option) => option.value === value);
+                if (!selectedImage) return;
+                setDraft((prev) => ({
+                  ...prev,
+                  background_mode: 'ai_artwork',
+                  ai_artwork: {
+                    prompt: `${selectedImage.label} curated artwork background`,
+                    image_url: selectedImage.imageUrl,
+                    generation_status: 'done',
+                  },
                 }));
                 return;
               }
@@ -2286,6 +2317,7 @@ export default function OutfitBackgroundStudioModal({
             options={[
               ...SEGMENTED_GRADIENT_OPTIONS.map((preset) => ({ value: preset.label, label: preset.label, hint: 'Applies gradient + geometry recipe' })),
               { value: 'Flower', label: 'Flower', hint: 'Applies flower motif artwork surface' },
+              ...CURATED_IMAGE_PICKER_OPTIONS,
             ]}
           />
         </div>
