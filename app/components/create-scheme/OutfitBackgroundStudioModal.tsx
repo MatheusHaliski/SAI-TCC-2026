@@ -202,6 +202,8 @@ const CURATED_IMAGE_PICKER_OPTIONS = [
   { fileName: 'Fart.png', label: 'Premium Fashion Artwork' },
   { fileName: 'Sem título (25).png' },
   { fileName: '208445B9-82BD-4AC7-863A-B177A4D187B0_4_5005_c.jpeg', label: 'LEGO Mini Logo' },
+  { fileName: '642F71E8-FE96-4345-BB4B-0C4203032B5A.png' },
+  { fileName: '6385F3BD-29DE-4841-A3E7-64079EB53F09.png' },
 ].map(({ fileName, label }) => ({
   value: `image:${fileName}`,
   label: label || fileName,
@@ -1311,7 +1313,7 @@ export default function OutfitBackgroundStudioModal({
     const baseColor = source.solid_color || source.gradient?.stops?.[0]?.color || '#334155';
     if (!source.materialLayer?.type || source.materialLayer.type === 'none') return buildNoMaterialConfig(baseColor);
     return buildFabricPresetConfig(baseColor, {
-      type: 'embroidered_fabric',
+      type: source.materialLayer.type,
       density: source.materialLayer.density,
       threadDirection: source.materialLayer.threadDirection,
       threadThickness: source.materialLayer.threadThickness,
