@@ -193,6 +193,9 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const NEON_MOTION_GRID_IMAGE = '/neongrid.png';
 const CURATED_IMAGE_PICKER_OPTIONS = [
+  { fileName: 'Sem título (32).png' },
+  { fileName: 'Sem título (33).png' },
+  { fileName: 'Sem título (34).png' },
   { fileName: 'Sem título (37).png' },
   { fileName: 'Sem título (36).png' },
   { fileName: 'Sem título (35).png' },
