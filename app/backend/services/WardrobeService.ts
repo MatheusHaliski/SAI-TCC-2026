@@ -18,6 +18,7 @@ const SEGMENTATION_MIN_CONFIDENCE = Number(process.env.SEGMENTATION_MIN_CONFIDEN
 const MODEL_GENERATION_MAX_POLLS = Number(process.env.BLENDER_MODEL_MAX_POLLS ?? 48);
 const MODEL_GENERATION_POLL_MS = Number(process.env.BLENDER_MODEL_POLL_MS ?? 1500);
 const MODEL_GENERATION_JOB_TYPE = (process.env.BLENDER_MODEL_JOB_TYPE ?? 'image_to_garment').trim() || 'image_to_garment';
+const BRAND_REVIEW_REQUIRED = String(process.env.BRAND_REVIEW_REQUIRED ?? 'false').trim().toLowerCase() === 'true';
 
 interface BlenderGenerationResult {
   model_3d_url: string;
@@ -91,7 +92,8 @@ export class WardrobeService {
       imageUrl: image_url,
     });
     const resolvedBrandId = detection.brand_id_detected ?? selectedBrandId;
-    const needsBrandReview = !detection.brand_id_detected;
+    const hasReliableBrandMatch = Boolean(detection.brand_id_detected);
+    const needsBrandReview = BRAND_REVIEW_REQUIRED && !hasReliableBrandMatch && selectedBrandId === DEFAULT_BRAND_ID;
 
     const createdItem = await this.wardrobeRepo.create({
       user_id,
@@ -106,7 +108,12 @@ export class WardrobeService {
       geometry_scope_passed: false,
       geometry_scope_score: null,
       generation_attempt_count: 0,
-      pipeline_stage_details: null,
+      pipeline_stage_details: hasReliableBrandMatch
+        ? null
+        : {
+            stage: needsBrandReview ? 'needs_brand_review' : 'queued_segmentation',
+            brand_detection_warning: detection.detection_explanation,
+          },
       model_status: needsBrandReview ? 'needs_brand_review' : 'queued_segmentation',
       model_generation_error: needsBrandReview ? detection.detection_explanation : null,
       piece_type,
