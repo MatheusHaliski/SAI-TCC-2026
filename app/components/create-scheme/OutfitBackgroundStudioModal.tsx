@@ -1311,7 +1311,7 @@ export default function OutfitBackgroundStudioModal({
     const baseColor = source.solid_color || source.gradient?.stops?.[0]?.color || '#334155';
     if (!source.materialLayer?.type || source.materialLayer.type === 'none') return buildNoMaterialConfig(baseColor);
     return buildFabricPresetConfig(baseColor, {
-      type: 'embroidered_fabric',
+      type: source.materialLayer.type,
       density: source.materialLayer.density,
       threadDirection: source.materialLayer.threadDirection,
       threadThickness: source.materialLayer.threadThickness,
