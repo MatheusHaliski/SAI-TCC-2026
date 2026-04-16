@@ -138,6 +138,100 @@ function drawLegoField(
   }
 }
 
+function drawWaterField(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  material: FabricMaterialConfig,
+  color: string,
+) {
+  const density = clamp(material.density, 10, 140);
+  const rippleGap = clamp(Math.round(36 - density * 0.16), 10, 34);
+  const emboss = clamp(material.embossIntensity, 0, 100) / 100;
+
+  for (let y = -20; y < height + 20; y += rippleGap) {
+    const amplitude = 6 + emboss * 9 + (y % 13) * 0.1;
+    const wave = 60 - density * 0.18;
+    ctx.strokeStyle = tint(color, 26, 0.22 + emboss * 0.14);
+    ctx.lineWidth = 1.8 + emboss * 1.2;
+    ctx.beginPath();
+    for (let x = -20; x <= width + 20; x += 10) {
+      const py = y + Math.sin((x + y * 0.6) / wave) * amplitude;
+      if (x === -20) ctx.moveTo(x, py);
+      else ctx.lineTo(x, py);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = tint(color, -20, 0.16 + emboss * 0.1);
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    for (let x = -20; x <= width + 20; x += 10) {
+      const py = y + rippleGap * 0.35 + Math.sin((x + y) / (wave * 0.85)) * (amplitude * 0.55);
+      if (x === -20) ctx.moveTo(x, py);
+      else ctx.lineTo(x, py);
+    }
+    ctx.stroke();
+  }
+
+  const causticCount = Math.round((width * height) / 18000);
+  for (let i = 0; i < causticCount; i += 1) {
+    const cx = (i * 73) % width;
+    const cy = (i * 97) % height;
+    const rx = 18 + (i % 6) * 6;
+    const ry = 6 + (i % 4) * 3;
+    ctx.strokeStyle = tint(color, 40, 0.12);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, (i % 8) * 0.35, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function drawGlassField(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  material: FabricMaterialConfig,
+  color: string,
+) {
+  const density = clamp(material.density, 10, 140);
+  const cellSize = clamp(Math.round(68 - density * 0.22), 22, 72);
+  const emboss = clamp(material.embossIntensity, 0, 100) / 100;
+
+  for (let y = 0; y < height + cellSize; y += cellSize) {
+    for (let x = 0; x < width + cellSize; x += cellSize) {
+      const jitter = ((x * 5 + y * 3) % 7) - 3;
+      const paneX = x + jitter * 0.5;
+      const paneY = y - jitter * 0.35;
+      const paneW = cellSize + (jitter % 2) * 2;
+      const paneH = cellSize - (jitter % 3);
+      const radius = Math.max(4, Math.round(cellSize * 0.14));
+
+      const paneGradient = ctx.createLinearGradient(paneX, paneY, paneX + paneW, paneY + paneH);
+      paneGradient.addColorStop(0, tint(color, 26, 0.18 + emboss * 0.12));
+      paneGradient.addColorStop(0.5, 'rgba(255,255,255,0.02)');
+      paneGradient.addColorStop(1, tint(color, -12, 0.16));
+      ctx.fillStyle = paneGradient;
+      ctx.beginPath();
+      ctx.roundRect(paneX, paneY, paneW, paneH, radius);
+      ctx.fill();
+
+      ctx.strokeStyle = tint(color, 34, 0.22);
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.roundRect(paneX + 0.6, paneY + 0.6, paneW - 1.2, paneH - 1.2, radius - 1);
+      ctx.stroke();
+
+      ctx.strokeStyle = tint(color, -26, 0.18);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(paneX + paneW * 0.18, paneY + paneH * 0.2);
+      ctx.lineTo(paneX + paneW * 0.82, paneY + paneH * 0.8);
+      ctx.stroke();
+    }
+  }
+}
+
 export function renderFabricTextureToCanvas(input: FabricTextureRenderInput): FabricTextureRenderResult {
   if (typeof document === 'undefined') {
     return { textureDataUrl: null, decorativeDataUrl: null };
@@ -168,6 +262,10 @@ export function renderFabricTextureToCanvas(input: FabricTextureRenderInput): Fa
 
   if (material.type === 'lego_material') {
     drawLegoField(textureCtx, width, height, material, input.color);
+  } else if (material.type === 'water_material') {
+    drawWaterField(textureCtx, width, height, material, input.color);
+  } else if (material.type === 'glass_material') {
+    drawGlassField(textureCtx, width, height, material, input.color);
   } else {
     const primaryAngle = directionToAngle(material.threadDirection);
     drawThreadField(textureCtx, width, height, material, input.color, primaryAngle);

@@ -1591,7 +1591,7 @@ export default function OutfitBackgroundStudioModal({
       safeAreaMode: aiSafeArea,
       generationMode: aiGenerationMode,
       referenceImageUrl: getReferenceImageForApi(),
-      variationCount: 4,
+      variationCount: 6,
     };
 
     const response = await fetch('/api/artwork-studio/generate', {
@@ -2031,14 +2031,20 @@ export default function OutfitBackgroundStudioModal({
                 ) : null}
 
                 <div className="grid grid-cols-3 gap-2">
-                  {aiResults.map((result) => {
+                  {aiResults.map((result, index) => {
                     const previewSource = result.thumbnail_url || result.preview_url || result.output_url;
+                    const fallbackPreviewStyle = `linear-gradient(145deg, rgba(30,41,59,0.92), rgba(15,23,42,0.84)), repeating-linear-gradient(125deg, rgba(148,163,184,0.18) 0 6px, transparent 6px 16px)`;
                     return (
                     <button
                       key={result.variation_id}
                       type="button"
                       className={`h-20 rounded-xl border ${selectedAiResult?.variation_id === result.variation_id ? 'border-violet-300 shadow-[0_0_0_1px_rgba(196,181,253,0.5)]' : 'border-white/20'}`}
-                      style={{ backgroundImage: previewSource ? `url(${previewSource})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                      style={{
+                        backgroundImage: previewSource ? `url(${previewSource})` : fallbackPreviewStyle,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
+                      title={previewSource ? `Variation ${index + 1}` : `Variation ${index + 1} (procedural placeholder preview)`}
                       onClick={() => {
                         setSelectedAiResult(result);
                         applyVariationToDraft(result);
