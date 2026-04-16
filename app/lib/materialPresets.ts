@@ -1,6 +1,6 @@
 import type { OutfitBackgroundConfig } from '@/app/lib/outfit-card';
 
-export type MaterialType = 'none' | 'embroidered_fabric';
+export type MaterialType = 'none' | 'embroidered_fabric' | 'lego_material' | 'glass_material' | 'water_material';
 export type ThreadDirection = 'diagonal' | 'cross' | 'horizontal' | 'vertical';
 export type MaterialFinish = 'matte' | 'satin';
 export type MaterialScope = 'card' | 'hero_block' | 'content_block';
@@ -33,9 +33,9 @@ export function buildFabricPresetConfig(baseColor: string, overrides: Partial<Fa
   const stitched = overrides.stitchColor || '#1e3a8a';
   return {
     type: 'embroidered_fabric',
-    density: clamp(overrides.density ?? 68, 20, 100),
+    density: clamp(overrides.density ?? 72, 10, 140),
     threadDirection: overrides.threadDirection ?? 'cross',
-    threadThickness: clamp(overrides.threadThickness ?? 1.4, 0.8, 3.2),
+    threadThickness: clamp(overrides.threadThickness ?? 1.8, 0.4, 5),
     embossIntensity: clamp(overrides.embossIntensity ?? 42, 0, 100),
     stitchBorder: overrides.stitchBorder ?? true,
     stitchColor: /^#[0-9A-F]{6}$/i.test(stitched) ? stitched : '#1e3a8a',
@@ -72,12 +72,55 @@ export const MATERIAL_PRESETS: MaterialPresetDefinition[] = [
     label: 'Embroidered Fabric / Textile Material',
     tier: 'premium',
     description: 'Premium woven textile with stitched details and soft embossed depth.',
-    buildConfig: (baseColor) => buildFabricPresetConfig(baseColor),
+    buildConfig: (baseColor) => buildFabricPresetConfig(baseColor, { type: 'embroidered_fabric', finish: 'matte' }),
+  },
+  {
+    id: 'lego_material',
+    label: 'Lego Material',
+    tier: 'premium',
+    description: 'Chunkier block-like structure with bold thread highlights.',
+    buildConfig: (baseColor) => buildFabricPresetConfig(baseColor, {
+      type: 'lego_material',
+      density: 48,
+      threadThickness: 3.2,
+      surfaceContrast: 74,
+      embossIntensity: 60,
+      finish: 'matte',
+    }),
+  },
+  {
+    id: 'glass_material',
+    label: 'Glass Material',
+    tier: 'premium',
+    description: 'Translucent textile sheen with satin-like highlights.',
+    buildConfig: (baseColor) => buildFabricPresetConfig(baseColor, {
+      type: 'glass_material',
+      density: 86,
+      threadThickness: 0.9,
+      surfaceContrast: 38,
+      embossIntensity: 24,
+      finish: 'satin',
+    }),
+  },
+  {
+    id: 'water_material',
+    label: 'Water Material',
+    tier: 'premium',
+    description: 'Fluid directional streaks with deeper tonal movement.',
+    buildConfig: (baseColor) => buildFabricPresetConfig(baseColor, {
+      type: 'water_material',
+      density: 96,
+      threadDirection: 'diagonal',
+      threadThickness: 1.2,
+      surfaceContrast: 66,
+      embossIntensity: 34,
+      finish: 'satin',
+    }),
   },
 ];
 
 export function applyFabricMaterialToCard(background: OutfitBackgroundConfig, material: FabricMaterialConfig): OutfitBackgroundConfig {
-  if (material.type !== 'embroidered_fabric') {
+  if (material.type === 'none') {
     return {
       ...background,
       materialLayer: undefined,
@@ -105,7 +148,7 @@ export function applyFabricMaterialToCard(background: OutfitBackgroundConfig, ma
     },
     studioStyleConfig: {
       ...background.studioStyleConfig,
-      material: 'embroidered_fabric',
+      material: material.type,
       metadata: {
         ...(background.studioStyleConfig?.metadata || {}),
         materialTier: 'premium',
