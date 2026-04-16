@@ -204,6 +204,8 @@ const CURATED_IMAGE_PICKER_OPTIONS = [
   { fileName: '208445B9-82BD-4AC7-863A-B177A4D187B0_4_5005_c.jpeg', label: 'LEGO Mini Logo' },
   { fileName: '642F71E8-FE96-4345-BB4B-0C4203032B5A.png' },
   { fileName: '6385F3BD-29DE-4841-A3E7-64079EB53F09.png' },
+  { fileName: 'newbirds.jpg' },
+  { fileName: 'streetvibes.jpg' },
 ].map(({ fileName, label }) => ({
   value: `image:${fileName}`,
   label: label || fileName,
