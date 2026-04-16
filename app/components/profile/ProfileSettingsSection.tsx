@@ -3,27 +3,34 @@
 import { useEffect, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import DangerZoneCard from '@/app/components/profile/DangerZoneCard';
+import { applyTheme, readSavedTheme, type SaiTheme } from '@/app/lib/theme';
 
-const DARK_MODE_STORAGE_KEY = 'sai-dark-mode-enabled';
+const LEGACY_DARK_MODE_STORAGE_KEY = 'sai-dark-mode-enabled';
 
 export default function ProfileSettingsSection() {
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(DARK_MODE_STORAGE_KEY) === 'true';
+  const [theme, setTheme] = useState<SaiTheme>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    const legacyDarkModeEnabled = window.localStorage.getItem(LEGACY_DARK_MODE_STORAGE_KEY) === 'true';
+    if (legacyDarkModeEnabled) return 'dark';
+    return readSavedTheme();
   });
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
+  const darkMode = theme === 'dark';
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark-mode', darkMode);
-  }, [darkMode]);
+    if (typeof window === 'undefined') return;
+    const legacyDarkModeEnabled = window.localStorage.getItem(LEGACY_DARK_MODE_STORAGE_KEY) === 'true';
+    if (legacyDarkModeEnabled) {
+      applyTheme('dark');
+    }
+    document.documentElement.classList.remove('dark-mode');
+    window.localStorage.removeItem(LEGACY_DARK_MODE_STORAGE_KEY);
+  }, []);
 
   const toggleDarkMode = () => {
-    const nextValue = !darkMode;
-    setDarkMode(nextValue);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DARK_MODE_STORAGE_KEY, String(nextValue));
-    }
-    document.documentElement.classList.toggle('dark-mode', nextValue);
+    const nextTheme: SaiTheme = darkMode ? 'light' : 'dark';
+    setTheme(nextTheme);
+    applyTheme(nextTheme);
   };
 
   return (

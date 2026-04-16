@@ -59,7 +59,7 @@ export default function TopBar({ pageTitle, onOpenAddPiece }: TopBarProps) {
       <header className="sa-surface-topbar sa-topbar-shell h-full w-full rounded-2xl border-8 border-orange-500 px-4 py-3 backdrop-blur-md lg:px-6">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-semibold text-white">{pageTitle}</p>
+            <p className="sa-topbar-title truncate text-lg font-semibold text-white">{pageTitle}</p>
           </div>
 
           <div className="hidden w-full max-w-xl lg:block">
