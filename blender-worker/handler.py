@@ -29,6 +29,7 @@ logger.info("worker_module_loaded entrypoint=handler.py")
 
 
 pipeline_controller = Fashion3DController()
+_AUTH_WARNING_EMITTED = False
 
 
 app = FastAPI(title="StylistAI GPU Worker", version="2.0.0")
@@ -69,13 +70,23 @@ def _get_env_float(name: str, default: float) -> float:
 
 
 def _runtime_diagnostics() -> dict[str, Any]:
+    auth_token = _resolve_expected_worker_token()
     return {
         "appVersion": os.getenv("APP_VERSION", app.version).strip() or app.version,
         "imageTag": os.getenv("IMAGE_TAG", "").strip() or "unknown",
         "buildSha": os.getenv("BUILD_SHA", "").strip() or "unknown",
         "pipelineVersion": "fashion-ai-meshy-blender-v2",
         "workerOutputDir": str(OUTPUT_DIR),
+        "authEnabled": bool(auth_token),
+        "authSource": "BLENDER_WORKER_TOKEN|GPU_WORKER_TOKEN" if auth_token else "disabled",
     }
+
+
+def _resolve_expected_worker_token() -> str:
+    token = os.getenv("BLENDER_WORKER_TOKEN", "").strip()
+    if token:
+        return token
+    return os.getenv("GPU_WORKER_TOKEN", "").strip()
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 jobs_lock = threading.Lock()
@@ -293,9 +304,13 @@ async def auth_middleware(request: Request, call_next):
     if request.url.path in {"/ping", "/", "/health"}:
         return await call_next(request)
 
-    expected_token = os.getenv("BLENDER_WORKER_TOKEN", "").strip()
+    expected_token = _resolve_expected_worker_token()
     if not expected_token:
-        return JSONResponse(status_code=500, content={"detail": "Worker auth token is not configured", "message": "Set BLENDER_WORKER_TOKEN"})
+        global _AUTH_WARNING_EMITTED
+        if not _AUTH_WARNING_EMITTED:
+            logger.warning("worker_auth_disabled no BLENDER_WORKER_TOKEN/GPU_WORKER_TOKEN configured; allowing unauthenticated requests")
+            _AUTH_WARNING_EMITTED = True
+        return await call_next(request)
 
     authorization = request.headers.get("authorization", "")
     if authorization != f"Bearer {expected_token}":
