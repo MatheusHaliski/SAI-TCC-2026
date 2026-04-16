@@ -28,22 +28,26 @@ export type MaterialPresetDefinition = {
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const resolveNumeric = (value: number | undefined, fallback: number, min: number, max: number) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) return fallback;
+  return clamp(value, min, max);
+};
 
 export function buildFabricPresetConfig(baseColor: string, overrides: Partial<FabricMaterialConfig> = {}): FabricMaterialConfig {
   const stitched = overrides.stitchColor || '#1e3a8a';
+  const type = overrides.type ?? 'embroidered_fabric';
   return {
-    type: 'embroidered_fabric',
-    density: clamp(overrides.density ?? 72, 10, 140),
+    type,
+    density: resolveNumeric(overrides.density, 72, 10, 140),
     threadDirection: overrides.threadDirection ?? 'cross',
-    threadThickness: clamp(overrides.threadThickness ?? 1.8, 0.4, 5),
-    embossIntensity: clamp(overrides.embossIntensity ?? 42, 0, 100),
+    threadThickness: resolveNumeric(overrides.threadThickness, 1.8, 0.4, 5),
+    embossIntensity: resolveNumeric(overrides.embossIntensity, 42, 0, 100),
     stitchBorder: overrides.stitchBorder ?? true,
     stitchColor: /^#[0-9A-F]{6}$/i.test(stitched) ? stitched : '#1e3a8a',
-    surfaceContrast: clamp(overrides.surfaceContrast ?? 48, 0, 100),
+    surfaceContrast: resolveNumeric(overrides.surfaceContrast, 48, 0, 100),
     finish: overrides.finish ?? 'matte',
     scope: overrides.scope ?? 'card',
-    premium: true,
-    ...overrides,
+    premium: overrides.premium ?? type !== 'none',
   };
 }
 
