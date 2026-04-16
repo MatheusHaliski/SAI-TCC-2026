@@ -23,7 +23,7 @@ function RightDrawer({ title, onClose, children }: { title: string; onClose: () 
   return (
     <>
       <Overlay onClose={onClose} />
-      <aside className="sa-right-drawer fixed right-0 top-0 z-[80] h-full w-full max-w-sm border-l p-4 text-white shadow-2xl">
+      <aside className="sa-right-drawer sa-liquid-glass-token fixed right-0 top-0 z-[80] h-full w-full max-w-sm border-l p-4 text-white shadow-2xl">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold uppercase tracking-[0.15em] text-white/70">{title}</p>
           <button type="button" onClick={onClose} className="rounded-lg border border-white/30 px-2 py-1 text-xs">✕</button>
@@ -106,7 +106,7 @@ export function NotificationsPanel({ onClose }: { onClose: () => void }) {
   return (
     <RightDrawer title="Notifications" onClose={onClose}>
       {notifications.map((item) => (
-        <article key={item} className="rounded-xl border border-white/15 bg-white/10 p-3 text-sm">{item}</article>
+        <article key={item} className="sa-liquid-glass-token rounded-xl border border-white/15 bg-white/10 p-3 text-sm">{item}</article>
       ))}
     </RightDrawer>
   );
@@ -121,7 +121,7 @@ export function SystemInboxPanel({ onClose }: { onClose: () => void }) {
   return (
     <RightDrawer title="System Inbox" onClose={onClose}>
       {updates.map((item) => (
-        <article key={item.title} className="rounded-xl border border-white/15 bg-white/10 p-3">
+        <article key={item.title} className="sa-liquid-glass-token rounded-xl border border-white/15 bg-white/10 p-3">
           <div className="mb-1 flex items-center justify-between gap-2">
             <p className="text-sm font-semibold">{item.title}</p>
             <span className="rounded-full border border-white/25 px-2 py-0.5 text-[10px] uppercase">{item.level}</span>
@@ -151,7 +151,7 @@ export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; a
           key={`${link.href}-${link.label}`}
           href={link.href}
           onClick={onClose}
-          className={`block rounded-xl border px-3 py-2 text-sm transition ${activePath === link.href ? 'border-cyan-300/60 bg-cyan-400/15' : 'border-white/15 bg-white/8 hover:bg-white/15'}`}
+          className={`sa-liquid-glass-token block rounded-xl border px-3 py-2 text-sm transition ${activePath === link.href ? 'border-cyan-300/60 bg-cyan-400/15' : 'border-white/15 bg-white/8 hover:bg-white/15'}`}
         >
           {link.label}
         </Link>
@@ -193,7 +193,7 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
 
   return (
     <RightDrawer title="Account" onClose={onClose}>
-      <article className="sa-drawer-card rounded-xl border border-emerald-100/30 bg-white/10 p-3">
+      <article className="sa-drawer-card sa-liquid-glass-token rounded-xl border border-emerald-100/30 bg-white/10 p-3">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 overflow-hidden rounded-full border border-emerald-100/40 bg-emerald-950/40">
             {photoUrl ? (
@@ -212,7 +212,7 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
       </article>
       <div className="space-y-2">
         {actionItems.map((action) => (
-          <button key={action.label} type="button" onClick={action.onClick} className="sa-drawer-action w-full rounded-xl border border-emerald-100/30 bg-white/10 px-3 py-2 text-left text-sm">
+          <button key={action.label} type="button" onClick={action.onClick} className="sa-drawer-action sa-liquid-glass-token w-full rounded-xl border border-emerald-100/30 bg-white/10 px-3 py-2 text-left text-sm">
             <span className="flex items-center gap-2">
               <span>{action.icon}</span>
               <span>{action.label}</span>
