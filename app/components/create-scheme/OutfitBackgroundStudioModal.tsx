@@ -1310,18 +1310,24 @@ export default function OutfitBackgroundStudioModal({
   const deriveMaterialConfigFromDraft = (source: OutfitBackgroundConfig): FabricMaterialConfig => {
     const baseColor = source.solid_color || source.gradient?.stops?.[0]?.color || '#334155';
     if (!source.materialLayer?.type || source.materialLayer.type === 'none') return buildNoMaterialConfig(baseColor);
-    return buildFabricPresetConfig(baseColor, {
+    const preset = MATERIAL_PRESETS.find((entry) => entry.id === source.materialLayer?.type);
+    const baseConfig = preset?.buildConfig(baseColor)
+      ?? buildFabricPresetConfig(baseColor, { type: source.materialLayer.type });
+
+    return {
+      ...baseConfig,
       type: source.materialLayer.type,
-      density: source.materialLayer.density,
-      threadDirection: source.materialLayer.threadDirection,
-      threadThickness: source.materialLayer.threadThickness,
-      embossIntensity: source.materialLayer.embossIntensity,
-      surfaceContrast: source.materialLayer.surfaceContrast,
-      finish: source.materialLayer.finish,
-      scope: source.materialLayer.scope,
-      stitchBorder: source.decorativeOverlayLayer?.stitchBorder,
-      stitchColor: source.decorativeOverlayLayer?.stitchColor,
-    });
+      density: source.materialLayer.density ?? baseConfig.density,
+      threadDirection: source.materialLayer.threadDirection ?? baseConfig.threadDirection,
+      threadThickness: source.materialLayer.threadThickness ?? baseConfig.threadThickness,
+      embossIntensity: source.materialLayer.embossIntensity ?? baseConfig.embossIntensity,
+      surfaceContrast: source.materialLayer.surfaceContrast ?? baseConfig.surfaceContrast,
+      finish: source.materialLayer.finish ?? baseConfig.finish,
+      scope: source.materialLayer.scope ?? baseConfig.scope,
+      stitchBorder: source.decorativeOverlayLayer?.stitchBorder ?? baseConfig.stitchBorder,
+      stitchColor: source.decorativeOverlayLayer?.stitchColor ?? baseConfig.stitchColor,
+      premium: source.materialLayer.premium ?? baseConfig.premium,
+    };
   };
 
   const [activeTab, setActiveTab] = useState<StudioTab>('color');
