@@ -206,6 +206,8 @@ const CURATED_IMAGE_PICKER_OPTIONS = [
   { fileName: '6385F3BD-29DE-4841-A3E7-64079EB53F09.png' },
   { fileName: 'newbirds.jpg' },
   { fileName: 'streetvibes.jpg' },
+  { fileName: 'flw.jpg' },
+  { fileName: 'mfui.jpg' },
 ].map(({ fileName, label }) => ({
   value: `image:${fileName}`,
   label: label || fileName,
