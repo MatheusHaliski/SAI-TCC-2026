@@ -20,6 +20,10 @@ export type OutfitBackgroundMode = 'solid' | 'gradient' | 'ai_artwork';
 export type OutfitGradientType = 'linear' | 'radial' | 'conic';
 export type BackgroundStudioFamily = 'pattern_surface' | 'minimal_luxury' | 'editorial_branding' | 'geometry' | 'custom';
 export type BackgroundStudioOverlayType = 'monogram' | 'glass_reflection' | 'linework' | 'glow' | 'gradient_sweep';
+export type BackgroundMaterialType = 'none' | 'embroidered_fabric' | 'lego_material' | 'glass_material' | 'water_material';
+export type BackgroundThreadDirection = 'diagonal' | 'cross' | 'horizontal' | 'vertical';
+export type BackgroundMaterialFinish = 'matte' | 'satin';
+export type BackgroundMaterialScope = 'card' | 'hero_block' | 'content_block';
 
 export type BackgroundStudioStyleConfig = {
   presetId?: string | null;
@@ -64,6 +68,23 @@ export type OutfitBackgroundConfig = {
     generation_status?: 'idle' | 'loading' | 'done' | 'failed';
   };
   texture_overlay?: boolean;
+  materialLayer?: {
+    type: BackgroundMaterialType;
+    color?: string;
+    density?: number;
+    threadDirection?: BackgroundThreadDirection;
+    threadThickness?: number;
+    embossIntensity?: number;
+    surfaceContrast?: number;
+    finish?: BackgroundMaterialFinish;
+    scope?: BackgroundMaterialScope;
+    premium?: boolean;
+  };
+  decorativeOverlayLayer?: {
+    stitchBorder?: boolean;
+    stitchColor?: string;
+    opacity?: number;
+  };
   shape?: 'none' | 'orb' | 'diamond' | 'mesh' | 'stars' | 'circles' | 'triangles' | 'waves' | 'beams' | 'flowers' | 'arrows';
   studioStyleConfig?: BackgroundStudioStyleConfig;
 };
