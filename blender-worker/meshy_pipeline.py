@@ -17,6 +17,7 @@ MESHY_POLL_DELAY_SECONDS = float(os.getenv("MESHY_POLL_DELAY_SECONDS", "3"))
 MESHY_MAX_POLL_ATTEMPTS = int(os.getenv("MESHY_MAX_POLL_ATTEMPTS", "80"))
 MESHY_NETWORK_RETRIES = int(os.getenv("MESHY_NETWORK_RETRIES", "3"))
 MESHY_NETWORK_RETRY_BASE_SECONDS = float(os.getenv("MESHY_NETWORK_RETRY_BASE_SECONDS", "1.5"))
+MESHY_TEST_IMAGE_URL = os.getenv("MESHY_TEST_IMAGE_URL", "").strip()
 
 
 @dataclass
@@ -131,17 +132,27 @@ class MeshyPipeline:
         ) from transient_error
 
     def _create_task(self, *, image_url: str, piece_type: str) -> str:
+        effective_image_url = MESHY_TEST_IMAGE_URL or image_url
+        if MESHY_TEST_IMAGE_URL:
+            logger.warning("[meshy] overriding image_url with MESHY_TEST_IMAGE_URL for diagnostics")
+
+        self._validate_image_url_public(effective_image_url)
+
         payload = {
-            "image_url": image_url,
+            "image_url": effective_image_url,
             "should_texture": True,
-            "prompt": f"single {piece_type.strip().lower() or 'garment'} only, no mannequin, no body",
         }
-        response = self._request_with_retry("POST", self.create_url, headers=self._headers(), json=payload)
+        headers = self._headers()
+        logger.info("[meshy] create request headers=%s body=%s", headers, payload)
+        response = self._request_with_retry("POST", self.create_url, headers=headers, json=payload)
+        logger.info("[meshy] create response status=%s body=%s", response.status_code, response.text)
 
         if response.status_code in {401, 403}:
             raise MeshyPipelineError("meshy_auth_failed", "Meshy authentication failed (401/403).", {"url": self.create_url, "status": response.status_code, "body": response.text[:500]})
         if 400 <= response.status_code < 500:
-            raise MeshyPipelineError("meshy_bad_request", "Meshy rejected request payload.", {"url": self.create_url, "status": response.status_code, "body": response.text[:500]})
+            body_excerpt = response.text[:500]
+            message = "Meshy rejected request payload. Verify image URL is publicly reachable and request fields are valid."
+            raise MeshyPipelineError("meshy_bad_request", message, {"url": self.create_url, "status": response.status_code, "body": body_excerpt, "pieceType": piece_type})
         if response.status_code >= 500:
             raise MeshyPipelineError("meshy_provider_error", "Meshy provider error.", {"url": self.create_url, "status": response.status_code, "body": response.text[:500]})
 
@@ -150,6 +161,26 @@ class MeshyPipeline:
         if not task_id:
             raise MeshyPipelineError("meshy_provider_invalid_response", "Meshy did not return a task id.", {"url": self.create_url, "response": payload_json})
         return task_id
+
+    def _validate_image_url_public(self, image_url: str) -> None:
+        if image_url.startswith("data:image/"):
+            return
+        logger.info("[meshy] validating image_url accessibility url=%s", image_url)
+        try:
+            response = requests.head(image_url, allow_redirects=True, timeout=self.timeout_seconds)
+            logger.info("[meshy] image_url head status=%s headers=%s", response.status_code, dict(response.headers))
+            if response.status_code >= 400:
+                raise MeshyPipelineError(
+                    "meshy_input_image_unreachable",
+                    "Input image URL is not publicly reachable for Meshy provider.",
+                    {"imageUrl": image_url, "status": response.status_code, "responseHeaders": dict(response.headers)},
+                )
+        except requests.exceptions.RequestException as exc:
+            raise MeshyPipelineError(
+                "meshy_input_image_unreachable",
+                "Input image URL is not publicly reachable for Meshy provider.",
+                {"imageUrl": image_url, "error": str(exc)},
+            ) from exc
 
     def _wait_for_completion(self, task_id: str) -> dict[str, Any]:
         status = "unknown"

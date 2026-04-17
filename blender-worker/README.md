@@ -40,6 +40,8 @@ This folder contains the heavy GPU worker runtime.
 - Garment generation uses image-based flow:
   - `MESHY_BASE_URL=https://api.meshy.ai`
   - `MESHY_IMAGE_TO_3D_PATH=/openapi/v1/image-to-3d`
+- Optional diagnostics/testing override:
+  - `MESHY_TEST_IMAGE_URL=<public-image-url>`
 
 ## Startup behavior
 Container default command:
