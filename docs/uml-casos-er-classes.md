@@ -39,7 +39,7 @@ UC_Create .> UC_Select : <<include>>
 UC_Create .> UC_Validate : <<include>>
 UC_Create .> UC_SaveScheme : <<include>>
 UC_SaveScheme .> UC_SaveItems : <<include>>
-UC_Create .> UC_AI : <<extend>>
+UC_AI .> UC_Create : <<extend>>
 
 AI --> UC_AI
 @enduml
@@ -63,7 +63,7 @@ erDiagram
     USERS ||--o{ SCHEMES : cria
 
     SCHEMES ||--o{ SCHEME_ITEMS : contem
-    WARDROBE_ITEMS ||--o{ SCHEME_ITEMS : referencia
+    WARDROBE_ITEMS o|--o{ SCHEME_ITEMS : referencia_quando_wardrobe
 
     BRANDS ||--o{ WARDROBE_ITEMS : classifica
     MARKETS ||--o{ WARDROBE_ITEMS : contextualiza
@@ -123,7 +123,7 @@ erDiagram
     SCHEME_ITEMS {
       string scheme_item_id PK
       string scheme_id FK
-      string wardrobe_item_id FK
+      string wardrobe_item_id // referência lógica: wardrobe_item_id ou suggested:*
       string slot
       int sort_order
       datetime created_at
@@ -220,3 +220,4 @@ classDiagram
 - O caso de uso principal foi modelado em torno da jornada **criar + salvar** outfit, incluindo a extensão opcional por IA.
 - O ER reflete persistência relacional; já o diagrama de classes mostra a estrutura de domínio consumida pelos serviços/repositórios.
 - `SchemeItem` representa a relação entre `Scheme` e peças do guarda-roupa, permitindo ordenação por `slot` e `sort_order`.
+- Em `SCHEME_ITEMS`, `wardrobe_item_id` foi modelado como referência lógica (não FK rígida), pois o backend também aceita IDs sintéticos no formato `suggested:*`.
