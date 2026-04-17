@@ -11,9 +11,14 @@ import requests
 
 logger = logging.getLogger("stylistai.meshy_pipeline")
 
-MESHY_BASE_URL = os.getenv("MESHY_BASE_URL", "https://api.meshy.ai/openapi/v1").rstrip("/")
+MESHY_BASE_URL = os.getenv("MESHY_BASE_URL", "https://api.meshy.ai").rstrip("/")
 MESHY_POLL_DELAY_SECONDS = float(os.getenv("MESHY_POLL_DELAY_SECONDS", "3"))
 MESHY_MAX_POLL_ATTEMPTS = int(os.getenv("MESHY_MAX_POLL_ATTEMPTS", "80"))
+MESHY_TEXT_TO_3D_PATHS = [
+    path.strip()
+    for path in os.getenv("MESHY_TEXT_TO_3D_PATHS", "/openapi/v2/text-to-3d,/openapi/v1/text-to-3d").split(",")
+    if path.strip()
+]
 
 
 @dataclass
@@ -43,8 +48,8 @@ class MeshyPipeline:
         prompt = self._build_prompt(piece_type)
 
         logger.info("[meshy] creating task piece_type=%s format=%s", piece_type, fmt)
-        task_id = self._create_task(prompt=prompt)
-        task = self._wait_for_completion(task_id)
+        task_id, route = self._create_task(prompt=prompt)
+        task = self._wait_for_completion(task_id, route)
 
         model_url = (
             task.get("model_urls", {}).get(fmt)
@@ -64,6 +69,7 @@ class MeshyPipeline:
             "preview_url": task.get("preview_url"),
             "prompt": prompt,
             "resolved_format": fmt,
+            "route": route,
         }
         logger.info("[meshy] base model ready task_id=%s path=%s", task_id, base_path)
         return MeshyOutput(base_model_path=base_path, format=fmt, meshy_task_id=task_id, model_url=model_url, metadata=metadata)
@@ -81,32 +87,46 @@ class MeshyPipeline:
             "Content-Type": "application/json",
         }
 
-    def _create_task(self, *, prompt: str) -> str:
-        response = requests.post(
-            f"{MESHY_BASE_URL}/text-to-3d",
-            headers=self._headers(),
-            json={
-                "mode": "preview",
-                "prompt": prompt,
-                "art_style": "realistic",
-                "should_texture": True,
-            },
-            timeout=self.timeout_seconds,
-        )
-        if not response.ok:
-            raise MeshyPipelineError(f"Failed to create Meshy task: {response.text[:500]}")
+    def _build_url(self, path: str) -> str:
+        normalized = path if path.startswith("/") else f"/{path}"
+        return f"{MESHY_BASE_URL}{normalized}"
 
-        payload = response.json()
-        task_id = str(payload.get("result") or payload.get("id") or "").strip()
-        if not task_id:
-            raise MeshyPipelineError("Meshy did not return a task id.")
-        return task_id
+    def _create_task(self, *, prompt: str) -> tuple[str, str]:
+        errors: list[str] = []
+        for route in MESHY_TEXT_TO_3D_PATHS:
+            url = self._build_url(route)
+            response = requests.post(
+                url,
+                headers=self._headers(),
+                json={
+                    "mode": "preview",
+                    "prompt": prompt,
+                    "art_style": "realistic",
+                    "should_texture": True,
+                },
+                timeout=self.timeout_seconds,
+            )
+            if not response.ok:
+                body = response.text[:500]
+                errors.append(f"{url} => {response.status_code}: {body}")
+                continue
 
-    def _wait_for_completion(self, task_id: str) -> dict[str, Any]:
+            payload = response.json()
+            task_id = str(payload.get("result") or payload.get("id") or "").strip()
+            if task_id:
+                logger.info("[meshy] task created route=%s task_id=%s", route, task_id)
+                return task_id, route
+
+            errors.append(f"{url} => missing task id in response")
+
+        raise MeshyPipelineError(f"Failed to create Meshy task on available routes: {' | '.join(errors)}")
+
+    def _wait_for_completion(self, task_id: str, route: str) -> dict[str, Any]:
         status = "unknown"
+        poll_url = self._build_url(f"{route.rstrip('/')}/{task_id}")
         for attempt in range(1, MESHY_MAX_POLL_ATTEMPTS + 1):
             response = requests.get(
-                f"{MESHY_BASE_URL}/text-to-3d/{task_id}",
+                poll_url,
                 headers={"Authorization": f"Bearer {self.api_key}"},
                 timeout=self.timeout_seconds,
             )

@@ -36,6 +36,10 @@ This folder contains the heavy GPU worker runtime.
 - Blender headless execution failure (`RuntimeError` with stdout/stderr tail)
 - Generic job processing failure (`processing_error`)
 
+## Meshy route fallback
+- `meshy_pipeline.py` now attempts multiple Meshy text-to-3d routes in order (configurable):
+  - `MESHY_TEXT_TO_3D_PATHS=/openapi/v2/text-to-3d,/openapi/v1/text-to-3d`
+
 ## Startup behavior
 Container default command:
 
