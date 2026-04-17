@@ -77,25 +77,31 @@ def _runtime_diagnostics() -> dict[str, Any]:
         "buildSha": os.getenv("BUILD_SHA", "").strip() or "unknown",
         "pipelineVersion": "fashion-ai-meshy-blender-v2",
         "workerOutputDir": str(OUTPUT_DIR),
-        "authEnabled": bool(auth["token"]),
-        "authSource": auth["source"] if auth["token"] else "disabled",
+        "authEnabled": bool(auth["tokens"]),
+        "authSource": ",".join(auth["sources"]) if auth["tokens"] else "disabled",
     }
 
 
 def _resolve_expected_worker_token() -> str:
-    return _resolve_worker_auth()["token"]
+    auth = _resolve_worker_auth()
+    return auth["tokens"][0] if auth["tokens"] else ""
 
 
-def _resolve_worker_auth() -> dict[str, str]:
+def _resolve_worker_auth() -> dict[str, list[str]]:
+    tokens: list[str] = []
+    sources: list[str] = []
+
     blender_worker_token = os.getenv("BLENDER_WORKER_TOKEN", "").strip()
     if blender_worker_token:
-        return {"token": blender_worker_token, "source": "BLENDER_WORKER_TOKEN"}
+        tokens.append(blender_worker_token)
+        sources.append("BLENDER_WORKER_TOKEN")
 
     gpu_worker_token = os.getenv("GPU_WORKER_TOKEN", "").strip()
-    if gpu_worker_token:
-        return {"token": gpu_worker_token, "source": "GPU_WORKER_TOKEN"}
+    if gpu_worker_token and gpu_worker_token not in tokens:
+        tokens.append(gpu_worker_token)
+        sources.append("GPU_WORKER_TOKEN")
 
-    return {"token": "", "source": ""}
+    return {"tokens": tokens, "sources": sources}
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 jobs_lock = threading.Lock()
@@ -314,8 +320,8 @@ async def auth_middleware(request: Request, call_next):
         return await call_next(request)
 
     auth = _resolve_worker_auth()
-    expected_token = auth["token"]
-    if not expected_token:
+    expected_tokens = auth["tokens"]
+    if not expected_tokens:
         global _AUTH_WARNING_EMITTED
         if not _AUTH_WARNING_EMITTED:
             logger.warning("worker_auth_disabled no BLENDER_WORKER_TOKEN/GPU_WORKER_TOKEN configured; allowing unauthenticated requests")
@@ -323,13 +329,14 @@ async def auth_middleware(request: Request, call_next):
         return await call_next(request)
 
     authorization = request.headers.get("authorization", "")
-    if authorization != f"Bearer {expected_token}":
+    provided = authorization.removeprefix("Bearer ").strip() if authorization.startswith("Bearer ") else ""
+    if not provided or provided not in expected_tokens:
         return JSONResponse(
             status_code=401,
             content={
                 "detail": "Unauthorized",
                 "message": "invalid or missing bearer token",
-                "authSource": auth["source"],
+                "authSource": ",".join(auth["sources"]),
             },
         )
 
