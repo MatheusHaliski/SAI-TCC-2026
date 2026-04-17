@@ -52,6 +52,7 @@ class Fashion3DController:
         logger.info("[controller] job=%s start piece_type=%s", job_id, piece_type)
         meshy_output = self.meshy.generate_base_model(
             piece_type=piece_type,
+            source_image_url=str(piece_data.get("reference_image_url") or "").strip() or None,
             output_dir=job_dir,
             preferred_format=preferred_format,
         )

@@ -8,19 +8,15 @@ from pathlib import Path
 from typing import Any
 
 import requests
-import trimesh
 
 logger = logging.getLogger("stylistai.meshy_pipeline")
 
-MESHY_BASE_URL = os.getenv("MESHY_BASE_URL", "https://api.meshy.ai").rstrip("/")
+MESHY_BASE_URL = os.getenv("MESHY_BASE_URL", "https://api.meshy.ai")
+MESHY_IMAGE_TO_3D_PATH = os.getenv("MESHY_IMAGE_TO_3D_PATH", "/openapi/v1/image-to-3d")
 MESHY_POLL_DELAY_SECONDS = float(os.getenv("MESHY_POLL_DELAY_SECONDS", "3"))
 MESHY_MAX_POLL_ATTEMPTS = int(os.getenv("MESHY_MAX_POLL_ATTEMPTS", "80"))
-MESHY_TEXT_TO_3D_PATHS = [
-    path.strip()
-    for path in os.getenv("MESHY_TEXT_TO_3D_PATHS", "/openapi/v2/text-to-3d,/openapi/v1/text-to-3d").split(",")
-    if path.strip()
-]
-MESHY_ALLOW_PRIMITIVE_FALLBACK = os.getenv("MESHY_ALLOW_PRIMITIVE_FALLBACK", "true").strip().lower() in {"1", "true", "yes", "on"}
+MESHY_NETWORK_RETRIES = int(os.getenv("MESHY_NETWORK_RETRIES", "3"))
+MESHY_NETWORK_RETRY_BASE_SECONDS = float(os.getenv("MESHY_NETWORK_RETRY_BASE_SECONDS", "1.5"))
 
 
 @dataclass
@@ -33,78 +29,73 @@ class MeshyOutput:
 
 
 class MeshyPipelineError(RuntimeError):
-    pass
+    def __init__(self, code: str, message: str, details: dict[str, Any] | None = None):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.details = details or {}
 
 
 class MeshyPipeline:
     def __init__(self, *, api_key: str | None = None, timeout_seconds: int = 45):
         self.api_key = (api_key or os.getenv("MESHY_API_KEY", "")).strip()
         self.timeout_seconds = timeout_seconds
+        self.create_url = self._build_url(MESHY_IMAGE_TO_3D_PATH)
 
-    def generate_base_model(self, *, piece_type: str, output_dir: Path, preferred_format: str = "glb") -> MeshyOutput:
+    def generate_base_model(
+        self,
+        *,
+        piece_type: str,
+        source_image_url: str | None,
+        output_dir: Path,
+        preferred_format: str = "glb",
+    ) -> MeshyOutput:
         if not self.api_key:
-            raise MeshyPipelineError("MESHY_API_KEY is required.")
+            raise MeshyPipelineError("meshy_auth_not_configured", "MESHY_API_KEY is required.")
+        if not source_image_url:
+            raise MeshyPipelineError("meshy_invalid_request", "source image URL is required for image-to-3d flow.")
 
         output_dir.mkdir(parents=True, exist_ok=True)
         fmt = "obj" if preferred_format.lower() == "obj" else "glb"
-        prompt = self._build_prompt(piece_type)
 
-        try:
-            logger.info("[meshy] creating task piece_type=%s format=%s", piece_type, fmt)
-            task_id, route = self._create_task(prompt=prompt)
-            task = self._wait_for_completion(task_id, route)
+        logger.info("[meshy] create url=%s", self.create_url)
+        task_id = self._create_task(image_url=source_image_url, piece_type=piece_type)
+        task = self._wait_for_completion(task_id)
 
-            model_url = (
-                task.get("model_urls", {}).get(fmt)
-                or task.get("model_urls", {}).get("glb")
-                or task.get("model_urls", {}).get("obj")
-            )
-            if not model_url:
-                raise MeshyPipelineError(f"Meshy task {task_id} finished without model_urls.")
-
-            base_path = output_dir / f"base_meshy.{fmt}"
-            self._download(model_url, base_path)
-
-            metadata = {
-                "task_id": task_id,
-                "status": task.get("status"),
-                "thumbnail_url": task.get("thumbnail_url"),
-                "preview_url": task.get("preview_url"),
-                "prompt": prompt,
-                "resolved_format": fmt,
-                "route": route,
-                "fallback_used": False,
-            }
-            logger.info("[meshy] base model ready task_id=%s path=%s", task_id, base_path)
-            return MeshyOutput(base_model_path=base_path, format=fmt, meshy_task_id=task_id, model_url=model_url, metadata=metadata)
-        except Exception as exc:
-            if not MESHY_ALLOW_PRIMITIVE_FALLBACK:
-                raise
-            logger.warning("[meshy] network/provider unavailable, using primitive fallback: %s", exc)
-            fallback_path = self._create_primitive_fallback(piece_type=piece_type, output_dir=output_dir, fmt=fmt)
-            metadata = {
-                "task_id": "fallback_primitive",
-                "status": "completed_fallback",
-                "prompt": prompt,
-                "resolved_format": fmt,
-                "route": "local_fallback",
-                "fallback_used": True,
-                "fallback_reason": str(exc),
-            }
-            return MeshyOutput(
-                base_model_path=fallback_path,
-                format=fmt,
-                meshy_task_id="fallback_primitive",
-                model_url=fallback_path.as_uri(),
-                metadata=metadata,
-            )
-
-    def _build_prompt(self, piece_type: str) -> str:
-        normalized = piece_type.strip().lower() or "fashion garment"
-        return (
-            f"A clean standalone 3D {normalized}, centered, no mannequin, no body, "
-            "studio neutral lighting, fashion prototyping quality"
+        model_url = (
+            task.get("model_urls", {}).get(fmt)
+            or task.get("model_urls", {}).get("glb")
+            or task.get("model_urls", {}).get("obj")
         )
+        if not model_url:
+            raise MeshyPipelineError(
+                "meshy_provider_invalid_response",
+                f"Meshy task {task_id} finished without model URLs.",
+                {"taskId": task_id, "response": task},
+            )
+
+        base_path = output_dir / f"base_meshy.{fmt}"
+        self._download(model_url, base_path)
+
+        metadata = {
+            "task_id": task_id,
+            "status": task.get("status"),
+            "thumbnail_url": task.get("thumbnail_url"),
+            "preview_url": task.get("preview_url"),
+            "resolved_format": fmt,
+            "create_url": self.create_url,
+        }
+        logger.info("[meshy] base model ready task_id=%s path=%s", task_id, base_path)
+        return MeshyOutput(base_model_path=base_path, format=fmt, meshy_task_id=task_id, model_url=model_url, metadata=metadata)
+
+    def _build_url(self, path: str) -> str:
+        base = MESHY_BASE_URL.strip().rstrip("/")
+        normalized_path = path.strip()
+        if not normalized_path:
+            normalized_path = "/openapi/v1/image-to-3d"
+        if not normalized_path.startswith("/"):
+            normalized_path = f"/{normalized_path}"
+        return f"{base}{normalized_path}"
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -112,51 +103,62 @@ class MeshyPipeline:
             "Content-Type": "application/json",
         }
 
-    def _build_url(self, path: str) -> str:
-        normalized = path if path.startswith("/") else f"/{path}"
-        return f"{MESHY_BASE_URL}{normalized}"
+    def _request_with_retry(self, method: str, url: str, **kwargs: Any) -> requests.Response:
+        transient_error: Exception | None = None
+        for attempt in range(1, MESHY_NETWORK_RETRIES + 2):
+            try:
+                return requests.request(method, url, timeout=self.timeout_seconds, **kwargs)
+            except requests.exceptions.Timeout as exc:
+                raise MeshyPipelineError("meshy_timeout", "Meshy request timed out.", {"url": url, "attempt": attempt}) from exc
+            except requests.exceptions.ConnectionError as exc:
+                transient_error = exc
+                if attempt > MESHY_NETWORK_RETRIES:
+                    break
+                wait_seconds = MESHY_NETWORK_RETRY_BASE_SECONDS * (2 ** (attempt - 1))
+                logger.warning("[meshy] temporary network failure url=%s attempt=%s retry_in=%ss err=%s", url, attempt, wait_seconds, exc)
+                time.sleep(wait_seconds)
 
-    def _create_task(self, *, prompt: str) -> tuple[str, str]:
-        errors: list[str] = []
-        for route in MESHY_TEXT_TO_3D_PATHS:
-            url = self._build_url(route)
-            response = requests.post(
-                url,
-                headers=self._headers(),
-                json={
-                    "mode": "preview",
-                    "prompt": prompt,
-                    "art_style": "realistic",
-                    "should_texture": True,
-                },
-                timeout=self.timeout_seconds,
-            )
-            if not response.ok:
-                body = response.text[:500]
-                errors.append(f"{url} => {response.status_code}: {body}")
-                continue
+        raise MeshyPipelineError(
+            "meshy_temporarily_unavailable",
+            "Meshy temporarily unavailable, please retry.",
+            {"url": url, "error": str(transient_error) if transient_error else "network_failure"},
+        ) from transient_error
 
-            payload = response.json()
-            task_id = str(payload.get("result") or payload.get("id") or "").strip()
-            if task_id:
-                logger.info("[meshy] task created route=%s task_id=%s", route, task_id)
-                return task_id, route
+    def _create_task(self, *, image_url: str, piece_type: str) -> str:
+        payload = {
+            "image_url": image_url,
+            "should_texture": True,
+            "prompt": f"single {piece_type.strip().lower() or 'garment'} only, no mannequin, no body",
+        }
+        response = self._request_with_retry("POST", self.create_url, headers=self._headers(), json=payload)
 
-            errors.append(f"{url} => missing task id in response")
+        if response.status_code in {401, 403}:
+            raise MeshyPipelineError("meshy_auth_failed", "Meshy authentication failed (401/403).", {"url": self.create_url, "status": response.status_code, "body": response.text[:500]})
+        if 400 <= response.status_code < 500:
+            raise MeshyPipelineError("meshy_bad_request", "Meshy rejected request payload.", {"url": self.create_url, "status": response.status_code, "body": response.text[:500]})
+        if response.status_code >= 500:
+            raise MeshyPipelineError("meshy_provider_error", "Meshy provider error.", {"url": self.create_url, "status": response.status_code, "body": response.text[:500]})
 
-        raise MeshyPipelineError(f"Failed to create Meshy task on available routes: {' | '.join(errors)}")
+        payload_json = response.json()
+        task_id = str(payload_json.get("result") or payload_json.get("id") or "").strip()
+        if not task_id:
+            raise MeshyPipelineError("meshy_provider_invalid_response", "Meshy did not return a task id.", {"url": self.create_url, "response": payload_json})
+        return task_id
 
-    def _wait_for_completion(self, task_id: str, route: str) -> dict[str, Any]:
+    def _wait_for_completion(self, task_id: str) -> dict[str, Any]:
         status = "unknown"
-        poll_url = self._build_url(f"{route.rstrip('/')}/{task_id}")
+        poll_url = f"{self.create_url.rstrip('/')}/{task_id}"
+        logger.info("[meshy] poll url=%s", poll_url)
+
         for attempt in range(1, MESHY_MAX_POLL_ATTEMPTS + 1):
-            response = requests.get(
-                poll_url,
-                headers={"Authorization": f"Bearer {self.api_key}"},
-                timeout=self.timeout_seconds,
-            )
-            if not response.ok:
-                raise MeshyPipelineError(f"Failed polling Meshy task {task_id}: {response.text[:500]}")
+            response = self._request_with_retry("GET", poll_url, headers={"Authorization": f"Bearer {self.api_key}"})
+
+            if response.status_code in {401, 403}:
+                raise MeshyPipelineError("meshy_auth_failed", "Meshy authentication failed during polling (401/403).", {"url": poll_url, "status": response.status_code, "body": response.text[:500]})
+            if 400 <= response.status_code < 500:
+                raise MeshyPipelineError("meshy_bad_request", "Meshy polling request rejected.", {"url": poll_url, "status": response.status_code, "body": response.text[:500]})
+            if response.status_code >= 500:
+                raise MeshyPipelineError("meshy_provider_error", "Meshy provider error during polling.", {"url": poll_url, "status": response.status_code, "body": response.text[:500]})
 
             payload = response.json()
             status = str(payload.get("status", "")).strip().lower() or status
@@ -165,27 +167,19 @@ class MeshyPipeline:
             if status in {"succeeded", "success", "completed"}:
                 return payload
             if status in {"failed", "error", "cancelled"}:
-                raise MeshyPipelineError(f"Meshy task {task_id} finished with status={status}.")
+                raise MeshyPipelineError("meshy_task_failed", f"Meshy task {task_id} finished with status={status}.", {"taskId": task_id, "status": status})
 
             time.sleep(MESHY_POLL_DELAY_SECONDS)
 
-        raise MeshyPipelineError(f"Meshy task {task_id} timed out. Last status={status}.")
+        raise MeshyPipelineError("meshy_timeout", f"Meshy task timed out before completion. Last status={status}.", {"taskId": task_id, "status": status})
 
     def _download(self, url: str, destination: Path) -> None:
-        response = requests.get(url, timeout=self.timeout_seconds)
-        if not response.ok:
-            raise MeshyPipelineError(f"Failed downloading model from Meshy: {response.text[:500]}")
+        logger.info("[meshy] download url=%s", url)
+        response = self._request_with_retry("GET", url)
+        if response.status_code in {401, 403}:
+            raise MeshyPipelineError("meshy_auth_failed", "Meshy asset download auth failed (401/403).", {"url": url, "status": response.status_code, "body": response.text[:500]})
+        if 400 <= response.status_code < 500:
+            raise MeshyPipelineError("meshy_bad_request", "Meshy asset download request rejected.", {"url": url, "status": response.status_code, "body": response.text[:500]})
+        if response.status_code >= 500:
+            raise MeshyPipelineError("meshy_provider_error", "Meshy provider error during asset download.", {"url": url, "status": response.status_code, "body": response.text[:500]})
         destination.write_bytes(response.content)
-
-    def _create_primitive_fallback(self, *, piece_type: str, output_dir: Path, fmt: str) -> Path:
-        piece = piece_type.strip().lower()
-        if "jacket" in piece:
-            primitive = trimesh.creation.box(extents=(0.72, 0.45, 0.92))
-        elif "pant" in piece or "cal" in piece:
-            primitive = trimesh.creation.box(extents=(0.55, 0.32, 1.05))
-        else:
-            primitive = trimesh.creation.box(extents=(0.68, 0.38, 0.82))
-
-        output_path = output_dir / f"base_meshy_fallback.{fmt}"
-        primitive.export(str(output_path))
-        return output_path

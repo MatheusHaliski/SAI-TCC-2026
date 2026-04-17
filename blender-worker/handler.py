@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
 from controller import Fashion3DController
+from meshy_pipeline import MeshyPipelineError
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -245,16 +246,16 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
     except Exception as exc:
         print(f"[JOB] error id={job_id} err={str(exc)}")
         logger.exception("job_failed jobId=%s", job_id)
-        debug["error"] = {"code": "processing_error", "message": str(exc), "type": exc.__class__.__name__}
+        if isinstance(exc, MeshyPipelineError):
+            error_payload = {"code": exc.code, "message": exc.message, "type": exc.__class__.__name__, "details": exc.details}
+        else:
+            error_payload = {"code": "processing_error", "message": str(exc), "type": exc.__class__.__name__}
+        debug["error"] = error_payload
         debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
         update_job(
             job_id,
             status="failed",
-            error={
-                "code": "processing_error",
-                "message": str(exc),
-                "type": exc.__class__.__name__,
-            },
+            error=error_payload,
             debug=debug,
         )
 
