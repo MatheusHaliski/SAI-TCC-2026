@@ -39,6 +39,8 @@ This folder contains the heavy GPU worker runtime.
 ## Meshy route fallback
 - `meshy_pipeline.py` now attempts multiple Meshy text-to-3d routes in order (configurable):
   - `MESHY_TEXT_TO_3D_PATHS=/openapi/v2/text-to-3d,/openapi/v1/text-to-3d`
+- If Meshy DNS/provider is temporarily unavailable, local primitive fallback can keep pipeline alive:
+  - `MESHY_ALLOW_PRIMITIVE_FALLBACK=true`
 
 ## Startup behavior
 Container default command:

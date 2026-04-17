@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
+import trimesh
 
 logger = logging.getLogger("stylistai.meshy_pipeline")
 
@@ -19,6 +20,7 @@ MESHY_TEXT_TO_3D_PATHS = [
     for path in os.getenv("MESHY_TEXT_TO_3D_PATHS", "/openapi/v2/text-to-3d,/openapi/v1/text-to-3d").split(",")
     if path.strip()
 ]
+MESHY_ALLOW_PRIMITIVE_FALLBACK = os.getenv("MESHY_ALLOW_PRIMITIVE_FALLBACK", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 
 @dataclass
@@ -47,32 +49,55 @@ class MeshyPipeline:
         fmt = "obj" if preferred_format.lower() == "obj" else "glb"
         prompt = self._build_prompt(piece_type)
 
-        logger.info("[meshy] creating task piece_type=%s format=%s", piece_type, fmt)
-        task_id, route = self._create_task(prompt=prompt)
-        task = self._wait_for_completion(task_id, route)
+        try:
+            logger.info("[meshy] creating task piece_type=%s format=%s", piece_type, fmt)
+            task_id, route = self._create_task(prompt=prompt)
+            task = self._wait_for_completion(task_id, route)
 
-        model_url = (
-            task.get("model_urls", {}).get(fmt)
-            or task.get("model_urls", {}).get("glb")
-            or task.get("model_urls", {}).get("obj")
-        )
-        if not model_url:
-            raise MeshyPipelineError(f"Meshy task {task_id} finished without model_urls.")
+            model_url = (
+                task.get("model_urls", {}).get(fmt)
+                or task.get("model_urls", {}).get("glb")
+                or task.get("model_urls", {}).get("obj")
+            )
+            if not model_url:
+                raise MeshyPipelineError(f"Meshy task {task_id} finished without model_urls.")
 
-        base_path = output_dir / f"base_meshy.{fmt}"
-        self._download(model_url, base_path)
+            base_path = output_dir / f"base_meshy.{fmt}"
+            self._download(model_url, base_path)
 
-        metadata = {
-            "task_id": task_id,
-            "status": task.get("status"),
-            "thumbnail_url": task.get("thumbnail_url"),
-            "preview_url": task.get("preview_url"),
-            "prompt": prompt,
-            "resolved_format": fmt,
-            "route": route,
-        }
-        logger.info("[meshy] base model ready task_id=%s path=%s", task_id, base_path)
-        return MeshyOutput(base_model_path=base_path, format=fmt, meshy_task_id=task_id, model_url=model_url, metadata=metadata)
+            metadata = {
+                "task_id": task_id,
+                "status": task.get("status"),
+                "thumbnail_url": task.get("thumbnail_url"),
+                "preview_url": task.get("preview_url"),
+                "prompt": prompt,
+                "resolved_format": fmt,
+                "route": route,
+                "fallback_used": False,
+            }
+            logger.info("[meshy] base model ready task_id=%s path=%s", task_id, base_path)
+            return MeshyOutput(base_model_path=base_path, format=fmt, meshy_task_id=task_id, model_url=model_url, metadata=metadata)
+        except Exception as exc:
+            if not MESHY_ALLOW_PRIMITIVE_FALLBACK:
+                raise
+            logger.warning("[meshy] network/provider unavailable, using primitive fallback: %s", exc)
+            fallback_path = self._create_primitive_fallback(piece_type=piece_type, output_dir=output_dir, fmt=fmt)
+            metadata = {
+                "task_id": "fallback_primitive",
+                "status": "completed_fallback",
+                "prompt": prompt,
+                "resolved_format": fmt,
+                "route": "local_fallback",
+                "fallback_used": True,
+                "fallback_reason": str(exc),
+            }
+            return MeshyOutput(
+                base_model_path=fallback_path,
+                format=fmt,
+                meshy_task_id="fallback_primitive",
+                model_url=fallback_path.as_uri(),
+                metadata=metadata,
+            )
 
     def _build_prompt(self, piece_type: str) -> str:
         normalized = piece_type.strip().lower() or "fashion garment"
@@ -151,3 +176,16 @@ class MeshyPipeline:
         if not response.ok:
             raise MeshyPipelineError(f"Failed downloading model from Meshy: {response.text[:500]}")
         destination.write_bytes(response.content)
+
+    def _create_primitive_fallback(self, *, piece_type: str, output_dir: Path, fmt: str) -> Path:
+        piece = piece_type.strip().lower()
+        if "jacket" in piece:
+            primitive = trimesh.creation.box(extents=(0.72, 0.45, 0.92))
+        elif "pant" in piece or "cal" in piece:
+            primitive = trimesh.creation.box(extents=(0.55, 0.32, 1.05))
+        else:
+            primitive = trimesh.creation.box(extents=(0.68, 0.38, 0.82))
+
+        output_path = output_dir / f"base_meshy_fallback.{fmt}"
+        primitive.export(str(output_path))
+        return output_path
