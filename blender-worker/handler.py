@@ -210,6 +210,7 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
     }
 
     try:
+        logger.info("job_meshy_endpoint jobId=%s create_url=%s", job_id, pipeline_controller.meshy.create_url)
         piece_data = {
             "piece_type": options.get("pieceType") or options.get("piece_type") or "garment",
             "color": options.get("color"),
@@ -268,6 +269,7 @@ def startup_log() -> None:
     logger.info("cors_allowed_origins origins=%s", ",".join(allowed_origins))
     logger.info("runtime_diagnostics %s", json.dumps(runtime, sort_keys=True))
     logger.info("server_ready output_dir=%s max_workers=%s pipeline=%s", OUTPUT_DIR, MAX_WORKERS, runtime["pipelineVersion"])
+    logger.info("meshy_runtime_endpoint create_url=%s", pipeline_controller.meshy.create_url)
 
 
 @app.get("/")

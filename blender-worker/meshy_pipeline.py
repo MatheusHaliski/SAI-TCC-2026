@@ -105,6 +105,7 @@ class MeshyPipeline:
 
     def _request_with_retry(self, method: str, url: str, **kwargs: Any) -> requests.Response:
         transient_error: Exception | None = None
+        failure_kind = "network_failure"
         for attempt in range(1, MESHY_NETWORK_RETRIES + 2):
             try:
                 return requests.request(method, url, timeout=self.timeout_seconds, **kwargs)
@@ -112,6 +113,11 @@ class MeshyPipeline:
                 raise MeshyPipelineError("meshy_timeout", "Meshy request timed out.", {"url": url, "attempt": attempt}) from exc
             except requests.exceptions.ConnectionError as exc:
                 transient_error = exc
+                error_text = str(exc).lower()
+                if "name resolution" in error_text or "failed to resolve" in error_text or "nodename nor servname provided" in error_text:
+                    failure_kind = "dns_resolution_failure"
+                else:
+                    failure_kind = "network_connection_failure"
                 if attempt > MESHY_NETWORK_RETRIES:
                     break
                 wait_seconds = MESHY_NETWORK_RETRY_BASE_SECONDS * (2 ** (attempt - 1))
@@ -120,8 +126,8 @@ class MeshyPipeline:
 
         raise MeshyPipelineError(
             "meshy_temporarily_unavailable",
-            "Meshy temporarily unavailable, please retry.",
-            {"url": url, "error": str(transient_error) if transient_error else "network_failure"},
+            "Meshy service temporarily unavailable. Please retry.",
+            {"url": url, "kind": failure_kind, "error": str(transient_error) if transient_error else "network_failure"},
         ) from transient_error
 
     def _create_task(self, *, image_url: str, piece_type: str) -> str:
