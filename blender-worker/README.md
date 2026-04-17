@@ -3,9 +3,10 @@
 This folder contains the heavy GPU worker runtime.
 
 ## Responsibilities
-- execute strict product-only fashion 3D pipeline
-- validate and preprocess uploaded image before Meshy
-- generate and refine GLB artifact
+- execute Fashion AI v2 mesh generation pipeline (MeshyAI → Blender)
+- generate base garment mesh by piece type (shirt/pants/jacket/etc.)
+- apply visual details from Fashion AI data (color, fabric metadata, logo/pattern references)
+- export web-ready artifacts to persistent volume path (`/workspace/output`)
 - expose structured job status and diagnostics
 
 ## Base image
@@ -19,20 +20,25 @@ This folder contains the heavy GPU worker runtime.
 - `GET /jobs/{jobId}` (also `GET /status/{jobId}`)
 
 ## Pipeline stages
-1. Input fetch + validation gate.
-2. Garment-only segmentation and recentered cleaned PNG generation.
-3. Image quality scoring on cleaned asset.
-4. Meshy base generation using cleaned image + metadata prompt.
-5. Blender/trimesh refinement (center, normalize scale, clean scene) and final GLB export.
+1. `meshy_pipeline.py`: creates MeshyAI task and downloads base `.glb`/`.obj`.
+2. `blender_pipeline.py`: runs Blender headless script (`bpy`) to apply material/detail metadata and exports final `.glb` (+ `.usdz` placeholder).
+3. `controller.py`: orchestrates complete flow with step-level logging and writes debug JSON.
+4. `handler.py`: async job API for RunPod worker, persisting outputs under `/workspace/output/<jobId>`.
 
-## Failure codes
-- `invalid_input_person_detected`
-- `invalid_input_low_quality`
-- `invalid_input_background_noise`
-- `invalid_input_multiple_objects`
-- `segmentation_failed`
-- `meshy_failed`
-- `blender_failed`
+## Core scripts
+- `meshy_pipeline.py`
+- `blender_pipeline.py`
+- `controller.py`
+- `handler.py`
+
+## Failure classes
+- Meshy task creation/polling failure (`MeshyPipelineError`)
+- Blender headless execution failure (`RuntimeError` with stdout/stderr tail)
+- Generic job processing failure (`processing_error`)
+
+## Meshy route fallback
+- `meshy_pipeline.py` now attempts multiple Meshy text-to-3d routes in order (configurable):
+  - `MESHY_TEXT_TO_3D_PATHS=/openapi/v2/text-to-3d,/openapi/v1/text-to-3d`
 
 ## Startup behavior
 Container default command:
