@@ -74,6 +74,12 @@ function stateLabel(state: ReturnType<typeof mapItemState>, status?: string, ite
 
 export default function MyWardrobeView() {
   const [items, setItems] = useState<WardrobeItem[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [cursorCache, setCursorCache] = useState<Record<number, string | null>>({ 0: null });
+  const [page, setPage] = useState(0);
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [selectedSection, setSelectedSection] = useState(sections[0]?.toLowerCase() ?? 'available');
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
@@ -95,6 +101,7 @@ export default function MyWardrobeView() {
 
   useEffect(() => {
     const loadWardrobeData = async () => {
+      setIsInitialLoading(true);
       const localProfile = getAuthSessionProfile();
       let userId = localProfile.user_id?.trim() || '';
 
@@ -105,16 +112,52 @@ export default function MyWardrobeView() {
 
       if (!userId) {
         setItems([]);
+        setHasMore(false);
+        setIsInitialLoading(false);
         return;
       }
 
-      const wardrobeResponse = await fetch(`/api/wardrobe-items/user/${userId}`);
-      const wardrobeItems = await wardrobeResponse.json().catch(() => []);
-      setItems(wardrobeResponse.ok && Array.isArray(wardrobeItems) ? wardrobeItems : []);
+      const wardrobeResponse = await fetch(`/api/wardrobe-items/user/${userId}?status=active&limit=24`);
+      const wardrobePayload = await wardrobeResponse.json().catch(() => ({ items: [], nextCursor: null }));
+      const nextItems = wardrobeResponse.ok && Array.isArray(wardrobePayload?.items) ? wardrobePayload.items : [];
+      setItems(nextItems);
+      setCursor(typeof wardrobePayload?.nextCursor === 'string' ? wardrobePayload.nextCursor : null);
+      setCursorCache({ 0: null, 1: typeof wardrobePayload?.nextCursor === 'string' ? wardrobePayload.nextCursor : null });
+      setPage(0);
+      setHasMore(Boolean(wardrobePayload?.nextCursor));
+      setIsInitialLoading(false);
     };
 
-    void loadWardrobeData().catch(() => setItems([]));
+    void loadWardrobeData().catch(() => {
+      setItems([]);
+      setHasMore(false);
+      setIsInitialLoading(false);
+    });
   }, []);
+
+  const loadMore = async () => {
+    if (isLoadingMore || !hasMore || !cursor) return;
+    setIsLoadingMore(true);
+    try {
+      const localProfile = getAuthSessionProfile();
+      const userId = localProfile.user_id?.trim() || '';
+      if (!userId) return;
+
+      const wardrobeResponse = await fetch(`/api/wardrobe-items/user/${userId}?status=active&limit=24&cursor=${encodeURIComponent(cursor)}`);
+      const wardrobePayload = await wardrobeResponse.json().catch(() => ({ items: [], nextCursor: null }));
+      const nextItems = wardrobeResponse.ok && Array.isArray(wardrobePayload?.items) ? wardrobePayload.items : [];
+      setItems((prev) => [...prev, ...nextItems]);
+      setCursor(typeof wardrobePayload?.nextCursor === 'string' ? wardrobePayload.nextCursor : null);
+      setHasMore(Boolean(wardrobePayload?.nextCursor));
+      setPage((prev) => {
+        const nextPage = prev + 1;
+        setCursorCache((current) => ({ ...current, [nextPage + 1]: wardrobePayload?.nextCursor ?? null }));
+        return nextPage;
+      });
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   const grouped = useMemo(() => {
     const available = items.filter((item) => (availability[item.wardrobe_item_id] ?? 'available') === 'available');
@@ -195,6 +238,7 @@ export default function MyWardrobeView() {
           {activeGroups.map((group) => (
             <SectionBlock key={group.key} title={group.title} subtitle="Manage list status for each wardrobe item.">
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {isInitialLoading ? <p className="text-sm text-white/70">Loading wardrobe items…</p> : null}
                 {group.data.map((item) => {
                   const cardState = mapItemState(item);
                   return (
@@ -216,6 +260,19 @@ export default function MyWardrobeView() {
                 })}
                 {!group.data.length ? <p className="text-sm text-white/70">No pieces in this list.</p> : null}
               </div>
+              {group.key === 'available' && hasMore ? (
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-xs text-white/60">Page {page + 1} · Cached cursors: {Object.keys(cursorCache).length}</p>
+                  <button
+                    type="button"
+                    onClick={() => void loadMore()}
+                    disabled={isLoadingMore}
+                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-white disabled:opacity-60"
+                  >
+                    {isLoadingMore ? 'Loading…' : 'Load more'}
+                  </button>
+                </div>
+              ) : null}
             </SectionBlock>
           ))}
         </div>

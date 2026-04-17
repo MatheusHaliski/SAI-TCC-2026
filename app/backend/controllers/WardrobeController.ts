@@ -9,8 +9,11 @@ export class WardrobeController {
     private readonly wardrobeRepository = new WardrobeRepository(),
   ) {}
 
-  async listByUser(userId: string) {
-    return this.wardrobeService.listUserWardrobe(userId);
+  async listByUser(
+    userId: string,
+    options?: { limit?: number; cursorCreatedAt?: string; status?: 'active' | 'processing' | 'archived'; piece_type?: string },
+  ) {
+    return this.wardrobeService.listUserWardrobe(userId, options);
   }
 
   async analysisByUser(userId: string) {
@@ -22,14 +25,11 @@ export class WardrobeController {
   }
 
   async listDiscoverable(filters?: {
-    query?: string;
-    brand?: string;
-    piece_type?: string;
+    brand_id?: string;
+    market_id?: string;
     gender?: string;
-    season?: string;
-    material?: string;
-    creator?: string;
-    rarity?: string;
+    limit?: number;
+    cursorCreatedAt?: string;
   }) {
     return this.wardrobeService.listDiscoverablePieces(filters);
   }
