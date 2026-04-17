@@ -1,4 +1,9 @@
-export type BlenderCloudAuthSource = 'BLENDER_CLOUD_API_TOKEN' | 'RUNPOD_API_KEY' | 'none';
+export type BlenderCloudAuthSource =
+  | 'BLENDER_CLOUD_API_TOKEN'
+  | 'GPU_WORKER_TOKEN'
+  | 'BLENDER_WORKER_TOKEN'
+  | 'RUNPOD_API_KEY'
+  | 'none';
 export type BlenderCloudPayloadMode = 'raw' | 'input';
 
 export interface BlenderCloudConfig {
@@ -40,6 +45,22 @@ function resolveAuth(): Pick<BlenderCloudConfig, 'authToken' | 'authSource'> {
     return {
       authToken: explicitToken,
       authSource: 'BLENDER_CLOUD_API_TOKEN',
+    };
+  }
+
+  const gpuWorkerToken = process.env.GPU_WORKER_TOKEN?.trim();
+  if (gpuWorkerToken) {
+    return {
+      authToken: gpuWorkerToken,
+      authSource: 'GPU_WORKER_TOKEN',
+    };
+  }
+
+  const blenderWorkerToken = process.env.BLENDER_WORKER_TOKEN?.trim();
+  if (blenderWorkerToken) {
+    return {
+      authToken: blenderWorkerToken,
+      authSource: 'BLENDER_WORKER_TOKEN',
     };
   }
 
