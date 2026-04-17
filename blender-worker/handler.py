@@ -70,23 +70,32 @@ def _get_env_float(name: str, default: float) -> float:
 
 
 def _runtime_diagnostics() -> dict[str, Any]:
-    auth_token = _resolve_expected_worker_token()
+    auth = _resolve_worker_auth()
     return {
         "appVersion": os.getenv("APP_VERSION", app.version).strip() or app.version,
         "imageTag": os.getenv("IMAGE_TAG", "").strip() or "unknown",
         "buildSha": os.getenv("BUILD_SHA", "").strip() or "unknown",
         "pipelineVersion": "fashion-ai-meshy-blender-v2",
         "workerOutputDir": str(OUTPUT_DIR),
-        "authEnabled": bool(auth_token),
-        "authSource": "BLENDER_WORKER_TOKEN|GPU_WORKER_TOKEN" if auth_token else "disabled",
+        "authEnabled": bool(auth["token"]),
+        "authSource": auth["source"] if auth["token"] else "disabled",
     }
 
 
 def _resolve_expected_worker_token() -> str:
-    token = os.getenv("BLENDER_WORKER_TOKEN", "").strip()
-    if token:
-        return token
-    return os.getenv("GPU_WORKER_TOKEN", "").strip()
+    return _resolve_worker_auth()["token"]
+
+
+def _resolve_worker_auth() -> dict[str, str]:
+    blender_worker_token = os.getenv("BLENDER_WORKER_TOKEN", "").strip()
+    if blender_worker_token:
+        return {"token": blender_worker_token, "source": "BLENDER_WORKER_TOKEN"}
+
+    gpu_worker_token = os.getenv("GPU_WORKER_TOKEN", "").strip()
+    if gpu_worker_token:
+        return {"token": gpu_worker_token, "source": "GPU_WORKER_TOKEN"}
+
+    return {"token": "", "source": ""}
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 jobs_lock = threading.Lock()
@@ -304,7 +313,8 @@ async def auth_middleware(request: Request, call_next):
     if request.url.path in {"/ping", "/", "/health"}:
         return await call_next(request)
 
-    expected_token = _resolve_expected_worker_token()
+    auth = _resolve_worker_auth()
+    expected_token = auth["token"]
     if not expected_token:
         global _AUTH_WARNING_EMITTED
         if not _AUTH_WARNING_EMITTED:
@@ -314,7 +324,14 @@ async def auth_middleware(request: Request, call_next):
 
     authorization = request.headers.get("authorization", "")
     if authorization != f"Bearer {expected_token}":
-        return JSONResponse(status_code=401, content={"detail": "Unauthorized", "message": "no token provided"})
+        return JSONResponse(
+            status_code=401,
+            content={
+                "detail": "Unauthorized",
+                "message": "invalid or missing bearer token",
+                "authSource": auth["source"],
+            },
+        )
 
     return await call_next(request)
 
