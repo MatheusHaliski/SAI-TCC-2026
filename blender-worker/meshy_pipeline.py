@@ -3,9 +3,11 @@ from __future__ import annotations
 import logging
 import os
 import time
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import requests
 
@@ -18,6 +20,29 @@ MESHY_MAX_POLL_ATTEMPTS = int(os.getenv("MESHY_MAX_POLL_ATTEMPTS", "80"))
 MESHY_NETWORK_RETRIES = int(os.getenv("MESHY_NETWORK_RETRIES", "3"))
 MESHY_NETWORK_RETRY_BASE_SECONDS = float(os.getenv("MESHY_NETWORK_RETRY_BASE_SECONDS", "1.5"))
 MESHY_TEST_IMAGE_URL = os.getenv("MESHY_TEST_IMAGE_URL", "").strip()
+MESHY_VALID_CREATE_FIELDS = {
+    "image_url",
+    "model_type",
+    "ai_model",
+    "should_texture",
+    "enable_pbr",
+    "texture_prompt",
+    "texture_image_url",
+    "should_remesh",
+    "topology",
+    "target_polycount",
+    "decimation_mode",
+    "save_pre_remeshed_model",
+    "symmetry_mode",
+    "pose_mode",
+    "is_a_t_pose",
+    "image_enhancement",
+    "remove_lighting",
+    "moderation",
+    "target_formats",
+    "auto_size",
+    "origin_at",
+}
 
 
 @dataclass
@@ -138,23 +163,29 @@ class MeshyPipeline:
 
         self._validate_image_url_public(effective_image_url)
 
-        payload = {
-            "image_url": effective_image_url,
-            "should_texture": True,
-        }
+        payload = {"image_url": effective_image_url}
+        self._validate_create_payload_schema(payload)
         headers = self._headers()
-        logger.info("[meshy] create request headers=%s body=%s", headers, payload)
+        logger.info("[meshy] create request headers=%s body=%s", json.dumps(headers, sort_keys=True), json.dumps(payload, sort_keys=True))
         response = self._request_with_retry("POST", self.create_url, headers=headers, json=payload)
-        logger.info("[meshy] create response status=%s body=%s", response.status_code, response.text)
+        logger.info(
+            "[meshy] create response status=%s headers=%s body=%s",
+            response.status_code,
+            json.dumps(dict(response.headers), sort_keys=True),
+            response.text,
+        )
 
         if response.status_code in {401, 403}:
-            raise MeshyPipelineError("meshy_auth_failed", "Meshy authentication failed (401/403).", {"url": self.create_url, "status": response.status_code, "body": response.text[:500]})
+            raise MeshyPipelineError("meshy_auth_failed", "Meshy authentication failed (401/403).", {"url": self.create_url, "status": response.status_code, "body": response.text})
         if 400 <= response.status_code < 500:
-            body_excerpt = response.text[:500]
             message = "Meshy rejected request payload. Verify image URL is publicly reachable and request fields are valid."
-            raise MeshyPipelineError("meshy_bad_request", message, {"url": self.create_url, "status": response.status_code, "body": body_excerpt, "pieceType": piece_type})
+            raise MeshyPipelineError(
+                "meshy_bad_request",
+                message,
+                {"url": self.create_url, "status": response.status_code, "body": response.text, "pieceType": piece_type, "requestPayload": payload},
+            )
         if response.status_code >= 500:
-            raise MeshyPipelineError("meshy_provider_error", "Meshy provider error.", {"url": self.create_url, "status": response.status_code, "body": response.text[:500]})
+            raise MeshyPipelineError("meshy_provider_error", "Meshy provider error.", {"url": self.create_url, "status": response.status_code, "body": response.text})
 
         payload_json = response.json()
         task_id = str(payload_json.get("result") or payload_json.get("id") or "").strip()
@@ -162,18 +193,70 @@ class MeshyPipeline:
             raise MeshyPipelineError("meshy_provider_invalid_response", "Meshy did not return a task id.", {"url": self.create_url, "response": payload_json})
         return task_id
 
+    def _validate_create_payload_schema(self, payload: dict[str, Any]) -> None:
+        image_url = str(payload.get("image_url", "")).strip()
+        if not image_url:
+            raise MeshyPipelineError("meshy_invalid_request", "Meshy image-to-3d requires 'image_url'.", {"payload": payload})
+        unknown_fields = sorted(key for key in payload if key not in MESHY_VALID_CREATE_FIELDS)
+        if unknown_fields:
+            raise MeshyPipelineError(
+                "meshy_invalid_request",
+                "Meshy image-to-3d payload has unsupported fields.",
+                {"unknownFields": unknown_fields, "payload": payload},
+            )
+        if "prompt" in payload:
+            raise MeshyPipelineError(
+                "meshy_invalid_request",
+                "Field 'prompt' belongs to text-to-3d and must not be sent to image-to-3d.",
+                {"payload": payload},
+            )
+
     def _validate_image_url_public(self, image_url: str) -> None:
         if image_url.startswith("data:image/"):
             return
-        logger.info("[meshy] validating image_url accessibility url=%s", image_url)
+        parsed = urlparse(image_url)
+        if parsed.scheme not in {"http", "https"}:
+            raise MeshyPipelineError(
+                "meshy_invalid_request",
+                "Input image URL must be http(s) or data URI.",
+                {"imageUrl": image_url, "scheme": parsed.scheme},
+            )
+
+        is_firebase_storage = parsed.netloc.endswith("firebasestorage.googleapis.com")
+        query_params = parse_qs(parsed.query)
+        logger.info("[meshy] validating image_url accessibility url=%s host=%s firebase=%s", image_url, parsed.netloc, is_firebase_storage)
+        if is_firebase_storage:
+            logger.info("[meshy] firebase image_url query params=%s", json.dumps(query_params, sort_keys=True))
+
+        if is_firebase_storage and "token" not in query_params:
+            logger.warning(
+                "[meshy] firebase storage url has no token query parameter; it may not be publicly downloadable by Meshy. url=%s",
+                image_url,
+            )
+
         try:
             response = requests.head(image_url, allow_redirects=True, timeout=self.timeout_seconds)
-            logger.info("[meshy] image_url head status=%s headers=%s", response.status_code, dict(response.headers))
+            logger.info("[meshy] image_url head status=%s headers=%s", response.status_code, json.dumps(dict(response.headers), sort_keys=True))
+            if response.status_code in {405, 403}:
+                logger.info("[meshy] image_url head returned status=%s, retrying with GET bytes probe", response.status_code)
+                response = requests.get(
+                    image_url,
+                    allow_redirects=True,
+                    timeout=self.timeout_seconds,
+                    stream=True,
+                    headers={"Range": "bytes=0-0"},
+                )
+                logger.info("[meshy] image_url get_probe status=%s headers=%s", response.status_code, json.dumps(dict(response.headers), sort_keys=True))
             if response.status_code >= 400:
                 raise MeshyPipelineError(
                     "meshy_input_image_unreachable",
                     "Input image URL is not publicly reachable for Meshy provider.",
-                    {"imageUrl": image_url, "status": response.status_code, "responseHeaders": dict(response.headers)},
+                    {
+                        "imageUrl": image_url,
+                        "status": response.status_code,
+                        "responseHeaders": dict(response.headers),
+                        "isFirebaseStorage": is_firebase_storage,
+                    },
                 )
         except requests.exceptions.RequestException as exc:
             raise MeshyPipelineError(
