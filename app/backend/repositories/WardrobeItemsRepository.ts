@@ -36,12 +36,42 @@ export class WardrobeItemsRepository extends BaseRepository {
     super();
   }
 
-  async findByUser(userId: string): Promise<WardrobeViewItem[]> {
+  async findByUser(
+    userId: string,
+    options?: {
+      limit?: number;
+      cursorCreatedAt?: string;
+      status?: 'active' | 'processing' | 'archived';
+      piece_type?: string;
+    },
+  ): Promise<{ items: WardrobeViewItem[]; nextCursor: string | null }> {
+    const pageSize = Math.max(1, Math.min(100, Math.floor(options?.limit ?? 24)));
+    const status = options?.status ?? 'active';
     const brandMap = await this.brandsRepository.getNameMap();
     const marketsMap = await this.marketsRepository.getByIdMap();
 
-    const snapshot = await this.db.collection(WARDROBE_ITEMS_COLLECTION).where('user_id', '==', userId).get();
-    return snapshot.docs.map((doc) => {
+    let query: FirebaseFirestore.Query = this.db
+      .collection(WARDROBE_ITEMS_COLLECTION)
+      .where('userId', '==', userId)
+      .where('status', '==', status)
+      .orderBy('createdAt', 'desc')
+      .limit(pageSize);
+
+    if (options?.piece_type) {
+      query = this.db
+        .collection(WARDROBE_ITEMS_COLLECTION)
+        .where('userId', '==', userId)
+        .where('piece_type', '==', options.piece_type)
+        .orderBy('createdAt', 'desc')
+        .limit(pageSize);
+    }
+
+    if (options?.cursorCreatedAt) {
+      query = query.startAfter(options.cursorCreatedAt);
+    }
+
+    const snapshot = await query.get();
+    const items = snapshot.docs.map((doc) => {
       const item = doc.data() as Record<string, string | number | boolean | null>;
       const market = marketsMap.get(String(item.market_id ?? ''));
       const model3dUrl = resolveWardrobeModelUrl({
@@ -107,28 +137,55 @@ export class WardrobeItemsRepository extends BaseRepository {
         piece_type: String(item.piece_type ?? ''),
       };
     });
+
+    const nextCursor = snapshot.docs.length === pageSize
+      ? String(snapshot.docs[snapshot.docs.length - 1]?.get('createdAt') ?? '')
+      : null;
+    return { items, nextCursor: nextCursor || null };
   }
 
 
   async findDiscoverable(filters?: {
-    query?: string;
-    brand?: string;
-    piece_type?: string;
+    brand_id?: string;
+    market_id?: string;
     gender?: string;
-    season?: string;
-    material?: string;
-    creator?: string;
-    rarity?: string;
-  }) {
+    limit?: number;
+    cursorCreatedAt?: string;
+  }): Promise<{ items: Array<Record<string, unknown>>; nextCursor: string | null }> {
+    const pageSize = Math.max(1, Math.min(100, Math.floor(filters?.limit ?? 24)));
     const brandMap = await this.brandsRepository.getNameMap();
     const marketsMap = await this.marketsRepository.getByIdMap();
-    const snapshot = await this.db.collection(WARDROBE_ITEMS_COLLECTION).get();
-    const normalizedQuery = (filters?.query ?? '').trim().toLowerCase();
+    let query: FirebaseFirestore.Query = this.db
+      .collection(WARDROBE_ITEMS_COLLECTION)
+      .orderBy('createdAt', 'desc')
+      .limit(pageSize);
+
+    if (filters?.brand_id) {
+      query = this.db
+        .collection(WARDROBE_ITEMS_COLLECTION)
+        .where('brand_id', '==', filters.brand_id)
+        .orderBy('createdAt', 'desc')
+        .limit(pageSize);
+    }
+
+    if (filters?.market_id && filters?.gender) {
+      query = this.db
+        .collection(WARDROBE_ITEMS_COLLECTION)
+        .where('market_id', '==', filters.market_id)
+        .where('gender', '==', filters.gender)
+        .orderBy('createdAt', 'desc')
+        .limit(pageSize);
+    }
+
+    if (filters?.cursorCreatedAt) {
+      query = query.startAfter(filters.cursorCreatedAt);
+    }
+    const snapshot = await query.get();
 
     const items = await Promise.all(snapshot.docs.map(async (doc) => {
       const item = doc.data() as Record<string, unknown>;
       const market = marketsMap.get(String(item.market_id ?? ''));
-      const creator = await this.usersRepository.getById(String(item.user_id ?? ''));
+      const creator = await this.usersRepository.getById(String(item.user_id ?? item.userId ?? ''));
       const brand = brandMap.get(String(item.brand_id ?? '')) ?? (item.brand_id === 'default' ? 'Default brand' : 'Unknown');
       const model3dUrl = resolveWardrobeModelUrl({
         model_3d_url: (item.model_3d_url as string | null) ?? null,
@@ -181,34 +238,14 @@ export class WardrobeItemsRepository extends BaseRepository {
       };
     }));
 
-    return items
-      .filter((item) => {
-        if (!item.is_public || !item.is_discoverable || !item.published_in_search) return false;
-        if (filters?.brand && item.brand.toLowerCase() !== filters.brand.toLowerCase()) return false;
-        if (filters?.piece_type && item.piece_type.toLowerCase() !== filters.piece_type.toLowerCase()) return false;
-        if (filters?.gender && item.gender.toLowerCase() !== filters.gender.toLowerCase()) return false;
-        if (filters?.season && item.season.toLowerCase() !== filters.season.toLowerCase()) return false;
-        if (filters?.material && item.material.toLowerCase() !== filters.material.toLowerCase()) return false;
-        if (filters?.creator && !item.creator_name.toLowerCase().includes(filters.creator.toLowerCase())) return false;
-        if (filters?.rarity && item.rarity.toLowerCase() !== filters.rarity.toLowerCase()) return false;
-        if (!normalizedQuery) return true;
+    const nextCursor = snapshot.docs.length === pageSize
+      ? String(snapshot.docs[snapshot.docs.length - 1]?.get('createdAt') ?? '')
+      : null;
 
-        const blob = [
-          item.name,
-          item.brand,
-          item.piece_type,
-          item.color,
-          item.material,
-          item.creator_name,
-          item.description,
-          ...item.wearstyles,
-          ...item.style_tags,
-          ...item.occasion_tags,
-        ].join(' ').toLowerCase();
-
-        return blob.includes(normalizedQuery);
-      })
-      .sort((a, b) => b.wardrobe_item_id.localeCompare(a.wardrobe_item_id));
+    return {
+      items: items.filter((item) => item.is_public && item.is_discoverable && item.published_in_search),
+      nextCursor: nextCursor || null,
+    };
   }
 
   async create(input: {
@@ -251,6 +288,9 @@ export class WardrobeItemsRepository extends BaseRepository {
       is_public: true,
       is_discoverable: true,
       published_in_search: true,
+      userId: input.user_id,
+      createdAt: now,
+      status: 'active',
       created_at: now,
       updated_at: now,
     };
@@ -418,7 +458,7 @@ export class WardrobeItemsRepository extends BaseRepository {
   }
 
   async getAnalysisByUser(userId: string): Promise<WardrobeAnalysis> {
-    const items = await this.findByUser(userId);
+    const { items } = await this.findByUser(userId, { status: 'active', limit: 500 });
     return {
       total_items: items.length,
       by_brand: aggregate(items, 'brand'),

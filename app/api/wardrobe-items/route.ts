@@ -8,14 +8,11 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const data = await wardrobeController.listDiscoverable({
-      query: searchParams.get('query') ?? undefined,
-      brand: searchParams.get('brand') ?? undefined,
-      piece_type: searchParams.get('piece_type') ?? undefined,
+      brand_id: searchParams.get('brand_id') ?? undefined,
+      market_id: searchParams.get('market_id') ?? undefined,
       gender: searchParams.get('gender') ?? undefined,
-      season: searchParams.get('season') ?? undefined,
-      material: searchParams.get('material') ?? undefined,
-      creator: searchParams.get('creator') ?? undefined,
-      rarity: searchParams.get('rarity') ?? undefined,
+      cursorCreatedAt: searchParams.get('cursor') ?? undefined,
+      limit: Number(searchParams.get('limit') ?? 24),
     });
     return NextResponse.json(data);
   } catch (error) {

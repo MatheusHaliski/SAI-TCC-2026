@@ -39,9 +39,12 @@ export class WardrobeService {
     private readonly blenderPipelineService = new BlenderPipelineService(),
   ) {}
 
-  async listUserWardrobe(userId: string) {
+  async listUserWardrobe(
+    userId: string,
+    options?: { limit?: number; cursorCreatedAt?: string; status?: 'active' | 'processing' | 'archived'; piece_type?: string },
+  ) {
     await this.syncActiveUvJobs(userId);
-    return this.wardrobeRepo.findByUser(userId);
+    return this.wardrobeRepo.findByUser(userId, options);
   }
 
   private async syncActiveUvJobs(userId: string): Promise<void> {
@@ -58,14 +61,11 @@ export class WardrobeService {
   }
 
   async listDiscoverablePieces(filters?: {
-    query?: string;
-    brand?: string;
-    piece_type?: string;
+    brand_id?: string;
+    market_id?: string;
     gender?: string;
-    season?: string;
-    material?: string;
-    creator?: string;
-    rarity?: string;
+    limit?: number;
+    cursorCreatedAt?: string;
   }) {
     return this.wardrobeRepo.findDiscoverable(filters);
   }

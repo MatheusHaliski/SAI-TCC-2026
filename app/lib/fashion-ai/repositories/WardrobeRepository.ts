@@ -19,8 +19,13 @@ export class WardrobeRepository {
     };
   }
 
-  async listAll(): Promise<WardrobeItemDocument[]> {
-    const snap = await getAdminFirestore().collection(COLLECTION).get();
+  async listAll(maxItems = 100): Promise<WardrobeItemDocument[]> {
+    const safeLimit = Math.max(1, Math.floor(maxItems));
+    const snap = await getAdminFirestore()
+      .collection(COLLECTION)
+      .orderBy('createdAt', 'desc')
+      .limit(safeLimit)
+      .get();
     return snap.docs.map((doc) => this.mapDoc(doc));
   }
 
