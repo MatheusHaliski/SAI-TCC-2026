@@ -4,6 +4,12 @@ import { getAdminFirestore } from "@/app/lib/firebaseAdmin";
 import { getAuth as getAdminAuth } from "firebase-admin/auth";
 import { createSessionToken, setSessionCookie } from "@/app/lib/serverSession";
 import { syncUserProfileFromAuth } from "@/app/lib/userProfileSync";
+import {
+    GOOGLE_CLIENT_ID_ERROR_MESSAGE,
+    assertValidGoogleClientId,
+    getGoogleOAuthDiagnostics,
+    maskClientId,
+} from "@/app/lib/googleOAuthConfig";
 
 export const runtime = "nodejs";
 
@@ -37,6 +43,35 @@ export async function POST(request: NextRequest): Promise<Response> {
         provider: parsed.data.provider,
         normalizedEmail,
     });
+
+    if (parsed.data.provider === "google") {
+        const oauthDiagnostics = getGoogleOAuthDiagnostics();
+        console.info("[Signup API] Google OAuth client diagnostics", oauthDiagnostics);
+        if (oauthDiagnostics.serverClientIdMasked && oauthDiagnostics.publicClientIdMasked && !oauthDiagnostics.idsMatch) {
+            console.warn("[Signup API] Google OAuth client ID mismatch between server and public env vars", {
+                serverClientIdMasked: oauthDiagnostics.serverClientIdMasked,
+                publicClientIdMasked: oauthDiagnostics.publicClientIdMasked,
+            });
+        }
+
+        try {
+            const validatedClientId = assertValidGoogleClientId();
+            console.info("[Signup API] Google OAuth client ID in use", {
+                clientIdMasked: maskClientId(validatedClientId),
+                route: "/api/signup",
+            });
+        } catch (error) {
+            console.error("[Signup API] Invalid Google OAuth client configuration", {
+                message: error instanceof Error ? error.message : GOOGLE_CLIENT_ID_ERROR_MESSAGE,
+                route: "/api/signup",
+            });
+
+            return NextResponse.json(
+                { error: GOOGLE_CLIENT_ID_ERROR_MESSAGE },
+                { status: 500 }
+            );
+        }
+    }
 
     try {
         const adminAuth = getAdminAuth();

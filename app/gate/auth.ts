@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {usePathname, useRouter} from "next/navigation";
 import { firebaseAuthGate } from "./firebaseClient";
+import { GOOGLE_CLIENT_ID_ERROR_MESSAGE, isValidGoogleClientId, maskClientId } from "@/app/lib/googleOAuthConfig";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -147,7 +148,7 @@ export function useAuthGate(): UseAuthGateReturn  {
   }
 
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
-
+  const hasValidGoogleClientId = isValidGoogleClientId(clientId);
 
 
   const handleGoogleResponse = useCallback(async (response: GoogleCredentialResponse) => {
@@ -240,8 +241,10 @@ export function useAuthGate(): UseAuthGateReturn  {
 
   // load Google SDK
   useEffect(() => {
-    if (!clientId) {
-      setGoogleError("Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID.");
+    if (!hasValidGoogleClientId) {
+      console.error("[AuthGate] Invalid Google client configuration", {
+        clientIdMasked: maskClientId(clientId),
+      });
       return;
     }
 
@@ -278,13 +281,13 @@ export function useAuthGate(): UseAuthGateReturn  {
     return () => {
       document.body.removeChild(script);
     };
-  }, [clientId, handleGoogleResponse]);
+  }, [clientId, handleGoogleResponse, hasValidGoogleClientId]);
 
 
   return {
     googleAuthed,
     googleUserId,
-    googleError,
+    googleError: !hasValidGoogleClientId && !googleError ? GOOGLE_CLIENT_ID_ERROR_MESSAGE : googleError,
     pinInput,
     setPinInput,
     pinVerified,
