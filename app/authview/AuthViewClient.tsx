@@ -395,7 +395,7 @@ export default function AuthViewClient() {
                 "auth/popup-closed-by-user": "O popup de login foi fechado antes da conclusão. Tente novamente.",
             };
 
-            const deletedClientMessage = "A configuração de login Google deste projeto está quebrada (OAuth client removido: deleted_client). Peça ao administrador para recriar/habilitar o provedor Google no Firebase Console.";
+            const deletedClientMessage = "Login temporarily unavailable. Please try again later.";
             const fallbackMessage = "Não foi possível autenticar com o provedor selecionado. Verifique a configuração do Firebase Auth e tente novamente.";
             const userMessage = oauthError.isDeletedClient
                 ? deletedClientMessage
