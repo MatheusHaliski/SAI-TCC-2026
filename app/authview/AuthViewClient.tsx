@@ -151,10 +151,12 @@ export default function AuthViewClient() {
         }
         try {
             await setFirebasePersistenceMode();
+            let firebaseIdToken = "";
             if (firebaseApp && hasFirebaseConfig) {
                 const auth = getAuth(firebaseApp);
                 try {
-                    await signInWithEmailAndPassword(auth, normalizedEmail, normalizedPassword);
+                    const credential = await signInWithEmailAndPassword(auth, normalizedEmail, normalizedPassword);
+                    firebaseIdToken = await credential.user.getIdToken(true);
                     console.info("[AuthView] Firebase email/password sign-in succeeded", {
                         provider: "password",
                         normalizedEmail,
@@ -224,7 +226,7 @@ export default function AuthViewClient() {
             const response = await fetch("/api/auth/verify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: normalizedEmail, password: normalizedPassword }),
+                body: JSON.stringify({ email: normalizedEmail, password: normalizedPassword, idToken: firebaseIdToken }),
             });
             if (!response.ok) {
                 const data = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -327,11 +329,39 @@ export default function AuthViewClient() {
             await setFirebasePersistenceMode();
             const credential = provider === "google" ? await signInWithGoogle() : await signInWithFacebook();
             const user = credential.user;
+            const uid = user.uid;
+            const normalizedEmail = user.email?.trim().toLowerCase() || "";
+            const normalizedName = user.displayName?.trim() || "Usuário";
+            const idToken = await user.getIdToken(true);
+
+            const syncResponse = await fetch("/api/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    uid,
+                    email: normalizedEmail,
+                    name: normalizedName,
+                    provider,
+                    idToken,
+                }),
+            });
+            const syncPayload = (await syncResponse.json().catch(() => null)) as { ok?: boolean; profile?: { user_id?: string; name?: string; email?: string }; error?: string } | null;
+            if (!syncResponse.ok || !syncPayload?.ok) {
+                console.error("[AuthView] social profile sync failed", {
+                    provider,
+                    uid,
+                    normalizedEmail,
+                    status: syncResponse.status,
+                    error: syncPayload?.error,
+                });
+                throw new Error(syncPayload?.error ?? "Social profile sync failed.");
+            }
+
             const token = crypto.randomUUID();
             const profile = {
-                user_id: user.uid,
-                name: user.displayName?.trim() || "Usuário",
-                email: user.email?.trim().toLowerCase() || "",
+                user_id: syncPayload.profile?.user_id?.trim() || uid,
+                name: syncPayload.profile?.name?.trim() || normalizedName,
+                email: syncPayload.profile?.email?.trim().toLowerCase() || normalizedEmail,
             };
             setAuthSessionToken(token);
             setAuthSessionProfile(profile);
