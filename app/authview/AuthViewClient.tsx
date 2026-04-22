@@ -8,7 +8,12 @@ import { VSModalPaged } from "@/app/lib/authAlerts";
 import { clearAuthSessionToken, setAuthSessionProfile, setAuthSessionToken } from "@/app/lib/authSession";
 import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
-import { signInWithFacebook, signInWithGoogle } from "@/app/auth";
+import {
+    extractOAuthErrorDetails,
+    signInWithFacebook,
+    signInWithGoogle,
+    signInWithGoogleRedirect,
+} from "@/app/auth";
 import { ensureSavedPageBackgroundConfig } from "@/app/lib/pageBackground";
 import { firebaseAuthGate } from "@/app/gate/firebaseClient";
 import {
@@ -44,6 +49,7 @@ export default function AuthViewClient() {
     const [forgotEmail, setForgotEmail] = useState("");
     const [submittingForgot, setSubmittingForgot] = useState(false);
     const [socialSubmitting, setSocialSubmitting] = useState<"google" | "facebook" | null>(null);
+    const [socialErrorMessage, setSocialErrorMessage] = useState("");
     const pathname = usePathname();
     const { firebaseApp, hasFirebaseConfig } = firebaseAuthGate();
 
@@ -207,6 +213,7 @@ export default function AuthViewClient() {
     const handleSocialSignIn = async (provider: "google" | "facebook") => {
         if (socialSubmitting) return;
         setSocialSubmitting(provider);
+        setSocialErrorMessage("");
         try {
             console.log("RememberMe:", rememberMe);
             await setFirebasePersistenceMode();
@@ -224,10 +231,42 @@ export default function AuthViewClient() {
             setSharedAccessData({ token, profile });
             ensureSavedPageBackgroundConfig();
             router.replace("/home");
-        } catch {
+        } catch (error: unknown) {
+            const oauthError = extractOAuthErrorDetails(error);
+            const providerLabel = provider === "google" ? "Google" : "Facebook";
+            console.error(`[AuthView] ${providerLabel} OAuth failed`, {
+                ...oauthError,
+                authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
+                projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
+                route: "/authview",
+            });
+
+            if (provider === "google" && oauthError.code === "auth/popup-blocked") {
+                try {
+                    await signInWithGoogleRedirect();
+                    return;
+                } catch (redirectError: unknown) {
+                    const redirectOAuthError = extractOAuthErrorDetails(redirectError);
+                    console.error("[AuthView] Google redirect fallback failed", redirectOAuthError);
+                }
+            }
+
+            const userMessageByCode: Record<string, string> = {
+                "auth/invalid-credential": "Sua sessão de autenticação está inválida. Atualize a página e tente novamente.",
+                "auth/popup-blocked": "Seu navegador bloqueou o popup de login. Permita popups para este site e tente novamente.",
+                "auth/popup-closed-by-user": "O popup de login foi fechado antes da conclusão. Tente novamente.",
+            };
+
+            const deletedClientMessage = "A configuração de login Google deste projeto está quebrada (OAuth client removido: deleted_client). Peça ao administrador para recriar/habilitar o provedor Google no Firebase Console.";
+            const fallbackMessage = "Não foi possível autenticar com o provedor selecionado. Verifique a configuração do Firebase Auth e tente novamente.";
+            const userMessage = oauthError.isDeletedClient
+                ? deletedClientMessage
+                : (userMessageByCode[oauthError.code] ?? fallbackMessage);
+
+            setSocialErrorMessage(userMessage);
             void VSModalPaged({
                 title: "Falha no login social",
-                messages: ["Não foi possível autenticar com o provedor selecionado. Verifique a configuração do Firebase Auth e tente novamente."],
+                messages: [userMessage],
                 tone: "error",
             });
         } finally {
@@ -323,6 +362,22 @@ export default function AuthViewClient() {
                             <div style={{ borderTop: "1px solid #e5e7eb", position: "absolute", inset: 0, top: "50%" }} />
                             <span style={{ position: "relative", background: "#fff", padding: "0 1rem", color: "#6b7280", fontSize: "0.875rem", fontFamily: ff }}>Ou continue com</span>
                         </div>
+                        {socialErrorMessage ? (
+                            <div
+                                role="alert"
+                                style={{
+                                    padding: "0.75rem 1rem",
+                                    borderRadius: 8,
+                                    border: "1px solid #fecaca",
+                                    backgroundColor: "#fef2f2",
+                                    color: "#991b1b",
+                                    fontSize: "0.875rem",
+                                    fontFamily: ff,
+                                }}
+                            >
+                                {socialErrorMessage}
+                            </div>
+                        ) : null}
 
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                             <button type="button" onClick={() => void handleSocialSignIn("google")} disabled={Boolean(socialSubmitting)} style={{ padding: "12px 16px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", color: "#374151", fontSize: "1rem", fontWeight: 500, cursor: socialSubmitting ? "not-allowed" : "pointer", fontFamily: ff, opacity: socialSubmitting === "google" ? 0.6 : 1 }}>
