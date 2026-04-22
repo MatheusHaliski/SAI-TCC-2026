@@ -3,20 +3,27 @@ import crypto from "node:crypto";
 import { getAdminFirestore } from "@/app/lib/firebaseAdmin";
 import { consumeRateLimit, resolveClientIp } from "@/app/lib/security/basicRateLimit";
 import { createSessionToken, setSessionCookie } from "@/app/lib/serverSession";
+import { getAuth as getAdminAuth } from "firebase-admin/auth";
+import { syncUserProfileFromAuth } from "@/app/lib/userProfileSync";
+
 export const runtime = "nodejs";
 type AuthPayload = {
     email?: string;
     password?: string;
+    idToken?: string;
 };
 
 type UserRecord = {
     user_id?: string;
+    uid?: string;
     name?: string;
+    displayName?: string;
     password?: string;
     passwordHash?: string;
     passwordSalt?: string;
     passwordIterations?: number;
     passwordHashAlgorithm?: string;
+    provider?: string;
 };
 
 const HASH_ALGORITHM = "SHA-256";
@@ -62,10 +69,7 @@ const hashPassword = (
         );
     });
 
-const verifyPassword = async (
-    password: string,
-    digest: UserRecord
-) => {
+const verifyPassword = async (password: string, digest: UserRecord) => {
     if (
         !digest.passwordHash ||
         !digest.passwordSalt ||
@@ -85,7 +89,6 @@ const verifyPassword = async (
 };
 
 export async function POST(request: NextRequest): Promise<Response> {
-
     let body: AuthPayload = {};
     try {
         body = (await request.json()) as AuthPayload;
@@ -95,6 +98,8 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     const email = body.email?.trim().toLowerCase() ?? "";
     const password = body.password ?? "";
+    const idToken = body.idToken?.trim() ?? "";
+
     const firebaseAdminProjectId = process.env.NEXT_FIREBASE_ADMIN_PROJECT_ID ?? "";
     const firebaseClientProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "";
     const projectMismatch = Boolean(
@@ -126,6 +131,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         response.headers.set("Retry-After", String(ipRateLimit.retryAfterSeconds));
         return response;
     }
+
     if (email) {
         const emailRateLimit = consumeRateLimit({
             namespace: "auth-verify-email",
@@ -178,6 +184,47 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     try {
         const db = getAdminFirestore();
+
+        if (idToken) {
+            const adminAuth = getAdminAuth();
+            const decoded = await adminAuth.verifyIdToken(idToken, true);
+            const authUser = await adminAuth.getUser(decoded.uid);
+            const authEmail = (authUser.email ?? email).trim().toLowerCase();
+
+            if (authEmail !== email) {
+                console.warn("[Auth Verify API] email mismatch for idToken login", {
+                    uid: decoded.uid,
+                    payloadEmail: email,
+                    authEmail,
+                });
+            }
+
+            await syncUserProfileFromAuth({
+                uid: decoded.uid,
+                email: authEmail,
+                displayName: authUser.displayName ?? "",
+                provider: "password",
+                db,
+            });
+
+            const sessionToken = createSessionToken({
+                sub: decoded.uid,
+                email: authEmail,
+            });
+
+            const response = NextResponse.json({
+                ok: true,
+                profile: {
+                    user_id: decoded.uid,
+                    uid: decoded.uid,
+                    name: authUser.displayName ?? "",
+                    email: authEmail,
+                },
+            });
+            setSessionCookie(response, sessionToken);
+            return response;
+        }
+
         const snapshot = await db
             .collection(USER_COLLECTION)
             .where("email", "==", email)
@@ -207,10 +254,10 @@ export async function POST(request: NextRequest): Promise<Response> {
             );
         }
 
-        const canonicalUserId = firestoreDocId;
+        const canonicalUserId = record.uid?.trim() || firestoreDocId;
 
-        if (matchedDoc && record.user_id !== firestoreDocId) {
-            await matchedDoc.ref.set({ user_id: firestoreDocId }, { merge: true });
+        if (matchedDoc && record.user_id !== canonicalUserId) {
+            await matchedDoc.ref.set({ user_id: canonicalUserId, uid: canonicalUserId }, { merge: true });
         }
 
         const sessionToken = createSessionToken({
@@ -222,7 +269,7 @@ export async function POST(request: NextRequest): Promise<Response> {
             ok: true,
             profile: {
                 user_id: canonicalUserId,
-                name: record.name ?? "",
+                name: record.displayName ?? record.name ?? "",
                 email,
             },
         });
