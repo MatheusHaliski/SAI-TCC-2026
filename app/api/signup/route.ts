@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { getAdminFirestore } from "@/app/lib/firebaseAdmin";
+import { getAuth as getAdminAuth } from "firebase-admin/auth";
 import { signupPayloadSchema } from "@/app/signupview/schema";
 import { createSessionToken, setSessionCookie } from "@/app/lib/serverSession";
 
@@ -113,6 +114,36 @@ export async function POST(request: NextRequest): Promise<Response> {
             passwordHashAlgorithm: HASH_ALGORITHM,
             createdAt: new Date().toISOString(),
         });
+
+        try {
+            await getAdminAuth().createUser({
+                uid: userId,
+                email: normalizedEmail,
+                password: parsed.data.password,
+                displayName: normalizedName,
+                emailVerified: false,
+            });
+        } catch (firebaseAuthError: unknown) {
+            const authErrorCode =
+                typeof firebaseAuthError === "object" &&
+                firebaseAuthError !== null &&
+                "code" in firebaseAuthError
+                    ? String((firebaseAuthError as { code?: unknown }).code ?? "")
+                    : "";
+            console.error("[Signup API] failed to create Firebase Auth user:", firebaseAuthError);
+            await userRef.delete().catch(() => undefined);
+            if (authErrorCode === "auth/email-already-exists") {
+                return NextResponse.json(
+                    { error: "Este e-mail já existe no Firebase Auth (possivelmente via login social)." },
+                    { status: 409 }
+                );
+            }
+            return NextResponse.json(
+                { error: "Unable to provision email/password login in Firebase Auth." },
+                { status: 500 }
+            );
+        }
+
         const sessionToken = createSessionToken({
             sub: userId,
             email: normalizedEmail,
