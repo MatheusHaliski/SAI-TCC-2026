@@ -39,7 +39,7 @@ const SKIPPABLE_FIREBASE_ERROR_CODES = new Set([
 ]);
 
 const normalizeFirebaseErrorCode = (error: unknown): string => {
-    const maybeAuthError = error as Partial<AuthError> | null;
+    const maybeAuthError = error as Partial<FirebaseError> | null;
     return (maybeAuthError?.code ?? "").trim().toLowerCase();
 };
 
