@@ -146,9 +146,7 @@ export function useAuthGate(): UseAuthGateReturn  {
     }
   }
 
-  const clientId ="457209482063-pebaf4naeu54cjic80k3svga46f6pvgv.apps.googleusercontent.com";
-
-  console.log("IS:",clientId);
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
 
 
