@@ -94,7 +94,22 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     const email = body.email?.trim().toLowerCase() ?? "";
-    const password = body.password?.trim() ?? "";
+    const password = body.password ?? "";
+    const firebaseAdminProjectId = process.env.NEXT_FIREBASE_ADMIN_PROJECT_ID ?? "";
+    const firebaseClientProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "";
+    const projectMismatch = Boolean(
+        firebaseAdminProjectId &&
+        firebaseClientProjectId &&
+        firebaseAdminProjectId !== firebaseClientProjectId
+    );
+    if (projectMismatch) {
+        console.warn("[Auth Verify API] Firebase project mismatch detected", {
+            firebaseAdminProjectId,
+            firebaseClientProjectId,
+            route: "/api/auth/verify",
+        });
+    }
+
     const clientIp = resolveClientIp(request);
     const ipRateLimit = consumeRateLimit({
         namespace: "auth-verify-ip",

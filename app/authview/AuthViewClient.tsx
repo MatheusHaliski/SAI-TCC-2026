@@ -19,11 +19,12 @@ import { firebaseAuthGate } from "@/app/gate/firebaseClient";
 import {
     browserLocalPersistence,
     browserSessionPersistence,
-    type AuthError,
+    fetchSignInMethodsForEmail,
     getAuth,
     setPersistence,
     signInWithEmailAndPassword,
 } from "firebase/auth";
+import { FirebaseError } from "firebase/app";
 
 const ff = `${shareTechMono.style.fontFamily}, 'Inter', 'Segoe UI', Arial, sans-serif`
 const metallicGradient = 'linear-gradient(135deg, #f7e7b2 0%, #d4af37 28%, #f4f4f5 52%, #a3a3a3 74%, #fff5cf 100%)';
@@ -69,6 +70,7 @@ export default function AuthViewClient() {
     const [submittingForgot, setSubmittingForgot] = useState(false);
     const [socialSubmitting, setSocialSubmitting] = useState<"google" | "facebook" | null>(null);
     const [socialErrorMessage, setSocialErrorMessage] = useState("");
+    const [emailLoginErrorMessage, setEmailLoginErrorMessage] = useState("");
     const pathname = usePathname();
     const { firebaseApp, hasFirebaseConfig } = firebaseAuthGate();
 
@@ -124,12 +126,27 @@ export default function AuthViewClient() {
         event.preventDefault();
         if (submitting) return;
         setSubmitting(true);
+        setEmailLoginErrorMessage("");
         const normalizedEmail = email.trim().toLowerCase();
-        const normalizedPassword = password.trim();
-        console.log("RememberMe:", rememberMe);
+        const normalizedPassword = password;
+
+        const clientProjectId = firebaseApp?.options.projectId ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "";
+        const authDomain = firebaseApp?.options.authDomain ?? process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "";
+        const appName = firebaseApp?.name ?? "none";
+        console.info("[AuthView] Login attempt", {
+            provider: "password",
+            normalizedEmail,
+            projectId: clientProjectId,
+            authDomain,
+            hasFirebaseConfig,
+            firebaseAppName: appName,
+            rememberMe,
+            route: "/authview",
+        });
         if (!normalizedEmail || !normalizedPassword) {
             setSubmitting(false);
-            void VSModalPaged({ title: "Missing credentials", messages: ["Please enter your email and password."], tone: "error" });
+            setEmailLoginErrorMessage("E-mail e senha são obrigatórios.");
+            void VSModalPaged({ title: "Dados obrigatórios", messages: ["Informe seu e-mail e sua senha para continuar."], tone: "error" });
             return;
         }
         try {
@@ -138,12 +155,71 @@ export default function AuthViewClient() {
                 const auth = getAuth(firebaseApp);
                 try {
                     await signInWithEmailAndPassword(auth, normalizedEmail, normalizedPassword);
-                } catch (firebaseError) {
-                    if (!shouldSkipFirebaseSignIn(firebaseError)) {
-                        throw firebaseError;
+                    console.info("[AuthView] Firebase email/password sign-in succeeded", {
+                        provider: "password",
+                        normalizedEmail,
+                        projectId: clientProjectId,
+                    });
+                } catch (error: unknown) {
+                    const firebaseError = error instanceof FirebaseError ? error : null;
+                    const errorCode = firebaseError?.code ?? "auth/unknown";
+                    const errorMessage = firebaseError?.message ?? "Unknown Firebase auth error.";
+                    let signInMethods: string[] = [];
+                    try {
+                        signInMethods = await fetchSignInMethodsForEmail(auth, normalizedEmail);
+                    } catch (fetchMethodsError) {
+                        console.warn("[AuthView] Could not resolve sign-in methods for email", fetchMethodsError);
                     }
-                    console.warn("[AuthView] Firebase login unavailable. Falling back to backend auth only.", firebaseError);
+
+                    console.error("[AuthView] Firebase email/password sign-in failed", {
+                        provider: "password",
+                        normalizedEmail,
+                        projectId: clientProjectId,
+                        authDomain,
+                        errorCode,
+                        errorMessage,
+                        signInMethods,
+                    });
+
+                    const invalidCredentialCodes = new Set([
+                        "auth/invalid-credential",
+                        "auth/wrong-password",
+                        "auth/user-not-found",
+                        "auth/invalid-login-credentials",
+                    ]);
+                    const configOrProviderCodes = new Set([
+                        "auth/operation-not-allowed",
+                        "auth/invalid-api-key",
+                        "auth/app-not-authorized",
+                        "auth/unauthorized-domain",
+                        "auth/configuration-not-found",
+                    ]);
+
+                    const hasPasswordProvider = signInMethods.includes("password");
+                    const hasSocialProviderOnly = signInMethods.some((method) => method !== "password") && !hasPasswordProvider;
+
+                    let userMessage = "Não foi possível autenticar no momento. Tente novamente.";
+                    if (invalidCredentialCodes.has(errorCode)) {
+                        userMessage = hasSocialProviderOnly
+                            ? "Esta conta foi criada com login social. Entre com Google/Facebook ou redefina sua senha para usar e-mail e senha."
+                            : "E-mail ou senha inválidos.";
+                    } else if (configOrProviderCodes.has(errorCode)) {
+                        userMessage = "O login por e-mail/senha está desabilitado ou com configuração inválida no Firebase.";
+                    }
+
+                    setEmailLoginErrorMessage(userMessage);
+                    void VSModalPaged({ title: "Falha no login", messages: [userMessage], tone: "error" });
+                    setSubmitting(false);
+                    return;
                 }
+            } else {
+                console.warn("[AuthView] Firebase config not available; using /api/auth/verify only", {
+                    provider: "password",
+                    normalizedEmail,
+                    projectId: clientProjectId,
+                    authDomain,
+                    hasFirebaseConfig,
+                });
             }
             const response = await fetch("/api/auth/verify", {
                 method: "POST",
@@ -152,7 +228,11 @@ export default function AuthViewClient() {
             });
             if (!response.ok) {
                 const data = (await response.json().catch(() => null)) as { error?: string } | null;
-                void VSModalPaged({ title: "Access denied", messages: [data?.error ?? "No account was found with these credentials."], tone: "error" });
+                const userMessage = response.status === 401
+                    ? "E-mail ou senha inválidos."
+                    : (data?.error ?? "Não foi possível validar suas credenciais agora.");
+                setEmailLoginErrorMessage(userMessage);
+                void VSModalPaged({ title: "Acesso negado", messages: [userMessage], tone: "error" });
                 setSubmitting(false);
                 return;
             }
@@ -174,8 +254,10 @@ export default function AuthViewClient() {
             }
             ensureSavedPageBackgroundConfig();
             router.replace("/home");
-        } catch {
-            void VSModalPaged({ title: "Unexpected error", messages: ["Unable to verify credentials right now."], tone: "error" });
+        } catch (error) {
+            console.error("[AuthView] Unexpected login failure", error);
+            setEmailLoginErrorMessage("Não foi possível validar suas credenciais agora.");
+            void VSModalPaged({ title: "Erro inesperado", messages: ["Não foi possível validar suas credenciais agora."], tone: "error" });
             setSubmitting(false);
         }
     };
@@ -379,6 +461,23 @@ export default function AuthViewClient() {
                                 Esqueceu a senha?
                             </button>
                         </div>
+
+                        {emailLoginErrorMessage ? (
+                            <div
+                                role="alert"
+                                style={{
+                                    padding: "0.75rem 1rem",
+                                    borderRadius: 8,
+                                    border: "1px solid #fecaca",
+                                    backgroundColor: "#fef2f2",
+                                    color: "#991b1b",
+                                    fontSize: "0.875rem",
+                                    fontFamily: ff,
+                                }}
+                            >
+                                {emailLoginErrorMessage}
+                            </div>
+                        ) : null}
 
                         <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(to right, #7c3aed, #ec4899)", color: "#fff", padding: "12px", borderRadius: 8, border: "none", cursor: submitting ? "not-allowed" : "pointer", fontSize: "1rem", fontWeight: 500, opacity: submitting ? 0.6 : 1, fontFamily: ff }}>
                             {submitting ? "Entrando..." : "Entrar"}
