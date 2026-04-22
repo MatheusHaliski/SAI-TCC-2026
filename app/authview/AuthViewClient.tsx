@@ -10,9 +10,18 @@ import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
 import { signInWithFacebook, signInWithGoogle } from "@/app/auth";
 import { ensureSavedPageBackgroundConfig } from "@/app/lib/pageBackground";
+import { firebaseAuthGate } from "@/app/gate/firebaseClient";
+import {
+    browserLocalPersistence,
+    browserSessionPersistence,
+    getAuth,
+    setPersistence,
+    signInWithEmailAndPassword,
+} from "firebase/auth";
 
 const ff = `${shareTechMono.style.fontFamily}, 'Inter', 'Segoe UI', Arial, sans-serif`
 const metallicGradient = 'linear-gradient(135deg, #f7e7b2 0%, #d4af37 28%, #f4f4f5 52%, #a3a3a3 74%, #fff5cf 100%)';
+const REMEMBERED_EMAIL_KEY = "rememberedEmail";
 
 const EyeIcon = ({ open }: { open: boolean }) => open ? (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -36,6 +45,7 @@ export default function AuthViewClient() {
     const [submittingForgot, setSubmittingForgot] = useState(false);
     const [socialSubmitting, setSocialSubmitting] = useState<"google" | "facebook" | null>(null);
     const pathname = usePathname();
+    const { firebaseApp, hasFirebaseConfig } = firebaseAuthGate();
 
     useEffect(() => {
         // TODO: reativar verificação do devauthgate em produção
@@ -50,18 +60,59 @@ export default function AuthViewClient() {
         clearSharedAccessToken();
     }, [pathname]);
 
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const savedEmail = window.localStorage.getItem(REMEMBERED_EMAIL_KEY);
+        if (!savedEmail) return;
+        setEmail(savedEmail);
+        setRememberMe(true);
+    }, []);
+
+    const setFirebasePersistenceMode = async (): Promise<"LOCAL" | "SESSION"> => {
+        if (!firebaseApp || !hasFirebaseConfig) {
+            console.log("Persistence set:", "SESSION");
+            return "SESSION";
+        }
+        const auth = getAuth(firebaseApp);
+        try {
+            if (rememberMe) {
+                await setPersistence(auth, browserLocalPersistence);
+                console.log("Persistence set:", "LOCAL");
+                return "LOCAL";
+            }
+            await setPersistence(auth, browserSessionPersistence);
+            console.log("Persistence set:", "SESSION");
+            return "SESSION";
+        } catch (error) {
+            console.error("[AuthView] Failed to set selected persistence, falling back to SESSION:", error);
+            try {
+                await setPersistence(auth, browserSessionPersistence);
+            } catch (fallbackError) {
+                console.error("[AuthView] Failed to set SESSION fallback persistence:", fallbackError);
+            }
+            console.log("Persistence set:", "SESSION");
+            return "SESSION";
+        }
+    };
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (submitting) return;
         setSubmitting(true);
         const normalizedEmail = email.trim().toLowerCase();
         const normalizedPassword = password.trim();
+        console.log("RememberMe:", rememberMe);
         if (!normalizedEmail || !normalizedPassword) {
             setSubmitting(false);
             void VSModalPaged({ title: "Missing credentials", messages: ["Please enter your email and password."], tone: "error" });
             return;
         }
         try {
+            await setFirebasePersistenceMode();
+            if (firebaseApp && hasFirebaseConfig) {
+                const auth = getAuth(firebaseApp);
+                await signInWithEmailAndPassword(auth, normalizedEmail, normalizedPassword);
+            }
             const response = await fetch("/api/auth/verify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -84,6 +135,11 @@ export default function AuthViewClient() {
             setAuthSessionProfile(profile);
             setDevSessionToken(token);
             setSharedAccessData({ token, profile });
+            if (rememberMe) {
+                window.localStorage.setItem(REMEMBERED_EMAIL_KEY, normalizedEmail);
+            } else {
+                window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+            }
             ensureSavedPageBackgroundConfig();
             router.replace("/home");
         } catch {
@@ -152,6 +208,8 @@ export default function AuthViewClient() {
         if (socialSubmitting) return;
         setSocialSubmitting(provider);
         try {
+            console.log("RememberMe:", rememberMe);
+            await setFirebasePersistenceMode();
             const credential = provider === "google" ? await signInWithGoogle() : await signInWithFacebook();
             const user = credential.user;
             const token = crypto.randomUUID();
@@ -233,14 +291,14 @@ export default function AuthViewClient() {
 
                     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                         <div>
-                            <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#374151", marginBottom: "0.5rem", fontFamily: ff }}>E-mail</label>
-                            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required style={{ ...inputStyle, paddingLeft: 16 }} />
+                            <label htmlFor="auth-email" style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#374151", marginBottom: "0.5rem", fontFamily: ff }}>E-mail</label>
+                            <input id="auth-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required style={{ ...inputStyle, paddingLeft: 16 }} />
                         </div>
 
                         <div>
-                            <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#374151", marginBottom: "0.5rem", fontFamily: ff }}>Senha</label>
+                            <label htmlFor="auth-password" style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#374151", marginBottom: "0.5rem", fontFamily: ff }}>Senha</label>
                             <div style={{ position: "relative" }}>
-                                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required style={{ ...inputStyle, paddingRight: 48 }} />
+                                <input id="auth-password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required style={{ ...inputStyle, paddingRight: 48 }} />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0, display: "flex" }}>
                                     <EyeIcon open={showPassword} />
                                 </button>
@@ -248,8 +306,8 @@ export default function AuthViewClient() {
                         </div>
 
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontFamily: ff }}>
-                                <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: 16, height: 16 }} />
+                            <label htmlFor="remember-me" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontFamily: ff }}>
+                                <input id="remember-me" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: 16, height: 16 }} />
                                 <span style={{ fontSize: "0.875rem", color: "#4b5563", fontFamily: ff }}>Lembrar de mim</span>
                             </label>
                             <button type="button" onClick={() => setShowForgotModal(true)} style={{ fontSize: "0.875rem", color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 500, fontFamily: ff }}>
