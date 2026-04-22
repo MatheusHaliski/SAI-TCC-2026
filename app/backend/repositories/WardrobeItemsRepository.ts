@@ -74,7 +74,33 @@ export class WardrobeItemsRepository extends BaseRepository {
       pageSize,
       cursorCreatedAt: options?.cursorCreatedAt,
     });
-    const items = snapshot.docs.map((doc) => {
+    let docs = snapshot.docs;
+
+    const shouldTryLegacyFields = !options?.cursorCreatedAt && docs.length < pageSize;
+    if (shouldTryLegacyFields) {
+      const legacySnapshot = await this.db
+        .collection(WARDROBE_ITEMS_COLLECTION)
+        .where('user_id', '==', userId)
+        .orderBy('created_at', 'desc')
+        .limit(pageSize)
+        .get();
+
+      const mergedById = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+      for (const doc of docs) mergedById.set(doc.id, doc);
+      for (const doc of legacySnapshot.docs) mergedById.set(doc.id, doc);
+
+      docs = Array.from(mergedById.values())
+        .filter((doc) => {
+          const item = doc.data() as Record<string, unknown>;
+          const matchesStatus = options?.status ? String(item.status ?? 'active') === options.status : true;
+          const matchesPieceType = options?.piece_type ? String(item.piece_type ?? '') === options.piece_type : true;
+          return matchesStatus && matchesPieceType;
+        })
+        .sort((a, b) => this.extractCreatedAtCursor(b)!.localeCompare(this.extractCreatedAtCursor(a)!))
+        .slice(0, pageSize);
+    }
+
+    const items = docs.map((doc) => {
       const item = doc.data() as Record<string, string | number | boolean | null>;
       const market = marketsMap.get(String(item.market_id ?? ''));
       const model3dUrl = resolveWardrobeModelUrl({
@@ -141,10 +167,17 @@ export class WardrobeItemsRepository extends BaseRepository {
       };
     });
 
-    const nextCursor = snapshot.docs.length === pageSize
-      ? String(snapshot.docs[snapshot.docs.length - 1]?.get('createdAt') ?? '')
+    const nextCursor = docs.length === pageSize
+      ? this.extractCreatedAtCursor(docs[docs.length - 1]) ?? ''
       : null;
     return { items, nextCursor: nextCursor || null };
+  }
+
+  private extractCreatedAtCursor(doc: FirebaseFirestore.QueryDocumentSnapshot): string | null {
+    const value = doc.get('createdAt') ?? doc.get('created_at') ?? null;
+    if (typeof value === 'string') return value;
+    if (value instanceof Date) return value.toISOString();
+    return null;
   }
 
   private async getUserWardrobeSnapshotWithFallback(
