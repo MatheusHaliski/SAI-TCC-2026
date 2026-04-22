@@ -19,6 +19,7 @@ import { firebaseAuthGate } from "@/app/gate/firebaseClient";
 import {
     browserLocalPersistence,
     browserSessionPersistence,
+    type AuthError,
     getAuth,
     setPersistence,
     signInWithEmailAndPassword,
@@ -27,6 +28,24 @@ import {
 const ff = `${shareTechMono.style.fontFamily}, 'Inter', 'Segoe UI', Arial, sans-serif`
 const metallicGradient = 'linear-gradient(135deg, #f7e7b2 0%, #d4af37 28%, #f4f4f5 52%, #a3a3a3 74%, #fff5cf 100%)';
 const REMEMBERED_EMAIL_KEY = "rememberedEmail";
+const SKIPPABLE_FIREBASE_ERROR_CODES = new Set([
+    "auth/api-key-not-valid.-please-pass-a-valid-api-key.",
+    "auth/invalid-api-key",
+    "auth/network-request-failed",
+    "auth/configuration-not-found",
+    "auth/app-deleted",
+    "auth/app-not-authorized",
+]);
+
+const normalizeFirebaseErrorCode = (error: unknown): string => {
+    const maybeAuthError = error as Partial<AuthError> | null;
+    return (maybeAuthError?.code ?? "").trim().toLowerCase();
+};
+
+const shouldSkipFirebaseSignIn = (error: unknown): boolean => {
+    const normalizedCode = normalizeFirebaseErrorCode(error);
+    return SKIPPABLE_FIREBASE_ERROR_CODES.has(normalizedCode);
+};
 
 const EyeIcon = ({ open }: { open: boolean }) => open ? (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -117,7 +136,14 @@ export default function AuthViewClient() {
             await setFirebasePersistenceMode();
             if (firebaseApp && hasFirebaseConfig) {
                 const auth = getAuth(firebaseApp);
-                await signInWithEmailAndPassword(auth, normalizedEmail, normalizedPassword);
+                try {
+                    await signInWithEmailAndPassword(auth, normalizedEmail, normalizedPassword);
+                } catch (firebaseError) {
+                    if (!shouldSkipFirebaseSignIn(firebaseError)) {
+                        throw firebaseError;
+                    }
+                    console.warn("[AuthView] Firebase login unavailable. Falling back to backend auth only.", firebaseError);
+                }
             }
             const response = await fetch("/api/auth/verify", {
                 method: "POST",
