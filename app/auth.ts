@@ -27,6 +27,8 @@ export type OAuthErrorDetails = {
   isDeletedClient: boolean;
 };
 
+export const DELETED_GOOGLE_CLIENT_USER_MESSAGE = "Login temporarily unavailable. Please try again later.";
+
 export function extractOAuthErrorDetails(error: unknown): OAuthErrorDetails {
   const err = (error ?? {}) as {
     code?: string;
@@ -48,6 +50,17 @@ export function extractOAuthErrorDetails(error: unknown): OAuthErrorDetails {
     tokenResponseError,
     isDeletedClient,
   };
+}
+
+export function resolveOAuthUserMessage(
+  error: unknown,
+  fallbackMessage: string
+): string {
+  const oauthError = extractOAuthErrorDetails(error);
+  if (oauthError.isDeletedClient) {
+    return DELETED_GOOGLE_CLIENT_USER_MESSAGE;
+  }
+  return fallbackMessage;
 }
 
 export async function signInWithGoogle() {

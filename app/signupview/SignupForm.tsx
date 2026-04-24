@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "../componen
 import { signupSchema, type SignupValues } from "./schema";
 import { VSModalPaged } from "@/app/lib/authAlerts";
 import { setAuthSessionProfile } from "@/app/lib/authSession";
-import { signInWithGoogle } from "@/app/auth";
+import { resolveOAuthUserMessage, signInWithGoogle } from "@/app/auth";
 import { firebaseAuthGate } from "@/app/gate/firebaseClient";
 import {
     createUserWithEmailAndPassword,
@@ -113,7 +113,11 @@ export default function SignupForm() {
             } catch (error) {
                 const authError = error as Partial<AuthError> | null;
                 console.error("[SignupView] signup failed", { code: authError?.code ?? "unknown", message: authError?.message ?? "Unexpected signup error." });
-                void VSModalPaged({ title: "Cadastro falhou", messages: ["Não foi possível concluir o cadastro com Google."], tone: "error" });
+                void VSModalPaged({
+                    title: "Cadastro falhou",
+                    messages: [resolveOAuthUserMessage(error, "Não foi possível concluir o cadastro com Google.")],
+                    tone: "error",
+                });
             }
         });
     };

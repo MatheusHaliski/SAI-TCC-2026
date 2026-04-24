@@ -10,6 +10,7 @@ import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
 import {
     extractOAuthErrorDetails,
+    resolveOAuthUserMessage,
     signInWithFacebook,
     signInWithGoogle,
     signInWithGoogleRedirect,
@@ -395,11 +396,11 @@ export default function AuthViewClient() {
                 "auth/popup-closed-by-user": "O popup de login foi fechado antes da conclusão. Tente novamente.",
             };
 
-            const deletedClientMessage = "Login temporarily unavailable. Please try again later.";
             const fallbackMessage = "Não foi possível autenticar com o provedor selecionado. Verifique a configuração do Firebase Auth e tente novamente.";
-            const userMessage = oauthError.isDeletedClient
-                ? deletedClientMessage
-                : (userMessageByCode[oauthError.code] ?? fallbackMessage);
+            const userMessage = resolveOAuthUserMessage(
+                error,
+                userMessageByCode[oauthError.code] ?? fallbackMessage
+            );
 
             setSocialErrorMessage(userMessage);
             void VSModalPaged({
