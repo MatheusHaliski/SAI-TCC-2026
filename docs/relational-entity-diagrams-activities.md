@@ -6,6 +6,8 @@ This document provides **activity-oriented ER diagrams** for the three core SAI 
 2. Create and save an outfit card (scheme).
 3. Execute and track the 3D pipeline.
 
+For a quick legend of ER cardinality link symbols (`||`, `o|`, `|{`, `o{`), see [Cardinality Linking Symbols](./cardinality-linking-symbols.md).
+
 ---
 
 ## 1) Activity: Create a New Wardrobe Piece
