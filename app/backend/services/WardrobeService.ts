@@ -11,6 +11,12 @@ import { BlenderPipelineService } from './BlenderPipelineService';
 import { BlenderCloudService } from './BlenderCloudService';
 import type { ModelGenerationStatus } from '@/app/backend/types/entities';
 import { classifyGarmentGender, classifyGarmentType } from '@/app/lib/fashion-ai/utils/garment-classification';
+import { WardrobeImagePreparationService } from '@/app/lib/fashion-ai/services/WardrobeImagePreparationService';
+import {
+  buildPipelineInputSnapshot,
+  canonicalizeBrandId,
+  withStageHistory,
+} from './modelPipelineDiagnostics';
 
 const DEFAULT_BRAND_ID = 'default';
 const BRANDING_PASS_VERSION = 'v2-image-first';
@@ -37,6 +43,7 @@ export class WardrobeService {
     private readonly brandsRepository = new BrandsRepository(),
     private readonly pipelineJobsRepository = new PipelineJobsRepository(),
     private readonly blenderPipelineService = new BlenderPipelineService(),
+    private readonly preparationService = new WardrobeImagePreparationService(),
   ) {}
 
   async listUserWardrobe(
@@ -81,7 +88,8 @@ export class WardrobeService {
       throw new ServiceError('Missing required fields to create wardrobe item.', 400);
     }
 
-    const selectedBrandId = String(input.brand_id ?? DEFAULT_BRAND_ID).trim() || DEFAULT_BRAND_ID;
+    const selectedBrandIdRaw = String(input.brand_id ?? DEFAULT_BRAND_ID).trim() || DEFAULT_BRAND_ID;
+    const selectedBrandId = canonicalizeBrandId(selectedBrandIdRaw);
     const fitPieceType = classifyGarmentType({ pieceType: piece_type, name });
     const fitGender = classifyGarmentGender({ gender, name });
     const compatibleMannequins =
@@ -91,7 +99,7 @@ export class WardrobeService {
       name,
       imageUrl: image_url,
     });
-    const resolvedBrandId = detection.brand_id_detected ?? selectedBrandId;
+    const resolvedBrandId = canonicalizeBrandId(detection.brand_id_detected ?? selectedBrandId);
     const hasReliableBrandMatch = Boolean(detection.brand_id_detected);
     const needsBrandReview = BRAND_REVIEW_REQUIRED && !hasReliableBrandMatch && selectedBrandId === DEFAULT_BRAND_ID;
 
@@ -120,8 +128,8 @@ export class WardrobeService {
       gender,
       market_id,
       brand_id: resolvedBrandId,
-      brand_id_selected: selectedBrandId,
-      brand_id_detected: detection.brand_id_detected,
+      brand_id_selected: selectedBrandIdRaw,
+      brand_id_detected: detection.brand_id_detected ? canonicalizeBrandId(detection.brand_id_detected) : null,
       brand_detection_confidence: detection.brand_detection_confidence,
       brand_detection_source: detection.brand_detection_source,
       brand_applied: false,
@@ -168,6 +176,41 @@ export class WardrobeService {
     brandId: string;
   }): Promise<void> {
     try {
+      const sourceItem = await this.wardrobeRepo.findById(input.wardrobeItemId);
+      const fitProfile = sourceItem?.fitProfile && typeof sourceItem.fitProfile === 'object'
+        ? (sourceItem.fitProfile as Record<string, unknown>)
+        : null;
+      const hasImageUrl = Boolean(String(sourceItem?.image_url ?? '').trim());
+      const preparationStatus = String(fitProfile?.preparationStatus ?? 'missing');
+      const hasPreparedAsset = Boolean(String(fitProfile?.preparedAssetUrl ?? '').trim()) || hasImageUrl;
+      const hasFitProfile = Boolean(fitProfile);
+      const hasGarmentAnchors = Boolean(fitProfile?.garmentAnchors);
+      const hasNormalizedBBox = Boolean(fitProfile?.normalizedBBox);
+      const requiresAnchors = ['upper_piece', 'top'].includes(String(sourceItem?.piece_type ?? '').toLowerCase());
+
+      if (!hasImageUrl || preparationStatus !== 'ready' || !hasPreparedAsset || !hasFitProfile || !hasNormalizedBBox || (requiresAnchors && !hasGarmentAnchors)) {
+        await this.wardrobeRepo.updatePipelineStatus(
+          input.wardrobeItemId,
+          'needs_preparation',
+          'Piece is not ready for 3D generation.',
+          withStageHistory(sourceItem?.pipeline_stage_details as Record<string, unknown> | null, {
+            stage: 'failed',
+            failedStage: 'preparation_not_ready',
+            provider: 'local',
+            errorCode: 'PREPARATION_NOT_READY',
+            message: '2D preparation and fit profile preconditions are not satisfied.',
+            hint: 'Run 2D preparation before retrying 3D generation.',
+            retryable: true,
+            nextAction: 'POST /api/wardrobe/process-piece',
+            requestUrl: null,
+            responseStatus: null,
+            responseBodyPreview: null,
+            inputSnapshot: buildPipelineInputSnapshot((sourceItem ?? {}) as Record<string, unknown>),
+          }),
+        );
+        return;
+      }
+
       await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_segmentation');
       const isolation = await this.pieceIsolationService.isolate({
         imageUrl: input.imageUrl,
@@ -254,13 +297,26 @@ export class WardrobeService {
         stageLabel: 'branding_generation',
       });
 
-      const qaPassed = this.qualityChecksPass({
+      const qaResult = this.qualityChecksPass({
         baseModelUrl: baseModel.model_3d_url,
         brandedModelUrl: brandedModel.model_3d_url,
+        fitProfile,
+        brandIdRaw: String(sourceItem?.brand_id ?? ''),
+        brandIdSelectedRaw: String(sourceItem?.brand_id_selected ?? ''),
+        placementProfileId: placementProfile.profile_id,
       });
 
-      if (!qaPassed) {
-        throw new ServiceError('Branding quality checks failed (logo visibility/placement validation).', 502);
+      if (!qaResult.passed) {
+        throw Object.assign(new ServiceError(qaResult.message, 502), {
+          pipelineFailure: {
+            failedStage: qaResult.failedStage,
+            provider: 'branding',
+            errorCode: qaResult.errorCode,
+            hint: qaResult.hint,
+            retryable: qaResult.retryable,
+            diagnostics: qaResult.details,
+          },
+        });
       }
 
       await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_geometry_qa');
@@ -371,19 +427,82 @@ export class WardrobeService {
       });
       this.logPipelineMetrics(input.wardrobeItemId, input.pieceType, true, isolation.segmentationConfidence, geometryScope.scopeScore);
     } catch (error) {
+      const item = await this.wardrobeRepo.findById(input.wardrobeItemId);
+      const failureMeta = (error as { pipelineFailure?: Record<string, unknown> })?.pipelineFailure ?? {};
+      const failedStage = String(failureMeta.failedStage ?? 'unknown_failure');
+      const provider = String(failureMeta.provider ?? 'local');
+      const errorCode = String(failureMeta.errorCode ?? 'PIPELINE_FAILED');
+      const hint = String(failureMeta.hint ?? 'Inspect pipeline_stage_details and retry the suggested next action.');
+      const retryable = Boolean(failureMeta.retryable ?? true);
+      const diagnostics = (failureMeta.diagnostics ?? {}) as Record<string, unknown>;
       await this.wardrobeRepo.updatePipelineStatus(
         input.wardrobeItemId,
         'failed',
         error instanceof Error ? error.message : 'Unknown model pipeline failure.',
-        {
+        withStageHistory(item?.pipeline_stage_details as Record<string, unknown> | null, {
           stage: 'failed',
-        },
+          failedStage,
+          provider: provider as 'runpod' | 'meshy' | 'local' | 'branding',
+          errorCode,
+          message: error instanceof Error ? error.message : 'Unknown model pipeline failure.',
+          hint,
+          retryable,
+          requestUrl: diagnostics.requestUrl ? String(diagnostics.requestUrl) : null,
+          responseStatus: typeof diagnostics.responseStatus === 'number' ? diagnostics.responseStatus : null,
+          responseBodyPreview: diagnostics.responseBodyPreview ? String(diagnostics.responseBodyPreview) : null,
+          inputSnapshot: buildPipelineInputSnapshot((item ?? {}) as Record<string, unknown>),
+          diagnostics,
+        }),
       );
       console.error('[wardrobe-model-pipeline] pipeline failed', {
         wardrobe_item_id: input.wardrobeItemId,
         error: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+
+  async retry3DGeneration(wardrobeItemId: string) {
+    const item = await this.wardrobeRepo.findById(wardrobeItemId);
+    if (!item) throw new ServiceError('Wardrobe item not found.', 404);
+
+    const currentStageDetails = (item.pipeline_stage_details as Record<string, unknown> | null) ?? null;
+    const failedStage = String(currentStageDetails?.failedStage ?? '');
+    const nextAttempt = (Number(item.generation_attempt_count ?? 0) || 0) + 1;
+    await this.wardrobeRepo.updateGenerationAttempt(wardrobeItemId, nextAttempt);
+
+    if (failedStage === 'preparation_not_ready' || item.model_status === 'needs_preparation') {
+      await this.preparationService.preparePieceForTester2D(wardrobeItemId);
+    }
+
+    if (failedStage === 'runpod_route_mismatch') {
+      const diagnostics = await this.blenderCloudService.getDiagnostics().catch((error) => ({
+        diagnosticsError: error instanceof Error ? error.message : String(error),
+      }));
+      await this.wardrobeRepo.updatePipelineStatus(wardrobeItemId, 'failed', item.model_generation_error ?? null, withStageHistory(currentStageDetails, {
+        stage: 'failed',
+        failedStage: 'runpod_route_mismatch',
+        provider: 'runpod',
+        errorCode: 'RUNPOD_ROUTE_MISMATCH',
+        message: 'RunPod route diagnostics captured before retry.',
+        hint: 'Confirm BLENDER_CLOUD_SUBMIT_PATH or worker route configuration.',
+        retryable: true,
+        diagnostics,
+        inputSnapshot: buildPipelineInputSnapshot(item as unknown as Record<string, unknown>),
+      }));
+    }
+
+    await this.enrichWardrobeItemModel({
+      wardrobeItemId,
+      imageUrl: String(item.image_url ?? ''),
+      pieceType: String(item.piece_type ?? 'upper_piece'),
+      brandId: canonicalizeBrandId(String(item.brand_id ?? DEFAULT_BRAND_ID)),
+    });
+
+    return {
+      ok: true,
+      wardrobeItemId,
+      generation_attempt_count: nextAttempt,
+    };
   }
 
   private async shouldSkipBrandingPipeline(brandId: string): Promise<boolean> {
@@ -430,17 +549,37 @@ export class WardrobeService {
       job_type: MODEL_GENERATION_JOB_TYPE,
     });
 
-    const submitted = await this.blenderCloudService.submitBlenderCloudJob({
-      modelUrl: imageUrl,
-      imageUrl,
-      jobType: MODEL_GENERATION_JOB_TYPE,
-      options: {
-        prompt: options.prompt,
-        pieceType: options.pieceType,
-        mode: 'model_generation',
-        sourceImageUrl: imageUrl,
-      },
-    });
+    let submitted;
+    try {
+      submitted = await this.blenderCloudService.submitBlenderCloudJob({
+        modelUrl: imageUrl,
+        imageUrl,
+        jobType: MODEL_GENERATION_JOB_TYPE,
+        options: {
+          prompt: options.prompt,
+          pieceType: options.pieceType,
+          mode: 'model_generation',
+          sourceImageUrl: imageUrl,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isRouteMismatch = /status=404/i.test(message) && /\/jobs|\/run/i.test(message);
+      throw Object.assign(new ServiceError(message, 502), {
+        pipelineFailure: {
+          failedStage: isRouteMismatch ? 'runpod_route_mismatch' : 'runpod_submit',
+          provider: 'runpod',
+          errorCode: isRouteMismatch ? 'RUNPOD_ROUTE_MISMATCH' : 'RUNPOD_SUBMIT_FAILED',
+          hint: isRouteMismatch
+            ? 'The configured RunPod worker does not expose POST /jobs. Check FastAPI routes or use the correct submit path.'
+            : 'RunPod submit failed. Verify endpoint URL, token and worker health.',
+          retryable: true,
+          diagnostics: {
+            responseBodyPreview: message.slice(0, 700),
+          },
+        },
+      });
+    }
 
     await this.wardrobeRepo.updatePipelineStatus(options.wardrobeItemId, options.status, null, {
       stage: `${options.stageLabel}_submitted`,
@@ -544,12 +683,73 @@ export class WardrobeService {
     }
   }
 
-  private qualityChecksPass(input: { baseModelUrl: string; brandedModelUrl: string }): boolean {
+  private qualityChecksPass(input: {
+    baseModelUrl: string;
+    brandedModelUrl: string;
+    fitProfile: Record<string, unknown> | null;
+    brandIdRaw: string;
+    brandIdSelectedRaw: string;
+    placementProfileId: string;
+  }): { passed: boolean; failedStage: string; message: string; errorCode: string; hint: string; retryable: boolean; details: Record<string, unknown> } {
+    const geometryScopePassed = input.fitProfile?.preparationStatus === 'ready';
+    const hasAnchors = Boolean(input.fitProfile?.garmentAnchors);
+    if (!geometryScopePassed || !hasAnchors) {
+      return {
+        passed: false,
+        failedStage: 'branding_precondition_failed',
+        message: 'Branding preconditions failed: geometry/anchors unavailable.',
+        errorCode: 'BRANDING_PRECONDITION_FAILED',
+        hint: 'The item lacks usable garment geometry/anchors. Run 2D preparation before logo placement.',
+        retryable: true,
+        details: {
+          selectedBrandId: input.brandIdSelectedRaw,
+          normalizedBrandId: canonicalizeBrandId(input.brandIdRaw),
+          sourceLogoUrl: null,
+          placementProfileUsed: input.placementProfileId,
+          logoBBox: null,
+          targetGarmentBBox: input.fitProfile?.normalizedBBox ?? null,
+          visibilityScore: 0,
+          contrastScore: 0,
+          placementScore: 0,
+          finalBrandingScore: 0,
+          thresholds: { minFinalBrandingScore: 0.6 },
+          reasonForRejection: 'geometry_scope_passed=false or garmentAnchors missing',
+        },
+      };
+    }
+
     const baseValid = input.baseModelUrl.trim().length > 0 && input.baseModelUrl.toLowerCase().endsWith('.glb');
     const brandedValid = input.brandedModelUrl.trim().length > 0 && input.brandedModelUrl.toLowerCase().endsWith('.glb');
     const urlsDiffer = input.baseModelUrl !== input.brandedModelUrl;
+    const visibilityScore = brandedValid ? 0.75 : 0.15;
+    const contrastScore = brandedValid ? 0.7 : 0.2;
+    const placementScore = urlsDiffer ? 0.7 : 0.1;
+    const finalBrandingScore = Number(((visibilityScore + contrastScore + placementScore) / 3).toFixed(3));
+    const thresholds = { minVisibility: 0.55, minContrast: 0.5, minPlacement: 0.5, minFinalBrandingScore: 0.6 };
+    const passed = baseValid && brandedValid && urlsDiffer && finalBrandingScore >= thresholds.minFinalBrandingScore;
 
-    return baseValid && brandedValid && urlsDiffer;
+    return {
+      passed,
+      failedStage: 'branding_quality_validation',
+      message: passed ? 'Branding quality checks passed.' : 'Branding quality checks failed (logo visibility/placement validation).',
+      errorCode: passed ? 'OK' : 'BRANDING_QUALITY_FAILED',
+      hint: passed ? '' : 'Improve logo visibility/contrast or adjust placement profile.',
+      retryable: true,
+      details: {
+        selectedBrandId: input.brandIdSelectedRaw,
+        normalizedBrandId: canonicalizeBrandId(input.brandIdRaw),
+        sourceLogoUrl: null,
+        placementProfileUsed: input.placementProfileId,
+        logoBBox: null,
+        targetGarmentBBox: input.fitProfile?.normalizedBBox ?? null,
+        visibilityScore,
+        contrastScore,
+        placementScore,
+        finalBrandingScore,
+        thresholds,
+        reasonForRejection: passed ? null : 'final_branding_score_below_threshold_or_invalid_urls',
+      },
+    };
   }
 
   private logPipelineMetrics(

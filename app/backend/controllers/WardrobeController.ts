@@ -45,4 +45,8 @@ export class WardrobeController {
   async getByIdWith2D(wardrobeItemId: string) {
     return this.wardrobeRepository.findWith2DAssetsById(wardrobeItemId);
   }
+
+  async retry3D(wardrobeItemId: string) {
+    return this.wardrobeService.retry3DGeneration(wardrobeItemId);
+  }
 }
