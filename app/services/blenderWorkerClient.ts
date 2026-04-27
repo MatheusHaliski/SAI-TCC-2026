@@ -1,6 +1,7 @@
 export type BlenderWorkerStatus = 'queued' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
 
 export interface BlenderWorkerJobPayload {
+  pieceId: string;
   imageUrl: string;
   jobType: string;
   options: {
@@ -16,6 +17,11 @@ export interface BlenderWorkerJobPayload {
     };
   };
   modelUrl?: string;
+  provider?: 'runpod' | 'meshy';
+  userId?: string;
+  pieceName?: string;
+  prompt?: string;
+  quality?: string;
 }
 
 interface PieceLikeRecord {
@@ -35,6 +41,18 @@ function readPath(source: PieceLikeRecord, path: string[]): unknown {
     if (!acc || typeof acc !== 'object') return undefined;
     return (acc as PieceLikeRecord)[key];
   }, source);
+}
+
+function resolvePieceId(piece: PieceLikeRecord): string | null {
+  const candidatePaths = [['pieceId'], ['id'], ['piece_id']];
+
+  for (const path of candidatePaths) {
+    const value = readPath(piece, path);
+    const id = sanitizeUrl(value);
+    if (id) return id;
+  }
+
+  return null;
 }
 
 export function resolvePieceImageUrl(piece: PieceLikeRecord): string | null {
@@ -78,6 +96,11 @@ function resolvePieceModelUrl(piece: PieceLikeRecord): string | null {
 }
 
 export function buildBlenderWorkerSubmitPayload(piece: PieceLikeRecord): BlenderWorkerJobPayload {
+  const pieceId = resolvePieceId(piece);
+  if (!pieceId) {
+    throw new Error('A pieceId is required before starting 3D generation.');
+  }
+
   const imageUrl = resolvePieceImageUrl(piece);
   if (!imageUrl) {
     throw new Error('A valid piece image URL is required before starting 3D generation.');
@@ -88,6 +111,7 @@ export function buildBlenderWorkerSubmitPayload(piece: PieceLikeRecord): Blender
   const modelUrl = resolvePieceModelUrl(piece);
 
   const payload: BlenderWorkerJobPayload = {
+    pieceId,
     imageUrl,
     jobType: DEFAULT_JOB_TYPE,
     options: {
@@ -102,6 +126,8 @@ export function buildBlenderWorkerSubmitPayload(piece: PieceLikeRecord): Blender
         keepQualityGateStrict: true,
       },
     },
+    pieceName: prompt,
+    prompt,
   };
 
   if (modelUrl) {
@@ -112,6 +138,12 @@ export function buildBlenderWorkerSubmitPayload(piece: PieceLikeRecord): Blender
 }
 
 export async function submitBlenderWorkerJob(payload: BlenderWorkerJobPayload): Promise<Record<string, unknown>> {
+  console.info('[3d-worker-client] submit:start', {
+    pieceId: payload.pieceId,
+    hasImageUrl: Boolean(payload.imageUrl),
+    endpoint: '/api/3d-worker/submit',
+  });
+
   const response = await fetch('/api/3d-worker/submit', {
     method: 'POST',
     headers: {
@@ -121,8 +153,18 @@ export async function submitBlenderWorkerJob(payload: BlenderWorkerJobPayload): 
   });
 
   const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  console.info('[3d-worker-client] submit:response', {
+    pieceId: payload.pieceId,
+    status: response.status,
+    responseJson: body,
+  });
+
   if (!response.ok) {
-    const message = typeof body?.error === 'string' ? body.error : `Worker submit failed with status ${response.status}.`;
+    const message = typeof body?.message === 'string'
+      ? body.message
+      : typeof body?.error === 'string'
+        ? body.error
+        : `Worker submit failed with status ${response.status}.`;
     throw new Error(message);
   }
 
