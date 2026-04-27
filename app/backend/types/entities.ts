@@ -125,6 +125,14 @@ export interface WardrobeItem {
   geometry_scope_score: number | null;
   generation_attempt_count: number;
   pipeline_stage_details: Record<string, unknown> | null;
+  branding_error?: {
+    message: string;
+    failedStage: string;
+    visibilityScore: number;
+    placementScore: number;
+    thresholds: Record<string, number>;
+    retryable: boolean;
+  } | null;
   model_status: ModelGenerationStatus;
   model_generation_error: string | null;
   brand_id_selected: string;
@@ -199,10 +207,20 @@ export interface WardrobeViewItem {
   geometry_scope_score?: number | null;
   generation_attempt_count?: number;
   pipeline_stage_details?: Record<string, unknown> | null;
+  branding_error?: {
+    message: string;
+    failedStage: string;
+    visibilityScore: number;
+    placementScore: number;
+    thresholds: Record<string, number>;
+    retryable: boolean;
+  } | null;
   model_status?: ModelGenerationStatus;
   model_generation_error?: string | null;
   fitProfile?: {
     preparationStatus?: 'pending' | 'processing' | 'ready' | 'preview_only' | 'failed' | string;
+    normalizedBBox?: Record<string, unknown> | null;
+    garmentAnchors?: Record<string, unknown> | null;
   };
   brand: string;
   brand_detection_confidence?: number | null;
