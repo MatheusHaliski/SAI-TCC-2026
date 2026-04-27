@@ -42,7 +42,7 @@ export function truncateText(value: string, maxLength = 1000): string {
   return `${value.slice(0, maxLength)}...<truncated:${value.length - maxLength}>`;
 }
 
-export function deriveFailureHint(status?: number, code?: string): string | undefined {
+export function deriveFailureHint(status?: number, code?: string, provider?: WorkerProvider): string | undefined {
   if (code === 'TIMEOUT') {
     return 'Request timeout: worker cold start or long 3D generation job.';
   }
@@ -50,10 +50,22 @@ export function deriveFailureHint(status?: number, code?: string): string | unde
     return 'Remote service returned invalid JSON (often HTML error page).';
   }
   if (!status) return undefined;
-  if (status === 401 || status === 403) return 'Missing or invalid token. Check Authorization Bearer credentials.';
-  if (status === 404) return 'Wrong endpoint path. Verify RunPod path (/jobs vs /run).';
+  if (status === 401 || status === 403) {
+    return provider === 'meshy'
+      ? 'Invalid or missing MESHY_API_KEY.'
+      : 'Missing or invalid token. Check Authorization Bearer credentials.';
+  }
+  if (status === 404) {
+    return provider === 'meshy'
+      ? 'Meshy endpoint not found. Check MESHY_BASE_URL (expected: https://api.meshy.ai/openapi/v1).'
+      : 'Wrong endpoint path. Verify RunPod path (/jobs vs /run).';
+  }
   if (status === 405) return 'Wrong HTTP method used by remote service.';
-  if (status === 502 || status === 503) return 'RunPod pod not ready or Uvicorn app is not running.';
+  if (status === 502 || status === 503) {
+    return provider === 'meshy'
+      ? 'Meshy service unavailable.'
+      : 'RunPod pod not ready or Uvicorn app is not running.';
+  }
   return undefined;
 }
 
@@ -78,7 +90,7 @@ export async function safeFetchJson(
       provider,
       message,
       code: errorCode,
-      hint: deriveFailureHint(undefined, errorCode),
+      hint: deriveFailureHint(undefined, errorCode, provider),
       details: {
         fetchError: message,
       },
@@ -119,7 +131,7 @@ export async function safeFetchJson(
         rawTextTruncated,
         parsedJson,
       },
-      hint: deriveFailureHint(status),
+      hint: deriveFailureHint(status, undefined, provider),
     });
   }
 
@@ -143,7 +155,7 @@ export function toErrorPayload(
       message: error.message,
       status: error.status ?? fallback.status ?? 500,
       details: error.details,
-      hint: error.hint ?? deriveFailureHint(error.status, error.code),
+      hint: error.hint ?? deriveFailureHint(error.status, error.code, error.provider),
       code: error.code,
     };
   }
