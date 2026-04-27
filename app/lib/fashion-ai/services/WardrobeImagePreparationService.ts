@@ -160,11 +160,14 @@ export class WardrobeImagePreparationService {
   }
 
   buildDefaultNormalizedBBox(pieceType: WardrobePieceType): WardrobeFitProfile['normalizedBBox'] {
-    if (pieceType === 'top') return { x: 0.2, y: 0.12, w: 0.6, h: 0.56 };
-    if (pieceType === 'bottom') return { x: 0.24, y: 0.46, w: 0.52, h: 0.5 };
-    if (pieceType === 'shoes') return { x: 0.28, y: 0.82, w: 0.44, h: 0.14 };
-    if (pieceType === 'full_body') return { x: 0.18, y: 0.08, w: 0.64, h: 0.84 };
-    return { x: 0.2, y: 0.16, w: 0.6, h: 0.58 };
+    // Values describe where the garment content sits within the garment product image (0–1),
+    // not where it appears on the body. Typical e-commerce product photos center the garment
+    // as the primary subject with ~10% padding on each side.
+    if (pieceType === 'top') return { x: 0.10, y: 0.08, w: 0.80, h: 0.84 };
+    if (pieceType === 'bottom') return { x: 0.12, y: 0.06, w: 0.76, h: 0.88 };
+    if (pieceType === 'shoes') return { x: 0.10, y: 0.10, w: 0.80, h: 0.80 };
+    if (pieceType === 'full_body') return { x: 0.10, y: 0.04, w: 0.80, h: 0.92 };
+    return { x: 0.15, y: 0.12, w: 0.70, h: 0.76 };
   }
 
   buildDefaultGarmentAnchors(pieceType: WardrobePieceType): WardrobeFitProfile['garmentAnchors'] {
