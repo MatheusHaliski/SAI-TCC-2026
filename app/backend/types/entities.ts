@@ -14,7 +14,9 @@ export type ModelGenerationStatus =
   | 'retrying_generation'
   | 'failed_geometry_scope'
   | 'failed'
-  | 'needs_brand_review';
+  | 'needs_brand_review'
+  | 'needs_preparation'
+  | 'processing';
 
 export type BrandDetectionSource = 'manual' | 'ocr' | 'vision' | 'hybrid';
 
