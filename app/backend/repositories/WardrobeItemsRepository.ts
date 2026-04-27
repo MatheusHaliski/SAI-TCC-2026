@@ -1,4 +1,5 @@
 import { ModelGenerationStatus, WardrobeAnalysis, WardrobeImageAnalysis, WardrobeViewItem } from '@/app/backend/types/entities';
+import { adminDb } from '@/app/lib/firebaseAdmin';
 import { resolveWardrobeModelUrl } from '@/app/lib/wardrobeModelUrl';
 import { BaseRepository } from './BaseRepository';
 import { BrandsRepository } from './BrandsRepository';
@@ -47,10 +48,11 @@ export class WardrobeItemsRepository extends BaseRepository {
   ): Promise<{ items: WardrobeViewItem[]; nextCursor: string | null }> {
     const pageSize = Math.max(1, Math.min(100, Math.floor(options?.limit ?? 24)));
     const status = options?.status ?? 'active';
+    const queryFieldsUsed = ['where(userId ==)', 'orderBy(createdAt desc)', `limit(${pageSize})`];
     const brandMap = await this.brandsRepository.getNameMap();
     const marketsMap = await this.marketsRepository.getByIdMap();
 
-    let query: FirebaseFirestore.Query = this.db
+    let query: FirebaseFirestore.Query = adminDb
       .collection(WARDROBE_ITEMS_COLLECTION)
       .where('userId', '==', userId)
       .orderBy('createdAt', 'desc')
@@ -58,27 +60,39 @@ export class WardrobeItemsRepository extends BaseRepository {
 
     if (options?.status) {
       query = query.where('status', '==', status);
+      queryFieldsUsed.push('where(status ==)');
     }
 
     if (options?.piece_type) {
       query = query.where('piece_type', '==', options.piece_type);
+      queryFieldsUsed.push('where(piece_type ==)');
     }
 
     if (options?.cursorCreatedAt) {
       query = query.startAfter(options.cursorCreatedAt);
+      queryFieldsUsed.push('startAfter(cursorCreatedAt)');
     }
 
-    const snapshot = await this.getUserWardrobeSnapshotWithFallback(query, userId, {
-      status: options?.status,
-      piece_type: options?.piece_type,
-      pageSize,
-      cursorCreatedAt: options?.cursorCreatedAt,
+    console.info('[wardrobe-items/findByUser] Firestore query metadata', {
+      collection: WARDROBE_ITEMS_COLLECTION,
+      userId,
+      status: options?.status ?? null,
+      limit: pageSize,
+      queryFieldsUsed,
+      requiredCompositeIndex: [
+        'collection: sai-wardrobeItems',
+        'userId Ascending',
+        'status Ascending',
+        'createdAt Descending',
+      ],
     });
+
+    const snapshot = await query.get();
     let docs = snapshot.docs;
 
     const shouldTryLegacyFields = !options?.cursorCreatedAt && docs.length < pageSize;
     if (shouldTryLegacyFields) {
-      const legacySnapshot = await this.db
+      const legacySnapshot = await adminDb
         .collection(WARDROBE_ITEMS_COLLECTION)
         .where('user_id', '==', userId)
         .orderBy('created_at', 'desc')
@@ -193,59 +207,6 @@ export class WardrobeItemsRepository extends BaseRepository {
       }
     }
     return null;
-  }
-
-  private async getUserWardrobeSnapshotWithFallback(
-    query: FirebaseFirestore.Query,
-    userId: string,
-    options: {
-      status?: 'active' | 'processing' | 'archived';
-      piece_type?: string;
-      pageSize: number;
-      cursorCreatedAt?: string;
-    },
-  ): Promise<FirebaseFirestore.QuerySnapshot> {
-    try {
-      return await query.get();
-    } catch (error) {
-      if (!this.isFirestoreMissingIndexError(error)) {
-        throw error;
-      }
-
-      const fallbackLimit = Math.min(100, Math.max(options.pageSize * 4, options.pageSize));
-      let fallbackQuery: FirebaseFirestore.Query = this.db
-        .collection(WARDROBE_ITEMS_COLLECTION)
-        .where('userId', '==', userId)
-        .orderBy('createdAt', 'desc')
-        .limit(fallbackLimit);
-
-      if (options?.cursorCreatedAt) {
-        fallbackQuery = fallbackQuery.startAfter(options.cursorCreatedAt);
-      }
-
-      const fallbackSnapshot = await fallbackQuery.get();
-      const filteredDocs = fallbackSnapshot.docs.filter((doc) => {
-        const item = doc.data() as Record<string, unknown>;
-        const matchesStatus = options.status ? String(item.status ?? 'active') === options.status : true;
-        const matchesPieceType = options.piece_type ? String(item.piece_type ?? '') === options.piece_type : true;
-        return matchesStatus && matchesPieceType;
-      });
-
-      return {
-        ...fallbackSnapshot,
-        docs: filteredDocs.slice(0, options.pageSize),
-        size: Math.min(filteredDocs.length, options.pageSize),
-        empty: filteredDocs.length === 0,
-      } as FirebaseFirestore.QuerySnapshot;
-    }
-  }
-
-  private isFirestoreMissingIndexError(error: unknown): boolean {
-    if (!error || typeof error !== 'object') return false;
-    const maybeError = error as { code?: unknown; message?: unknown };
-    const code = typeof maybeError.code === 'number' ? maybeError.code : null;
-    const message = typeof maybeError.message === 'string' ? maybeError.message.toLowerCase() : '';
-    return code === 9 || message.includes('failed-precondition') || message.includes('requires an index');
   }
 
 

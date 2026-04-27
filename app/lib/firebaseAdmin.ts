@@ -35,6 +35,12 @@ export const getAdminFirestore = () => {
     return firestoreInstance;
 };
 
+export const adminDb = new Proxy({} as Firestore, {
+    get(_target, property, receiver) {
+        return Reflect.get(getAdminFirestore() as object, property, receiver);
+    },
+});
+
 export const getAdminStorageBucket = () => {
     getAdminFirestore();
     const app = getApp();
