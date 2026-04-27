@@ -46,6 +46,10 @@ export class WardrobeController {
     return this.wardrobeRepository.findWith2DAssetsById(wardrobeItemId);
   }
 
+  async retry3D(wardrobeItemId: string) {
+    return this.wardrobeService.retry3DGeneration(wardrobeItemId);
+  }
+
   async retryBranding(wardrobeItemId: string, input?: Record<string, unknown>) {
     return this.wardrobeService.retryBrandingPass({
       wardrobeItemId,
