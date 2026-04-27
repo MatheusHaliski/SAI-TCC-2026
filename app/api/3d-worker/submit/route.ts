@@ -139,7 +139,8 @@ async function runpodRouteDiagnostics(baseUrl: string, token: string) {
 function normalizeJobId(payload: unknown): string | null {
   if (!payload || typeof payload !== 'object') return null;
   const data = payload as Record<string, unknown>;
-  const candidate = data.jobId ?? data.id ?? data.taskId ?? (data.data as Record<string, unknown> | undefined)?.id;
+  // Meshy returns the task id in `result`; RunPod uses `jobId` / `id` / `taskId`
+  const candidate = data.result ?? data.jobId ?? data.id ?? data.taskId ?? (data.data as Record<string, unknown> | undefined)?.id;
   return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null;
 }
 
@@ -244,10 +245,11 @@ export async function POST(req: Request) {
       const meshyBase = normalizeUrl(process.env.MESHY_BASE_URL) || 'https://api.meshy.ai/openapi/v1';
       const meshyUrl = `${meshyBase}/image-to-3d`;
       const meshyToken = process.env.MESHY_API_KEY?.trim() ?? '';
-      const payload = {
+      const prompt = typeof body.prompt === 'string' && body.prompt.trim() ? body.prompt.trim() : undefined;
+      const payload: Record<string, unknown> = {
         image_url: imageUrl,
-        prompt: typeof body.prompt === 'string' ? body.prompt : undefined,
-        quality: typeof body.quality === 'string' ? body.quality : undefined,
+        should_texture: true,
+        ...(prompt ? { prompt } : {}),
       };
 
       logStage('submit_target', {
