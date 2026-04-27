@@ -96,7 +96,11 @@ export class WardrobeItemsRepository extends BaseRepository {
           const matchesPieceType = options?.piece_type ? String(item.piece_type ?? '') === options.piece_type : true;
           return matchesStatus && matchesPieceType;
         })
-        .sort((a, b) => this.extractCreatedAtCursor(b)!.localeCompare(this.extractCreatedAtCursor(a)!))
+        .sort((a, b) => {
+          const bCursor = this.extractCreatedAtCursor(b) ?? '';
+          const aCursor = this.extractCreatedAtCursor(a) ?? '';
+          return bCursor.localeCompare(aCursor);
+        })
         .slice(0, pageSize);
     }
 
@@ -177,6 +181,17 @@ export class WardrobeItemsRepository extends BaseRepository {
     const value = doc.get('createdAt') ?? doc.get('created_at') ?? null;
     if (typeof value === 'string') return value;
     if (value instanceof Date) return value.toISOString();
+    if (value && typeof value === 'object') {
+      const maybeTimestamp = value as { toDate?: () => Date; seconds?: number; nanoseconds?: number };
+      if (typeof maybeTimestamp.toDate === 'function') {
+        return maybeTimestamp.toDate().toISOString();
+      }
+
+      if (typeof maybeTimestamp.seconds === 'number' && Number.isFinite(maybeTimestamp.seconds)) {
+        const millis = maybeTimestamp.seconds * 1000 + (typeof maybeTimestamp.nanoseconds === 'number' ? maybeTimestamp.nanoseconds / 1_000_000 : 0);
+        return new Date(millis).toISOString();
+      }
+    }
     return null;
   }
 
