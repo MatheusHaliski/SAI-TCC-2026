@@ -1,87 +1,338 @@
 import { NextResponse } from 'next/server';
+import {
+  WorkerProvider,
+  logStage,
+  safeFetchJson,
+  toErrorPayload,
+  truncateText,
+} from '@/app/api/3d-worker/utils';
 
-function resolveWorkerConfig() {
-  const workerUrl = process.env.GPU_WORKER_URL?.trim() ?? '';
-  const token = process.env.GPU_WORKER_TOKEN?.trim() ?? '';
+type SubmitBody = Record<string, unknown>;
 
-  if (!workerUrl || !token) {
-    return null;
+interface RunpodConfig {
+  submitUrl: string;
+  token: string;
+  pathUsed: '/jobs' | '/run';
+  payloadMode: 'direct' | 'serverless_input_wrapper';
+}
+
+function normalizeUrl(value: string | undefined): string {
+  return (value ?? '').trim().replace(/\/+$/, '');
+}
+
+function chooseProvider(bodyProvider: unknown): WorkerProvider {
+  if (typeof bodyProvider === 'string') {
+    const normalized = bodyProvider.trim().toLowerCase();
+    if (normalized === 'runpod' || normalized === 'meshy') {
+      return normalized;
+    }
   }
 
-  return {
-    workerUrl: workerUrl.replace(/\/+$/, ''),
-    token,
-  };
+  if (process.env.MESHY_API_KEY?.trim()) {
+    return 'meshy';
+  }
+
+  return 'runpod';
+}
+
+function requiredEnvForProvider(provider: WorkerProvider): string[] {
+  const missing: string[] = [];
+  const gpuWorkerUrl = normalizeUrl(process.env.GPU_WORKER_URL);
+  const gpuWorkerToken = process.env.GPU_WORKER_TOKEN?.trim() ?? '';
+  const runpodEndpointUrl = normalizeUrl(process.env.RUNPOD_ENDPOINT_URL);
+  const runpodApiKey = process.env.RUNPOD_API_KEY?.trim() ?? '';
+  const meshyApiKey = process.env.MESHY_API_KEY?.trim() ?? '';
+
+  if (provider === 'runpod') {
+    const hasPodConfig = Boolean(gpuWorkerUrl && gpuWorkerToken);
+    const hasServerlessConfig = Boolean(runpodEndpointUrl && runpodApiKey);
+
+    if (!hasPodConfig && !hasServerlessConfig) {
+      if (!gpuWorkerUrl) missing.push('GPU_WORKER_URL');
+      if (!gpuWorkerToken) missing.push('GPU_WORKER_TOKEN');
+      if (!runpodEndpointUrl) missing.push('RUNPOD_ENDPOINT_URL');
+      if (!runpodApiKey) missing.push('RUNPOD_API_KEY');
+    }
+  }
+
+  if (provider === 'meshy' && !meshyApiKey) {
+    missing.push('MESHY_API_KEY');
+  }
+
+  return missing;
+}
+
+function getRunpodConfig(): RunpodConfig {
+  const gpuWorkerUrl = normalizeUrl(process.env.GPU_WORKER_URL);
+  const gpuWorkerToken = process.env.GPU_WORKER_TOKEN?.trim() ?? '';
+  const runpodEndpointUrl = normalizeUrl(process.env.RUNPOD_ENDPOINT_URL);
+  const runpodApiKey = process.env.RUNPOD_API_KEY?.trim() ?? '';
+
+  if (gpuWorkerUrl && gpuWorkerToken) {
+    return {
+      submitUrl: `${gpuWorkerUrl}/jobs`,
+      token: gpuWorkerToken,
+      pathUsed: '/jobs',
+      payloadMode: 'direct',
+    };
+  }
+
+  if (runpodEndpointUrl && runpodApiKey) {
+    return {
+      submitUrl: `${runpodEndpointUrl}/run`,
+      token: runpodApiKey,
+      pathUsed: '/run',
+      payloadMode: 'serverless_input_wrapper',
+    };
+  }
+
+  throw new Error('RunPod environment not configured.');
+}
+
+function normalizeJobId(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const data = payload as Record<string, unknown>;
+  const candidate = data.jobId ?? data.id ?? data.taskId ?? (data.data as Record<string, unknown> | undefined)?.id;
+  return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null;
+}
+
+function normalizeStatus(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const data = payload as Record<string, unknown>;
+  const candidate = data.status ?? data.state ?? (data.data as Record<string, unknown> | undefined)?.status;
+  return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null;
 }
 
 export async function POST(req: Request) {
-  const config = resolveWorkerConfig();
-  if (!config) {
+  const stageBase = 'submit_proxy';
+  logStage('incoming_request', {
+    method: req.method,
+  });
+
+  let body: SubmitBody;
+  try {
+    const parsed = await req.json();
+    body = (parsed && typeof parsed === 'object' ? parsed : null) as SubmitBody;
+  } catch (error) {
+    logStage('invalid_json', {
+      stage: `${stageBase}_body_parse`,
+      message: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       {
-        error: 'Worker not configured',
-        hint: 'Set GPU_WORKER_URL and GPU_WORKER_TOKEN in the server environment.',
+        ok: false,
+        stage: 'request_validation',
+        provider: 'fallback',
+        message: 'Invalid JSON payload.',
+        status: 400,
+        details: { missing: ['pieceId', 'imageUrl'] },
+        hint: 'Send a JSON body with pieceId and imageUrl.',
+      },
+      { status: 400 },
+    );
+  }
+
+  const bodyKeys = Object.keys(body ?? {});
+  const pieceId = typeof body.pieceId === 'string' ? body.pieceId.trim() : '';
+  const imageUrl = typeof body.imageUrl === 'string' ? body.imageUrl.trim() : '';
+  const provider = chooseProvider(body.provider);
+
+  logStage('request_body_summary', {
+    bodyKeys,
+    pieceId,
+    hasImageUrl: Boolean(imageUrl),
+    providerSelected: provider,
+    hasGpuWorkerUrl: Boolean(normalizeUrl(process.env.GPU_WORKER_URL)),
+    hasGpuWorkerToken: Boolean(process.env.GPU_WORKER_TOKEN?.trim()),
+    hasRunpodEndpointUrl: Boolean(normalizeUrl(process.env.RUNPOD_ENDPOINT_URL)),
+    hasRunpodApiKey: Boolean(process.env.RUNPOD_API_KEY?.trim()),
+    hasMeshyApiKey: Boolean(process.env.MESHY_API_KEY?.trim()),
+    hasMeshyBaseUrl: Boolean(normalizeUrl(process.env.MESHY_BASE_URL)),
+  });
+
+  const missingRequestFields: string[] = [];
+  if (!pieceId) missingRequestFields.push('pieceId');
+  if (!imageUrl) missingRequestFields.push('imageUrl');
+
+  if (missingRequestFields.length > 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        stage: 'request_validation',
+        provider,
+        message: 'Invalid request body.',
+        status: 400,
+        details: { missing: missingRequestFields },
+        hint: 'Required fields: pieceId, imageUrl.',
+      },
+      { status: 400 },
+    );
+  }
+
+  const missingEnv = requiredEnvForProvider(provider);
+  if (missingEnv.length > 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        stage: 'env_validation',
+        provider,
+        message: 'Missing required environment configuration.',
+        status: 500,
+        missing: missingEnv,
+        details: { missing: missingEnv },
+        hint: 'Set the missing environment variables on the Next.js server runtime.',
       },
       { status: 500 },
     );
   }
 
-  const body = await req.json().catch(() => null);
-  if (!body || typeof body !== 'object') {
-    return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
-  }
-
-  const payload = body as Record<string, unknown>;
-  const options = payload.options && typeof payload.options === 'object'
-    ? { ...(payload.options as Record<string, unknown>) }
-    : {};
-
-  const typeFallback = typeof options.type === 'string' ? options.type.trim() : '';
-  const pieceType = typeof options.pieceType === 'string' ? options.pieceType.trim() : '';
-  if (!pieceType && typeFallback) {
-    options.pieceType = typeFallback;
-  }
-
-  const imageUrl = typeof payload.imageUrl === 'string' ? payload.imageUrl.trim() : '';
-  if (!imageUrl && !String(options.pieceType ?? '').trim()) {
-    return NextResponse.json(
-      { error: 'Invalid payload: provide imageUrl or options.pieceType.' },
-      { status: 400 },
-    );
-  }
-
-  const normalizedPayload: Record<string, unknown> = {
-    ...payload,
-    options,
-  };
-
   try {
-    const response = await fetch(`${config.workerUrl}/jobs`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.token}`,
-      },
-      body: JSON.stringify(normalizedPayload),
-      cache: 'no-store',
+    if (provider === 'meshy') {
+      const meshyBase = normalizeUrl(process.env.MESHY_BASE_URL) || 'https://api.meshy.ai/openapi/v1';
+      const meshyUrl = `${meshyBase}/image-to-3d`;
+      const meshyToken = process.env.MESHY_API_KEY?.trim() ?? '';
+      const payload = {
+        image_url: imageUrl,
+        prompt: typeof body.prompt === 'string' ? body.prompt : undefined,
+        quality: typeof body.quality === 'string' ? body.quality : undefined,
+      };
+
+      logStage('submit_target', {
+        provider,
+        finalSubmitUrl: meshyUrl,
+        submitPathUsed: '/openapi/v1/image-to-3d',
+        payloadModeUsed: 'meshy_image_to_3d',
+      });
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45_000);
+
+      const result = await (async () => {
+        try {
+          return await safeFetchJson(
+            meshyUrl,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${meshyToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+              cache: 'no-store',
+              signal: controller.signal,
+            },
+            'meshy_submit',
+            provider,
+          );
+        } finally {
+          clearTimeout(timeout);
+        }
+      })();
+
+      const jobId = normalizeJobId(result.parsedJson);
+      const status = normalizeStatus(result.parsedJson) ?? 'queued';
+
+      logStage('normalized_response', {
+        provider,
+        responseStatus: result.status,
+        responseContentType: result.contentType,
+        rawResponseTextTruncated: truncateText(result.rawText),
+        parsedResponseJson: result.parsedJson,
+        normalizedJobId: jobId,
+        normalizedStatus: status,
+      });
+
+      return NextResponse.json(
+        {
+          ok: true,
+          provider,
+          status,
+          jobId,
+          upstream: result.parsedJson,
+        },
+        { status: 200 },
+      );
+    }
+
+    const runpod = getRunpodConfig();
+    const outboundPayload =
+      runpod.payloadMode === 'serverless_input_wrapper' ? { input: body } : body;
+
+    logStage('submit_target', {
+      provider,
+      finalSubmitUrl: runpod.submitUrl,
+      submitPathUsed: runpod.pathUsed,
+      payloadModeUsed: runpod.payloadMode,
     });
 
-    const contentType = response.headers.get('content-type') ?? 'application/json';
-    const data = await response.text();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45_000);
 
-    return new Response(data, {
-      status: response.status,
-      headers: { 'Content-Type': contentType },
+    const result = await (async () => {
+      try {
+        return await safeFetchJson(
+          runpod.submitUrl,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${runpod.token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(outboundPayload),
+            cache: 'no-store',
+            signal: controller.signal,
+          },
+          'runpod_submit',
+          provider,
+        );
+      } finally {
+        clearTimeout(timeout);
+      }
+    })();
+
+    const jobId = normalizeJobId(result.parsedJson);
+    const status = normalizeStatus(result.parsedJson) ?? 'queued';
+
+    logStage('normalized_response', {
+      provider,
+      responseStatus: result.status,
+      responseContentType: result.contentType,
+      rawResponseTextTruncated: truncateText(result.rawText),
+      parsedResponseJson: result.parsedJson,
+      normalizedJobId: jobId,
+      normalizedStatus: status,
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+
     return NextResponse.json(
       {
-        error: 'Worker request failed',
-        details: message,
-        workerUrl: config.workerUrl,
+        ok: true,
+        provider,
+        status,
+        jobId,
+        upstream: result.parsedJson,
       },
-      { status: 502 },
+      { status: 200 },
     );
+  } catch (error) {
+    const structured = toErrorPayload(error, {
+      stage: 'submit_proxy',
+      provider,
+      status: 500,
+    });
+
+    logStage('caught_error', {
+      provider,
+      stage: structured.stage,
+      status: structured.status,
+      message: structured.message,
+      details: structured.details,
+      hint: structured.hint,
+      code: structured.code,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    return NextResponse.json(structured, {
+      status: typeof structured.status === 'number' ? structured.status : 500,
+    });
   }
 }
