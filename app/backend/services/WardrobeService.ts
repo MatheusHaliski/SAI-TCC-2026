@@ -11,6 +11,12 @@ import { BlenderPipelineService } from './BlenderPipelineService';
 import { BlenderCloudService } from './BlenderCloudService';
 import type { ModelGenerationStatus } from '@/app/backend/types/entities';
 import { classifyGarmentGender, classifyGarmentType } from '@/app/lib/fashion-ai/utils/garment-classification';
+import { WardrobeImagePreparationService } from '@/app/lib/fashion-ai/services/WardrobeImagePreparationService';
+import {
+  buildPipelineInputSnapshot,
+  canonicalizeBrandId,
+  withStageHistory,
+} from './modelPipelineDiagnostics';
 
 const DEFAULT_BRAND_ID = 'default';
 const BRANDING_PASS_VERSION = 'v2-image-first';
@@ -58,6 +64,7 @@ export class WardrobeService {
     private readonly brandsRepository = new BrandsRepository(),
     private readonly pipelineJobsRepository = new PipelineJobsRepository(),
     private readonly blenderPipelineService = new BlenderPipelineService(),
+    private readonly preparationService = new WardrobeImagePreparationService(),
   ) {}
 
   async listUserWardrobe(
@@ -102,7 +109,8 @@ export class WardrobeService {
       throw new ServiceError('Missing required fields to create wardrobe item.', 400);
     }
 
-    const selectedBrandId = String(input.brand_id ?? DEFAULT_BRAND_ID).trim() || DEFAULT_BRAND_ID;
+    const selectedBrandIdRaw = String(input.brand_id ?? DEFAULT_BRAND_ID).trim() || DEFAULT_BRAND_ID;
+    const selectedBrandId = canonicalizeBrandId(selectedBrandIdRaw);
     const fitPieceType = classifyGarmentType({ pieceType: piece_type, name });
     const fitGender = classifyGarmentGender({ gender, name });
     const compatibleMannequins =
@@ -112,7 +120,7 @@ export class WardrobeService {
       name,
       imageUrl: image_url,
     });
-    const resolvedBrandId = detection.brand_id_detected ?? selectedBrandId;
+    const resolvedBrandId = canonicalizeBrandId(detection.brand_id_detected ?? selectedBrandId);
     const hasReliableBrandMatch = Boolean(detection.brand_id_detected);
     const needsBrandReview = BRAND_REVIEW_REQUIRED && !hasReliableBrandMatch && selectedBrandId === DEFAULT_BRAND_ID;
 
@@ -141,8 +149,8 @@ export class WardrobeService {
       gender,
       market_id,
       brand_id: resolvedBrandId,
-      brand_id_selected: selectedBrandId,
-      brand_id_detected: detection.brand_id_detected,
+      brand_id_selected: selectedBrandIdRaw,
+      brand_id_detected: detection.brand_id_detected ? canonicalizeBrandId(detection.brand_id_detected) : null,
       brand_detection_confidence: detection.brand_detection_confidence,
       brand_detection_source: detection.brand_detection_source,
       brand_applied: false,
@@ -227,6 +235,41 @@ export class WardrobeService {
     let isolation: Awaited<ReturnType<PieceIsolationService['isolate']>> | null = null;
     let placementProfileId: string | null = null;
     try {
+      const sourceItem = await this.wardrobeRepo.findById(input.wardrobeItemId);
+      const fitProfile = sourceItem?.fitProfile && typeof sourceItem.fitProfile === 'object'
+        ? (sourceItem.fitProfile as Record<string, unknown>)
+        : null;
+      const hasImageUrl = Boolean(String(sourceItem?.image_url ?? '').trim());
+      const preparationStatus = String(fitProfile?.preparationStatus ?? 'missing');
+      const hasPreparedAsset = Boolean(String(fitProfile?.preparedAssetUrl ?? '').trim()) || hasImageUrl;
+      const hasFitProfile = Boolean(fitProfile);
+      const hasGarmentAnchors = Boolean(fitProfile?.garmentAnchors);
+      const hasNormalizedBBox = Boolean(fitProfile?.normalizedBBox);
+      const requiresAnchors = ['upper_piece', 'top'].includes(String(sourceItem?.piece_type ?? '').toLowerCase());
+
+      if (!hasImageUrl || preparationStatus !== 'ready' || !hasPreparedAsset || !hasFitProfile || !hasNormalizedBBox || (requiresAnchors && !hasGarmentAnchors)) {
+        await this.wardrobeRepo.updatePipelineStatus(
+          input.wardrobeItemId,
+          'needs_preparation',
+          'Piece is not ready for 3D generation.',
+          withStageHistory(sourceItem?.pipeline_stage_details as Record<string, unknown> | null, {
+            stage: 'failed',
+            failedStage: 'preparation_not_ready',
+            provider: 'local',
+            errorCode: 'PREPARATION_NOT_READY',
+            message: '2D preparation and fit profile preconditions are not satisfied.',
+            hint: 'Run 2D preparation before retrying 3D generation.',
+            retryable: true,
+            nextAction: 'POST /api/wardrobe/process-piece',
+            requestUrl: null,
+            responseStatus: null,
+            responseBodyPreview: null,
+            inputSnapshot: buildPipelineInputSnapshot((sourceItem ?? {}) as Record<string, unknown>),
+          }),
+        );
+        return;
+      }
+
       await this.wardrobeRepo.updatePipelineStatus(input.wardrobeItemId, 'queued_segmentation');
       isolation = await this.pieceIsolationService.isolate({
         imageUrl: input.imageUrl,
@@ -661,17 +704,37 @@ export class WardrobeService {
       job_type: MODEL_GENERATION_JOB_TYPE,
     });
 
-    const submitted = await this.blenderCloudService.submitBlenderCloudJob({
-      modelUrl: imageUrl,
-      imageUrl,
-      jobType: MODEL_GENERATION_JOB_TYPE,
-      options: {
-        prompt: options.prompt,
-        pieceType: options.pieceType,
-        mode: 'model_generation',
-        sourceImageUrl: imageUrl,
-      },
-    });
+    let submitted;
+    try {
+      submitted = await this.blenderCloudService.submitBlenderCloudJob({
+        modelUrl: imageUrl,
+        imageUrl,
+        jobType: MODEL_GENERATION_JOB_TYPE,
+        options: {
+          prompt: options.prompt,
+          pieceType: options.pieceType,
+          mode: 'model_generation',
+          sourceImageUrl: imageUrl,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isRouteMismatch = /status=404/i.test(message) && /\/jobs|\/run/i.test(message);
+      throw Object.assign(new ServiceError(message, 502), {
+        pipelineFailure: {
+          failedStage: isRouteMismatch ? 'runpod_route_mismatch' : 'runpod_submit',
+          provider: 'runpod',
+          errorCode: isRouteMismatch ? 'RUNPOD_ROUTE_MISMATCH' : 'RUNPOD_SUBMIT_FAILED',
+          hint: isRouteMismatch
+            ? 'The configured RunPod worker does not expose POST /jobs. Check FastAPI routes or use the correct submit path.'
+            : 'RunPod submit failed. Verify endpoint URL, token and worker health.',
+          retryable: true,
+          diagnostics: {
+            responseBodyPreview: message.slice(0, 700),
+          },
+        },
+      });
+    }
 
     await this.wardrobeRepo.updatePipelineStatus(options.wardrobeItemId, options.status, null, {
       stage: `${options.stageLabel}_submitted`,

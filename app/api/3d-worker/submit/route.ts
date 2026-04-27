@@ -3,6 +3,7 @@ import {
   WorkerProvider,
   logStage,
   safeFetchJson,
+  StructuredStageError,
   toErrorPayload,
   truncateText,
 } from '@/app/api/3d-worker/utils';
@@ -12,8 +13,9 @@ type SubmitBody = Record<string, unknown>;
 interface RunpodConfig {
   submitUrl: string;
   token: string;
-  pathUsed: '/jobs' | '/run';
+  pathUsed: string;
   payloadMode: 'direct' | 'serverless_input_wrapper';
+  baseUrl: string;
 }
 
 function normalizeUrl(value: string | undefined): string {
@@ -39,8 +41,8 @@ function requiredEnvForProvider(provider: WorkerProvider): string[] {
   const missing: string[] = [];
   const gpuWorkerUrl = normalizeUrl(process.env.GPU_WORKER_URL);
   const gpuWorkerToken = process.env.GPU_WORKER_TOKEN?.trim() ?? '';
-  const runpodEndpointUrl = normalizeUrl(process.env.RUNPOD_ENDPOINT_URL);
-  const runpodApiKey = process.env.RUNPOD_API_KEY?.trim() ?? '';
+  const runpodEndpointUrl = normalizeUrl(process.env.RUNPOD_ENDPOINT_URL || process.env.BLENDER_CLOUD_API_URL);
+  const runpodApiKey = process.env.RUNPOD_API_KEY?.trim() ?? process.env.BLENDER_CLOUD_API_TOKEN?.trim() ?? '';
   const meshyApiKey = process.env.MESHY_API_KEY?.trim() ?? '';
 
   if (provider === 'runpod') {
@@ -63,30 +65,75 @@ function requiredEnvForProvider(provider: WorkerProvider): string[] {
 }
 
 function getRunpodConfig(): RunpodConfig {
-  const gpuWorkerUrl = normalizeUrl(process.env.GPU_WORKER_URL);
-  const gpuWorkerToken = process.env.GPU_WORKER_TOKEN?.trim() ?? '';
+  const gpuWorkerUrl = normalizeUrl(process.env.GPU_WORKER_URL || process.env.BLENDER_CLOUD_API_URL);
+  const gpuWorkerToken = process.env.GPU_WORKER_TOKEN?.trim() ?? process.env.BLENDER_CLOUD_API_TOKEN?.trim() ?? '';
   const runpodEndpointUrl = normalizeUrl(process.env.RUNPOD_ENDPOINT_URL);
   const runpodApiKey = process.env.RUNPOD_API_KEY?.trim() ?? '';
+  const submitPathOverride = (process.env.BLENDER_CLOUD_SUBMIT_PATH?.trim() || '').replace(/\/+$/, '');
 
   if (gpuWorkerUrl && gpuWorkerToken) {
+    const pathUsed = submitPathOverride || '/jobs';
     return {
-      submitUrl: `${gpuWorkerUrl}/jobs`,
+      submitUrl: `${gpuWorkerUrl}${pathUsed.startsWith('/') ? pathUsed : `/${pathUsed}`}`,
       token: gpuWorkerToken,
-      pathUsed: '/jobs',
+      pathUsed,
       payloadMode: 'direct',
+      baseUrl: gpuWorkerUrl,
     };
   }
 
   if (runpodEndpointUrl && runpodApiKey) {
+    const pathUsed = submitPathOverride || '/run';
     return {
-      submitUrl: `${runpodEndpointUrl}/run`,
+      submitUrl: `${runpodEndpointUrl}${pathUsed.startsWith('/') ? pathUsed : `/${pathUsed}`}`,
       token: runpodApiKey,
-      pathUsed: '/run',
+      pathUsed,
       payloadMode: 'serverless_input_wrapper',
+      baseUrl: runpodEndpointUrl,
     };
   }
 
   throw new Error('RunPod environment not configured.');
+}
+
+async function runpodRouteDiagnostics(baseUrl: string, token: string) {
+  const authHeaders: HeadersInit | undefined = token
+    ? { Authorization: `Bearer ${token}` }
+    : undefined;
+  const getProbe = async (path: string) => {
+    try {
+      const res = await fetch(`${baseUrl}${path}`, { method: 'GET', headers: authHeaders, cache: 'no-store' });
+      const text = truncateText(await res.text());
+      return { path, ok: res.ok, status: res.status, bodyPreview: text };
+    } catch (error) {
+      return { path, ok: false, status: null, bodyPreview: error instanceof Error ? error.message : String(error) };
+    }
+  };
+  const postProbe = async (path: string, payload: unknown) => {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+      const res = await fetch(`${baseUrl}${path}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+      const text = truncateText(await res.text());
+      return { path, ok: res.ok, status: res.status, bodyPreview: text };
+    } catch (error) {
+      return { path, ok: false, status: null, bodyPreview: error instanceof Error ? error.message : String(error) };
+    }
+  };
+
+  return {
+    ping: await getProbe('/ping'),
+    openapi: await getProbe('/openapi.json'),
+    jobsProbe: await postProbe('/jobs', { healthCheck: true }),
+    runProbe: await postProbe('/run', { input: { healthCheck: true } }),
+  };
 }
 
 function normalizeJobId(payload: unknown): string | null {
@@ -176,10 +223,11 @@ export async function POST(req: Request) {
 
   const missingEnv = requiredEnvForProvider(provider);
   if (missingEnv.length > 0) {
+    const onlyAuthMissing = missingEnv.every((entry) => entry.includes('TOKEN') || entry.includes('API_KEY'));
     return NextResponse.json(
       {
         ok: false,
-        stage: 'env_validation',
+        failedStage: onlyAuthMissing ? 'auth_config_missing' : 'env_validation',
         provider,
         message: 'Missing required environment configuration.',
         status: 500,
@@ -319,6 +367,23 @@ export async function POST(req: Request) {
       { status: 200 },
     );
   } catch (error) {
+    if (error instanceof StructuredStageError && error.stage === 'runpod_submit' && error.status === 404) {
+      const runpod = getRunpodConfig();
+      const diagnostics = await runpodRouteDiagnostics(runpod.baseUrl, runpod.token);
+      return NextResponse.json(
+        {
+          ok: false,
+          failedStage: 'runpod_route_mismatch',
+          provider: 'runpod',
+          message: 'RunPod worker route mismatch detected during submit.',
+          hint: 'The configured RunPod worker does not expose POST /jobs. Check FastAPI routes or use the correct submit path.',
+          retryable: true,
+          diagnostics,
+        },
+        { status: 502 },
+      );
+    }
+
     const structured = toErrorPayload(error, {
       stage: 'submit_proxy',
       provider,
@@ -336,7 +401,16 @@ export async function POST(req: Request) {
       stack: error instanceof Error ? error.stack : undefined,
     });
 
-    return NextResponse.json(structured, {
+    return NextResponse.json({
+      ok: false,
+      failedStage: structured.stage,
+      provider: structured.provider,
+      message: structured.message,
+      hint: structured.hint,
+      retryable: structured.status ? structured.status >= 500 : true,
+      diagnostics: structured.details,
+      code: structured.code,
+    }, {
       status: typeof structured.status === 'number' ? structured.status : 500,
     });
   }
