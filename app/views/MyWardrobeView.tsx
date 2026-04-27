@@ -30,6 +30,7 @@ interface WardrobeItem {
   model_branded_3d_url?: string | null;
   model_status?: string;
   model_generation_error?: string | null;
+  brand_applied?: boolean;
   fitProfile?: { preparationStatus?: string };
   brand: string;
   season: string;

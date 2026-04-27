@@ -119,7 +119,7 @@ export class WardrobeItemsRepository extends BaseRepository {
     }
 
     const items = docs.map((doc) => {
-      const item = doc.data() as Record<string, string | number | boolean | null>;
+      const item = doc.data() as Record<string, unknown>;
       const market = marketsMap.get(String(item.market_id ?? ''));
       const model3dUrl = resolveWardrobeModelUrl({
         model_3d_url: (item.model_3d_url as string | null) ?? null,
@@ -170,6 +170,7 @@ export class WardrobeItemsRepository extends BaseRepository {
         geometry_scope_score: Number(item.geometry_scope_score ?? 0) || null,
         generation_attempt_count: Number(item.generation_attempt_count ?? 0) || 0,
         pipeline_stage_details: (item.pipeline_stage_details as Record<string, unknown> | null) ?? null,
+        branding_error: (item.branding_error as WardrobeViewItem['branding_error']) ?? null,
         model_status: normalizedStatus,
         model_generation_error: (item.model_generation_error as string | null) ?? null,
         fitProfile: (item.fitProfile as WardrobeViewItem['fitProfile'] | undefined) ?? undefined,
@@ -480,6 +481,8 @@ export class WardrobeItemsRepository extends BaseRepository {
       placement_profile_id: string | null;
       brand_applied: boolean;
       branding_pass_version: string;
+      model_generation_error?: string | null;
+      branding_error?: Record<string, unknown> | null;
     },
   ): Promise<void> {
     const resolvedModel3dUrl = resolveWardrobeModelUrl(input);
@@ -488,6 +491,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       ...input,
       model_3d_url: resolvedModel3dUrl,
       model_status: 'completed',
+      model_generation_error: input.model_generation_error ?? null,
       updated_at: new Date().toISOString(),
     });
   }
