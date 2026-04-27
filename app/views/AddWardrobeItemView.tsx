@@ -433,8 +433,8 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       <div className="space-y-6">
         {mode === 'page' ? (
           <PageHeader
-            title="Add Piece"
-            subtitle="Add new items to your wardrobe. Brand can be left as default."
+            title="Adicionar peça"
+            subtitle="Adicione novas peças ao seu guarda-roupa. A marca pode ser mantida como padrão."
           />
         ) : null}
 
