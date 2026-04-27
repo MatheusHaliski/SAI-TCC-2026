@@ -225,6 +225,29 @@ export class WardrobeService {
     return this.wardrobeRepo.findById(input.wardrobeItemId);
   }
 
+  async retry3DGeneration(wardrobeItemId: string) {
+    const item = await this.wardrobeRepo.findById(wardrobeItemId);
+    if (!item) {
+      throw new ServiceError('Wardrobe item not found.', 404);
+    }
+
+    const imageUrl = String(item.image_url ?? '').trim();
+    const pieceType = String(item.piece_type ?? '').trim();
+    const brandId = String(item.brand_id ?? DEFAULT_BRAND_ID).trim() || DEFAULT_BRAND_ID;
+    if (!imageUrl || !pieceType) {
+      throw new ServiceError('Missing image or piece type for 3D retry.', 400);
+    }
+
+    await this.enrichWardrobeItemModel({
+      wardrobeItemId,
+      imageUrl,
+      pieceType,
+      brandId,
+    });
+
+    return this.wardrobeRepo.findById(wardrobeItemId);
+  }
+
   private async enrichWardrobeItemModel(input: {
     wardrobeItemId: string;
     imageUrl: string;
