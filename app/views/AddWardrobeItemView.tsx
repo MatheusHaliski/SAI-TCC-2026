@@ -439,7 +439,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         ) : null}
 
         <SectionBlock
-          title="Wardrobe Piece Form"
+          title="Formulário de peça de guarda-roupa"
           subtitle="Register a piece and classify it with tags and metadata."
         >
           <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={handleSubmit}>
@@ -584,7 +584,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
                     style={{ width: `${submitProgress}%` }}
                   />
                 </div>
-                <p className="text-xs text-white/80">Adding piece... {submitProgress}%</p>
+                <p className="text-xs text-white/80">Adicionando peça... {submitProgress}%</p>
               </div>
             ) : null}
 
