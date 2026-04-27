@@ -155,15 +155,20 @@ export async function POST(req: Request) {
   if (!imageUrl) missingRequestFields.push('imageUrl');
 
   if (missingRequestFields.length > 0) {
+    const pieceIdMissing = missingRequestFields.includes('pieceId');
     return NextResponse.json(
       {
         ok: false,
         stage: 'request_validation',
         provider,
-        message: 'Invalid request body.',
+        message: pieceIdMissing
+          ? 'A pieceId is required before starting 3D generation.'
+          : 'Invalid request body.',
         status: 400,
         details: { missing: missingRequestFields },
-        hint: 'Required fields: pieceId, imageUrl.',
+        hint: pieceIdMissing
+          ? 'Provide pieceId from the wardrobe item before submitting the 3D job.'
+          : 'Required fields: pieceId, imageUrl.',
       },
       { status: 400 },
     );

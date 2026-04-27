@@ -138,6 +138,10 @@ export function buildBlenderWorkerSubmitPayload(piece: PieceLikeRecord): Blender
 }
 
 export async function submitBlenderWorkerJob(payload: BlenderWorkerJobPayload): Promise<Record<string, unknown>> {
+  if (!payload.pieceId?.trim()) {
+    throw new Error('A pieceId is required before starting 3D generation.');
+  }
+
   console.info('[3d-worker-client] submit:start', {
     pieceId: payload.pieceId,
     hasImageUrl: Boolean(payload.imageUrl),
