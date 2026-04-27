@@ -44,7 +44,7 @@ function readPath(source: PieceLikeRecord, path: string[]): unknown {
 }
 
 function resolvePieceId(piece: PieceLikeRecord): string | null {
-  const candidatePaths = [['pieceId'], ['id'], ['piece_id']];
+  const candidatePaths = [['pieceId'], ['id'], ['piece_id'], ['wardrobe_item_id']];
 
   for (const path of candidatePaths) {
     const value = readPath(piece, path);
