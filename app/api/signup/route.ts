@@ -74,6 +74,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     try {
+        const db = getAdminFirestore();
         const adminAuth = getAdminAuth();
         const decodedToken = await adminAuth.verifyIdToken(parsed.data.idToken, true);
         const authUser = await adminAuth.getUser(decodedToken.uid);
@@ -96,7 +97,6 @@ export async function POST(request: NextRequest): Promise<Response> {
             });
         }
 
-        const db = getAdminFirestore();
         await syncUserProfileFromAuth({
             uid,
             email: authEmail,
