@@ -97,10 +97,12 @@ function getRunpodConfig(): RunpodConfig {
 }
 
 async function runpodRouteDiagnostics(baseUrl: string, token: string) {
-  const auth = token ? { Authorization: `Bearer ${token}` } : {};
+  const authHeaders: HeadersInit | undefined = token
+    ? { Authorization: `Bearer ${token}` }
+    : undefined;
   const getProbe = async (path: string) => {
     try {
-      const res = await fetch(`${baseUrl}${path}`, { method: 'GET', headers: auth, cache: 'no-store' });
+      const res = await fetch(`${baseUrl}${path}`, { method: 'GET', headers: authHeaders, cache: 'no-store' });
       const text = truncateText(await res.text());
       return { path, ok: res.ok, status: res.status, bodyPreview: text };
     } catch (error) {
@@ -109,9 +111,13 @@ async function runpodRouteDiagnostics(baseUrl: string, token: string) {
   };
   const postProbe = async (path: string, payload: unknown) => {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
       const res = await fetch(`${baseUrl}${path}`, {
         method: 'POST',
-        headers: { ...auth, 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload),
         cache: 'no-store',
       });

@@ -478,7 +478,11 @@ export class WardrobeService {
       const diagnostics = await this.blenderCloudService.getDiagnostics().catch((error) => ({
         diagnosticsError: error instanceof Error ? error.message : String(error),
       }));
-      await this.wardrobeRepo.updatePipelineStatus(wardrobeItemId, 'failed', item.model_generation_error ?? null, withStageHistory(currentStageDetails, {
+      await this.wardrobeRepo.updatePipelineStatus(
+        wardrobeItemId,
+        'failed',
+        typeof item.model_generation_error === 'string' ? item.model_generation_error : null,
+        withStageHistory(currentStageDetails, {
         stage: 'failed',
         failedStage: 'runpod_route_mismatch',
         provider: 'runpod',
@@ -488,7 +492,8 @@ export class WardrobeService {
         retryable: true,
         diagnostics,
         inputSnapshot: buildPipelineInputSnapshot(item as unknown as Record<string, unknown>),
-      }));
+      }),
+      );
     }
 
     await this.enrichWardrobeItemModel({

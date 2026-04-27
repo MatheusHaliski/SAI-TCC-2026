@@ -62,8 +62,8 @@ export function buildPipelineInputSnapshot(item: Record<string, unknown>): Pipel
 export function withStageHistory(
   current: Record<string, unknown> | null | undefined,
   next: PipelineStageDetails,
-): PipelineStageDetails {
-  if (!current || typeof current !== 'object') return next;
+): Record<string, unknown> {
+  if (!current || typeof current !== 'object') return { ...next };
   const prev = current as Record<string, unknown>;
   const prevHistory = Array.isArray(prev.history) ? (prev.history as Array<Record<string, unknown>>) : [];
   return {
