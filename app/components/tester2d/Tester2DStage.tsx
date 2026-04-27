@@ -18,7 +18,8 @@ export default function Tester2DStage({ mannequin, layers, zoom, showDebug, sele
   return (
     <div className="rounded-3xl border border-white/20 bg-black/35 p-4">
       <div className="mx-auto w-full max-w-[860px] overflow-hidden rounded-2xl bg-gradient-to-b from-black/30 to-black/65 p-3">
-        <div className="relative mx-auto w-full" style={{ aspectRatio: `${mannequin.canvasWidth} / ${mannequin.canvasHeight}` }}>
+        {/* White canvas so mix-blend-mode:multiply on garment images erases white product backgrounds */}
+        <div className="relative mx-auto w-full overflow-hidden rounded-xl bg-white" style={{ aspectRatio: `${mannequin.canvasWidth} / ${mannequin.canvasHeight}` }}>
           <div className="absolute inset-0 origin-center" style={{ transform: `scale(${zoom})`, transition: 'transform 180ms ease-out' }}>
             {layers.map((layer, index) => {
               if (layer.type === 'mannequin-base') {
@@ -48,7 +49,18 @@ export default function Tester2DStage({ mannequin, layers, zoom, showDebug, sele
                     zIndex: 20 + index,
                   }}
                 >
-                  <Image src={layer.imageUrl} alt={layer.slot} fill className="pointer-events-none object-contain" unoptimized />
+                  {/* object-fill: the projection math in MannequinFitService sizes this div so the
+                      garment content region fills the slot exactly — object-fill honours that. */}
+                  {/* mix-blend-mode:multiply: white bg pixels (255×255/255=255) become transparent
+                      on the white canvas; garment colours are preserved unchanged. */}
+                  <Image
+                    src={layer.imageUrl}
+                    alt={layer.slot}
+                    fill
+                    className="pointer-events-none"
+                    style={{ objectFit: 'fill', mixBlendMode: 'multiply' }}
+                    unoptimized
+                  />
                 </div>
               );
             })}
