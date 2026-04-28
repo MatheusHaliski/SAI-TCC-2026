@@ -261,6 +261,7 @@ export class WardrobeService {
 
       const shouldSkipBrandingPipeline = await this.shouldSkipBrandingPipeline(input.brandId);
       if (shouldSkipBrandingPipeline) {
+        const meshyFallback = !this.blenderCloudService.isConfigured();
         await this.wardrobeRepo.updateModelAssets(input.wardrobeItemId, {
           model_3d_url: baseModel.model_3d_url,
           model_preview_url: baseModel.model_preview_url,
@@ -273,12 +274,14 @@ export class WardrobeService {
           generation_attempt_count: 1,
           pipeline_stage_details: {
             stage: 'done_branding_skipped',
-            reason: 'Brand is Zara; logo placement pass intentionally skipped.',
+            reason: meshyFallback
+              ? 'RunPod not configured; branding pass skipped for Meshy fallback.'
+              : 'Brand is Zara; logo placement pass intentionally skipped.',
             segmentation: isolation.stageDetails,
           },
           placement_profile_id: null,
           brand_applied: false,
-          branding_pass_version: 'skipped-zara',
+          branding_pass_version: meshyFallback ? 'skipped-meshy-fallback' : 'skipped-zara',
         });
         this.logPipelineMetrics(input.wardrobeItemId, input.pieceType, true, isolation.segmentationConfidence, 1);
         return;
@@ -515,6 +518,7 @@ export class WardrobeService {
   }
 
   private async shouldSkipBrandingPipeline(brandId: string): Promise<boolean> {
+    if (!this.blenderCloudService.isConfigured()) return true;
     if (!brandId) return false;
     const brand = await this.brandsRepository.getById(brandId);
     return brand?.name?.trim().toLowerCase() === 'zara';
@@ -727,8 +731,9 @@ export class WardrobeService {
       };
     }
 
-    const baseValid = input.baseModelUrl.trim().length > 0 && input.baseModelUrl.toLowerCase().endsWith('.glb');
-    const brandedValid = input.brandedModelUrl.trim().length > 0 && input.brandedModelUrl.toLowerCase().endsWith('.glb');
+    const hasGlbExtension = (url: string) => url.split('?')[0].split('#')[0].toLowerCase().endsWith('.glb');
+    const baseValid = input.baseModelUrl.trim().length > 0 && hasGlbExtension(input.baseModelUrl);
+    const brandedValid = input.brandedModelUrl.trim().length > 0 && hasGlbExtension(input.brandedModelUrl);
     const urlsDiffer = input.baseModelUrl !== input.brandedModelUrl;
     const visibilityScore = brandedValid ? 0.75 : 0.15;
     const contrastScore = brandedValid ? 0.7 : 0.2;
