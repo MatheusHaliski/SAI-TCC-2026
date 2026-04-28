@@ -36,35 +36,66 @@ export default function WardrobeItemViewerModal({ open, item, onClose, onOpen3D 
   if (!open || !item) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4" onClick={onClose}>
-      <div className="w-full max-w-4xl rounded-3xl border border-white/25 bg-[#0d0f14] p-5" onClick={(event) => event.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-white">{item.name}</h3>
-          <button type="button" onClick={onClose} className="rounded-lg border border-white/30 px-3 py-1 text-xs text-white">Close</button>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm sm:p-5" onClick={onClose}>
+      <div
+        className="max-h-[86vh] w-[94vw] overflow-y-auto overflow-x-hidden rounded-[28px] border border-white/55 bg-[linear-gradient(145deg,rgba(255,255,255,0.92)_0%,rgba(248,251,255,0.88)_58%,rgba(240,246,255,0.86)_100%)] p-4 shadow-[0_28px_70px_rgba(15,23,42,0.18)] backdrop-blur-[18px] backdrop-saturate-[160%] sm:max-h-[82vh] sm:w-[min(92vw,720px)] sm:p-5"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <h3 className="pr-2 text-xl font-semibold text-slate-900">{item.name}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-slate-900/12 bg-white/75 px-3 text-sm font-semibold text-slate-900 transition hover:bg-white"
+          >
+            Close
+          </button>
         </div>
 
-        <div className="mb-4 flex gap-2">
-          <button onClick={() => setActiveTab('2d')} className={`rounded-xl px-4 py-2 text-xs uppercase tracking-[0.2em] ${activeTab === '2d' ? 'bg-white text-black' : 'border border-white/25 text-white'}`}>
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveTab('2d')}
+            className={`rounded-xl border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+              activeTab === '2d'
+                ? 'border-indigo-400/60 bg-[linear-gradient(135deg,#6366f1_0%,#8b5cf6_100%)] text-white shadow-[0_10px_24px_rgba(79,70,229,0.32)]'
+                : 'border-white/80 bg-white/65 text-slate-700 hover:bg-white/80'
+            }`}
+          >
             2D (default)
           </button>
-          <button onClick={() => setActiveTab('3d')} className={`rounded-xl px-4 py-2 text-xs uppercase tracking-[0.2em] ${activeTab === '3d' ? 'bg-white text-black' : 'border border-white/25 text-white'}`}>
+          <button
+            onClick={() => setActiveTab('3d')}
+            className={`rounded-xl border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+              activeTab === '3d'
+                ? 'border-indigo-400/60 bg-[linear-gradient(135deg,#6366f1_0%,#8b5cf6_100%)] text-white shadow-[0_10px_24px_rgba(79,70,229,0.32)]'
+                : 'border-white/80 bg-white/65 text-slate-700 hover:bg-white/80'
+            }`}
+          >
             3D
           </button>
         </div>
 
         {activeTab === '2d' ? (
-          <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/15 bg-black/25">
-            <Image src={image2d} alt={`${item.name} 2D view`} fill className="object-contain" unoptimized />
+          <div
+            className="relative mx-auto w-full overflow-hidden rounded-[18px] border border-slate-200/70 bg-[linear-gradient(180deg,#ffffff_0%,#f4f7fb_100%)] p-4"
+            style={{ maxHeight: '52vh' }}
+          >
+            <div className="relative mx-auto aspect-[3/4] h-full w-full max-w-full sm:max-h-[58vh]">
+              <Image src={image2d} alt={`${item.name} 2D view`} fill className="object-contain" unoptimized />
+            </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-white/15 bg-black/35 p-5">
-            <p className="mb-3 text-sm text-white/75">Open the immersive model viewer for this item.</p>
+          <div className="rounded-[18px] border border-slate-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#f4f7fb_100%)] p-5">
+            <p className="mb-3 text-sm text-slate-600">Open the immersive model viewer for this item.</p>
             {String(item.model_status ?? '').trim().toLowerCase() === 'completed' && item.brand_applied === false ? (
-              <p className="mb-3 rounded-lg border border-amber-300/50 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+              <p className="mb-3 rounded-lg border border-amber-300/70 bg-amber-100/70 px-3 py-2 text-xs text-amber-900">
                 3D model generated without logo branding.
               </p>
             ) : null}
-            <button onClick={onOpen3D} className="rounded-xl bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black">
+            <button
+              onClick={onOpen3D}
+              className="rounded-xl border border-indigo-400/60 bg-[linear-gradient(135deg,#4f46e5_0%,#7c3aed_100%)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(79,70,229,0.32)]"
+            >
               Open 3D viewer
             </button>
           </div>
