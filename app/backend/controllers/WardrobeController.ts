@@ -51,9 +51,7 @@ export class WardrobeController {
   }
 
   async retryBranding(wardrobeItemId: string, input?: Record<string, unknown>) {
-    return this.wardrobeService.retryBrandingPass({
-      wardrobeItemId,
-      regenerateBase: Boolean(input?.regenerate_base),
-    });
+    void input;
+    return this.wardrobeService.retry3DGeneration(wardrobeItemId);
   }
 }
