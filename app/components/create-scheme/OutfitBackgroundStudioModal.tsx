@@ -1638,6 +1638,66 @@ export default function OutfitBackgroundStudioModal({
     setAiGradientResults([]);
   };
 
+  const generateWithGoogleAI = async () => {
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const response = await fetch('/api/ai/fashion/background-studio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userPrompt: aiPrompt })
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        setAiError(payload.message || 'Google AI generation failed');
+        setAiLoading(false);
+        return;
+      }
+      
+      const data = payload.data;
+      
+      const stops = data.cssSuggestion?.stops || data.palette.slice(0, 3).map((color: string, i: number) => ({
+        color,
+        position: i === 0 ? 0 : i === data.palette.length - 1 ? 100 : 50
+      }));
+      
+      const gradient = {
+        type: data.cssSuggestion?.type || 'linear',
+        angle: data.cssSuggestion?.angle || 135,
+        intensity: 100,
+        stops
+      };
+
+      setDraft(prev => ({
+        ...prev,
+        background_mode: data.backgroundType === 'image' ? 'gradient' : 'gradient', // Force gradient as fallback for now since image gen is mocked
+        gradient,
+        shape: 'none'
+      }));
+      
+      if (data.backgroundType === 'image') {
+         setDraft(prev => ({
+            ...prev,
+            background_mode: 'ai_artwork',
+            ai_artwork: {
+               prompt: data.promptForImageGeneration,
+               image_url: '', // Fallback empty
+               generation_status: 'done'
+            }
+         }));
+      }
+      
+      void Swal.fire({
+        toast: true, position: 'top-end', icon: 'success', title: 'Google AI Background Applied!', timer: 3000, showConfirmButton: false
+      });
+      
+    } catch(e) {
+      setAiError('Error running Google AI Background Studio');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const applyVariationToDraft = (variation: ArtworkVariation) => {
     setDraft((prev) => ({
       ...prev,
@@ -1890,6 +1950,7 @@ export default function OutfitBackgroundStudioModal({
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Prompt</p>
                       <p className="mb-1 text-[10px] text-white/60">Use brand and mood details. Geometry control below has priority for structure.</p>
                       <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder="Premium editorial fashion background with geometric layers and elegant negative space." className="min-h-20 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm" />
+                      <button type="button" onClick={generateWithGoogleAI} disabled={aiLoading || !aiPrompt.trim()} className="mt-2 w-full rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-2 text-xs font-bold text-white shadow-lg transition hover:scale-[1.02] disabled:opacity-50">✨ Google AI: Smart Generate</button>
                     </div>
                     <div>
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Composition Type</p>
