@@ -17,6 +17,7 @@ import {
   pollBlenderWorkerJob,
   submitBlenderWorkerJob,
 } from '@/app/services/blenderWorkerClient';
+import type { SearchIntentOutput } from '@/app/lib/ai/providers/types';
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -88,6 +89,9 @@ export default function MyWardrobeView() {
   const [modalItem, setModalItem] = useState<WardrobeItem | null>(null);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [progressItem, setProgressItem] = useState<WardrobeItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchIntent, setSearchIntent] = useState<SearchIntentOutput | null>(null);
 
   const assetJob = use3dAssetJob({
     pollIntervalMs: 1200,
@@ -180,9 +184,68 @@ export default function MyWardrobeView() {
       favorites: 'favorite',
     };
 
+    let selectedGroupData = groups.find((group) => group.key === (sectionToGroupKey[selectedSection] ?? 'available'))?.data || [];
+    
+    if (searchIntent) {
+      selectedGroupData = selectedGroupData.map(item => {
+        let score = 0;
+        const text = `${item.name} ${item.brand} ${item.season} ${item.gender} ${item.piece_type}`.toLowerCase();
+        
+        const match = (arr: string[], weight: number) => {
+          if (arr && arr.length) {
+            arr.forEach(term => {
+              if (text.includes(term.toLowerCase())) score += weight;
+            });
+          }
+        };
+
+        match(searchIntent.piece_item, 3);
+        match(searchIntent.brand, 3);
+        match(searchIntent.colors, 2);
+        match(searchIntent.season, 2);
+        match(searchIntent.style, 1);
+        match(searchIntent.occasion, 1);
+        match(searchIntent.semanticTags, 1);
+        
+        return { item, score };
+      }).filter(x => x.score > 0).sort((a, b) => b.score - a.score).map(x => x.item);
+    } else if (searchQuery.trim().length > 0) {
+       // Simple text fallback if AI intent not present
+       const query = searchQuery.toLowerCase();
+       selectedGroupData = selectedGroupData.filter(item => 
+          `${item.name} ${item.brand} ${item.piece_type}`.toLowerCase().includes(query)
+       );
+    }
+
     const selectedGroup = groups.find((group) => group.key === (sectionToGroupKey[selectedSection] ?? 'available'));
-    return selectedGroup ? [selectedGroup] : [groups[0]];
-  }, [grouped, selectedSection]);
+    return selectedGroup ? [{ ...selectedGroup, data: selectedGroupData }] : [{ ...groups[0], data: selectedGroupData }];
+  }, [grouped, selectedSection, searchIntent, searchQuery]);
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!searchQuery.trim()) {
+      setSearchIntent(null);
+      return;
+    }
+    
+    setIsSearching(true);
+    setSearchIntent(null);
+    try {
+      const response = await fetch('/api/ai/fashion/search-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQuery }),
+      });
+      const result = await response.json();
+      if (result.ok && result.data) {
+        setSearchIntent(result.data);
+      }
+    } catch (err) {
+      console.error('Search failed', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const handleOpenViewerIntent = async (item: WardrobeItem) => {
     const existingModel = resolveWardrobeModelUrl(item);
@@ -235,6 +298,37 @@ export default function MyWardrobeView() {
         />
         <div className="space-y-6">
           <PageHeader title="Virtual Wardrobe" subtitle="Classify pieces as available, unavailable, and favorites." />
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <form onSubmit={handleSearch} className="flex flex-col gap-2 md:flex-row">
+              <input
+                type="text"
+                placeholder="✨ Semantic search (e.g. roupas de inverno pretas)"
+                className="flex-1 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm text-white placeholder-white/50"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value === '') setSearchIntent(null);
+                }}
+              />
+              <button
+                type="submit"
+                disabled={isSearching}
+                className="rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-2 font-semibold text-white shadow-lg transition hover:scale-[1.02] disabled:opacity-50"
+              >
+                {isSearching ? 'Searching...' : 'AI Search'}
+              </button>
+            </form>
+            {searchIntent && (
+               <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-white/70">
+                 {searchIntent.colors.map(c => <span key={c} className="rounded border border-white/20 bg-white/10 px-1 py-0.5">🎨 {c}</span>)}
+                 {searchIntent.season.map(s => <span key={s} className="rounded border border-white/20 bg-white/10 px-1 py-0.5">❄️ {s}</span>)}
+                 {searchIntent.piece_item.map(p => <span key={p} className="rounded border border-white/20 bg-white/10 px-1 py-0.5">👕 {p}</span>)}
+                 {searchIntent.style.map(s => <span key={s} className="rounded border border-white/20 bg-white/10 px-1 py-0.5">✨ {s}</span>)}
+                 {searchIntent.brand.map(b => <span key={b} className="rounded border border-white/20 bg-white/10 px-1 py-0.5">🏷️ {b}</span>)}
+               </div>
+            )}
+          </div>
 
           {activeGroups.map((group) => (
             <SectionBlock key={group.key} title={group.title} subtitle="Manage list status for each wardrobe item.">

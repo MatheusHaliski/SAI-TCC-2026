@@ -97,6 +97,7 @@ const makePiece = (
   season: 'all',
   gender: 'female',
   compatible_gender: ['female', 'male'],
+  render_image_url: null,
   asset_status: 'published',
   active: true,
   created_at: now,

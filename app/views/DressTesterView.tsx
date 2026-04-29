@@ -9,9 +9,11 @@ import Tester2DStage from '@/app/components/tester2d/Tester2DStage';
 import Tester2DWardrobePanel, { Tester2DWardrobeItem } from '@/app/components/tester2d/Tester2DWardrobePanel';
 import { Tester2DRenderService } from '@/app/lib/fashion-ai/services/Tester2DRenderService';
 import { MannequinProfile } from '@/app/lib/fashion-ai/types/mannequin';
-import { WardrobeFitProfile } from '@/app/lib/fashion-ai/types/wardrobe-fit';
+import { WardrobeFitProfile, WardrobePieceType } from '@/app/lib/fashion-ai/types/wardrobe-fit';
 import { isPieceCompatibleWithMannequin } from '@/app/lib/fashion-ai/utils/garment-compatibility';
 import { getDevSessionToken } from '@/app/lib/devSession';
+import AdminAssetStudio from '@/app/components/dress-tester/AdminAssetStudio';
+import { TesterFitOutput } from '@/app/lib/ai/providers/types';
 
 interface BootstrapPayload {
   mannequins: MannequinProfile[];
@@ -33,7 +35,9 @@ export default function DressTesterView() {
   const [backfillRunning, setBackfillRunning] = useState(false);
   const [backfillSummary, setBackfillSummary] = useState<string | null>(null);
   const [hasDevSession] = useState(() => Boolean(getDevSessionToken()));
+  const [aiInstructions, setAiInstructions] = useState<Record<string, TesterFitOutput>>({});
   const isDevToolsEnabled = process.env.NODE_ENV !== 'production' || hasDevSession;
+
 
   const mannequin = useMemo(
     () => mannequins.find((item) => item.id === selectedMannequin) ?? mannequins[0],
@@ -100,56 +104,77 @@ export default function DressTesterView() {
     return renderService.composeLayers({ mannequin, appliedPieces: Object.values(equipped) as WardrobeFitProfile[] });
   }, [mannequin, equipped]);
 
+  const PREVIEW_BBOX: Record<WardrobePieceType, { x: number; y: number; w: number; h: number }> = {
+    top: { x: 0.10, y: 0.08, w: 0.80, h: 0.84 },
+    bottom: { x: 0.12, y: 0.06, w: 0.76, h: 0.88 },
+    shoes: { x: 0.10, y: 0.10, w: 0.80, h: 0.80 },
+    full_body: { x: 0.10, y: 0.04, w: 0.80, h: 0.92 },
+    accessory: { x: 0.15, y: 0.12, w: 0.70, h: 0.76 },
+  };
+
   const applyPiece = async (piece: Tester2DWardrobeItem) => {
-    const fitProfile = piece.fitProfile;
-
-    if (!fitProfile) {
-      setMessage('This piece has no 2D preparation data yet.');
-      return;
-    }
-
-    if (fitProfile.preparationStatus !== 'ready') {
-      if (fitProfile.preparationStatus === 'preview_only') {
-        setMessage('This piece is preview only and cannot be fitted yet.');
-        return;
-      }
-      if (fitProfile.preparationStatus === 'processing' || fitProfile.preparationStatus === 'pending') {
-        setMessage('This piece is still being prepared for 2D fitting.');
-        return;
-      }
-      setMessage('This piece failed preparation and cannot be applied.');
-      return;
-    }
-
     if (!mannequin) return;
-    if (!isPieceCompatibleWithMannequin(fitProfile, mannequin.id, mannequin)) {
+
+    const rawFitProfile = piece.fitProfile;
+    let effectiveFitProfile: WardrobeFitProfile;
+
+    if (rawFitProfile?.preparationStatus === 'ready' && rawFitProfile.preparedAssetUrl) {
+      effectiveFitProfile = rawFitProfile;
+    } else if (piece.imageUrl) {
+      const pieceType: WardrobePieceType = rawFitProfile?.pieceType ?? 'top';
+      const targetGender = rawFitProfile?.targetGender ?? 'unisex';
+      const compatibleMannequins: Array<'male_v1' | 'female_v1'> =
+        targetGender === 'male' ? ['male_v1'] : targetGender === 'female' ? ['female_v1'] : ['male_v1', 'female_v1'];
+
+      effectiveFitProfile = {
+        pieceType,
+        targetGender,
+        preparationStatus: 'ready',
+        originalImageUrl: piece.imageUrl,
+        preparedAssetUrl: piece.imageUrl,
+        preparedMaskUrl: null,
+        compatibleMannequins,
+        fitMode: 'overlay',
+        normalizedBBox: PREVIEW_BBOX[pieceType],
+        garmentAnchors: null,
+        validationWarnings: ['preview_mode'],
+        preparationError: null,
+        preparedAt: null,
+        updatedAt: new Date().toISOString(),
+      };
+      setMessage('Preview mode: showing approximate fit. Run "Process Missing Pieces" for precision.');
+    } else {
+      setMessage('This piece has no image available.');
+      return;
+    }
+
+    if (!isPieceCompatibleWithMannequin(effectiveFitProfile, mannequin.id, mannequin)) {
       setMessage('This piece is not compatible with the selected mannequin.');
       return;
     }
 
-    setSelectedCategory(fitProfile.pieceType);
-    setMessage(null);
-    setEquipped((prev) => ({ ...prev, [fitProfile.pieceType]: fitProfile }));
-  };
+    setSelectedCategory(effectiveFitProfile.pieceType);
+    if (!effectiveFitProfile.validationWarnings?.includes('preview_mode')) setMessage(null);
+    setEquipped((prev) => ({ ...prev, [effectiveFitProfile.pieceType]: effectiveFitProfile }));
 
-  const processPieceNow = async (pieceId: string) => {
-    console.debug('[dress-tester] process-now:start', { pieceId });
-    const response = await fetch('/api/wardrobe/process-piece', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pieceId }),
-    });
-    const payload = await response.json().catch(() => null);
-    console.debug('[dress-tester] process-now:done', {
-      pieceId,
-      status: response.status,
-      payload,
-    });
-    if (!response.ok) {
-      setMessage(`Process piece failed for ${pieceId}.`);
-      return;
+    if (!aiInstructions[piece.pieceId]) {
+      fetch('/api/ai/fashion/tester-fit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pieceName: piece.name,
+          category: effectiveFitProfile.pieceType,
+          bodyRegion: effectiveFitProfile.pieceType,
+        }),
+      })
+        .then((res) => res.json())
+        .then((payload) => {
+          if (payload.ok && payload.data) {
+            setAiInstructions((prev) => ({ ...prev, [piece.pieceId]: payload.data }));
+          }
+        })
+        .catch((err) => console.error('AI Fit Error', err));
     }
-    await refreshData();
   };
 
   const processMissingPieces = async () => {
@@ -218,15 +243,57 @@ export default function DressTesterView() {
         </div>
       </SectionBlock>
 
+      <SectionBlock title="AI Fit Instructions" subtitle="AI-generated suggestions for placement and fit">
+        {Object.entries(equipped).map(([slot, profile]) => {
+          if (!profile) return null;
+          const pieceId = pieces.find((p) => p.fitProfile === profile)?.pieceId;
+          const instructions = pieceId ? aiInstructions[pieceId] : null;
+
+          return (
+            <div key={slot} className="mb-2 text-sm text-white/80 bg-white/10 p-3 rounded-lg border border-white/20">
+              <p className="font-bold text-white mb-2 uppercase tracking-wide text-[11px]">{slot} SLOT</p>
+              {instructions ? (
+                <ul className="list-disc pl-4 space-y-1">
+                  <li><span className="font-semibold text-fuchsia-300">Target Region:</span> {instructions.targetBodyRegion}</li>
+                  <li><span className="font-semibold text-fuchsia-300">Suggested Layer:</span> {instructions.suggestedLayer}</li>
+                  <li><span className="font-semibold text-fuchsia-300">Fit Type:</span> {instructions.fitType}</li>
+                  <li><span className="font-semibold text-fuchsia-300">Alignment:</span> {instructions.alignmentHint}</li>
+                  <li><span className="font-semibold text-fuchsia-300">Scale:</span> {instructions.scaleHint}</li>
+                  {instructions.warnings && instructions.warnings.length > 0 && (
+                    <li className="text-amber-400">
+                      <span className="font-semibold">Warnings:</span> {instructions.warnings.join(', ')}
+                    </li>
+                  )}
+                </ul>
+              ) : (
+                <p className="text-white/50 italic text-xs">Generating AI Fit instructions...</p>
+              )}
+            </div>
+          );
+        })}
+        {Object.values(equipped).length === 0 && (
+          <p className="text-white/50 text-xs">Equip a piece to see AI fit instructions.</p>
+        )}
+      </SectionBlock>
+
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
         <SectionBlock title="Editing Stage" subtitle="Stable, centered, geometry-aware fitting stage">
           <Tester2DStage mannequin={mannequin} layers={layers} zoom={zoom} showDebug={showDebug} selectedSlot={selectedCategory} />
         </SectionBlock>
 
         <SectionBlock title="Wardrobe 2D Library" subtitle="Prepared pipeline status and mannequin-compatible fitting">
-          <Tester2DWardrobePanel items={pieces} onApply={applyPiece} onProcessNow={processPieceNow} showProcessingActions={isDevToolsEnabled} />
+          <Tester2DWardrobePanel items={pieces} onApply={applyPiece} />
         </SectionBlock>
       </div>
+
+      {isDevToolsEnabled ? (
+        <SectionBlock title="Admin Asset Studio" subtitle="Create mannequins, upload piece metadata, and calibrate torso quads">
+          <AdminAssetStudio
+            onCreated={refreshData}
+            wardrobeItems={pieces.map((p) => ({ pieceId: p.pieceId, name: p.name, imageUrl: p.imageUrl }))}
+          />
+        </SectionBlock>
+      ) : null}
     </div>
   );
 }

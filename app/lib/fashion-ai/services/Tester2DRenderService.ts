@@ -25,7 +25,7 @@ export class Tester2DRenderService {
 
     const selectedBySlot = new Map<string, WardrobeFitProfile>();
     args.appliedPieces.forEach((piece) => {
-      if (piece.preparationStatus === 'ready') selectedBySlot.set(piece.pieceType, piece);
+      selectedBySlot.set(piece.pieceType, piece);
     });
 
     const hasFullBody = selectedBySlot.has('full_body');
@@ -35,17 +35,21 @@ export class Tester2DRenderService {
       const fitProfile = selectedBySlot.get(slot);
       if (!fitProfile) return;
 
-      const fitted = this.fitService.buildFittedGarmentLayer({ mannequin: args.mannequin, fitProfile });
-      layers.push({
-        type: 'garment',
-        slot: fitted.slot,
-        imageUrl: fitted.assetUrl,
-        x: fitted.x,
-        y: fitted.y,
-        width: fitted.width,
-        height: fitted.height,
-        clipMaskUrl: fitted.clipMaskUrl,
-      });
+      try {
+        const fitted = this.fitService.buildFittedGarmentLayer({ mannequin: args.mannequin, fitProfile });
+        layers.push({
+          type: 'garment',
+          slot: fitted.slot,
+          imageUrl: fitted.assetUrl,
+          x: fitted.x,
+          y: fitted.y,
+          width: fitted.width,
+          height: fitted.height,
+          clipMaskUrl: fitted.clipMaskUrl,
+        });
+      } catch (e) {
+        console.warn('[Tester2DRenderService] skipping slot due to fit error', slot, e);
+      }
     });
 
     return layers;

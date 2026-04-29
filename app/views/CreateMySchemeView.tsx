@@ -165,6 +165,7 @@ export default function CreateMySchemeView() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState('');
   const [generatedCardData, setGeneratedCardData] = useState<OutfitCardData | null>(null);
+  const [isGeneratingPremiumDesc, setIsGeneratingPremiumDesc] = useState(false);
 
   const inputClassName =
     'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
@@ -548,6 +549,59 @@ export default function CreateMySchemeView() {
     }
   };
 
+  const generatePremiumDescription = async () => {
+    setIsGeneratingPremiumDesc(true);
+    try {
+      const piecesData = (Object.keys(slots) as SlotKey[]).map((slot) => {
+        const selectedValue = slots[slot];
+        if (!selectedValue) return null;
+        const item = items.find((i) => i.wardrobe_item_id === selectedValue);
+        const suggested = DEFAULT_SLOT_SUGGESTIONS[slot].find((s) => s.value === selectedValue);
+        return {
+          name: item?.name || suggested?.label || `${slot} piece`,
+          brand: resolveBrandForSlot(slot)?.name || 'Unknown',
+        };
+      }).filter(Boolean);
+
+      if (piecesData.length === 0) {
+        setAlertMessage('Please select at least one piece to generate a description.');
+        return;
+      }
+
+      const response = await fetch('/api/ai/fashion/generate-card-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pieces: piecesData,
+          overallColors: [palette].filter(Boolean),
+          dominantStyle: style,
+          season: 'all-season',
+          userIntent: aiPrompt,
+          occasion: occasion,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        setAlertMessage(payload.message || 'Error generating description');
+        return;
+      }
+
+      const data = payload.data;
+      if (data.editorialTitle) setTitle(data.editorialTitle);
+      if (data.dominantStyle) setStyle(data.dominantStyle);
+      if (data.longDescription) {
+        setManualDescription(data.longDescription);
+        setDescriptionMode('manual');
+      }
+      setAlertMessage('Premium editorial description generated successfully!');
+    } catch (error: any) {
+      setAlertMessage(error.message || 'Error generating description');
+    } finally {
+      setIsGeneratingPremiumDesc(false);
+    }
+  };
+
   const handleFinalSave = async () => {
     if (!isFormValid) {
       setAlertMessage('Fill title, style, occasion, and assign at least one slot before saving.');
@@ -704,6 +758,15 @@ export default function CreateMySchemeView() {
         </label>
 
         <DescriptionModeSelector value={descriptionMode} onChange={setDescriptionMode} />
+
+        <button
+          type="button"
+          onClick={generatePremiumDescription}
+          disabled={isGeneratingPremiumDesc || filledSlotsCount === 0}
+          className={`${primaryButtonClassName} md:col-span-2 flex justify-center items-center gap-2`}
+        >
+          <span>✨</span> {isGeneratingPremiumDesc ? 'Generating Premium Editorial Copy...' : 'Generate Premium Editorial Copy with Google AI'}
+        </button>
 
         {descriptionMode === 'manual' ? (
           <textarea

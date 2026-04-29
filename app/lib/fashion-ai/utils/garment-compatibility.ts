@@ -12,7 +12,7 @@ export function isPieceCompatibleWithMannequin(
   if (fitProfile.targetGender === 'male' && mannequinId !== 'male_v1') return false;
   if (fitProfile.targetGender === 'female' && mannequinId !== 'female_v1') return false;
 
-  if (!fitProfile.compatibleMannequins.includes(mannequinId)) return false;
+  if (!Array.isArray(fitProfile.compatibleMannequins) || !fitProfile.compatibleMannequins.includes(mannequinId)) return false;
 
   if (mannequin) {
     const slot = mannequin.slots[fitProfile.pieceType];

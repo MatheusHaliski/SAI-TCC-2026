@@ -100,6 +100,8 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [imagePreview, setImagePreview] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submitProgress, setSubmitProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -370,6 +372,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       setForm((prev) => ({ ...prev, image_url: '' }));
       setSelectedImageName('');
       setImagePreview('');
+      setSelectedFile(null);
       return;
     }
 
@@ -387,6 +390,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
     setImagePreview(nextPreview);
     setSelectedImageName(file.name);
+    setSelectedFile(file);
     setUploadingImage(true);
 
     const payload = new FormData();
@@ -425,6 +429,65 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       }));
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleAnalyzeWithAI = async () => {
+    if (!selectedFile && !form.image_url) {
+      setAlertMessage('Please select an image first.');
+      return;
+    }
+    setIsAnalyzing(true);
+    try {
+      let base64Image: string | undefined;
+      let mimeType: string | undefined;
+
+      if (selectedFile) {
+        base64Image = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedFile);
+        });
+        mimeType = selectedFile.type;
+      }
+
+      const response = await fetch('/api/ai/fashion/analyze-piece', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64Image, imageUrl: form.image_url, mimeType }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        setAlertMessage(payload.message || 'Error analyzing image');
+        return;
+      }
+
+      const data = payload.data;
+
+      let mappedPieceType = form.piece_type;
+      if (form.piece_type === 'upper_piece') {
+        if (data.bodyRegion === 'lower') mappedPieceType = 'lower_piece';
+        else if (data.bodyRegion === 'shoes') mappedPieceType = 'shoes_piece';
+        else if (data.bodyRegion === 'accessory') mappedPieceType = 'accessory_piece';
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || data.pieceName || '',
+        color: prev.color || data.primaryColor || '',
+        material: prev.material || (data.materials && data.materials[0]) || '',
+        style_tags: prev.style_tags || (data.styles ? data.styles.join(', ') : ''),
+        occasion_tags: prev.occasion_tags || '',
+        gender: prev.gender || (data.gender === 'male' ? 'masculino' : data.gender === 'female' ? 'feminino' : prev.gender),
+        piece_type: mappedPieceType,
+      }));
+      setAlertMessage('AI Analysis complete! Suggestions applied to empty fields.');
+    } catch (err: any) {
+      setAlertMessage(err.message || 'Error during AI analysis.');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -557,14 +620,25 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
               </p>
 
               {imagePreview ? (
-                <Image
-                  src={imagePreview}
-                  alt="Selected clothing piece preview"
-                  width={512}
-                  height={320}
-                  className="mt-3 h-40 w-auto rounded-xl border border-white/20 object-cover"
-                  unoptimized
-                />
+                <div className="mt-3 flex flex-col items-start gap-3">
+                  <Image
+                    src={imagePreview}
+                    alt="Selected clothing piece preview"
+                    width={512}
+                    height={320}
+                    className="h-40 w-auto rounded-xl border border-white/20 object-cover"
+                    unoptimized
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAnalyzeWithAI}
+                    disabled={isAnalyzing || uploadingImage}
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:scale-105 hover:brightness-110 disabled:opacity-50"
+                  >
+                    <span>✨</span>
+                    {isAnalyzing ? 'Analyzing with Google AI...' : 'Analyze with Google AI'}
+                  </button>
+                </div>
               ) : null}
             </div>
 

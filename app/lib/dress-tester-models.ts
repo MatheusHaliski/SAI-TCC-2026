@@ -59,6 +59,7 @@ export interface WardrobePiece2D {
   materials: string[];
   season: string;
   gender: string;
+  render_image_url: string | null;
   asset_status: PieceAssetStatus;
   active: boolean;
   created_at: string;
