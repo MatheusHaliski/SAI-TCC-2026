@@ -47,18 +47,18 @@ export default function Tester2DStage({ mannequin, layers, zoom, showDebug, sele
                     width: toPct(layer.width, mannequin.canvasWidth),
                     height: toPct(layer.height, mannequin.canvasHeight),
                     zIndex: 20 + index,
+                    mixBlendMode: 'multiply',
                   }}
                 >
                   {/* object-fill: the projection math in MannequinFitService sizes this div so the
                       garment content region fills the slot exactly — object-fill honours that. */}
-                  {/* mix-blend-mode:multiply: white bg pixels (255×255/255=255) become transparent
-                      on the white canvas; garment colours are preserved unchanged. */}
+                  {/* mix-blend-mode:multiply: moved to the wrapper div to avoid stacking context isolation. */}
                   <Image
                     src={layer.imageUrl}
                     alt={layer.slot}
                     fill
                     className="pointer-events-none"
-                    style={{ objectFit: 'fill', mixBlendMode: 'multiply' }}
+                    style={{ objectFit: 'fill' }}
                     unoptimized
                   />
                 </div>
