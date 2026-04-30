@@ -67,7 +67,9 @@ export async function POST(request: Request) {
     const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${downloadToken}`;
 
     return NextResponse.json({ image_url: imageUrl }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: 'Unable to upload image.' }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[upload-image] upload failed:', message);
+    return NextResponse.json({ error: 'Unable to upload image.', detail: message }, { status: 500 });
   }
 }
