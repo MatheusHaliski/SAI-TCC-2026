@@ -53,11 +53,6 @@ interface BlenderCloudSubmitResult {
   raw: Record<string, unknown>;
 }
 
-interface SubmitAttemptResult {
-  response: Response;
-  submitUrl: string;
-}
-
 function toRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 }
@@ -269,19 +264,6 @@ export class BlenderCloudService {
     return config.payloadMode === 'input' ? { input: internalPayload } : internalPayload;
   }
 
-  private async submitAttempt(config: BlenderCloudConfig, requestBody: Record<string, unknown>, submitPath?: string): Promise<SubmitAttemptResult> {
-    const submitUrl = buildSubmitUrl({
-      ...config,
-      ...(submitPath ? { submitPath } : {}),
-    });
-    const response = await this.fetchWithTimeout(submitUrl, {
-      method: 'POST',
-      headers: this.buildHeaders(config),
-      body: JSON.stringify(requestBody),
-    }, config.submitTimeoutMs);
-    return { response, submitUrl };
-  }
-
   isConfigured(): boolean {
     return isBlenderCloudConfigured();
   }
@@ -333,34 +315,26 @@ export class BlenderCloudService {
 
   async submitBlenderCloudJob(input: SubmitBlenderCloudJobInput): Promise<BlenderCloudSubmitResult> {
     const config = resolveBlenderCloudConfig();
+    const submitUrl = buildSubmitUrl(config);
     const requestBody = this.mapSubmitPayload(config, input);
 
     console.info('[blender-cloud] submit request', {
-      submitUrl: buildSubmitUrl(config),
+      submitUrl,
       payloadMode: config.payloadMode,
       authSource: config.authSource,
       jobType: input.jobType,
     });
 
-    let attempt: SubmitAttemptResult;
+    let response: Response;
     try {
-      attempt = await this.submitAttempt(config, requestBody);
+      response = await this.fetchWithTimeout(submitUrl, {
+        method: 'POST',
+        headers: this.buildHeaders(config),
+        body: JSON.stringify(requestBody),
+      }, config.submitTimeoutMs);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Blender Cloud submit request failed. url=${buildSubmitUrl(config)} timeoutMs=${config.submitTimeoutMs} error=${message}`);
-    }
-
-    let { response, submitUrl } = attempt;
-    if (!response.ok && response.status === 404 && config.submitPath === '/jobs') {
-      console.warn('[blender-cloud] submit route /jobs returned 404; retrying with /run fallback');
-      try {
-        attempt = await this.submitAttempt(config, requestBody, '/run');
-        response = attempt.response;
-        submitUrl = attempt.submitUrl;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        throw new Error(`Blender Cloud submit request failed after fallback. url=${submitUrl} fallbackUrl=${buildSubmitUrl({ ...config, submitPath: '/run' })} timeoutMs=${config.submitTimeoutMs} error=${message}`);
-      }
+      throw new Error(`Blender Cloud submit request failed. url=${submitUrl} timeoutMs=${config.submitTimeoutMs} error=${message}`);
     }
 
     const body = toRecord((await response.json().catch(() => ({}))) as PodSubmitResponse);
