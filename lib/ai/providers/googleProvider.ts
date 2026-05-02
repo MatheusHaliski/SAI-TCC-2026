@@ -1,4 +1,3 @@
-import { GoogleGenAI } from '@google/genai';
 import {
   FashionAIProvider,
   AnalyzeImageInput,
@@ -14,7 +13,7 @@ import {
 } from './types';
 
 export class GoogleProvider implements FashionAIProvider {
-  private ai: GoogleGenAI;
+  private apiKey: string;
   private textModel: string;
   private visionModel: string;
 
@@ -23,43 +22,54 @@ export class GoogleProvider implements FashionAIProvider {
     if (!apiKey) {
       throw new Error('GOOGLE_AI_API_KEY is missing');
     }
-    this.ai = new GoogleGenAI({ apiKey });
+    this.apiKey = apiKey;
     this.textModel = process.env.GOOGLE_AI_MODEL_TEXT || 'gemini-2.5-pro';
     this.visionModel = process.env.GOOGLE_AI_MODEL_VISION || 'gemini-2.5-pro';
   }
 
   private async generateJson<T>(model: string, prompt: string, imageBase64?: string, imageMimeType?: string): Promise<T> {
     try {
-      const contents: any[] = [];
-      
+      const parts: any[] = [{ text: prompt }];
       if (imageBase64 && imageMimeType) {
-        // Remove the data:image/...;base64, prefix if present
         const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
-        contents.push({
-          inlineData: {
+        parts.push({
+          inline_data: {
             data: cleanBase64,
-            mimeType: imageMimeType,
-          }
+            mime_type: imageMimeType,
+          },
         });
       }
-      
-      contents.push(prompt);
 
-      const response = await this.ai.models.generateContent({
-        model: model,
-        contents: contents,
-        config: {
-          responseMimeType: 'application/json',
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(this.apiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: { responseMimeType: 'application/json' },
+          }),
         }
-      });
+      );
 
-      const text = response.text || '';
+      if (!response.ok) {
+        const details = await response.text();
+        throw new Error(`Google API error ${response.status}: ${details}`);
+      }
+
+      const payload = await response.json();
+      const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      if (!text) {
+        throw new Error('Google API returned an empty response.');
+      }
+
       let cleanText = text.trim();
       if (cleanText.startsWith('```json')) {
         cleanText = cleanText.replace(/^```json\n/, '').replace(/\n```$/, '');
       } else if (cleanText.startsWith('```')) {
         cleanText = cleanText.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '');
       }
+
       return JSON.parse(cleanText) as T;
     } catch (error) {
       console.error('[GoogleProvider] Error generating JSON content:', error);
