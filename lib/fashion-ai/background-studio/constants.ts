@@ -88,14 +88,14 @@ export const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent
       Array.from({ length: 14 }).map((__, col) => {
         const x = col * 90 + (row % 2 === 0 ? 0 : 8);
         const y = row * 82 + 6;
-        return \`<g transform='translate(\${x} \${y})'>
+        return `<g transform='translate(${x} ${y})'>
           <ellipse cx='40' cy='24' rx='10' ry='17' fill='#b49cf1'/>
           <ellipse cx='53' cy='35' rx='10' ry='17' transform='rotate(50 53 35)' fill='#b49cf1'/>
           <ellipse cx='49' cy='53' rx='10' ry='17' transform='rotate(104 49 53)' fill='#b49cf1'/>
           <ellipse cx='31' cy='53' rx='10' ry='17' transform='rotate(154 31 53)' fill='#b49cf1'/>
           <ellipse cx='27' cy='35' rx='10' ry='17' transform='rotate(206 27 35)' fill='#b49cf1'/>
           <circle cx='40' cy='40' r='8.5' fill='#f7d665'/>
-        </g>\`;
+        </g>`;
       }).join('')
     ).join('')}
   </svg>`,
