@@ -1,0 +1,27 @@
+/* [project]/app/sharetechmono_de18a0cb.module.css [app-client] (css) */
+@font-face {
+  font-family: shareTechMono;
+  src: url("../media/ShareTechMono_Regular-s.p.a4c9fe51.ttf") format("truetype");
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: shareTechMono Fallback;
+  src: local(Arial);
+  ascent-override: 74.78%;
+  descent-override: 20.45%;
+  line-gap-override: 0.0%;
+  size-adjust: 118.34%;
+}
+
+.sharetechmono_de18a0cb-module__i_kq6q__className {
+  font-family: shareTechMono, shareTechMono Fallback;
+}
+
+.sharetechmono_de18a0cb-module__i_kq6q__variable {
+  --font-sharetech: "shareTechMono", "shareTechMono Fallback";
+}
+
+/*# sourceMappingURL=app_sharetechmono_de18a0cb_module_css_bad6b30c._.single.css.map*/

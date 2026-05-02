@@ -1,0 +1,17 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/3d-worker/jobs/[jobId]/route": "app/api/3d-worker/jobs/[jobId]/route.js",
+  "/api/3d-worker/submit/route": "app/api/3d-worker/submit/route.js",
+  "/api/add-piece/route": "app/api/add-piece/route.js",
+  "/api/ai/fashion/analyze-piece/route": "app/api/ai/fashion/analyze-piece/route.js",
+  "/api/auth/verify/route": "app/api/auth/verify/route.js",
+  "/api/brands/route": "app/api/brands/route.js",
+  "/api/markets/route": "app/api/markets/route.js",
+  "/api/model-proxy/route": "app/api/model-proxy/route.js",
+  "/api/upload-image/route": "app/api/upload-image/route.js",
+  "/api/wardrobe-items/user/[userId]/route": "app/api/wardrobe-items/user/[userId]/route.js",
+  "/api/wardrobe/process-piece/route": "app/api/wardrobe/process-piece/route.js",
+  "/authview/page": "app/authview/page.js",
+  "/home/page": "app/home/page.js",
+  "/signupview/page": "app/signupview/page.js"
+}

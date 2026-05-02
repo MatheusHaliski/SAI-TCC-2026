@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/app/sharetechmono_de18a0cb.module.css"],"sourcesContent":["@font-face {\n    \nfont-family: 'shareTechMono';\n    src: url('@vercel/turbopack-next/internal/font/local/font?{%22path%22:%22../public/fonts/ShareTechMono-Regular.ttf%22,%22preload%22:true,%22has_size_adjust%22:true}') format('truetype');\n    font-display: swap;\n    \nfont-weight: 400;\nfont-style: normal;\n}\n\n@font-face {\n    font-family: 'shareTechMono Fallback';\n    src: local(\"Arial\");\n    ascent-override: 74.78%;\ndescent-override: 20.45%;\nline-gap-override: 0.00%;\nsize-adjust: 118.34%;\n\n}\n\n.className {\n    font-family: 'shareTechMono', 'shareTechMono Fallback';\n    \n}\n.variable {\n    --font-sharetech: 'shareTechMono', 'shareTechMono Fallback';\n}\n\n"],"names":[],"mappings":"AAAA;;;;;;;;AAUA;;;;;;;;;AAUA;;;;AAIA"}}]
+}

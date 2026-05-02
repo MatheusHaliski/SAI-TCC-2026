@@ -1,0 +1,525 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/3d-worker/jobs/[jobId]",
+      "regex": "^/api/3d\\-worker/jobs/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPjobId": "nxtPjobId"
+      },
+      "namedRegex": "^/api/3d\\-worker/jobs/(?<nxtPjobId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/brands/[brandId]/logo-catalog",
+      "regex": "^/api/brands/([^/]+?)/logo\\-catalog(?:/)?$",
+      "routeKeys": {
+        "nxtPbrandId": "nxtPbrandId"
+      },
+      "namedRegex": "^/api/brands/(?<nxtPbrandId>[^/]+?)/logo\\-catalog(?:/)?$"
+    },
+    {
+      "page": "/api/pipeline-jobs/[jobId]",
+      "regex": "^/api/pipeline\\-jobs/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPjobId": "nxtPjobId"
+      },
+      "namedRegex": "^/api/pipeline\\-jobs/(?<nxtPjobId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/schemes/user/[userId]",
+      "regex": "^/api/schemes/user/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPuserId": "nxtPuserId"
+      },
+      "namedRegex": "^/api/schemes/user/(?<nxtPuserId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/schemes/[id]",
+      "regex": "^/api/schemes/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/schemes/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/users/[id]",
+      "regex": "^/api/users/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/users/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/wardrobe/[id]",
+      "regex": "^/api/wardrobe/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/wardrobe/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/wardrobe-items/user/[userId]",
+      "regex": "^/api/wardrobe\\-items/user/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPuserId": "nxtPuserId"
+      },
+      "namedRegex": "^/api/wardrobe\\-items/user/(?<nxtPuserId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/wardrobe-items/user/[userId]/analysis",
+      "regex": "^/api/wardrobe\\-items/user/([^/]+?)/analysis(?:/)?$",
+      "routeKeys": {
+        "nxtPuserId": "nxtPuserId"
+      },
+      "namedRegex": "^/api/wardrobe\\-items/user/(?<nxtPuserId>[^/]+?)/analysis(?:/)?$"
+    },
+    {
+      "page": "/api/wardrobe-items/[id]/retry-3d",
+      "regex": "^/api/wardrobe\\-items/([^/]+?)/retry\\-3d(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/wardrobe\\-items/(?<nxtPid>[^/]+?)/retry\\-3d(?:/)?$"
+    },
+    {
+      "page": "/api/wardrobe-items/[id]/retry-branding",
+      "regex": "^/api/wardrobe\\-items/([^/]+?)/retry\\-branding(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/wardrobe\\-items/(?<nxtPid>[^/]+?)/retry\\-branding(?:/)?$"
+    },
+    {
+      "page": "/profile/[userId]",
+      "regex": "^/profile/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPuserId": "nxtPuserId"
+      },
+      "namedRegex": "^/profile/(?<nxtPuserId>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/add-wardrobe-item",
+      "regex": "^/add\\-wardrobe\\-item(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/add\\-wardrobe\\-item(?:/)?$"
+    },
+    {
+      "page": "/api/3d-worker/diagnostics",
+      "regex": "^/api/3d\\-worker/diagnostics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/3d\\-worker/diagnostics(?:/)?$"
+    },
+    {
+      "page": "/api/3d-worker/submit",
+      "regex": "^/api/3d\\-worker/submit(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/3d\\-worker/submit(?:/)?$"
+    },
+    {
+      "page": "/api/add-piece",
+      "regex": "^/api/add\\-piece(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/add\\-piece(?:/)?$"
+    },
+    {
+      "page": "/api/ai/background-artwork",
+      "regex": "^/api/ai/background\\-artwork(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/ai/background\\-artwork(?:/)?$"
+    },
+    {
+      "page": "/api/ai/fashion/analyze-piece",
+      "regex": "^/api/ai/fashion/analyze\\-piece(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/ai/fashion/analyze\\-piece(?:/)?$"
+    },
+    {
+      "page": "/api/ai/fashion/background-studio",
+      "regex": "^/api/ai/fashion/background\\-studio(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/ai/fashion/background\\-studio(?:/)?$"
+    },
+    {
+      "page": "/api/ai/fashion/enrich-item",
+      "regex": "^/api/ai/fashion/enrich\\-item(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/ai/fashion/enrich\\-item(?:/)?$"
+    },
+    {
+      "page": "/api/ai/fashion/generate-card-description",
+      "regex": "^/api/ai/fashion/generate\\-card\\-description(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/ai/fashion/generate\\-card\\-description(?:/)?$"
+    },
+    {
+      "page": "/api/ai/fashion/search-intent",
+      "regex": "^/api/ai/fashion/search\\-intent(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/ai/fashion/search\\-intent(?:/)?$"
+    },
+    {
+      "page": "/api/ai/fashion/tester-fit",
+      "regex": "^/api/ai/fashion/tester\\-fit(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/ai/fashion/tester\\-fit(?:/)?$"
+    },
+    {
+      "page": "/api/artwork-studio/apply",
+      "regex": "^/api/artwork\\-studio/apply(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/artwork\\-studio/apply(?:/)?$"
+    },
+    {
+      "page": "/api/artwork-studio/generate",
+      "regex": "^/api/artwork\\-studio/generate(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/artwork\\-studio/generate(?:/)?$"
+    },
+    {
+      "page": "/api/artwork-studio/list",
+      "regex": "^/api/artwork\\-studio/list(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/artwork\\-studio/list(?:/)?$"
+    },
+    {
+      "page": "/api/artwork-studio/save",
+      "regex": "^/api/artwork\\-studio/save(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/artwork\\-studio/save(?:/)?$"
+    },
+    {
+      "page": "/api/auth/debug",
+      "regex": "^/api/auth/debug(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/debug(?:/)?$"
+    },
+    {
+      "page": "/api/auth/reset",
+      "regex": "^/api/auth/reset(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/reset(?:/)?$"
+    },
+    {
+      "page": "/api/auth/session",
+      "regex": "^/api/auth/session(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/session(?:/)?$"
+    },
+    {
+      "page": "/api/auth/verify",
+      "regex": "^/api/auth/verify(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/verify(?:/)?$"
+    },
+    {
+      "page": "/api/authview",
+      "regex": "^/api/authview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/authview(?:/)?$"
+    },
+    {
+      "page": "/api/brands",
+      "regex": "^/api/brands(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/brands(?:/)?$"
+    },
+    {
+      "page": "/api/dress-tester/bootstrap",
+      "regex": "^/api/dress\\-tester/bootstrap(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/dress\\-tester/bootstrap(?:/)?$"
+    },
+    {
+      "page": "/api/dress-tester/mannequins",
+      "regex": "^/api/dress\\-tester/mannequins(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/dress\\-tester/mannequins(?:/)?$"
+    },
+    {
+      "page": "/api/dress-tester/outfits",
+      "regex": "^/api/dress\\-tester/outfits(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/dress\\-tester/outfits(?:/)?$"
+    },
+    {
+      "page": "/api/dress-tester/pieces",
+      "regex": "^/api/dress\\-tester/pieces(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/dress\\-tester/pieces(?:/)?$"
+    },
+    {
+      "page": "/api/internal/blender-cloud/diagnostics",
+      "regex": "^/api/internal/blender\\-cloud/diagnostics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/internal/blender\\-cloud/diagnostics(?:/)?$"
+    },
+    {
+      "page": "/api/mannequins",
+      "regex": "^/api/mannequins(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/mannequins(?:/)?$"
+    },
+    {
+      "page": "/api/markets",
+      "regex": "^/api/markets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/markets(?:/)?$"
+    },
+    {
+      "page": "/api/model-proxy",
+      "regex": "^/api/model\\-proxy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/model\\-proxy(?:/)?$"
+    },
+    {
+      "page": "/api/outfit-card/interpret",
+      "regex": "^/api/outfit\\-card/interpret(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/outfit\\-card/interpret(?:/)?$"
+    },
+    {
+      "page": "/api/outfit-exports",
+      "regex": "^/api/outfit\\-exports(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/outfit\\-exports(?:/)?$"
+    },
+    {
+      "page": "/api/outfit-favorites",
+      "regex": "^/api/outfit\\-favorites(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/outfit\\-favorites(?:/)?$"
+    },
+    {
+      "page": "/api/piece-items",
+      "regex": "^/api/piece\\-items(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/piece\\-items(?:/)?$"
+    },
+    {
+      "page": "/api/pin",
+      "regex": "^/api/pin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/pin(?:/)?$"
+    },
+    {
+      "page": "/api/scheme-items",
+      "regex": "^/api/scheme\\-items(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/scheme\\-items(?:/)?$"
+    },
+    {
+      "page": "/api/schemes",
+      "regex": "^/api/schemes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/schemes(?:/)?$"
+    },
+    {
+      "page": "/api/schemes/public",
+      "regex": "^/api/schemes/public(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/schemes/public(?:/)?$"
+    },
+    {
+      "page": "/api/signup",
+      "regex": "^/api/signup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/signup(?:/)?$"
+    },
+    {
+      "page": "/api/upload-image",
+      "regex": "^/api/upload\\-image(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/upload\\-image(?:/)?$"
+    },
+    {
+      "page": "/api/user-posts",
+      "regex": "^/api/user\\-posts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/user\\-posts(?:/)?$"
+    },
+    {
+      "page": "/api/users/me",
+      "regex": "^/api/users/me(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/users/me(?:/)?$"
+    },
+    {
+      "page": "/api/users/public",
+      "regex": "^/api/users/public(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/users/public(?:/)?$"
+    },
+    {
+      "page": "/api/wardrobe/process-2d",
+      "regex": "^/api/wardrobe/process\\-2d(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/wardrobe/process\\-2d(?:/)?$"
+    },
+    {
+      "page": "/api/wardrobe/process-missing",
+      "regex": "^/api/wardrobe/process\\-missing(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/wardrobe/process\\-missing(?:/)?$"
+    },
+    {
+      "page": "/api/wardrobe/process-piece",
+      "regex": "^/api/wardrobe/process\\-piece(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/wardrobe/process\\-piece(?:/)?$"
+    },
+    {
+      "page": "/api/wardrobe-items",
+      "regex": "^/api/wardrobe\\-items(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/wardrobe\\-items(?:/)?$"
+    },
+    {
+      "page": "/api/wardrobe-items/generate-uv",
+      "regex": "^/api/wardrobe\\-items/generate\\-uv(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/wardrobe\\-items/generate\\-uv(?:/)?$"
+    },
+    {
+      "page": "/authview",
+      "regex": "^/authview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/authview(?:/)?$"
+    },
+    {
+      "page": "/create-my-scheme",
+      "regex": "^/create\\-my\\-scheme(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/create\\-my\\-scheme(?:/)?$"
+    },
+    {
+      "page": "/devauthgate",
+      "regex": "^/devauthgate(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/devauthgate(?:/)?$"
+    },
+    {
+      "page": "/dress-tester",
+      "regex": "^/dress\\-tester(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dress\\-tester(?:/)?$"
+    },
+    {
+      "page": "/explore-scheme",
+      "regex": "^/explore\\-scheme(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/explore\\-scheme(?:/)?$"
+    },
+    {
+      "page": "/favicon.ico",
+      "regex": "^/favicon\\.ico(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/forgetpasswordview",
+      "regex": "^/forgetpasswordview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/forgetpasswordview(?:/)?$"
+    },
+    {
+      "page": "/home",
+      "regex": "^/home(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/home(?:/)?$"
+    },
+    {
+      "page": "/my-wardrobe",
+      "regex": "^/my\\-wardrobe(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/my\\-wardrobe(?:/)?$"
+    },
+    {
+      "page": "/profile",
+      "regex": "^/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/profile(?:/)?$"
+    },
+    {
+      "page": "/profile/settings",
+      "regex": "^/profile/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/profile/settings(?:/)?$"
+    },
+    {
+      "page": "/search-items",
+      "regex": "^/search\\-items(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/search\\-items(?:/)?$"
+    },
+    {
+      "page": "/search-pieces",
+      "regex": "^/search\\-pieces(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/search\\-pieces(?:/)?$"
+    },
+    {
+      "page": "/signupview",
+      "regex": "^/signupview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/signupview(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

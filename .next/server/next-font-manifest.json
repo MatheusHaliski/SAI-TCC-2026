@@ -1,0 +1,58 @@
+{
+  "app": {
+    "[project]/app/_not-found/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/add-wardrobe-item/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/authview/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/create-my-scheme/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/devauthgate/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/dress-tester/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/explore-scheme/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/forgetpasswordview/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/home/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/my-wardrobe/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/profile/[userId]/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/profile/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/profile/settings/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/search-items/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/search-pieces/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/signupview/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

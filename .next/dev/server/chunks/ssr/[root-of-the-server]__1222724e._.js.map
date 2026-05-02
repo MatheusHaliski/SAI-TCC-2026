@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 18, "column": 0}, "map": {"version":3,"sources":["file:///Users/matheushaliski/Downloads/SAI-TCC-2026-main%2026/app/page.tsx"],"sourcesContent":["import { redirect } from 'next/navigation';\n\nexport default function RootPage() {\n  redirect('/authview');\n}\n"],"names":[],"mappings":";;;;AAAA;AAAA;;AAEe,SAAS;IACtB,IAAA,iMAAQ,EAAC;AACX"}}]
+}

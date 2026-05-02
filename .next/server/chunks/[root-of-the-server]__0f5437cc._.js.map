@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../../app/backend/services/errors.ts"],"sourcesContent":["export class ServiceError extends Error {\n  constructor(\n    message: string,\n    public readonly statusCode = 400,\n  ) {\n    super(message);\n  }\n}\n"],"names":[],"mappings":"q3BAAO,OAAM,UAAqB,gBAChC,aACE,CAAe,CACC,EAAa,GAAG,CAChC,CACA,KAAK,CAAC,GAAA,IAAA,CAFU,UAAA,CAAA,CAGlB,CACF"}

@@ -1,0 +1,19 @@
+{
+  "app": {
+    "[project]/app/_not-found/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/authview/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/home/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ],
+    "[project]/app/signupview/page": [
+      "static/media/ShareTechMono_Regular-s.p.a4c9fe51.ttf"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

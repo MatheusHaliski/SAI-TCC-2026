@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/auth/debug": {},
+    "/api/auth/reset": {},
+    "/api/auth/verify": {},
+    "/api/authview": {},
+    "/api/signup": {}
+  }
+}
