@@ -67,6 +67,7 @@ class MeshyPipeline:
         self.api_key = (api_key or os.getenv("MESHY_API_KEY", "")).strip()
         self.timeout_seconds = timeout_seconds
         self.create_url = self._build_url(MESHY_IMAGE_TO_3D_PATH)
+        logger.info("[meshy] initialized create_url=%s", self.create_url)
 
     def generate_base_model(
         self,
@@ -114,18 +115,25 @@ class MeshyPipeline:
         logger.info("[meshy] base model ready task_id=%s path=%s", task_id, base_path)
         return MeshyOutput(base_model_path=base_path, format=fmt, meshy_task_id=task_id, model_url=model_url, metadata=metadata)
 
-    def _build_url(self, path: str) -> str:
-        base = MESHY_BASE_URL.strip().rstrip("/")
-        normalized_path = path.strip()
-        if not normalized_path:
-            normalized_path = "/openapi/v1/image-to-3d"
-        if not normalized_path.startswith("/"):
-            normalized_path = f"/{normalized_path}"
-        return f"{base}{normalized_path}"
+    @staticmethod
+    def build_meshy_create_url(base_url: str) -> str:
+        base = (base_url or "https://api.meshy.ai").strip().rstrip("/")
+        base = base.replace("/openapi/v1/image-to-3d", "")
+        base = base.replace("/openapi/v1", "")
+        return f"{base}/openapi/v1/image-to-3d"
+
+    def _build_url(self, _path: str) -> str:
+        return self.build_meshy_create_url(MESHY_BASE_URL)
 
     def _headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+    def _safe_log_headers(self) -> dict[str, str]:
+        return {
+            "Authorization": "Bearer ***REDACTED***",
             "Content-Type": "application/json",
         }
 
@@ -166,7 +174,7 @@ class MeshyPipeline:
         payload = {"image_url": effective_image_url}
         self._validate_create_payload_schema(payload)
         headers = self._headers()
-        logger.info("[meshy] create request headers=%s body=%s", json.dumps(headers, sort_keys=True), json.dumps(payload, sort_keys=True))
+        logger.info("[meshy] create request headers=%s body=%s", json.dumps(self._safe_log_headers(), sort_keys=True), json.dumps(payload, sort_keys=True))
         response = self._request_with_retry("POST", self.create_url, headers=headers, json=payload)
         logger.info(
             "[meshy] create response status=%s headers=%s body=%s",
@@ -177,6 +185,12 @@ class MeshyPipeline:
 
         if response.status_code in {401, 403}:
             raise MeshyPipelineError("meshy_auth_failed", "Meshy authentication failed (401/403).", {"url": self.create_url, "status": response.status_code, "body": response.text})
+        if response.status_code == 404 and "/openapi/v1/openapi/v1" in self.create_url:
+            raise MeshyPipelineError(
+                "meshy_endpoint_misconfigured",
+                "MESHY_BASE_URL is duplicating /openapi/v1. Use https://api.meshy.ai or normalize the URL builder.",
+                {"url": self.create_url, "failedStage": "meshy_submit", "hint": "MESHY_BASE_URL is duplicating /openapi/v1. Use https://api.meshy.ai or normalize the URL builder."},
+            )
         if 400 <= response.status_code < 500:
             message = "Meshy rejected request payload. Verify image URL is publicly reachable and request fields are valid."
             raise MeshyPipelineError(
@@ -267,7 +281,7 @@ class MeshyPipeline:
 
     def _wait_for_completion(self, task_id: str) -> dict[str, Any]:
         status = "unknown"
-        poll_url = f"{self.create_url.rstrip('/')}/{task_id}"
+        poll_url = f"{self.build_meshy_create_url(MESHY_BASE_URL)}/{task_id}"
         logger.info("[meshy] poll url=%s", poll_url)
 
         for attempt in range(1, MESHY_MAX_POLL_ATTEMPTS + 1):
