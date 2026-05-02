@@ -16,7 +16,8 @@ export type ModelGenerationStatus =
   | 'failed'
   | 'needs_brand_review'
   | 'needs_preparation'
-  | 'processing';
+  | 'processing'
+  | 'processing_timeout';
 
 export type BrandDetectionSource = 'manual' | 'ocr' | 'vision' | 'hybrid';
 

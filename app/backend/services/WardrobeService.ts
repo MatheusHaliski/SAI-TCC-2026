@@ -442,12 +442,14 @@ export class WardrobeService {
       const hint = String(failureMeta.hint ?? 'Inspect pipeline_stage_details and retry the suggested next action.');
       const retryable = Boolean(failureMeta.retryable ?? true);
       const diagnostics = (failureMeta.diagnostics ?? {}) as Record<string, unknown>;
+      const isPollingTimeout = failedStage === 'cloud_polling_timeout';
+      const pipelineStatus: ModelGenerationStatus = isPollingTimeout ? 'processing_timeout' : 'failed';
       await this.wardrobeRepo.updatePipelineStatus(
         input.wardrobeItemId,
-        'failed',
+        pipelineStatus,
         error instanceof Error ? error.message : 'Unknown model pipeline failure.',
         withStageHistory(item?.pipeline_stage_details as Record<string, unknown> | null, {
-          stage: 'failed',
+          stage: isPollingTimeout ? 'processing_timeout' : 'failed',
           failedStage,
           provider: provider as 'runpod' | 'meshy' | 'local' | 'branding',
           errorCode,
@@ -601,6 +603,7 @@ export class WardrobeService {
       job_type: MODEL_GENERATION_JOB_TYPE,
       cloud_submit_status: submitted.status,
     });
+    await this.wardrobeRepo.updateProcessingState(options.wardrobeItemId, submitted.cloudJobId);
 
     const resolveModelFromArtifacts = (artifacts: Record<string, unknown> | null) => {
       const source = artifacts ?? {};
@@ -658,14 +661,65 @@ export class WardrobeService {
       }
 
       if (status.status === 'failed' || status.status === 'cancelled') {
+        const rawError =
+          status.raw?.error && typeof status.raw.error === 'object'
+            ? (status.raw.error as Record<string, unknown>)
+            : null;
+        const workerCode = rawError ? String(rawError.code ?? '') : '';
         const details = status.errorMessage ?? JSON.stringify(status.raw?.error ?? status.raw);
-        throw new ServiceError(`RunPod Blender model generation ${status.status}: ${details}`, 502);
+        const fullMessage = `RunPod Blender model generation failed: ${details}`;
+
+        const meshyStageMap: Record<string, string> = {
+          meshy_auth_failed: 'meshy_auth_failed',
+          meshy_auth_not_configured: 'meshy_auth_failed',
+          meshy_bad_request: 'meshy_submit',
+          meshy_endpoint_misconfigured: 'meshy_endpoint_misconfigured',
+          meshy_input_image_unreachable: 'meshy_submit',
+          meshy_invalid_request: 'meshy_submit',
+          meshy_provider_error: 'meshy_submit',
+          meshy_provider_invalid_response: 'meshy_submit',
+          meshy_task_failed: 'meshy_submit',
+          meshy_temporarily_unavailable: 'meshy_submit',
+          meshy_timeout: 'meshy_submit',
+        };
+
+        const isMeshyError = workerCode.startsWith('meshy_');
+        const failedStage = isMeshyError
+          ? (meshyStageMap[workerCode] ?? 'meshy_submit')
+          : 'runpod_worker_failure';
+        const isAuthError = workerCode.includes('auth');
+        const isMisconfigured = workerCode === 'meshy_endpoint_misconfigured';
+
+        throw Object.assign(new ServiceError(fullMessage, 502), {
+          pipelineFailure: {
+            failedStage,
+            provider: 'runpod',
+            errorCode: workerCode.toUpperCase() || 'WORKER_FAILED',
+            hint: rawError
+              ? String((rawError.details as Record<string, unknown> | undefined)?.hint ?? rawError.message ?? details)
+              : fullMessage,
+            retryable: !isAuthError && !isMisconfigured,
+            diagnostics: (rawError?.details as Record<string, unknown> | undefined) ?? {},
+          },
+        });
       }
 
       await new Promise((resolve) => setTimeout(resolve, MODEL_GENERATION_POLL_MS));
     }
 
-    throw new ServiceError('RunPod Blender model generation timed out before completion.', 504);
+    throw Object.assign(
+      new ServiceError('RunPod Blender model generation is still processing after the local polling window.', 202),
+      {
+        pipelineFailure: {
+          failedStage: 'cloud_polling_timeout',
+          provider: 'runpod',
+          errorCode: 'CLOUD_POLLING_TIMEOUT',
+          hint: 'RunPod accepted the job but it did not finish within the local polling window. Continue polling the status endpoint.',
+          retryable: true,
+          diagnostics: { cloudJobId: submitted?.cloudJobId ?? null },
+        },
+      },
+    );
   }
 
   private async validateGeometryScopeWithFallback(input: {

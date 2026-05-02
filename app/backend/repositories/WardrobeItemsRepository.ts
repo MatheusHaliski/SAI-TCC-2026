@@ -496,6 +496,40 @@ export class WardrobeItemsRepository extends BaseRepository {
     });
   }
 
+  async updateProcessingState(wardrobeItemId: string, cloudJobId: string): Promise<void> {
+    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
+      model_status: 'processing',
+      cloud_job_id: cloudJobId,
+      model_generation_error: null,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  async updateCompletedModel(
+    wardrobeItemId: string,
+    assets: {
+      model_3d_url: string;
+      model_base_3d_url: string | null;
+      model_usdz_url: string | null;
+      model_preview_url: string | null;
+    },
+    cloudJobId: string,
+  ): Promise<void> {
+    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
+      model_status: 'completed',
+      model_3d_url: assets.model_3d_url,
+      model_base_3d_url: assets.model_base_3d_url,
+      model_usdz_url: assets.model_usdz_url,
+      model_preview_url: assets.model_preview_url,
+      model_generation_error: null,
+      brand_applied: false,
+      brand_apply_blocked_reason: 'branded_pass_not_implemented',
+      cloud_job_id: cloudJobId,
+      completedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  }
+
   async updateGenerationAttempt(wardrobeItemId: string, generationAttemptCount: number): Promise<void> {
     await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
       generation_attempt_count: generationAttemptCount,

@@ -14,7 +14,9 @@ from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+import mimetypes
+import re as _re
+from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
@@ -451,6 +453,29 @@ def job_status(jobId: str) -> dict[str, Any]:
 @app.get("/status/{jobId}")
 def job_status_alias(jobId: str) -> dict[str, Any]:
     return job_status(jobId)
+
+
+_ALLOWED_ARTIFACTS = frozenset({"final_model.glb", "base_meshy.glb", "final_model.usdz", "debug.json"})
+_ARTIFACT_CONTENT_TYPES: dict[str, str] = {
+    ".glb": "model/gltf-binary",
+    ".usdz": "model/vnd.usdz+zip",
+    ".json": "application/json",
+}
+
+
+@app.get("/artifacts/{job_id}/{filename}")
+def get_artifact(job_id: str, filename: str) -> Response:
+    if not _re.fullmatch(r"[a-zA-Z0-9_\-]{1,64}", job_id):
+        raise HTTPException(status_code=400, detail={"code": "INVALID_JOB_ID", "message": "Invalid job_id format"})
+    if filename not in _ALLOWED_ARTIFACTS:
+        raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": f"Artifact '{filename}' is not available"})
+    artifact_path = OUTPUT_DIR / job_id / filename
+    if not artifact_path.exists():
+        raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": f"Artifact '{filename}' not found for job {job_id}"})
+    suffix = artifact_path.suffix.lower()
+    content_type = _ARTIFACT_CONTENT_TYPES.get(suffix) or mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    logger.info("artifact_download job_id=%s filename=%s", job_id, filename)
+    return FileResponse(artifact_path, media_type=content_type, filename=filename)
 
 
 if __name__ == "__main__":

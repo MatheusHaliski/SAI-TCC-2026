@@ -22,6 +22,13 @@ function normalizeUrl(value: string | undefined): string {
   return (value ?? '').trim().replace(/\/+$/, '');
 }
 
+function buildMeshyCreateUrl(rawBase: string): string {
+  let base = (rawBase || 'https://api.meshy.ai').trim().replace(/\/+$/, '');
+  base = base.replace('/openapi/v1/image-to-3d', '');
+  base = base.replace('/openapi/v1', '');
+  return `${base}/openapi/v1/image-to-3d`;
+}
+
 function chooseProvider(bodyProvider: unknown): WorkerProvider {
   if (typeof bodyProvider === 'string') {
     const normalized = bodyProvider.trim().toLowerCase();
@@ -242,8 +249,7 @@ export async function POST(req: Request) {
 
   try {
     if (provider === 'meshy') {
-      const meshyBase = normalizeUrl(process.env.MESHY_BASE_URL) || 'https://api.meshy.ai/openapi/v1';
-      const meshyUrl = `${meshyBase}/image-to-3d`;
+      const meshyUrl = buildMeshyCreateUrl(normalizeUrl(process.env.MESHY_BASE_URL));
       const meshyToken = process.env.MESHY_API_KEY?.trim() ?? '';
       const prompt = typeof body.prompt === 'string' && body.prompt.trim() ? body.prompt.trim() : undefined;
       const payload: Record<string, unknown> = {

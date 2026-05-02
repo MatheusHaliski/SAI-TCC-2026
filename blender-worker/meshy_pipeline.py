@@ -9,9 +9,15 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+import re
+
 import requests
 
 logger = logging.getLogger("stylistai.meshy_pipeline")
+
+
+def _redact_url_token(url: str) -> str:
+    return re.sub(r"([?&]token=)[^&\s]+", r"\1***REDACTED***", url)
 
 MESHY_BASE_URL = os.getenv("MESHY_BASE_URL", "https://api.meshy.ai")
 MESHY_IMAGE_TO_3D_PATH = os.getenv("MESHY_IMAGE_TO_3D_PATH", "/openapi/v1/image-to-3d")
@@ -238,9 +244,10 @@ class MeshyPipeline:
 
         is_firebase_storage = parsed.netloc.endswith("firebasestorage.googleapis.com")
         query_params = parse_qs(parsed.query)
-        logger.info("[meshy] validating image_url accessibility url=%s host=%s firebase=%s", image_url, parsed.netloc, is_firebase_storage)
+        logger.info("[meshy] validating image_url accessibility url=%s host=%s firebase=%s", _redact_url_token(image_url), parsed.netloc, is_firebase_storage)
         if is_firebase_storage:
-            logger.info("[meshy] firebase image_url query params=%s", json.dumps(query_params, sort_keys=True))
+            safe_params = {k: ("***REDACTED***" if k == "token" else v) for k, v in query_params.items()}
+            logger.info("[meshy] firebase image_url query params=%s", json.dumps(safe_params, sort_keys=True))
 
         if is_firebase_storage and "token" not in query_params:
             logger.warning(
