@@ -200,6 +200,13 @@ export async function reconcileBlenderWorkerJob(pieceId: string, jobId: string):
   });
 
   const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+
+  // job_not_found (404) is returned as a payload so the caller can handle
+  // it gracefully (fall back to creating a new job) instead of throwing.
+  if (response.status === 404 && typeof body?.status === 'string' && body.status === 'job_not_found') {
+    return body;
+  }
+
   if (!response.ok) {
     const message =
       typeof body?.message === 'string' ? body.message

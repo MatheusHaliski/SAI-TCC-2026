@@ -263,20 +263,40 @@ export default function MyWardrobeView() {
     setProgressItem(item);
 
     if (isInFlight) {
-      // Job already submitted — reconcile instead of re-submitting
-      await assetJob.startJob({
-        existingJobId: cloudJobId,
-        pollJob: async (jobId) => {
-          const payload = await reconcileBlenderWorkerJob(item.wardrobe_item_id, jobId);
-          console.log('[3d-worker] reconcile:poll', {
-            pieceId: item.wardrobe_item_id,
-            jobId,
-            status: payload.status ?? null,
+      // One-shot check: try to reconcile the existing job eagerly.
+      // If it's done → open viewer directly.
+      // If still running → start polling.
+      // If job_not_found (worker restarted, no artifacts on disk) → fall through to new job.
+      try {
+        const result = await reconcileBlenderWorkerJob(item.wardrobe_item_id, cloudJobId);
+        const resultStatus = String(result.status ?? '').toLowerCase();
+        const model3dUrl = typeof result.model_3d_url === 'string' ? result.model_3d_url.trim() : '';
+
+        if (resultStatus === 'completed' && model3dUrl) {
+          setProgressItem(null);
+          setViewerItem(item);
+          setViewerUrl(model3dUrl);
+          return;
+        }
+
+        if (resultStatus === 'processing') {
+          await assetJob.startJob({
+            existingJobId: cloudJobId,
+            pollJob: async (jobId) => {
+              const payload = await reconcileBlenderWorkerJob(item.wardrobe_item_id, jobId);
+              console.log('[3d-worker] reconcile:poll', { pieceId: item.wardrobe_item_id, jobId, status: payload.status ?? null });
+              return payload;
+            },
           });
-          return payload;
-        },
-      });
-      return;
+          return;
+        }
+
+        // job_not_found or failed — fall through to create a new job below
+        console.log('[3d-worker] reconcile:stale-job', { pieceId: item.wardrobe_item_id, cloudJobId, resultStatus });
+      } catch (err) {
+        // Worker unreachable or unexpected error — fall through to new job
+        console.warn('[3d-worker] reconcile:error-fallback', { pieceId: item.wardrobe_item_id, cloudJobId, error: String(err) });
+      }
     }
 
     await assetJob.startJob({

@@ -64,7 +64,8 @@ export type ReconcileOutcome =
   | { ok: true; status: 'processing'; jobId: string; rawStatus: string }
   | { ok: false; status: 'failed'; jobId: string; rawStatus: string; error: unknown }
   | { ok: true; status: 'completed'; jobId: string; model_3d_url: string; model_base_3d_url: string | null; model_usdz_url: string | null; model_preview_url: string | null }
-  | { ok: false; status: 'error'; error: string };
+  | { ok: false; status: 'error'; error: string }
+  | { ok: false; status: 'job_not_found'; jobId: string; error: string };
 
 export async function reconcileJob(pieceId: string, jobId: string): Promise<ReconcileOutcome> {
   const worker = resolveWorkerConfig();
@@ -91,6 +92,32 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
 
   if (!workerRes.ok) {
     const body = await workerRes.text().catch(() => '');
+    if (workerRes.status === 404) {
+      // Worker restarted and lost in-memory job record.
+      // The artifact file may still exist on the pod's persistent disk.
+      // Attempt a direct artifact download before giving up.
+      const glbBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'final_model.glb');
+      if (glbBuf) {
+        const repo = new WardrobeItemsRepository();
+        const piece = await repo.findById(pieceId);
+        const userId = String(piece?.user_id ?? piece?.userId ?? '');
+        if (userId) {
+          const storageBase = `wardrobe-3d-models/${userId}/${pieceId}/${jobId}`;
+          const finalModelUrl = await uploadToFirebase(`${storageBase}/final_model.glb`, glbBuf, 'model/gltf-binary');
+          const baseBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'base_meshy.glb');
+          const baseModelUrl = baseBuf ? await uploadToFirebase(`${storageBase}/base_meshy.glb`, baseBuf, 'model/gltf-binary') : null;
+          const usdzBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'final_model.usdz');
+          const usdzUrl = usdzBuf ? await uploadToFirebase(`${storageBase}/final_model.usdz`, usdzBuf, 'model/vnd.usdz+zip') : null;
+          const pngBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'preview.png');
+          const previewUrl = pngBuf ? await uploadToFirebase(`${storageBase}/preview.png`, pngBuf, 'image/png') : null;
+          await repo.updateCompletedModel(pieceId, { model_3d_url: finalModelUrl, model_base_3d_url: baseModelUrl, model_usdz_url: usdzUrl, model_preview_url: previewUrl }, jobId);
+          console.info('[3d-worker/reconcile] recovered artifacts from disk after job-not-found', { pieceId, jobId });
+          return { ok: true, status: 'completed', jobId, model_3d_url: finalModelUrl, model_base_3d_url: baseModelUrl, model_usdz_url: usdzUrl, model_preview_url: previewUrl };
+        }
+      }
+      // Artifacts not on disk either — job is truly gone.
+      return { ok: false, status: 'job_not_found', jobId, error: `RunPod job ${jobId} no longer exists (worker restarted). Please start a new generation job.` };
+    }
     return { ok: false, status: 'error', error: `worker_error: HTTP ${workerRes.status} — ${body.slice(0, 300)}` };
   }
 
@@ -231,6 +258,10 @@ export async function GET(req: NextRequest) {
     const errResult = result as { ok: false; status: 'error'; error: string };
     const isUnreachable = errResult.error.startsWith('worker_unreachable');
     return NextResponse.json(errResult, { status: isUnreachable ? 503 : 502 });
+  }
+
+  if (result.status === 'job_not_found') {
+    return NextResponse.json(result, { status: 404 });
   }
 
   return NextResponse.json(result, { status: result.ok ? 200 : 502 });

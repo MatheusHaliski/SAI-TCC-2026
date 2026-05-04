@@ -35,6 +35,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(errResult, { status: isUnreachable ? 503 : 502 });
     }
 
+    if (result.status === 'job_not_found') {
+      return NextResponse.json(result, { status: 404 });
+    }
+
     return NextResponse.json(result, { status: result.ok ? 200 : 502 });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
