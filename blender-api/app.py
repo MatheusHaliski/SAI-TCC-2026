@@ -83,6 +83,11 @@ class JobRequest(BaseModel):
     imageUrl: str
     jobType: str = "blender_uv_pipeline"
     options: dict[str, Any] = Field(default_factory=dict)
+    pieceId: str | None = None
+    pieceName: str | None = None
+    decalMode: str | None = None
+    frontAxis: str | None = None
+    decalPlacement: dict[str, Any] | None = None
 
 
 class LbSubmitRequest(BaseModel):
@@ -169,6 +174,8 @@ def _normalize_status_payload(job_id: str, payload: dict[str, Any]) -> dict[str,
         response["metrics"] = payload["metrics"]
     if error:
         response["error"] = error
+    if isinstance(payload.get("validation"), dict):
+        response["validation"] = payload["validation"]
     if stage:
         response["stage"] = normalize_status(stage)
     return response

@@ -120,6 +120,11 @@ class JobRequest(BaseModel):
     imageUrl: str
     jobType: str = "blender_uv_pipeline"
     options: dict[str, Any] = Field(default_factory=dict)
+    pieceId: str | None = None
+    pieceName: str | None = None
+    decalMode: str | None = None
+    frontAxis: str | None = None
+    decalPlacement: dict[str, Any] | None = None
 
 
 class JobResponse(BaseModel):
@@ -222,6 +227,9 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
             "pattern_url": options.get("patternUrl"),
             "reference_image_url": image_url or None,
             "job_type": job_type,
+            "decal_mode": options.get("decalMode") or "front_only",
+            "front_axis": options.get("frontAxis") or os.getenv("DECAL_FRONT_AXIS", "-Y"),
+            "decal_placement": options.get("decalPlacement") or {"region": "chest", "x": 0.5, "y": 0.62, "scale": 0.28},
         }
         result = pipeline_controller.run(job_id=job_id, piece_data=piece_data)
         duration_ms = int((time.perf_counter() - started) * 1000)
@@ -231,10 +239,13 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
         debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
 
         artifacts = dict(result.artifacts)
+        validation = result.debug.get("steps", {}).get("blender", {}).get("validation", {"frontOnlyDecal": True, "backDecalDetected": False})
         model_path = Path(artifacts.get("model_3d_path", ""))
         if model_path.exists():
             artifacts["model_3d_url"] = build_artifact_url(model_path, job_id)
         artifacts["debug_report_path"] = str(debug_path)
+        artifacts.setdefault("preview_front_path", str(job_dir / "preview_front.png"))
+        artifacts.setdefault("preview_back_path", str(job_dir / "preview_back.png"))
 
         update_job(
             job_id,
@@ -242,6 +253,7 @@ def run_3d_pipeline(job_id: str, payload: dict[str, Any]) -> None:
             artifacts=artifacts,
             metrics=result.metrics,
             debug=debug,
+            validation=validation,
             error=None,
         )
         print(f"[JOB] success id={job_id}")
@@ -395,11 +407,15 @@ async def create_job(request: Request) -> dict[str, str]:
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="JSON body must be an object")
 
+        options = payload.get("options", {}) if isinstance(payload.get("options", {}), dict) else {}
+        for k in ("decalMode", "frontAxis", "decalPlacement", "pieceId", "pieceName"):
+            if k in payload and k not in options:
+                options[k] = payload.get(k)
         normalized_payload = {
             "modelUrl": payload.get("modelUrl"),
             "imageUrl": payload.get("imageUrl", ""),
             "jobType": payload.get("jobType", "blender_uv_pipeline"),
-            "options": payload.get("options", {}),
+            "options": options,
         }
 
         result = _submit_job(normalized_payload)
@@ -450,6 +466,8 @@ def job_status(jobId: str) -> dict[str, Any]:
         response["error"] = record["error"]
     if record.get("qualityReport"):
         response["qualityReport"] = record["qualityReport"]
+    if record.get("validation"):
+        response["validation"] = record["validation"]
     if record.get("debug"):
         response["debug"] = record["debug"]
     return response
@@ -460,7 +478,7 @@ def job_status_alias(jobId: str) -> dict[str, Any]:
     return job_status(jobId)
 
 
-_ALLOWED_ARTIFACTS = frozenset({"final_model.glb", "base_meshy.glb", "final_model.usdz", "debug.json", "preview.png"})
+_ALLOWED_ARTIFACTS = frozenset({"final_model.glb", "base_meshy.glb", "final_model.usdz", "debug.json", "preview.png", "preview_front.png", "preview_back.png"})
 _ARTIFACT_CONTENT_TYPES: dict[str, str] = {
     ".glb": "model/gltf-binary",
     ".usdz": "model/vnd.usdz+zip",
