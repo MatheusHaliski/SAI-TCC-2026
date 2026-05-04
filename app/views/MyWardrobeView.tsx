@@ -285,6 +285,9 @@ export default function MyWardrobeView() {
             pollJob: async (jobId) => {
               const payload = await reconcileBlenderWorkerJob(item.wardrobe_item_id, jobId);
               console.log('[3d-worker] reconcile:poll', { pieceId: item.wardrobe_item_id, jobId, status: payload.status ?? null });
+              if (String(payload.status ?? '').toLowerCase() === 'job_not_found') {
+                throw new Error('Job no longer exists in the worker. Click Retry to start a new generation.');
+              }
               return payload;
             },
           });
@@ -324,6 +327,9 @@ export default function MyWardrobeView() {
           jobId,
           status: payload.status ?? null,
         });
+        if (String(payload.status ?? '').toLowerCase() === 'job_not_found') {
+          throw new Error('Job no longer exists in the worker. Click Retry to start a new generation.');
+        }
         return payload;
       },
     });
@@ -439,7 +445,8 @@ export default function MyWardrobeView() {
         }}
         onRetry={() => {
           if (!progressItem) return;
-          assetJob.retry();
+          assetJob.cancelPolling();
+          void handleOpenViewerIntent(progressItem);
         }}
       />
 

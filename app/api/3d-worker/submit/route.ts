@@ -7,6 +7,7 @@ import {
   toErrorPayload,
   truncateText,
 } from '@/app/api/3d-worker/utils';
+import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
 
 type SubmitBody = Record<string, unknown>;
 
@@ -32,9 +33,25 @@ function buildMeshyCreateUrl(rawBase: string): string {
 function chooseProvider(bodyProvider: unknown): WorkerProvider {
   if (typeof bodyProvider === 'string') {
     const normalized = bodyProvider.trim().toLowerCase();
-    if (normalized === 'runpod' || normalized === 'meshy') {
-      return normalized;
+    // Only honour an explicit 'meshy' override when no RunPod worker is configured.
+    // When GPU_WORKER_URL is set, RunPod is the entry-point and handles Meshy
+    // internally — the Meshy task ID must never leak out as a RunPod job ID.
+    if (normalized === 'runpod') return 'runpod';
+    if (normalized === 'meshy') {
+      const gpuWorkerUrl = normalizeUrl(process.env.GPU_WORKER_URL);
+      const gpuWorkerToken = process.env.GPU_WORKER_TOKEN?.trim() ?? '';
+      if (!gpuWorkerUrl || !gpuWorkerToken) return 'meshy';
     }
+  }
+
+  // Prefer the RunPod worker when it is configured: it handles Meshy internally
+  // and returns a stable runpod_job_id that the reconcile route can poll safely.
+  const gpuWorkerUrl = normalizeUrl(process.env.GPU_WORKER_URL);
+  const gpuWorkerToken = process.env.GPU_WORKER_TOKEN?.trim() ?? '';
+  const runpodEndpointUrl = normalizeUrl(process.env.RUNPOD_ENDPOINT_URL);
+  const runpodApiKey = process.env.RUNPOD_API_KEY?.trim() ?? '';
+  if ((gpuWorkerUrl && gpuWorkerToken) || (runpodEndpointUrl && runpodApiKey)) {
+    return 'runpod';
   }
 
   if (process.env.MESHY_API_KEY?.trim()) {
@@ -364,12 +381,22 @@ export async function POST(req: Request) {
       normalizedStatus: status,
     });
 
+    // Persist cloud_job_id / runpod_job_id immediately so that if the user
+    // navigates away and returns, the reconcile route uses the correct ID.
+    if (jobId && pieceId) {
+      const repo = new WardrobeItemsRepository();
+      repo.updateProcessingState(pieceId, jobId).catch((err) => {
+        console.error('[3d-worker/submit] failed to persist runpod_job_id', { pieceId, jobId, error: err });
+      });
+    }
+
     return NextResponse.json(
       {
         ok: true,
         provider,
         status,
         jobId,
+        runpod_job_id: jobId,
         upstream: result.parsedJson,
       },
       { status: 200 },

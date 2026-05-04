@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import logging
 import os
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -13,6 +14,66 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger("stylistai.startup")
+
+_DNS_PROBE_HOSTS = [
+    "google.com",
+    "firebasestorage.googleapis.com",
+    "api.meshy.ai",
+]
+_RESOLV_CONF = Path("/etc/resolv.conf")
+_FALLBACK_RESOLV = "nameserver 1.1.1.1\nnameserver 8.8.8.8\noptions timeout:2 attempts:3 rotate\n"
+
+
+def _probe_dns(hosts: list[str]) -> list[str]:
+    """Return list of hosts that could NOT be resolved."""
+    failed: list[str] = []
+    for host in hosts:
+        try:
+            socket.getaddrinfo(host, None)
+            logger.info("dns_probe ok host=%s", host)
+        except OSError as exc:
+            logger.warning("dns_probe failed host=%s err=%s", host, exc)
+            failed.append(host)
+    return failed
+
+
+def _rewrite_resolv_conf() -> None:
+    try:
+        _RESOLV_CONF.write_text(_FALLBACK_RESOLV, encoding="utf-8")
+        logger.info("dns_heal wrote fallback resolv.conf path=%s", _RESOLV_CONF)
+    except OSError as exc:
+        logger.error("dns_heal could not write %s: %s", _RESOLV_CONF, exc)
+
+
+def check_and_heal_dns() -> None:
+    """
+    Test DNS before uvicorn starts. If resolution fails, rewrite /etc/resolv.conf
+    with public resolvers and re-test. Exits with code 1 if DNS is still broken.
+    """
+    logger.info("dns_preflight starting probes=%s", _DNS_PROBE_HOSTS)
+    failed = _probe_dns(_DNS_PROBE_HOSTS)
+    if not failed:
+        logger.info("dns_preflight all probes passed")
+        return
+
+    logger.warning("dns_preflight failed hosts=%s — rewriting resolv.conf", failed)
+    _rewrite_resolv_conf()
+
+    # Clear the OS-level resolver cache by forcing a fresh lookup after the rewrite.
+    # Python's socket module caches nothing itself, but we give the kernel a moment.
+    import time
+    time.sleep(1)
+
+    failed_after = _probe_dns(_DNS_PROBE_HOSTS)
+    if not failed_after:
+        logger.info("dns_preflight healed — all probes passed after resolv.conf rewrite")
+        return
+
+    logger.error(
+        "dns_preflight FATAL still failing after resolv.conf rewrite failed_hosts=%s",
+        failed_after,
+    )
+    sys.exit(1)
 
 
 def verify_runtime() -> None:
@@ -56,6 +117,7 @@ def run_uvicorn() -> int:
 
 if __name__ == "__main__":
     try:
+        check_and_heal_dns()
         verify_runtime()
         rc = run_uvicorn()
         if rc != 0:

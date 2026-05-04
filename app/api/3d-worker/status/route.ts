@@ -65,7 +65,7 @@ export type ReconcileOutcome =
   | { ok: false; status: 'failed'; jobId: string; rawStatus: string; error: unknown }
   | { ok: true; status: 'completed'; jobId: string; model_3d_url: string; model_base_3d_url: string | null; model_usdz_url: string | null; model_preview_url: string | null }
   | { ok: false; status: 'error'; error: string }
-  | { ok: false; status: 'job_not_found'; jobId: string; error: string };
+  | { ok: false; status: 'job_not_found'; jobId: string; error: string; diagnostics?: Record<string, unknown> };
 
 export async function reconcileJob(pieceId: string, jobId: string): Promise<ReconcileOutcome> {
   const worker = resolveWorkerConfig();
@@ -93,30 +93,27 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
   if (!workerRes.ok) {
     const body = await workerRes.text().catch(() => '');
     if (workerRes.status === 404) {
-      // Worker restarted and lost in-memory job record.
-      // The artifact file may still exist on the pod's persistent disk.
-      // Attempt a direct artifact download before giving up.
-      const glbBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'final_model.glb');
-      if (glbBuf) {
-        const repo = new WardrobeItemsRepository();
-        const piece = await repo.findById(pieceId);
-        const userId = String(piece?.user_id ?? piece?.userId ?? '');
-        if (userId) {
-          const storageBase = `wardrobe-3d-models/${userId}/${pieceId}/${jobId}`;
-          const finalModelUrl = await uploadToFirebase(`${storageBase}/final_model.glb`, glbBuf, 'model/gltf-binary');
-          const baseBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'base_meshy.glb');
-          const baseModelUrl = baseBuf ? await uploadToFirebase(`${storageBase}/base_meshy.glb`, baseBuf, 'model/gltf-binary') : null;
-          const usdzBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'final_model.usdz');
-          const usdzUrl = usdzBuf ? await uploadToFirebase(`${storageBase}/final_model.usdz`, usdzBuf, 'model/vnd.usdz+zip') : null;
-          const pngBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'preview.png');
-          const previewUrl = pngBuf ? await uploadToFirebase(`${storageBase}/preview.png`, pngBuf, 'image/png') : null;
-          await repo.updateCompletedModel(pieceId, { model_3d_url: finalModelUrl, model_base_3d_url: baseModelUrl, model_usdz_url: usdzUrl, model_preview_url: previewUrl }, jobId);
-          console.info('[3d-worker/reconcile] recovered artifacts from disk after job-not-found', { pieceId, jobId });
-          return { ok: true, status: 'completed', jobId, model_3d_url: finalModelUrl, model_base_3d_url: baseModelUrl, model_usdz_url: usdzUrl, model_preview_url: previewUrl };
-        }
-      }
-      // Artifacts not on disk either — job is truly gone.
-      return { ok: false, status: 'job_not_found', jobId, error: `RunPod job ${jobId} no longer exists (worker restarted). Please start a new generation job.` };
+      // The worker returned 404 for this jobId. This means either:
+      //   a) The worker restarted and lost its in-memory job registry, OR
+      //   b) The jobId stored in cloud_job_id was never a valid RunPod worker job
+      //      (e.g. a Meshy task ID or a Firestore piece ID leaked into cloud_job_id).
+      //
+      // Do NOT attempt to download /artifacts/{jobId} — if the ID is wrong, that
+      // endpoint will also 404 and we would be masking the real problem.
+      // Surface a clear diagnostic instead so the caller can restart the job.
+      console.warn('[3d-worker/reconcile] job_not_found: RunPod worker returned 404', {
+        pieceId,
+        jobId,
+        errorCode: 'INVALID_WORKER_JOB_ID',
+        hint: 'The app polled a job ID the RunPod worker does not recognise. Likely cause: a Meshy task ID or piece ID was stored as cloud_job_id. Start a new generation job.',
+      });
+      return {
+        ok: false,
+        status: 'job_not_found',
+        jobId,
+        error: `The app is polling a job ID that the RunPod worker does not know (jobId=${jobId}). Start a new generation job.`,
+        diagnostics: { errorCode: 'INVALID_WORKER_JOB_ID', usedJobId: jobId },
+      } as ReconcileOutcome;
     }
     return { ok: false, status: 'error', error: `worker_error: HTTP ${workerRes.status} — ${body.slice(0, 300)}` };
   }
@@ -140,11 +137,14 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
       ? String(rawError.message ?? `RunPod job ${rawStatus}`)
       : `RunPod job ${rawStatus}`;
 
+    const isDnsFailure = workerCode === 'dns_resolution_failure';
+    const isMeshyFailure = !isDnsFailure && workerCode.startsWith('meshy_');
     await repo.updatePipelineStatus(pieceId, 'failed', errorMsg, {
       stage: 'failed',
-      failedStage: workerCode.startsWith('meshy_') ? 'meshy_submit' : 'runpod_worker_failure',
+      failedStage: isDnsFailure ? 'network_dns' : isMeshyFailure ? 'meshy_submit' : 'runpod_worker_failure',
       provider: 'runpod',
-      errorCode: workerCode.toUpperCase() || 'WORKER_FAILED',
+      errorCode: isDnsFailure ? 'DNS_RESOLUTION_FAILED' : workerCode.toUpperCase() || 'WORKER_FAILED',
+      kind: isDnsFailure ? 'dns_resolution_failure' : undefined,
       retryable: true,
       diagnostics: (rawError?.details as Record<string, unknown> | undefined) ?? {},
     });
@@ -162,6 +162,15 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
     if (!userId) {
       return { ok: false, status: 'error', error: 'piece_missing_userId' };
     }
+
+    // Extract meshy_task_id from worker metrics — store it separately from
+    // cloud_job_id so the two IDs are never confused in Firestore.
+    const metrics = jobData.metrics && typeof jobData.metrics === 'object'
+      ? (jobData.metrics as Record<string, unknown>)
+      : {};
+    const meshyTaskId = typeof metrics.meshyTaskId === 'string' && metrics.meshyTaskId.trim()
+      ? metrics.meshyTaskId.trim()
+      : null;
 
     const debug = jobData.debug && typeof jobData.debug === 'object'
       ? (jobData.debug as Record<string, unknown>)
@@ -207,6 +216,7 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
         model_base_3d_url: baseModelUrl,
         model_usdz_url: usdzUrl,
         model_preview_url: resolvedPreviewUrl,
+        meshy_task_id: meshyTaskId,
       },
       jobId,
     );

@@ -156,6 +156,9 @@ class MeshyPipeline:
                 error_text = str(exc).lower()
                 if "name resolution" in error_text or "failed to resolve" in error_text or "nodename nor servname provided" in error_text:
                     failure_kind = "dns_resolution_failure"
+                    # DNS failures are not transient in the way a connection reset is —
+                    # retrying immediately after a DNS failure rarely helps, but we still
+                    # attempt MESHY_NETWORK_RETRIES times in case the resolver recovers.
                 else:
                     failure_kind = "network_connection_failure"
                 if attempt > MESHY_NETWORK_RETRIES:
@@ -164,10 +167,30 @@ class MeshyPipeline:
                 logger.warning("[meshy] temporary network failure url=%s attempt=%s retry_in=%ss err=%s", url, attempt, wait_seconds, exc)
                 time.sleep(wait_seconds)
 
+        if failure_kind == "dns_resolution_failure":
+            raise MeshyPipelineError(
+                "dns_resolution_failure",
+                f"DNS resolution failed for {url}. The container cannot reach the external network. "
+                "Check /etc/resolv.conf or restart the container to trigger DNS self-healing.",
+                {
+                    "url": url,
+                    "kind": "dns_resolution_failure",
+                    "failedStage": "network_dns",
+                    "retryable": True,
+                    "error": str(transient_error) if transient_error else "dns_resolution_failure",
+                },
+            ) from transient_error
+
         raise MeshyPipelineError(
             "meshy_temporarily_unavailable",
             "Meshy service temporarily unavailable. Please retry.",
-            {"url": url, "kind": failure_kind, "error": str(transient_error) if transient_error else "network_failure"},
+            {
+                "url": url,
+                "kind": failure_kind,
+                "failedStage": "network_connection",
+                "retryable": True,
+                "error": str(transient_error) if transient_error else "network_failure",
+            },
         ) from transient_error
 
     def _create_task(self, *, image_url: str, piece_type: str) -> str:
@@ -280,9 +303,35 @@ class MeshyPipeline:
                     },
                 )
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-            # Pod may have no outbound internet; let Meshy's servers attempt the download instead.
+            error_text = str(exc).lower()
+            is_dns_failure = (
+                "name resolution" in error_text
+                or "failed to resolve" in error_text
+                or "nodename nor servname provided" in error_text
+            )
+            if is_dns_failure:
+                # DNS is broken on this pod — Meshy's servers will also be unable to
+                # download the Firebase Storage image, so fail now rather than wasting
+                # the task submission.
+                raise MeshyPipelineError(
+                    "dns_resolution_failure",
+                    f"DNS resolution failed while probing input image URL. "
+                    "The container cannot resolve external hostnames. "
+                    "Restart the container to trigger DNS self-healing.",
+                    {
+                        "imageUrl": _redact_url_token(image_url),
+                        "kind": "dns_resolution_failure",
+                        "failedStage": "network_dns",
+                        "retryable": True,
+                        "errorCode": "DNS_RESOLUTION_FAILED",
+                        "error": str(exc),
+                    },
+                ) from exc
+            # Non-DNS network failure (e.g. connection refused, timeout) —
+            # the pod may simply lack direct outbound access to Firebase Storage
+            # while Meshy's own servers can still reach the URL.
             logger.warning(
-                "[meshy] image_url probe failed (network unreachable from pod) — skipping validation url=%s err=%s",
+                "[meshy] image_url probe failed (non-DNS network error from pod) — skipping validation url=%s err=%s",
                 _redact_url_token(image_url),
                 str(exc),
             )

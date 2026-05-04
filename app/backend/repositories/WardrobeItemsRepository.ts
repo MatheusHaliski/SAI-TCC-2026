@@ -507,7 +507,10 @@ export class WardrobeItemsRepository extends BaseRepository {
   async updateProcessingState(wardrobeItemId: string, cloudJobId: string): Promise<void> {
     await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
       model_status: 'processing',
+      // cloud_job_id and runpod_job_id are always the RunPod worker jobId returned
+      // by POST /jobs — never a Meshy task ID or Firestore piece ID.
       cloud_job_id: cloudJobId,
+      runpod_job_id: cloudJobId,
       model_generation_error: null,
       updated_at: new Date().toISOString(),
     });
@@ -520,13 +523,15 @@ export class WardrobeItemsRepository extends BaseRepository {
       model_base_3d_url: string | null;
       model_usdz_url: string | null;
       model_preview_url: string | null;
+      // Stored separately from cloud_job_id — never used to poll RunPod.
+      meshy_task_id?: string | null;
     },
     cloudJobId: string,
   ): Promise<void> {
     assertPublicModelUrl(assets.model_3d_url, 'model_3d_url');
     assertPublicModelUrl(assets.model_base_3d_url, 'model_base_3d_url');
     assertPublicModelUrl(assets.model_usdz_url, 'model_usdz_url');
-    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
+    const update: Record<string, unknown> = {
       model_status: 'completed',
       model_3d_url: assets.model_3d_url,
       model_base_3d_url: assets.model_base_3d_url,
@@ -535,10 +540,16 @@ export class WardrobeItemsRepository extends BaseRepository {
       model_generation_error: null,
       brand_applied: false,
       brand_apply_blocked_reason: 'branded_pass_not_implemented',
+      // cloud_job_id and runpod_job_id remain the RunPod worker jobId.
       cloud_job_id: cloudJobId,
+      runpod_job_id: cloudJobId,
       completedAt: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    });
+    };
+    if (assets.meshy_task_id != null) {
+      update.meshy_task_id = assets.meshy_task_id;
+    }
+    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update(update);
   }
 
   async updateGenerationAttempt(wardrobeItemId: string, generationAttemptCount: number): Promise<void> {
