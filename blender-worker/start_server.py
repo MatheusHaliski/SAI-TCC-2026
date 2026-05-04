@@ -53,7 +53,8 @@ def check_and_heal_dns() -> None:
     logger.info("dns_preflight starting probes=%s", _DNS_PROBE_HOSTS)
     failed = _probe_dns(_DNS_PROBE_HOSTS)
     if not failed:
-        logger.info("dns_preflight all probes passed")
+        for host in _DNS_PROBE_HOSTS:
+            logger.info("[bootstrap] dns_ok host=%s", host)
         return
 
     logger.warning("dns_preflight failed hosts=%s — rewriting resolv.conf", failed)
@@ -66,14 +67,13 @@ def check_and_heal_dns() -> None:
 
     failed_after = _probe_dns(_DNS_PROBE_HOSTS)
     if not failed_after:
-        logger.info("dns_preflight healed — all probes passed after resolv.conf rewrite")
+        for host in _DNS_PROBE_HOSTS:
+            logger.info("[bootstrap] dns_ok host=%s", host)
         return
 
-    logger.error(
-        "dns_preflight FATAL still failing after resolv.conf rewrite failed_hosts=%s",
-        failed_after,
-    )
-    sys.exit(1)
+    for host in failed_after:
+        logger.error("[bootstrap] dns_failed host=%s", host)
+    logger.warning("dns_preflight continuing startup despite DNS probe failures")
 
 
 def verify_runtime() -> None:

@@ -4,9 +4,15 @@ export interface WardrobeModelUrlFields {
   model_base_3d_url?: string | null;
 }
 
+function isRenderableHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
 function normalizeUrl(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
+  if (!trimmed) return null;
+  if (trimmed.startsWith('file://')) return null;
+  return isRenderableHttpUrl(trimmed) ? trimmed : null;
 }
 
 export function resolveWardrobeModelUrl(item: WardrobeModelUrlFields): string | null {

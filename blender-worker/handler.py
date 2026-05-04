@@ -438,7 +438,12 @@ def job_status(jobId: str) -> dict[str, Any]:
         "status": status,
     }
     if record.get("artifacts"):
-        response["artifacts"] = record["artifacts"]
+        artifacts = dict(record["artifacts"])
+        if status == "completed":
+            artifacts.setdefault("public_model_3d_url", None)
+            artifacts.setdefault("public_model_usdz_url", None)
+            artifacts.setdefault("thumbnail_url", artifacts.get("preview_url"))
+        response["artifacts"] = artifacts
     if record.get("metrics"):
         response["metrics"] = record["metrics"]
     if record.get("error"):

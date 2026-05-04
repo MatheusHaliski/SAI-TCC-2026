@@ -185,11 +185,16 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
 
     const storageBase = `wardrobe-3d-models/${userId}/${pieceId}/${jobId}`;
 
+    console.info('[3d-worker] job_completed', { pieceId, jobId });
+    console.info('[artifact-publish] downloading final_model.glb from worker', { jobId });
     const glbBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'final_model.glb');
     if (!glbBuf) {
       return { ok: false, status: 'error', error: 'artifact_download_failed: final_model.glb' };
     }
-    const finalModelUrl = await uploadToFirebase(`${storageBase}/final_model.glb`, glbBuf, 'model/gltf-binary');
+    const finalModelPath = `${storageBase}/final_model.glb`;
+    const finalModelUrl = await uploadToFirebase(finalModelPath, glbBuf, 'model/gltf-binary');
+    console.info('[artifact-publish] uploaded', { firebasePath: finalModelPath });
+    console.info('[artifact-publish] publicUrl', { publicUrl: finalModelUrl });
 
     const baseBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'base_meshy.glb');
     const baseModelUrl = baseBuf
@@ -199,6 +204,12 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
     const usdzBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'final_model.usdz');
     const usdzUrl = usdzBuf
       ? await uploadToFirebase(`${storageBase}/final_model.usdz`, usdzBuf, 'model/vnd.usdz+zip')
+      : null;
+
+
+    const debugBuf = await downloadArtifact(worker.workerUrl, worker.token, jobId, 'debug.json');
+    const debugUrl = debugBuf
+      ? await uploadToFirebase(`${storageBase}/debug.json`, debugBuf, 'application/json')
       : null;
 
     let resolvedPreviewUrl = previewUrl;
@@ -220,6 +231,29 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
       },
       jobId,
     );
+
+    const completedAt = new Date().toISOString();
+    await repo.updatePipelineStatus(pieceId, 'completed', null, {
+      current: {
+        provider: 'runpod',
+        stage: 'completed',
+        runpod_job_id: jobId,
+        meshyTaskId,
+        durationMs: Number(metrics.durationMs ?? 0) || null,
+        completedAt,
+        artifacts: {
+          internal: jobData.artifacts ?? null,
+          public: {
+            model_3d_url: finalModelUrl,
+            model_base_3d_url: baseModelUrl,
+            model_usdz_url: usdzUrl,
+            model_preview_url: resolvedPreviewUrl,
+            debug_report_url: debugUrl,
+          },
+        },
+      },
+    });
+    console.info('[firestore] piece model_status=completed model_3d_url_saved=true', { pieceId, jobId });
 
     console.info('[3d-worker/reconcile] model completed and synced', {
       pieceId,
