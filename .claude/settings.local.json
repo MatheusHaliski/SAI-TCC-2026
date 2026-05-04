@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3 -)"
+      "Bash(python3 -)",
+      "Bash(/opt/homebrew/bin/node \"/Users/matheushaliski/Downloads/SAI-TCC-2026-main 26/app/components/create-scheme/teste.js\")"
     ]
   }
 }

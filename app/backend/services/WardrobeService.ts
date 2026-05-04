@@ -449,7 +449,7 @@ export class WardrobeService {
         pipelineStatus,
         error instanceof Error ? error.message : 'Unknown model pipeline failure.',
         withStageHistory(item?.pipeline_stage_details as Record<string, unknown> | null, {
-          stage: isPollingTimeout ? 'processing_timeout' : 'failed',
+          stage: isPollingTimeout ? 'processing' : 'failed',
           failedStage,
           provider: provider as 'runpod' | 'meshy' | 'local' | 'branding',
           errorCode,
