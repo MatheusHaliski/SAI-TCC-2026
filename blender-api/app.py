@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
+from tester2d_pipeline import Tester2DPipeline, Tester2DRequest, Tester2DResponse
 
 GPU_WORKER_URL = os.getenv("GPU_WORKER_URL", "").strip()
 RUNNING_AS_ORCHESTRATOR = bool(GPU_WORKER_URL)
@@ -32,6 +33,8 @@ if RUNNING_AS_ORCHESTRATOR and _is_loopback(GPU_WORKER_URL):
     raise RuntimeError("GPU_WORKER_URL cannot point to localhost in orchestrator mode.")
 
 app = FastAPI(title="StylistAI Blender API Orchestrator", version="2.0.0")
+
+TESTER2D_PIPELINE = Tester2DPipeline()
 
 ALLOWED_ORIGINS = [
     "https://sai-tcc-2026.vercel.app",
@@ -170,6 +173,24 @@ def _normalize_status_payload(job_id: str, payload: dict[str, Any]) -> dict[str,
         response["stage"] = normalize_status(stage)
     return response
 
+
+
+
+@app.post("/tester2d/process", response_model=Tester2DResponse)
+def process_tester2d(payload: Tester2DRequest) -> Tester2DResponse:
+    if not TESTER2D_PIPELINE.enable_v2:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "FEATURE_DISABLED",
+                "message": "ENABLE_TESTER_2D_V2=false. Ative a flag para usar o pipeline redesign fit-realism.",
+            },
+        )
+
+    try:
+        return TESTER2D_PIPELINE.process(payload)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail={"code": "ASSET_NOT_FOUND", "message": str(exc)}) from exc
 
 @app.post("/submit", response_model=SubmitResponse)
 def submit(payload: JobRequest, authorization: str | None = Header(default=None)) -> dict[str, str]:
