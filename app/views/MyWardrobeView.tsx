@@ -14,7 +14,7 @@ import WardrobeItemCard from '@/app/components/wardrobe/WardrobeItemCard';
 import { use3dAssetJob } from '@/app/hooks/use3dAssetJob';
 import {
   buildBlenderWorkerSubmitPayload,
-  pollBlenderWorkerJob,
+  reconcileBlenderWorkerJob,
   submitBlenderWorkerJob,
 } from '@/app/services/blenderWorkerClient';
 import type { SearchIntentOutput } from '@/app/lib/ai/providers/types';
@@ -31,6 +31,7 @@ interface WardrobeItem {
   model_branded_3d_url?: string | null;
   model_status?: string;
   model_generation_error?: string | null;
+  cloud_job_id?: string | null;
   brand_applied?: boolean;
   fitProfile?: { preparationStatus?: string };
   brand: string;
@@ -255,7 +256,28 @@ export default function MyWardrobeView() {
       return;
     }
 
+    const modelStatus = String(item.model_status ?? '').trim().toLowerCase();
+    const cloudJobId = item.cloud_job_id?.trim() ?? '';
+    const isInFlight = (modelStatus === 'processing' || modelStatus === 'processing_timeout') && Boolean(cloudJobId);
+
     setProgressItem(item);
+
+    if (isInFlight) {
+      // Job already submitted — reconcile instead of re-submitting
+      await assetJob.startJob({
+        existingJobId: cloudJobId,
+        pollJob: async (jobId) => {
+          const payload = await reconcileBlenderWorkerJob(item.wardrobe_item_id, jobId);
+          console.log('[3d-worker] reconcile:poll', {
+            pieceId: item.wardrobe_item_id,
+            jobId,
+            status: payload.status ?? null,
+          });
+          return payload;
+        },
+      });
+      return;
+    }
 
     await assetJob.startJob({
       createJob: async () => {
@@ -275,8 +297,8 @@ export default function MyWardrobeView() {
         return response;
       },
       pollJob: async (jobId) => {
-        const payload = await pollBlenderWorkerJob(jobId);
-        console.log('[3d-worker] poll', {
+        const payload = await reconcileBlenderWorkerJob(item.wardrobe_item_id, jobId);
+        console.log('[3d-worker] reconcile:poll', {
           pieceId: item.wardrobe_item_id,
           pieceName: item.name,
           jobId,

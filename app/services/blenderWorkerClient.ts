@@ -191,3 +191,22 @@ export async function pollBlenderWorkerJob(jobId: string): Promise<Record<string
 
   return body ?? {};
 }
+
+export async function reconcileBlenderWorkerJob(pieceId: string, jobId: string): Promise<Record<string, unknown>> {
+  const response = await fetch('/api/3d-worker/reconcile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pieceId, jobId }),
+  });
+
+  const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!response.ok) {
+    const message =
+      typeof body?.message === 'string' ? body.message
+        : typeof body?.error === 'string' ? body.error
+          : `Reconcile failed with status ${response.status}.`;
+    throw new Error(message);
+  }
+
+  return body ?? {};
+}

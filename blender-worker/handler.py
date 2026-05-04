@@ -455,11 +455,12 @@ def job_status_alias(jobId: str) -> dict[str, Any]:
     return job_status(jobId)
 
 
-_ALLOWED_ARTIFACTS = frozenset({"final_model.glb", "base_meshy.glb", "final_model.usdz", "debug.json"})
+_ALLOWED_ARTIFACTS = frozenset({"final_model.glb", "base_meshy.glb", "final_model.usdz", "debug.json", "preview.png"})
 _ARTIFACT_CONTENT_TYPES: dict[str, str] = {
     ".glb": "model/gltf-binary",
     ".usdz": "model/vnd.usdz+zip",
     ".json": "application/json",
+    ".png": "image/png",
 }
 
 

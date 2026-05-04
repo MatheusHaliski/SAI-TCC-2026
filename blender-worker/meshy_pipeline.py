@@ -279,6 +279,13 @@ class MeshyPipeline:
                         "isFirebaseStorage": is_firebase_storage,
                     },
                 )
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+            # Pod may have no outbound internet; let Meshy's servers attempt the download instead.
+            logger.warning(
+                "[meshy] image_url probe failed (network unreachable from pod) — skipping validation url=%s err=%s",
+                _redact_url_token(image_url),
+                str(exc),
+            )
         except requests.exceptions.RequestException as exc:
             raise MeshyPipelineError(
                 "meshy_input_image_unreachable",

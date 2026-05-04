@@ -443,7 +443,7 @@ export class WardrobeService {
       const retryable = Boolean(failureMeta.retryable ?? true);
       const diagnostics = (failureMeta.diagnostics ?? {}) as Record<string, unknown>;
       const isPollingTimeout = failedStage === 'cloud_polling_timeout';
-      const pipelineStatus: ModelGenerationStatus = isPollingTimeout ? 'processing_timeout' : 'failed';
+      const pipelineStatus: ModelGenerationStatus = isPollingTimeout ? 'processing' : 'failed';
       await this.wardrobeRepo.updatePipelineStatus(
         input.wardrobeItemId,
         pipelineStatus,
@@ -708,13 +708,13 @@ export class WardrobeService {
     }
 
     throw Object.assign(
-      new ServiceError('RunPod Blender model generation is still processing after the local polling window.', 202),
+      new ServiceError('3D generation is still running. Continue polling.', 202),
       {
         pipelineFailure: {
           failedStage: 'cloud_polling_timeout',
           provider: 'runpod',
           errorCode: 'CLOUD_POLLING_TIMEOUT',
-          hint: 'RunPod accepted the job but it did not finish within the local polling window. Continue polling the status endpoint.',
+          hint: 'RunPod accepted the job but it did not finish within the local polling window. Call /api/3d-worker/reconcile to check completion.',
           retryable: true,
           diagnostics: { cloudJobId: submitted?.cloudJobId ?? null },
         },

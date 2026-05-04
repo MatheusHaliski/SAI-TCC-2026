@@ -7,6 +7,14 @@ import { MarketsRepository } from './MarketsRepository';
 import { UsersRepository } from './UsersRepository';
 
 const WARDROBE_ITEMS_COLLECTION = 'sai-wardrobeItems';
+
+function assertPublicModelUrl(url: string | null | undefined, field: string): void {
+  if (url == null) return;
+  const s = String(url).trim();
+  if (s.startsWith('file://') || s.startsWith('/workspace/') || s.startsWith('/tmp/') || (!s.startsWith('http://') && !s.startsWith('https://'))) {
+    throw new Error(`${field} must be an http(s):// URL — got: ${s.slice(0, 120)}`);
+  }
+}
 const RECOMMENDED_ACTIONS: WardrobeImageAnalysis['recommended_action'][] = [
   'approve_catalog_2d',
   'refine_with_diffusion',
@@ -515,6 +523,9 @@ export class WardrobeItemsRepository extends BaseRepository {
     },
     cloudJobId: string,
   ): Promise<void> {
+    assertPublicModelUrl(assets.model_3d_url, 'model_3d_url');
+    assertPublicModelUrl(assets.model_base_3d_url, 'model_base_3d_url');
+    assertPublicModelUrl(assets.model_usdz_url, 'model_usdz_url');
     await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
       model_status: 'completed',
       model_3d_url: assets.model_3d_url,
@@ -541,6 +552,7 @@ export class WardrobeItemsRepository extends BaseRepository {
   async updateModel3dUrl(wardrobeItemId: string, model3dUrl: string): Promise<void> {
     const normalized = model3dUrl.trim();
     if (!normalized) return;
+    assertPublicModelUrl(normalized, 'model_3d_url');
 
     await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
       model_3d_url: normalized,
