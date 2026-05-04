@@ -1,4 +1,4 @@
-# SAI Cloud Blender Pipeline (RunPod Separated Runtime)
+# FAI Cloud Blender Pipeline (RunPod Separated Runtime)
 
 This repository now supports a **separated RunPod deployment**:
 
