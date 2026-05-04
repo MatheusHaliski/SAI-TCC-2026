@@ -17,8 +17,12 @@ export default function ThreeDViewerModal({ open, title, modelUrl, posterUrl, on
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const safeUrl = useMemo(() => modelUrl.startsWith('http://') ? modelUrl.replace('http://', 'https://') : modelUrl, [modelUrl]);
-  const proxiedModelUrl = useMemo(() => safeUrl.includes('assets.meshy.ai') ? `/api/model-proxy?url=${encodeURIComponent(safeUrl)}` : safeUrl, [safeUrl]);
+  const renderableModelUrl = useMemo(() => {
+    const trimmed = modelUrl?.trim();
+    if (!trimmed || trimmed.startsWith('file://') || !/^https?:\/\//i.test(trimmed)) return null;
+    const safeUrl = trimmed.startsWith('http://') ? trimmed.replace('http://', 'https://') : trimmed;
+    return safeUrl.includes('assets.meshy.ai') ? `/api/model-proxy?url=${encodeURIComponent(safeUrl)}` : safeUrl;
+  }, [modelUrl]);
   const proxiedPoster = useMemo(() => {
     if (!posterUrl) return undefined;
     const safePoster = posterUrl.startsWith('http://') ? posterUrl.replace('http://', 'https://') : posterUrl;
@@ -46,7 +50,7 @@ export default function ThreeDViewerModal({ open, title, modelUrl, posterUrl, on
       element.removeEventListener('load', onLoad as EventListener);
       element.removeEventListener('error', onError as EventListener);
     };
-  }, [open, proxiedModelUrl, reloadKey]);
+  }, [open, renderableModelUrl, reloadKey]);
 
   if (!open) return null;
 
@@ -61,9 +65,9 @@ export default function ThreeDViewerModal({ open, title, modelUrl, posterUrl, on
           </div>
           <div className="relative">
             <model-viewer
-              key={`${proxiedModelUrl}-${reloadKey}`}
+              key={`${renderableModelUrl ?? 'pending'}-${reloadKey}`}
               ref={modelViewerRef}
-              src={proxiedModelUrl}
+              src={renderableModelUrl ?? undefined}
               poster={proxiedPoster}
               ar={false}
               camera-controls
@@ -72,7 +76,7 @@ export default function ThreeDViewerModal({ open, title, modelUrl, posterUrl, on
               auto-rotate
               className="h-[60vh] w-full rounded-xl bg-slate-900"
             />
-            {loading ? <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/55 text-sm text-white/90">Loading 3D model...</div> : null}
+            {!renderableModelUrl ? <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/70 text-sm text-white/90">Modelo gerado, aguardando publicação do arquivo 3D...</div> : loading ? <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/55 text-sm text-white/90">Loading 3D model...</div> : null}
             {error ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl bg-black/70 p-4 text-center text-sm text-white">
                 <p>{error}</p>
