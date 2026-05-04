@@ -76,6 +76,8 @@ class Fashion3DController:
             "model_3d_path": str(output_glb),
             "model_3d_url": output_glb.as_uri(),
             "model_usdz_path": str(output_glb.with_suffix(".usdz")),
+            "preview_front_path": blender_meta.get("preview_front_path"),
+            "preview_back_path": blender_meta.get("preview_back_path"),
             "base_model_path": str(meshy_output.base_model_path),
             "debug_report_path": str(debug_path),
             "output_root": str(self.output_root),
