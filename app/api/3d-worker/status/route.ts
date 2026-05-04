@@ -144,7 +144,7 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
       failedStage: isDnsFailure ? 'network_dns' : isMeshyFailure ? 'meshy_submit' : 'runpod_worker_failure',
       provider: 'runpod',
       errorCode: isDnsFailure ? 'DNS_RESOLUTION_FAILED' : workerCode.toUpperCase() || 'WORKER_FAILED',
-      kind: isDnsFailure ? 'dns_resolution_failure' : undefined,
+      ...(isDnsFailure ? { kind: 'dns_resolution_failure' } : {}),
       retryable: true,
       diagnostics: (rawError?.details as Record<string, unknown> | undefined) ?? {},
     });
