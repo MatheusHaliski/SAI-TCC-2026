@@ -2,13 +2,15 @@ import { GarmentAnchors, WardrobePieceType } from '@/app/lib/fashion-ai/types/wa
 
 export function estimateGarmentAnchors(pieceType: WardrobePieceType): GarmentAnchors | null {
   if (pieceType === 'top') {
+    // Typical e-commerce product photo: collar very close to top (~5-7%), shoulders
+    // at ~14-16%, hem at ~88-92%.  Previous y=0.12 was too low, pushing the shirt down.
     return {
-      neckCenter: { x: 0.5, y: 0.12 },
-      shoulderLeft: { x: 0.24, y: 0.18 },
-      shoulderRight: { x: 0.76, y: 0.18 },
-      waistLeft: { x: 0.3, y: 0.68 },
-      waistRight: { x: 0.7, y: 0.68 },
-      hemCenter: { x: 0.5, y: 0.82 },
+      neckCenter: { x: 0.5, y: 0.06 },
+      shoulderLeft: { x: 0.20, y: 0.14 },
+      shoulderRight: { x: 0.80, y: 0.14 },
+      waistLeft: { x: 0.26, y: 0.70 },
+      waistRight: { x: 0.74, y: 0.70 },
+      hemCenter: { x: 0.5, y: 0.90 },
     };
   }
 

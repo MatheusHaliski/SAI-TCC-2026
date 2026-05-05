@@ -34,6 +34,8 @@ export default function DressTesterView() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [backfillRunning, setBackfillRunning] = useState(false);
   const [backfillSummary, setBackfillSummary] = useState<string | null>(null);
+  const [reseedRunning, setReseedRunning] = useState(false);
+  const [reseedSummary, setReseedSummary] = useState<string | null>(null);
   const [hasDevSession] = useState(() => Boolean(getDevSessionToken()));
   const [aiInstructions, setAiInstructions] = useState<Record<string, TesterFitOutput>>({});
   const isDevToolsEnabled = process.env.NODE_ENV !== 'production' || hasDevSession;
@@ -105,7 +107,7 @@ export default function DressTesterView() {
   }, [mannequin, equipped]);
 
   const PREVIEW_BBOX: Record<WardrobePieceType, { x: number; y: number; w: number; h: number }> = {
-    top: { x: 0.10, y: 0.08, w: 0.80, h: 0.84 },
+    top: { x: 0.06, y: 0.04, w: 0.88, h: 0.90 },
     bottom: { x: 0.12, y: 0.06, w: 0.76, h: 0.88 },
     shoes: { x: 0.10, y: 0.10, w: 0.80, h: 0.80 },
     full_body: { x: 0.10, y: 0.04, w: 0.80, h: 0.92 },
@@ -174,6 +176,24 @@ export default function DressTesterView() {
     }
   };
 
+  const reseedMannequins = async (force: boolean) => {
+    setReseedRunning(true);
+    setReseedSummary(null);
+    const response = await fetch('/api/dress-tester/reseed-mannequins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ force }),
+    });
+    const payload = await response.json().catch(() => null);
+    setReseedRunning(false);
+    if (!response.ok || !payload?.ok) {
+      setReseedSummary('Reseed failed. Check console logs.');
+      return;
+    }
+    setReseedSummary(`Mannequin profiles ${force ? 'force-overwritten' : 'merged'} (${payload.profiles?.length ?? 0} profiles).`);
+    await refreshData();
+  };
+
   const processMissingPieces = async () => {
     setBackfillRunning(true);
     setBackfillSummary(null);
@@ -233,7 +253,26 @@ export default function DressTesterView() {
               >
                 {backfillRunning ? 'Processing Missing Pieces...' : 'Process Missing Pieces'}
               </button>
+              <button
+                type="button"
+                className="rounded-lg border border-sky-300/60 bg-sky-400/20 px-3 py-2 text-xs font-semibold text-sky-50 disabled:opacity-60"
+                onClick={() => void reseedMannequins(false)}
+                disabled={reseedRunning}
+                title="Merge code defaults into Firestore (preserves manual edits)"
+              >
+                {reseedRunning ? 'Reseeding...' : 'Reseed Mannequin Profiles'}
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-red-400/60 bg-red-500/20 px-3 py-2 text-xs font-semibold text-red-100 disabled:opacity-60"
+                onClick={() => void reseedMannequins(true)}
+                disabled={reseedRunning}
+                title="Force-overwrite ALL mannequin slot/anchor coordinates from code defaults"
+              >
+                Force Reset Mannequin Coords
+              </button>
               {backfillSummary ? <p className="text-xs text-amber-100">{backfillSummary}</p> : null}
+              {reseedSummary ? <p className="text-xs text-sky-100">{reseedSummary}</p> : null}
             </div>
           ) : null}
           {message ? <p className="text-xs text-white/70">{message}</p> : null}

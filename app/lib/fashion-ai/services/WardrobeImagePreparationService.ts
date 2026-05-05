@@ -163,7 +163,9 @@ export class WardrobeImagePreparationService {
     // Values describe where the garment content sits within the garment product image (0–1),
     // not where it appears on the body. Typical e-commerce product photos center the garment
     // as the primary subject with ~10% padding on each side.
-    if (pieceType === 'top') return { x: 0.10, y: 0.08, w: 0.80, h: 0.84 };
+    // Collar starts very close to the top of a typical product photo (~4%).
+    // Garment fills ~88% of width and ~90% of height (less side margin than previously assumed).
+    if (pieceType === 'top') return { x: 0.06, y: 0.04, w: 0.88, h: 0.90 };
     if (pieceType === 'bottom') return { x: 0.12, y: 0.06, w: 0.76, h: 0.88 };
     if (pieceType === 'shoes') return { x: 0.10, y: 0.10, w: 0.80, h: 0.80 };
     if (pieceType === 'full_body') return { x: 0.10, y: 0.04, w: 0.80, h: 0.92 };

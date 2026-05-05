@@ -209,6 +209,24 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../../app/api/3d-worker/reconcile/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/3d-worker/reconcile">> = Specific
+  const handler = {} as typeof import("../../../app/api/3d-worker/reconcile/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/api/3d-worker/status/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/3d-worker/status">> = Specific
+  const handler = {} as typeof import("../../../app/api/3d-worker/status/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../app/api/3d-worker/submit/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/3d-worker/submit">> = Specific

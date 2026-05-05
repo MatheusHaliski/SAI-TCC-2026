@@ -66,9 +66,40 @@ export default function Tester2DStage({ mannequin, layers, zoom, showDebug, sele
             })}
 
             {showDebug ? (
-              <div className="absolute left-2 top-2 z-[120] rounded-lg bg-black/70 px-2 py-1 text-[11px] uppercase tracking-[0.14em] text-white/90">
-                Selected: {selectedSlot ?? 'none'}
-              </div>
+              <>
+                <div className="absolute left-2 top-2 z-[120] rounded-lg bg-black/70 px-2 py-1 text-[11px] uppercase tracking-[0.14em] text-white/90">
+                  Selected: {selectedSlot ?? 'none'}
+                </div>
+                {/* Slot bbox outlines */}
+                {Object.entries(mannequin.slots).map(([slotName, slot]) => slot ? (
+                  <div
+                    key={`slot-${slotName}`}
+                    className="absolute border border-cyan-400/70 pointer-events-none"
+                    style={{
+                      left: toPct(slot.bbox.x, mannequin.canvasWidth),
+                      top: toPct(slot.bbox.y, mannequin.canvasHeight),
+                      width: toPct(slot.bbox.w, mannequin.canvasWidth),
+                      height: toPct(slot.bbox.h, mannequin.canvasHeight),
+                      zIndex: 100,
+                    }}
+                  >
+                    <span className="absolute left-0 top-0 bg-cyan-900/80 text-cyan-200 text-[9px] px-1 leading-tight">{slotName}</span>
+                  </div>
+                ) : null)}
+                {/* Anchor points */}
+                {Object.entries(mannequin.slots).flatMap(([, slot]) =>
+                  slot?.anchors ? Object.entries(slot.anchors).map(([anchorName, pt]) => pt ? (
+                    <div
+                      key={`anchor-${anchorName}`}
+                      className="absolute z-[110] pointer-events-none"
+                      style={{ left: toPct(pt.x, mannequin.canvasWidth), top: toPct(pt.y, mannequin.canvasHeight) }}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-fuchsia-400 border border-white -translate-x-1/2 -translate-y-1/2" />
+                      <span className="absolute left-2 top-0 bg-black/70 text-fuchsia-200 text-[8px] px-0.5 whitespace-nowrap">{anchorName}</span>
+                    </div>
+                  ) : null) : []
+                )}
+              </>
             ) : null}
           </div>
         </div>

@@ -25,13 +25,26 @@ export class MannequinFitService {
       (normalizedBBox?.w ?? 0) <= 1 &&
       (normalizedBBox?.h ?? 0) <= 1;
 
-    // When the prepared garment image still contains extra transparent/white padding,
-    // normalizedBBox describes where the garment content sits inside that image.
-    // We project the full image so that the garment bbox fits exactly into the mannequin slot.
+    // Scale the image so the garment content region fills the slot dimensions.
     const width = hasUsableNormalizedBBox ? bbox.w / (normalizedBBox?.w ?? 1) : bbox.w;
     const height = hasUsableNormalizedBBox ? bbox.h / (normalizedBBox?.h ?? 1) : bbox.h;
+
+    // Horizontal: offset left so garment content left-edge aligns with slot left.
     const x = hasUsableNormalizedBBox ? bbox.x - (normalizedBBox?.x ?? 0) * width : bbox.x;
-    const y = hasUsableNormalizedBBox ? bbox.y - (normalizedBBox?.y ?? 0) * height : bbox.y;
+
+    // Vertical: prefer neck-anchor pinning over normalizedBBox.y.
+    // When both the mannequin slot and the garment expose a neckCenter anchor, we
+    // position the garment image so that its collar maps exactly to the mannequin neck
+    // regardless of how much padding the product photo has above the collar.
+    const mannequinNeckY = slot.anchors?.neckCenter?.y ?? null;
+    const garmentNeckY = fitProfile.garmentAnchors?.neckCenter?.y ?? null;
+
+    const y =
+      mannequinNeckY !== null && garmentNeckY !== null
+        ? mannequinNeckY - garmentNeckY * height
+        : hasUsableNormalizedBBox
+          ? bbox.y - (normalizedBBox?.y ?? 0) * height
+          : bbox.y;
 
     return {
       assetUrl: fitProfile.preparedAssetUrl!,

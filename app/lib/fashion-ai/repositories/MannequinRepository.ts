@@ -51,12 +51,14 @@ export class MannequinRepository {
     return snap.docs.map((doc) => doc.data() as MannequinProfile);
   }
 
-  async seedDefaults(): Promise<void> {
+  async seedDefaults(opts: { force?: boolean } = {}): Promise<void> {
     const db = getAdminFirestore();
     const batch = db.batch();
     DEFAULT_MANNEQUIN_PROFILES.forEach((profile) => {
       const ref = db.collection(COLLECTION).doc(profile.id);
-      batch.set(ref, profile, { merge: true });
+      // force=true overwrites ALL fields (use when slot/anchor coordinates were corrected).
+      // force=false (default) merges so manual calibrations in Firestore are preserved.
+      batch.set(ref, { ...profile, updatedAt: new Date().toISOString() }, { merge: !opts.force });
     });
     await batch.commit();
   }
