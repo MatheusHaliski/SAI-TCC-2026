@@ -22,30 +22,55 @@ export default function DressTesterView() {
   const [processingPieceId, setProcessingPieceId] = useState<string | null>(null);
   const [stageImageUrl, setStageImageUrl] = useState('');
   const [stageError, setStageError] = useState<string | null>(null);
+  const [tryOnCache, setTryOnCache] = useState<Record<string, string>>({});
 
   const mannequin = useMemo(() => mannequins.find((item) => item.id === selectedMannequin) ?? mannequins[0], [mannequins, selectedMannequin]);
+  const mannequinImageAbsoluteUrl = useMemo(() => {
+    if (!mannequin?.baseImageUrl) return '';
+    if (/^https?:\/\//i.test(mannequin.baseImageUrl)) return mannequin.baseImageUrl;
+    if (typeof window === 'undefined') return mannequin.baseImageUrl;
+    return new URL(mannequin.baseImageUrl, window.location.origin).toString();
+  }, [mannequin]);
 
   const refreshData = useCallback(async () => {
     setLoading(true);
     const response = await fetch('/api/dress-tester/bootstrap');
     const payload = (await response.json()) as BootstrapPayload;
     setMannequins(payload.mannequins ?? []);
-    setPieces((payload.pieces ?? []).map((piece) => ({ pieceId: piece.pieceId, name: piece.name, imageUrl: piece.imageUrl, garmentCategory: piece.category ?? 'tops', tryOn2dImageUrl: piece.tryOn2dImageUrl ?? null })));
+    const mapped = (payload.pieces ?? []).map((piece) => ({ pieceId: piece.pieceId, name: piece.name, imageUrl: piece.imageUrl, garmentCategory: piece.category ?? 'tops', tryOn2dImageUrl: piece.tryOn2dImageUrl ?? null }));
+    setPieces(mapped);
+    setTryOnCache((prev) => {
+      const next = { ...prev };
+      for (const piece of mapped) {
+        if (piece.tryOn2dImageUrl) {
+          next[`${selectedMannequin}:${piece.pieceId}`] = piece.tryOn2dImageUrl;
+        }
+      }
+      return next;
+    });
     setLoading(false);
-  }, []);
+  }, [selectedMannequin]);
 
   useEffect(() => { void refreshData(); }, [refreshData]);
+  useEffect(() => {
+    setStageError(null);
+    setSelectedPieceId(null);
+    setProcessingPieceId(null);
+    setStageImageUrl('');
+  }, [selectedMannequin]);
 
   const runTryOn = useCallback(async (piece: Tester2DWardrobeItem) => {
-    if (!mannequin) return;
+    if (!mannequin || !mannequinImageAbsoluteUrl) return;
     setSelectedPieceId(piece.pieceId);
     setStageError(null);
-    if (piece.tryOn2dImageUrl) {
-      setStageImageUrl(piece.tryOn2dImageUrl);
+    const cacheKey = `${mannequin.id}:${piece.pieceId}`;
+    const cachedImageUrl = tryOnCache[cacheKey];
+    if (cachedImageUrl) {
+      setStageImageUrl(cachedImageUrl);
       return;
     }
     setProcessingPieceId(piece.pieceId);
-    const response = await fetch('/api/dress-tester/try-on-2d', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ garmentId: piece.pieceId, garmentImageUrl: piece.imageUrl, garmentCategory: piece.garmentCategory, mannequinImageUrl: mannequin.baseImageUrl }) });
+    const response = await fetch('/api/dress-tester/try-on-2d', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ garmentId: piece.pieceId, garmentImageUrl: piece.imageUrl, garmentCategory: piece.garmentCategory, mannequinImageUrl: mannequinImageAbsoluteUrl }) });
     const payload = await response.json();
     setProcessingPieceId(null);
     if (!response.ok || payload.status !== 'completed' || !payload.resultImageUrl) {
@@ -53,8 +78,8 @@ export default function DressTesterView() {
       return;
     }
     setStageImageUrl(payload.resultImageUrl);
-    setPieces((prev) => prev.map((item) => item.pieceId === piece.pieceId ? { ...item, tryOn2dImageUrl: payload.resultImageUrl as string } : item));
-  }, [mannequin]);
+    setTryOnCache((prev) => ({ ...prev, [cacheKey]: payload.resultImageUrl as string }));
+  }, [mannequin, mannequinImageAbsoluteUrl, tryOnCache]);
 
   if (loading) return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Loading Tester 2D...</div>;
   if (!mannequin) return <div className="p-6 text-sm text-white/70">No mannequin profiles found.</div>;
