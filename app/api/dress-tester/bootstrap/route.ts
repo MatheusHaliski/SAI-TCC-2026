@@ -22,7 +22,7 @@ export async function GET() {
         category: String(data.piece_type ?? '').includes('lower') ? 'bottoms' : (String(data.piece_type ?? '').includes('full') ? 'full-body' : 'tops'),
         gender: String(data.gender ?? 'unisex'),
         fitProfile: data.fitProfile ?? null,
-        tryOn2dImageUrl: typeof data.tryOn2dImageUrl === 'string' ? data.tryOn2dImageUrl : null,
+        tryOn2dResultUrl: typeof data.tryOn2dResultUrl === 'string' ? data.tryOn2dResultUrl : null,
       };
     });
 

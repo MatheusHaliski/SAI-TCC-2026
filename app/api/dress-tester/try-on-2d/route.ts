@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
+import { getAdminFirestore } from '@/app/lib/firebaseAdmin';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -41,7 +42,17 @@ export async function POST(request: NextRequest) {
       const statusRes = await fetch(`https://api.fashn.ai/v1/status/${predictionId}`, { headers: { Authorization: `Bearer ${process.env.FASHN_API_KEY ?? ''}` } });
       const statusPayload = await statusRes.json() as { status?: string; output?: string; resultImageUrl?: string; error?: string };
       if (statusPayload.status === 'completed') {
-        return NextResponse.json({ status: 'completed', resultImageUrl: statusPayload.resultImageUrl ?? statusPayload.output ?? null, error: null });
+        const resultImageUrl = statusPayload.resultImageUrl ?? statusPayload.output ?? null;
+        if (resultImageUrl) {
+          await getAdminFirestore().collection('sai-wardrobeItems').doc(body.garmentId).set(
+            {
+              tryOn2dResultUrl: resultImageUrl,
+              updated_at: new Date().toISOString(),
+            },
+            { merge: true },
+          );
+        }
+        return NextResponse.json({ status: 'completed', resultImageUrl, error: null });
       }
       if (statusPayload.status === 'error' || statusPayload.status === 'failed') {
         return NextResponse.json({ status: 'error', resultImageUrl: null, error: statusPayload.error ?? 'Virtual try-on failed.' }, { status: 502 });

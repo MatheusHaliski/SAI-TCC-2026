@@ -10,7 +10,7 @@ import { MannequinProfile } from '@/app/lib/fashion-ai/types/mannequin';
 
 interface BootstrapPayload {
   mannequins: MannequinProfile[];
-  pieces: Array<{ pieceId: string; name: string; imageUrl: string; category?: 'tops' | 'bottoms' | 'full-body'; tryOn2dImageUrl?: string | null }>;
+  pieces: Array<{ pieceId: string; name: string; imageUrl: string; category?: 'tops' | 'bottoms' | 'full-body'; tryOn2dResultUrl?: string | null }>;
 }
 
 export default function DressTesterView() {
@@ -37,13 +37,13 @@ export default function DressTesterView() {
     const response = await fetch('/api/dress-tester/bootstrap');
     const payload = (await response.json()) as BootstrapPayload;
     setMannequins(payload.mannequins ?? []);
-    const mapped = (payload.pieces ?? []).map((piece) => ({ pieceId: piece.pieceId, name: piece.name, imageUrl: piece.imageUrl, garmentCategory: piece.category ?? 'tops', tryOn2dImageUrl: piece.tryOn2dImageUrl ?? null }));
+    const mapped = (payload.pieces ?? []).map((piece) => ({ pieceId: piece.pieceId, name: piece.name, imageUrl: piece.imageUrl, garmentCategory: piece.category ?? 'tops', tryOn2dImageUrl: piece.tryOn2dResultUrl ?? null }));
     setPieces(mapped);
     setTryOnCache((prev) => {
       const next = { ...prev };
       for (const piece of mapped) {
         if (piece.tryOn2dImageUrl) {
-          next[`${selectedMannequin}:${piece.pieceId}`] = piece.tryOn2dImageUrl;
+          next[piece.pieceId] = piece.tryOn2dImageUrl;
         }
       }
       return next;
@@ -63,7 +63,7 @@ export default function DressTesterView() {
     if (!mannequin || !mannequinImageAbsoluteUrl) return;
     setSelectedPieceId(piece.pieceId);
     setStageError(null);
-    const cacheKey = `${mannequin.id}:${piece.pieceId}`;
+    const cacheKey = piece.pieceId;
     const cachedImageUrl = tryOnCache[cacheKey];
     if (cachedImageUrl) {
       setStageImageUrl(cachedImageUrl);
