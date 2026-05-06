@@ -19,8 +19,10 @@ export async function GET() {
         name: String(data.name ?? 'Wardrobe piece'),
         imageUrl: String(data.image_url ?? ''),
         pieceType: String(data.piece_type ?? ''),
+        category: String(data.piece_type ?? '').includes('lower') ? 'bottoms' : (String(data.piece_type ?? '').includes('full') ? 'full-body' : 'tops'),
         gender: String(data.gender ?? 'unisex'),
         fitProfile: data.fitProfile ?? null,
+        tryOn2dImageUrl: typeof data.tryOn2dImageUrl === 'string' ? data.tryOn2dImageUrl : null,
       };
     });
 

@@ -96,6 +96,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [submitting, setSubmitting] = useState(false);
   const [uvJobId, setUvJobId] = useState<string | null>(null);
   const [uvJobStatus, setUvJobStatus] = useState<string | null>(null);
+  const [lastCreatedPieceId, setLastCreatedPieceId] = useState<string | null>(null);
   const [selectedImageName, setSelectedImageName] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -276,6 +277,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       }
 
       if (createdWardrobeItemId && form.piece_type === 'upper_piece') {
+        setLastCreatedPieceId(createdWardrobeItemId);
         try {
           const submitPayload = buildBlenderWorkerSubmitPayload({
             wardrobe_item_id: createdWardrobeItemId,
@@ -375,6 +377,20 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       window.clearInterval(timer);
     };
   }, [uvJobId]);
+
+  useEffect(() => {
+    if (uvJobStatus !== 'completed' || !lastCreatedPieceId || !form.image_url) return;
+    void fetch('/api/dress-tester/try-on-2d', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        garmentId: lastCreatedPieceId,
+        garmentImageUrl: form.image_url,
+        garmentCategory: form.piece_type === 'lower_piece' ? 'bottoms' : 'tops',
+        mannequinImageUrl: '/tester2d/mannequins/female-default.png',
+      }),
+    });
+  }, [uvJobStatus, lastCreatedPieceId, form.image_url, form.piece_type]);
 
   const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
