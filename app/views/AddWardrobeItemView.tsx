@@ -66,6 +66,12 @@ const GENDER_OPTIONS = [
   { value: 'feminino', label: 'Feminino' },
 ];
 
+interface TryOnPrewarmContext {
+  pieceId: string;
+  garmentImageUrl: string;
+  garmentCategory: 'tops' | 'bottoms' | 'full-body';
+}
+
 function resolveBrandLogoUrl(brand: Brand): string | null {
   if (brand.logo_url?.trim()) {
     return brand.logo_url;
@@ -96,6 +102,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [submitting, setSubmitting] = useState(false);
   const [uvJobId, setUvJobId] = useState<string | null>(null);
   const [uvJobStatus, setUvJobStatus] = useState<string | null>(null);
+  const [pendingTryOnPrewarm, setPendingTryOnPrewarm] = useState<TryOnPrewarmContext | null>(null);
   const [selectedImageName, setSelectedImageName] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -276,6 +283,11 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       }
 
       if (createdWardrobeItemId && form.piece_type === 'upper_piece') {
+        setPendingTryOnPrewarm({
+          pieceId: createdWardrobeItemId,
+          garmentImageUrl: form.image_url,
+          garmentCategory: form.piece_type === 'lower_piece' ? 'bottoms' : 'tops',
+        });
         try {
           const submitPayload = buildBlenderWorkerSubmitPayload({
             wardrobe_item_id: createdWardrobeItemId,
@@ -375,6 +387,21 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       window.clearInterval(timer);
     };
   }, [uvJobId]);
+
+  useEffect(() => {
+    if (uvJobStatus !== 'completed' || !pendingTryOnPrewarm) return;
+    void fetch('/api/dress-tester/try-on-2d', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        garmentId: pendingTryOnPrewarm.pieceId,
+        garmentImageUrl: pendingTryOnPrewarm.garmentImageUrl,
+        garmentCategory: pendingTryOnPrewarm.garmentCategory,
+        mannequinImageUrl: '/tester2d/mannequins/female-default.png',
+      }),
+    });
+    setPendingTryOnPrewarm(null);
+  }, [uvJobStatus, pendingTryOnPrewarm]);
 
   const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
