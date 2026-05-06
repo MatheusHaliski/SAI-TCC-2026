@@ -49,7 +49,7 @@ export default function DressTesterView() {
       return next;
     });
     setLoading(false);
-  }, []);
+  }, [selectedMannequin]);
 
   useEffect(() => { void refreshData(); }, [refreshData]);
   useEffect(() => {
