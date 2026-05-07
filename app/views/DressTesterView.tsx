@@ -23,6 +23,7 @@ export default function DressTesterView() {
   const [stageImageUrl, setStageImageUrl] = useState('');
   const [stageError, setStageError] = useState<string | null>(null);
   const [tryOnCache, setTryOnCache] = useState<Record<string, string>>({});
+  const getTryOnCacheKey = useCallback((pieceId: string, mannequinId: string) => `${pieceId}::${mannequinId}`, []);
 
   const mannequin = useMemo(() => mannequins.find((item) => item.id === selectedMannequin) ?? mannequins[0], [mannequins, selectedMannequin]);
   const mannequinImageAbsoluteUrl = useMemo(() => {
@@ -43,13 +44,14 @@ export default function DressTesterView() {
       const next = { ...prev };
       for (const piece of mapped) {
         if (piece.tryOn2dImageUrl) {
-          next[piece.pieceId] = piece.tryOn2dImageUrl;
+          const cacheKey = getTryOnCacheKey(piece.pieceId, selectedMannequin);
+          next[cacheKey] = piece.tryOn2dImageUrl;
         }
       }
       return next;
     });
     setLoading(false);
-  }, [selectedMannequin]);
+  }, [getTryOnCacheKey, selectedMannequin]);
 
   useEffect(() => { void refreshData(); }, [refreshData]);
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function DressTesterView() {
     if (!mannequin || !mannequinImageAbsoluteUrl) return;
     setSelectedPieceId(piece.pieceId);
     setStageError(null);
-    const cacheKey = piece.pieceId;
+    const cacheKey = getTryOnCacheKey(piece.pieceId, mannequin.id);
     const cachedImageUrl = tryOnCache[cacheKey];
     if (cachedImageUrl) {
       setStageImageUrl(cachedImageUrl);
@@ -79,7 +81,7 @@ export default function DressTesterView() {
     }
     setStageImageUrl(payload.resultImageUrl);
     setTryOnCache((prev) => ({ ...prev, [cacheKey]: payload.resultImageUrl as string }));
-  }, [mannequin, mannequinImageAbsoluteUrl, tryOnCache]);
+  }, [getTryOnCacheKey, mannequin, mannequinImageAbsoluteUrl, tryOnCache]);
 
   if (loading) return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Loading Tester 2D...</div>;
   if (!mannequin) return <div className="p-6 text-sm text-white/70">No mannequin profiles found.</div>;
