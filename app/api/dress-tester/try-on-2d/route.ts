@@ -6,12 +6,20 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type GarmentCategory = 'tops' | 'bottoms' | 'full-body';
 
+
+const toAbsolutePublicUrl = (inputUrl: string, requestUrl: string): string => {
+  if (/^https?:\/\//i.test(inputUrl)) return inputUrl;
+  return new URL(inputUrl, requestUrl).toString();
+};
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as { garmentId: string; garmentImageUrl: string; garmentCategory: GarmentCategory; mannequinImageUrl: string };
     if (!body.garmentId || !body.garmentImageUrl || !body.garmentCategory || !body.mannequinImageUrl) {
       return NextResponse.json({ status: 'error', resultImageUrl: null, error: 'Invalid payload.' }, { status: 400 });
     }
+
+    const mannequinImageUrl = toAbsolutePublicUrl(body.mannequinImageUrl, request.url);
 
     const removeBgRes = await fetch('https://api.remove.bg/v1.0/removebg', {
       method: 'POST',
@@ -28,7 +36,7 @@ export async function POST(request: NextRequest) {
     const fashnRunRes = await fetch('https://api.fashn.ai/v1/run', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.FASHN_API_KEY ?? ''}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model_image: body.mannequinImageUrl, garment_image: blob.url, category: body.garmentCategory }),
+      body: JSON.stringify({ model_image: mannequinImageUrl, garment_image: blob.url, category: body.garmentCategory }),
     });
     const fashnRunPayload = await fashnRunRes.json() as { id?: string; predictionId?: string };
     const predictionId = fashnRunPayload.predictionId ?? fashnRunPayload.id;
