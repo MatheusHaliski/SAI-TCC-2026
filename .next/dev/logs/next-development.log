@@ -1,0 +1,538 @@
+[00:00:00.858] Server  LOG     ✓ Ready in 620ms
+[00:00:07.228] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:07.520] Browser ERROR   uncaughtError: Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/my-wardrobe" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <RootLayout>
+                        <html lang="en">
+                          <body
+                            className="sharetechmono_de18a0cb-module__i_kq6q__variable min-h-screen antialiased"
+-                           data-gptw=""
+                          >
+                            ...
+                              <SegmentViewNode type="page" pagePath="my-wardrob...">
+                                <SegmentTrieNode>
+                                <ShellPage>
+                                  <HomeShell>
+                                    <div
++                                     className="sa-home-shell flex min-h-screen text-[color:var(--shell-foreground)]"
+-                                     className="flex min-h-screen items-center justify-center text-sm font-semibold u..."
+                                    >
+                                      <SidebarNav>
+                                      <DiscoverySearchProvider>
++                                       <main className="flex min-w-0 min-h-[600px] flex-1 flex-col p-2">
+-                                       Checking access...
+                                        ...
+                              ...
+                  ...
+
+[00:00:08.111] Server  INFO    [wardrobe-items/user] incoming request {}
+[00:00:09.549] Server  INFO    [wardrobe-items/findByUser] Firestore query metadata {}
+[00:00:11.020] Server  INFO    [wardrobe-items/user] incoming request {}
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:11.115] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:12.413] Server  INFO    [wardrobe-items/findByUser] Firestore query metadata {}
+[00:00:13.042] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.043] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:13.617] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:15.261] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:17.498] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea53-8d3a-79ab-8ecb-6d26b46a92aa: {"message":"Task not found"}
+[00:00:17.504] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea53-8d3a-79ab-8ecb-6d26b46a92aa: {"message":"Task not found"}
+[00:00:17.605] Browser ERROR   {"response":{}}
+[00:00:26.454] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea53-8d3a-79ab-8ecb-6d26b46a92aa: {"message":"Task not found"}
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:46.343] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:48.211] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:49.342] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:50.270] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019df3f9-2eff-75ce-86bd-a1988f33c777: {"message":"Task not found"}
+[00:00:55.900] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.900] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:55.901] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:56.435] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:57.861] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:00:58.813] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea57-42ad-7a99-bd12-ceae896b2643: {"message":"Task not found"}
+[00:00:58.817] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea57-42ad-7a99-bd12-ceae896b2643: {"message":"Task not found"}
+[00:00:58.922] Browser ERROR   {"response":{}}
+[00:01:00.236] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea57-42ad-7a99-bd12-ceae896b2643: {"message":"Task not found"}
+[00:01:10.259] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea57-42ad-7a99-bd12-ceae896b2643: {"message":"Task not found"}
+[00:01:10.662] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea57-42ad-7a99-bd12-ceae896b2643: {"message":"Task not found"}
+[00:01:11.247] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea57-42ad-7a99-bd12-ceae896b2643: {"message":"Task not found"}
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:16.995] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:18.420] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:19.488] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:20.399] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea1f-37e9-7e82-9a95-c4cb2de67be4: {"message":"Task not found"}
+[00:01:20.409] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea1f-37e9-7e82-9a95-c4cb2de67be4: {"message":"Task not found"}
+[00:01:20.513] Browser ERROR   {"response":{}}
+[00:01:21.935] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea1f-37e9-7e82-9a95-c4cb2de67be4: {"message":"Task not found"}
+[00:01:22.851] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:22.852] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:38.828] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser LOG     [3d-worker] submit:start {"imageUrl":"https://firebasestorage.googleapis.com/v0/b/funcionarioslistaapp2025.firebasestorage.app/o/wardrobe-images%2F1777920034283-d15068a8-9fe8-4226-8bf7-a62628d0771a.jpg?alt=media&token=d851c67b-a154-4081-9468-32987e0ca084","payload":{"imageUrl":"https://firebasestorage.googleapis.com/v0/b/funcionarioslistaapp2025.firebasestorage.app/o/wardrobe-images%2F1777920034283-d15068a8-9fe8-4226-8bf7-a62628d0771a.jpg?alt=media&token=d851c67b-a154-4081-9468-32987e0ca084","jobType":"blender_uv_pipeline","options":{"cleanedImagePreprocess":{"autoBrightnessContrast":true,"enabled":true,"keepQualityGateStrict":true,"maxBrightnessGain":0.16,"maxContrastGain":0.14},"mode":"model_generation","prompt":"REDSfem","type":"upper_piece"},"pieceId":"fUJ6jtM3ztvkNTXUBGWu","pieceName":"REDSfem","prompt":"REDSfem"},"pieceId":"fUJ6jtM3ztvkNTXUBGWu","pieceName":"REDSfem"}
+[00:01:39.969] Browser INFO    [3d-worker-client] submit:start {"endpoint":"/api/3d-worker/submit","hasImageUrl":true,"pieceId":"fUJ6jtM3ztvkNTXUBGWu"}
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:39.969] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:40.085] Server  INFO    [3d-worker] "incoming_request" {}
+[00:01:40.086] Server  INFO    [3d-worker] "request_body_summary" {}
+[00:01:40.087] Server  INFO    [3d-worker] "submit_target" {}
+[00:01:45.497] Server  INFO    [3d-worker] "safe_fetch_result" {}
+[00:01:45.497] Server  INFO    [3d-worker] "normalized_response" {}
+[00:01:45.611] Browser INFO    [3d-worker-client] submit:response {"pieceId":"fUJ6jtM3ztvkNTXUBGWu","responseJson":{"jobId":"019e09b2-f544-79b9-ae5c-7868007bef70","ok":true,"provider":"meshy","status":"queued","upstream":{"result":"019e09b2-f544-79b9-ae5c-7868007bef70"}},"status":200}
+[00:01:45.611] Browser LOG     [3d-worker] submit:done {"jobId":"019e09b2-f544-79b9-ae5c-7868007bef70","pieceId":"fUJ6jtM3ztvkNTXUBGWu","pieceName":"REDSfem"}
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:45.611] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:46.330] Server  WARN    [3d-worker/reconcile] job_not_found: RunPod worker returned 404 {}
+[00:01:46.437] Browser LOG     [3d-worker] reconcile:poll {"jobId":"019e09b2-f544-79b9-ae5c-7868007bef70","pieceId":"fUJ6jtM3ztvkNTXUBGWu","pieceName":"REDSfem","status":"job_not_found"}
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.648] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:47.851] Server  WARN    [3d-worker/reconcile] job_not_found: RunPod worker returned 404 {}
+[00:01:47.957] Browser LOG     [3d-worker] reconcile:poll {"jobId":"019e09b2-f544-79b9-ae5c-7868007bef70","pieceId":"fUJ6jtM3ztvkNTXUBGWu","pieceName":"REDSfem","status":"job_not_found"}
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.468] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.671] Server  WARN    [3d-worker/reconcile] job_not_found: RunPod worker returned 404 {}
+[00:01:49.785] Browser LOG     [3d-worker] reconcile:poll {"jobId":"019e09b2-f544-79b9-ae5c-7868007bef70","pieceId":"fUJ6jtM3ztvkNTXUBGWu","pieceName":"REDSfem","status":"job_not_found"}
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:01:49.785] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:12.985] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.870] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.870] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.870] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.870] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:14.871] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.029] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:16.943] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea53-8d3a-79ab-8ecb-6d26b46a92aa: {"message":"Task not found"}
+[00:02:18.251] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea53-8d3a-79ab-8ecb-6d26b46a92aa: {"message":"Task not found"}
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:02:19.339] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.355] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.355] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.355] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:02.356] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.300] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.300] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:03.301] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:04.228] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea1f-37e9-7e82-9a95-c4cb2de67be4: {"message":"Task not found"}
+[00:03:05.262] Server  ERROR   [model-proxy] Meshy API returned 404 for task 019dea1f-37e9-7e82-9a95-c4cb2de67be4: {"message":"Task not found"}
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:03:06.236] Browser WARN    [Tester2D] Falling back to raw_upload_image_url; overlay quality and geometry may be unreliable.
+[00:05:40.999] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:05:41.087] Server  INFO    [wardrobe-items/user] incoming request {}
+[00:05:41.122] Browser ERROR   uncaughtError: Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/my-wardrobe" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <RootLayout>
+                        <html lang="en">
+                          <body
+                            className="sharetechmono_de18a0cb-module__i_kq6q__variable min-h-screen antialiased"
+-                           data-gptw=""
+                          >
+                            ...
+                              <SegmentViewNode type="page" pagePath="my-wardrob...">
+                                <SegmentTrieNode>
+                                <ShellPage>
+                                  <HomeShell>
+                                    <div
++                                     className="sa-home-shell flex min-h-screen text-[color:var(--shell-foreground)]"
+-                                     className="flex min-h-screen items-center justify-center text-sm font-semibold u..."
+                                    >
+                                      <SidebarNav>
+                                      <DiscoverySearchProvider>
++                                       <main className="flex min-w-0 min-h-[600px] flex-1 flex-col p-2">
+-                                       Checking access...
+                                        ...
+                              ...
+                  ...
+
+[00:05:43.000] Server  INFO    [wardrobe-items/findByUser] Firestore query metadata {}
+[00:05:43.900] Server  INFO    [wardrobe-items/user] incoming request {}
+[00:05:45.323] Server  INFO    [wardrobe-items/findByUser] Firestore query metadata {}
