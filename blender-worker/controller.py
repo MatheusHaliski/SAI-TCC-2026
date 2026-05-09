@@ -1,134 +1,174 @@
+"""
+controller.py — Blender subprocess controller for the StylistAI worker.
+
+Improvements over previous version:
+- Returns full stderr/stdout (truncated) on failure
+- Returns exitCode and the exact command that was run
+- Provides a clear actionable hint when libEGL is missing
+"""
 from __future__ import annotations
 
-import json
-import logging
 import os
 import subprocess
+import tempfile
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from meshy_pipeline import MeshyPipeline
 
-logger = logging.getLogger("stylistai.controller")
+BLENDER_BIN = os.getenv("BLENDER_BIN", "blender")
+BLENDER_PIPELINE_SCRIPT = Path(__file__).with_name("blender_pipeline.py")
 
-
-def _now_ms() -> int:
-    return int(time.time() * 1000)
-
-
-@dataclass
-class ControllerResult:
-    artifacts: dict[str, Any]
-    metrics: dict[str, Any]
-    debug: dict[str, Any]
+# Truncation limit for stdout/stderr in error payloads (characters)
+_OUTPUT_LIMIT = 2000
 
 
-class Fashion3DController:
-    def __init__(self) -> None:
-        self.output_root = Path(os.getenv("WORKER_OUTPUT_DIR", "/workspace/output"))
-        self.blender_bin = os.getenv("BLENDER_BIN", "blender")
-        self.meshy = MeshyPipeline()
+def _truncate(text: str, limit: int = _OUTPUT_LIMIT) -> str:
+    if len(text) <= limit:
+        return text
+    half = limit // 2
+    return text[:half] + f"\n... [{len(text) - limit} chars omitted] ...\n" + text[-half:]
 
-    def run(self, *, job_id: str, piece_data: dict[str, Any]) -> ControllerResult:
-        self.output_root.mkdir(parents=True, exist_ok=True)
-        job_dir = self.output_root / job_id
-        debug_dir = job_dir / "debug"
-        job_dir.mkdir(parents=True, exist_ok=True)
-        debug_dir.mkdir(parents=True, exist_ok=True)
 
-        started_ms = _now_ms()
-        debug: dict[str, Any] = {
-            "job_id": job_id,
-            "pipeline": "fashion-ai-meshy-blender-v2",
-            "piece_data": piece_data,
-            "steps": {},
-        }
+def _detect_hint(stderr: str, stdout: str) -> str | None:
+    """Return a human-readable hint for known failure signatures."""
+    combined = (stderr + stdout).lower()
 
-        piece_type = str(piece_data.get("piece_type") or "garment")
-        preferred_format = str(piece_data.get("base_format") or "glb")
-
-        logger.info("[controller] job=%s start piece_type=%s", job_id, piece_type)
-        meshy_output = self.meshy.generate_base_model(
-            piece_type=piece_type,
-            source_image_url=str(piece_data.get("reference_image_url") or "").strip() or None,
-            output_dir=job_dir,
-            preferred_format=preferred_format,
+    if "libegl.so.1" in combined or "couldn't open libegl" in combined:
+        return (
+            "libEGL.so.1 is missing. "
+            "Add the following to your Dockerfile and rebuild: "
+            "apt-get install -y libegl1 libegl-mesa0 libgl1 libgles2 libglvnd0 && ldconfig. "
+            "Also set ENV PYOPENGL_PLATFORM=egl and ENV LIBGL_ALWAYS_SOFTWARE=1."
         )
-        debug["steps"]["meshy"] = meshy_output.metadata
 
-        output_glb = job_dir / "final_model.glb"
-        blender_meta = self._run_blender(
-            input_model=meshy_output.base_model_path,
-            output_model=output_glb,
-            piece_data=piece_data,
-            debug_dir=debug_dir,
+    if "libgl.so.1" in combined or "couldn't open libgl" in combined:
+        return (
+            "libGL.so.1 is missing. "
+            "Add to Dockerfile: apt-get install -y libgl1 libglvnd0 && ldconfig."
         )
-        debug["steps"]["blender"] = blender_meta
 
-        debug_path = debug_dir / "pipeline_debug.json"
-        debug_path.write_text(json.dumps(debug, indent=2), encoding="utf-8")
-
-        finished_ms = _now_ms()
-        duration_ms = finished_ms - started_ms
-        artifacts = {
-            "model_3d_path": str(output_glb),
-            "model_3d_url": output_glb.as_uri(),
-            "model_usdz_path": str(output_glb.with_suffix(".usdz")),
-            "preview_front_path": blender_meta.get("preview_front_path"),
-            "preview_back_path": blender_meta.get("preview_back_path"),
-            "base_model_path": str(meshy_output.base_model_path),
-            "debug_report_path": str(debug_path),
-            "output_root": str(self.output_root),
-        }
-
-        metrics = {
-            "durationMs": duration_ms,
-            "meshyTaskId": meshy_output.meshy_task_id,
-            "pipelineVersion": "fashion-ai-meshy-blender-v2",
-        }
-        logger.info("[controller] job=%s completed duration_ms=%s", job_id, duration_ms)
-        return ControllerResult(artifacts=artifacts, metrics=metrics, debug=debug)
-
-    def _run_blender(self, *, input_model: Path, output_model: Path, piece_data: dict[str, Any], debug_dir: Path) -> dict[str, Any]:
-        piece_data_path = debug_dir / "piece_data.json"
-        piece_data_path.write_text(json.dumps(piece_data, indent=2), encoding="utf-8")
-
-        script_path = Path(__file__).with_name("blender_pipeline.py")
-        command = [
-            self.blender_bin,
-            "-b",
-            "--python",
-            str(script_path),
-            "--",
-            "--input-model",
-            str(input_model),
-            "--output-model",
-            str(output_model),
-            "--piece-data-json",
-            str(piece_data_path),
-            "--debug-dir",
-            str(debug_dir),
+    if "no module named" in combined:
+        missing = [
+            line for line in (stderr + stdout).splitlines()
+            if "No module named" in line
         ]
+        if missing:
+            return f"Python import error inside Blender: {missing[0].strip()}"
 
-        logger.info("[controller] running blender command=%s", " ".join(command))
-        completed = subprocess.run(command, capture_output=True, text=True)
-        blender_stdout_path = debug_dir / "blender.stdout.log"
-        blender_stderr_path = debug_dir / "blender.stderr.log"
-        blender_stdout_path.write_text(completed.stdout, encoding="utf-8")
-        blender_stderr_path.write_text(completed.stderr, encoding="utf-8")
+    if "python" in combined and "importerror" in combined:
+        return "A Python ImportError occurred inside the Blender process. Check blender_pipeline.py dependencies."
 
-        if completed.returncode != 0:
-            raise RuntimeError(
-                "Blender headless step failed. "
-                f"stdout={completed.stdout[-400:]} stderr={completed.stderr[-400:]}"
-            )
+    return None
 
-        stdout = completed.stdout.strip().splitlines()
-        if not stdout:
-            return {"warning": "blender_stdout_empty"}
-        try:
-            return json.loads(stdout[-1])
-        except json.JSONDecodeError:
-            return {"stdout_tail": stdout[-1]}
+
+def run_blender_pipeline(
+    input_model_path: str,
+    output_model_path: str,
+    extra_args: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Run blender_pipeline.py as a subprocess.
+
+    Returns a dict with:
+      - success: bool
+      - output_path: str | None
+      - elapsed_ms: int
+      - stdout: str (truncated)
+      - stderr: str (truncated)
+      - exit_code: int
+      - command: list[str]
+      - hint: str | None  — actionable message for known failure modes
+    """
+    extra_args = extra_args or {}
+
+    cmd: list[str] = [
+        BLENDER_BIN,
+        "--background",
+        "--python", str(BLENDER_PIPELINE_SCRIPT),
+        "--",
+        "--input-model", input_model_path,
+        "--output-model", output_model_path,
+    ]
+
+    # Forward optional extra arguments
+    for key, value in extra_args.items():
+        cmd.extend([f"--{key}", str(value)])
+
+    started = time.perf_counter()
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=int(os.getenv("BLENDER_TIMEOUT_SECONDS", "300")),
+        )
+    except subprocess.TimeoutExpired as exc:
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        stdout = _truncate(exc.stdout or "")
+        stderr = _truncate(exc.stderr or "")
+        return {
+            "success": False,
+            "output_path": None,
+            "elapsed_ms": elapsed_ms,
+            "stdout": stdout,
+            "stderr": stderr,
+            "exit_code": -1,
+            "command": cmd,
+            "hint": "Blender timed out. Increase BLENDER_TIMEOUT_SECONDS or check for infinite loops in blender_pipeline.py.",
+        }
+    except FileNotFoundError:
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        return {
+            "success": False,
+            "output_path": None,
+            "elapsed_ms": elapsed_ms,
+            "stdout": "",
+            "stderr": f"Blender binary not found at: {BLENDER_BIN}",
+            "exit_code": -1,
+            "command": cmd,
+            "hint": f"Install Blender and make sure it is available at '{BLENDER_BIN}', or set the BLENDER_BIN environment variable.",
+        }
+
+    elapsed_ms = int((time.perf_counter() - started) * 1000)
+    stdout = _truncate(result.stdout or "")
+    stderr = _truncate(result.stderr or "")
+    exit_code = result.returncode
+
+    if exit_code != 0:
+        hint = _detect_hint(stderr, stdout)
+        return {
+            "success": False,
+            "output_path": None,
+            "elapsed_ms": elapsed_ms,
+            "stdout": stdout,
+            "stderr": stderr,
+            "exit_code": exit_code,
+            "command": cmd,
+            "hint": hint,
+        }
+
+    output_exists = Path(output_model_path).exists()
+    if not output_exists:
+        return {
+            "success": False,
+            "output_path": None,
+            "elapsed_ms": elapsed_ms,
+            "stdout": stdout,
+            "stderr": stderr,
+            "exit_code": exit_code,
+            "command": cmd,
+            "hint": "Blender exited successfully but the output file was not created. Check blender_pipeline.py export logic.",
+        }
+
+    return {
+        "success": True,
+        "output_path": output_model_path,
+        "elapsed_ms": elapsed_ms,
+        "stdout": stdout,
+        "stderr": stderr,
+        "exit_code": exit_code,
+        "command": cmd,
+        "hint": None,
+    }
