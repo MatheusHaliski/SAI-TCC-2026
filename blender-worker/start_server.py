@@ -95,6 +95,25 @@ def verify_runtime() -> None:
     logger.info("startup_check fastapi and uvicorn imports succeeded")
 
 
+
+
+def _log_blender_diagnostics() -> None:
+    checks = [
+        "test -x /usr/bin/blender && echo '/usr/bin/blender exists' || echo '/usr/bin/blender missing'",
+        "blender --version",
+        "ldconfig -p | grep libEGL",
+        "ldconfig -p | grep libGL",
+        "echo $PYOPENGL_PLATFORM",
+        "echo $LIBGL_ALWAYS_SOFTWARE",
+    ]
+    for cmd in checks:
+        proc = subprocess.run(["bash", "-lc", cmd], capture_output=True, text=True, check=False)
+        logger.info("blender_diag cmd=%s rc=%s", cmd, proc.returncode)
+        if proc.stdout.strip():
+            logger.info("blender_diag stdout=%s", proc.stdout.strip())
+        if proc.stderr.strip():
+            logger.info("blender_diag stderr=%s", proc.stderr.strip())
+
 def run_uvicorn() -> int:
     host = "0.0.0.0"
     port = os.getenv("PORT", "8000")
@@ -119,6 +138,7 @@ if __name__ == "__main__":
     try:
         check_and_heal_dns()
         verify_runtime()
+        _log_blender_diagnostics()
         rc = run_uvicorn()
         if rc != 0:
             logger.error("uvicorn exited with status=%s", rc)

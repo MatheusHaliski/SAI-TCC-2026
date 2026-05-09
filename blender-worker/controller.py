@@ -9,6 +9,7 @@ Improvements over previous version:
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import tempfile
 import time
@@ -162,13 +163,32 @@ def run_blender_pipeline(
             "hint": "Blender exited successfully but the output file was not created. Check blender_pipeline.py export logic.",
         }
 
-    return {
-        "success": True,
-        "output_path": output_model_path,
-        "elapsed_ms": elapsed_ms,
-        "stdout": stdout,
-        "stderr": stderr,
-        "exit_code": exit_code,
-        "command": cmd,
-        "hint": None,
-    }
+        logger.info("[controller] running blender command=%s", " ".join(command))
+        completed = subprocess.run(command, capture_output=True, text=True)
+        blender_stdout_path = debug_dir / "blender.stdout.log"
+        blender_stderr_path = debug_dir / "blender.stderr.log"
+        blender_stdout_path.write_text(completed.stdout, encoding="utf-8")
+        blender_stderr_path.write_text(completed.stderr, encoding="utf-8")
+
+        if completed.returncode != 0:
+            stdout_tail = completed.stdout[-1200:]
+            stderr_tail = completed.stderr[-1200:]
+            command_str = " ".join(shlex.quote(part) for part in command)
+            hint = ""
+            if "libEGL.so.1" in completed.stderr or "libEGL.so.1" in completed.stdout:
+                hint = (
+                    " Hint: libEGL.so.1 missing. Ensure Docker image installs libegl1 (and related GL/EGL headless dependencies)."
+                )
+            raise RuntimeError(
+                "Blender headless step failed. "
+                f"exitCode={completed.returncode} command={command_str} "
+                f"stdout_tail={stdout_tail!r} stderr_tail={stderr_tail!r}.{hint}"
+            )
+
+        stdout = completed.stdout.strip().splitlines()
+        if not stdout:
+            return {"warning": "blender_stdout_empty"}
+        try:
+            return json.loads(stdout[-1])
+        except json.JSONDecodeError:
+            return {"stdout_tail": stdout[-1]}
