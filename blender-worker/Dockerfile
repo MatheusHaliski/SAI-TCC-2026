@@ -1,4 +1,4 @@
-FROM runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404
+FROM --platform=linux/amd64 runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

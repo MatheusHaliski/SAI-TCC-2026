@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import threading
 import time
 from typing import Any
 from urllib.parse import urlparse
@@ -12,6 +13,9 @@ from pydantic import BaseModel, Field
 
 from blender_common import finalize_job_status, normalize_status
 from tester2d_pipeline import Tester2DPipeline, Tester2DRequest, Tester2DResponse
+
+_inflight_pieces: set[str] = set()
+_inflight_lock = threading.Lock()
 
 GPU_WORKER_URL = os.getenv("GPU_WORKER_URL", "").strip()
 RUNNING_AS_ORCHESTRATOR = bool(GPU_WORKER_URL)
@@ -209,39 +213,59 @@ def submit(payload: JobRequest, authorization: str | None = Header(default=None)
     if not payload.imageUrl.strip():
         raise HTTPException(status_code=400, detail={"code": "VALIDATION_ERROR", "message": "imageUrl is required."})
 
-    started = time.perf_counter()
     if not GPU_WORKER_TOKEN:
         raise HTTPException(status_code=500, detail="GPU_WORKER_TOKEN is required")
 
+    piece_key = payload.pieceId or ""
+    piece_claimed = False
+    if piece_key:
+        with _inflight_lock:
+            if piece_key in _inflight_pieces:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "JOB_ALREADY_INFLIGHT",
+                        "message": f"A job for pieceId={piece_key!r} is already in progress.",
+                    },
+                )
+            _inflight_pieces.add(piece_key)
+            piece_claimed = True
+
+    started = time.perf_counter()
     print(f"[ORCHESTRATOR] sending job to {GPU_WORKER_URL}")
     try:
-        response = requests.post(
-            f"{GPU_WORKER_URL}/jobs",
-            json=payload.model_dump(),
-            headers=_worker_headers(),
-            timeout=15,
-        )
-    except requests.exceptions.Timeout as exc:
-        raise HTTPException(status_code=504, detail="Worker timeout") from exc
-    except requests.exceptions.ConnectionError as exc:
-        raise HTTPException(status_code=502, detail="Worker unreachable") from exc
-    except requests.exceptions.RequestException as exc:
-        raise HTTPException(status_code=502, detail={"message": "Worker request error", "error": str(exc)}) from exc
+        try:
+            response = requests.post(
+                f"{GPU_WORKER_URL}/jobs",
+                json=payload.model_dump(),
+                headers=_worker_headers(),
+                timeout=15,
+            )
+        except requests.exceptions.Timeout as exc:
+            raise HTTPException(status_code=504, detail="Worker timeout") from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise HTTPException(status_code=502, detail="Worker unreachable") from exc
+        except requests.exceptions.RequestException as exc:
+            raise HTTPException(status_code=502, detail={"message": "Worker request error", "error": str(exc)}) from exc
 
-    if response.status_code != 200:
-        raise HTTPException(
-            status_code=response.status_code,
-            detail={
-                "message": "Worker error",
-                "worker_status": response.status_code,
-                "worker_body": response.text[:1200],
-            },
-        )
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail={
+                    "message": "Worker error",
+                    "worker_status": response.status_code,
+                    "worker_body": response.text[:1200],
+                },
+            )
 
-    data = response.json()
-    status = normalize_status(data.get("status"))
-    _ = int((time.perf_counter() - started) * 1000)
-    return {"jobId": str(data.get("jobId")), "status": status}
+        data = response.json()
+        job_status = normalize_status(data.get("status"))
+        _ = int((time.perf_counter() - started) * 1000)
+        return {"jobId": str(data.get("jobId")), "status": job_status}
+    finally:
+        if piece_claimed:
+            with _inflight_lock:
+                _inflight_pieces.discard(piece_key)
 
 
 @app.post("/")

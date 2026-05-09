@@ -249,6 +249,10 @@ export default function MyWardrobeView() {
   };
 
   const handleOpenViewerIntent = async (item: WardrobeItem) => {
+    if (progressItem !== null && !['completed', 'failed', 'timed_out', 'cancelled', 'idle'].includes(assetJob.status)) {
+      return;
+    }
+
     const existingModel = resolveWardrobeModelUrl(item);
     if (existingModel) {
       setViewerItem(item);
