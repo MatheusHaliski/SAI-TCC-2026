@@ -87,6 +87,44 @@ def _face_stats(obj, front_vec, threshold: float = 0.1):
     return fcnt, bcnt
 
 
+def _detect_front_axis_from_bbox(obj) -> str:
+    bbox = [obj.matrix_world @ v for v in obj.bound_box]
+    min_x = min(v.x for v in bbox); max_x = max(v.x for v in bbox)
+    min_y = min(v.y for v in bbox); max_y = max(v.y for v in bbox)
+    if (max_y - min_y) >= (max_x - min_x):
+        return "+Y"
+    return "+X"
+
+
+def _select_frontal_torso_faces(obj, front_vec, placement: dict[str, Any], normal_threshold: float = 0.2):
+    import bmesh
+    bbox = [obj.matrix_world @ v for v in obj.bound_box]
+    min_x = min(v.x for v in bbox); max_x = max(v.x for v in bbox)
+    min_y = min(v.y for v in bbox); max_y = max(v.y for v in bbox)
+    min_z = min(v.z for v in bbox); max_z = max(v.z for v in bbox)
+    width = max(max_x - min_x, 1e-6); depth = max(max_y - min_y, 1e-6); height = max(max_z - min_z, 1e-6)
+
+    center_x = min_x + width * float(placement.get("x", 0.5))
+    center_z = min_z + height * float(placement.get("y", 0.62))
+    scale = float(placement.get("scale", 0.28))
+    half_w = max(0.05 * width, (width * scale) * 0.9)
+    half_h = max(0.05 * height, (height * scale) * 0.9)
+
+    bm = bmesh.new(); bm.from_mesh(obj.data); bm.normal_update()
+    front_idx = []; back_idx = []
+    for f in bm.faces:
+        center = obj.matrix_world @ f.calc_center_median()
+        dot = f.normal.dot(front_vec)
+        in_center = abs(center.x - center_x) <= half_w and abs(center.z - center_z) <= half_h
+        frontal_depth = center.y >= (min_y + depth * 0.52) if front_vec.y >= 0 else center.y <= (max_y - depth * 0.52)
+        if dot > normal_threshold and in_center and frontal_depth:
+            front_idx.append(f.index)
+        elif dot < -normal_threshold:
+            back_idx.append(f.index)
+    bm.free()
+    return front_idx, back_idx
+
+
 def _create_decal_plane(target_obj, front_axis: str, placement: dict[str, Any], decal_mat):
     import bpy
     bbox = [target_obj.matrix_world @ v for v in target_obj.bound_box]
@@ -173,9 +211,11 @@ def apply_visual_details_and_export(*, input_model: Path, output_model: Path, pi
     logo_texture = str(piece_data.get("logo_url") or "").strip()
     pattern_texture = str(piece_data.get("pattern_url") or "").strip()
     decal_mode = str(piece_data.get("decal_mode") or "front_only")
-    front_axis_raw = str(piece_data.get("front_axis") or os.getenv("DECAL_FRONT_AXIS", "-Y"))
+    front_axis_raw = str(piece_data.get("front_axis") or os.getenv("DECAL_FRONT_AXIS", "AUTO"))
     placement = piece_data.get("decal_placement") if isinstance(piece_data.get("decal_placement"), dict) else {}
 
+    if front_axis_raw.strip().upper() == "AUTO":
+        front_axis_raw = _detect_front_axis_from_bbox(garment_obj)
     front_vec_tuple, front_axis = _front_vector_from_axis(front_axis_raw)
     front_vec = Vector(front_vec_tuple)
 
@@ -184,17 +224,22 @@ def apply_visual_details_and_export(*, input_model: Path, output_model: Path, pi
         obj.data.materials.clear(); obj.data.materials.append(base_mat)
 
     selected_front_faces, selected_back_faces = _face_stats(garment_obj, front_vec)
+    frontal_face_indices, back_face_indices = _select_frontal_torso_faces(garment_obj, front_vec, placement)
     logger.info("[decal] mode=%s", decal_mode)
     logger.info("[decal] frontAxis=%s", front_axis)
     logger.info("[decal] selectedFrontFaces=%s", selected_front_faces)
     logger.info("[decal] selectedBackFaces=%s", selected_back_faces)
+    logger.info("[decal] frontalCandidateFaces=%s", len(frontal_face_indices))
+    logger.info("[decal] backExcludedFaces=%s", len(back_face_indices))
 
     decal_applied = False
     if decal_mode == "front_only":
         tex_path = _download_texture(logo_texture or pattern_texture, debug_dir)
         if tex_path:
             decal_mat = _create_decal_material(tex_path)
-            _create_decal_plane(garment_obj, front_axis, placement, decal_mat)
+            if frontal_face_indices:
+                _create_decal_plane(garment_obj, front_axis, placement, decal_mat)
+            logger.info("[decal] frontalFacesUsed=%s", len(frontal_face_indices))
             decal_applied = True
             logger.info("[decal] textureExtension=CLIP")
 

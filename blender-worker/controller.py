@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shlex
 import subprocess
 import time
 from dataclasses import dataclass
@@ -120,9 +121,18 @@ class Fashion3DController:
         blender_stderr_path.write_text(completed.stderr, encoding="utf-8")
 
         if completed.returncode != 0:
+            stdout_tail = completed.stdout[-1200:]
+            stderr_tail = completed.stderr[-1200:]
+            command_str = " ".join(shlex.quote(part) for part in command)
+            hint = ""
+            if "libEGL.so.1" in completed.stderr or "libEGL.so.1" in completed.stdout:
+                hint = (
+                    " Hint: libEGL.so.1 missing. Ensure Docker image installs libegl1 (and related GL/EGL headless dependencies)."
+                )
             raise RuntimeError(
                 "Blender headless step failed. "
-                f"stdout={completed.stdout[-400:]} stderr={completed.stderr[-400:]}"
+                f"exitCode={completed.returncode} command={command_str} "
+                f"stdout_tail={stdout_tail!r} stderr_tail={stderr_tail!r}.{hint}"
             )
 
         stdout = completed.stdout.strip().splitlines()
