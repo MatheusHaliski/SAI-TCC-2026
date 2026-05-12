@@ -220,3 +220,96 @@ This layer explicitly raises `HTTPException(status_code=502, ...)` when upstream
   2) proxy (`blender-api/app.py`),
   3) worker Meshy stage (`meshy_pipeline.py`).
   Use stage/errorCode metadata to isolate submit vs poll vs download vs endpoint mismatch.
+
+---
+
+## 9) Perguntas e respostas para diagnóstico rápido (401, 403, 502)
+
+Use este roteiro em ordem. A ideia é descobrir **em qual camada** o erro nasce (backend, proxy, worker, Meshy) e por que o pipeline 3D trava.
+
+## Bloco A — Identificar a camada da falha
+
+**Pergunta 1:** O erro aparece no backend como `pipelineFailure.failedStage`?
+- **Resposta esperada:** Sim, geralmente em `WardrobeService.generateModelFromImage(...)`.
+- **Interpretação:** Se houver `failedStage`, comece por ele para saber se falhou em `runpod_submit`, `meshy_submit`, `runpod_worker_failure` etc.
+
+**Pergunta 2:** O erro veio como `HTTPException 502` no `blender-api`?
+- **Resposta esperada:** Sim, quando o proxy não alcança o worker ou recebe erro de comunicação.
+- **Interpretação:** O problema pode ser conectividade entre API e worker, não necessariamente a Meshy.
+
+**Pergunta 3:** O worker retornou código `meshy_*` no `raw.error.code`?
+- **Resposta esperada:** Pode aparecer `meshy_auth_failed`, `meshy_bad_request`, `meshy_timeout`, etc.
+- **Interpretação:** A falha nasceu dentro do `meshy_pipeline.py`.
+
+## Bloco B — Diagnóstico de 401 (Unauthorized)
+
+**Pergunta 4:** `MESHY_API_KEY` está presente e sem espaços extras?
+- **Resposta:** Se não, `_create_task(...)` e `_wait_for_completion(...)` podem retornar 401/403 e virar `meshy_auth_failed`.
+
+**Pergunta 5:** O token Bearer enviado ao worker RunPod está correto?
+- **Resposta:** Se inválido/ausente, `validate_auth_header(...)` retorna 401 direto.
+
+**Pergunta 6:** O erro 401 ocorre ao criar task, ao poll, ou ao baixar asset?
+- **Resposta:** 
+  - criar task -> provável chave inválida/escopo insuficiente;
+  - poll -> chave pode ter sido rotacionada/expirada durante execução;
+  - download -> URL final do asset pode exigir outra autorização.
+
+**Pergunta 7:** O header `Authorization` está sendo sobrescrito por outro serviço no caminho?
+- **Resposta:** Se sim, tokens podem chegar truncados/duplicados, gerando 401 intermitente.
+
+## Bloco C — Diagnóstico de 403 (Forbidden)
+
+**Pergunta 8:** A chave Meshy tem permissão/quota para image-to-3d?
+- **Resposta:** Sem quota/permissão, `_create_task(...)` pode retornar 403.
+
+**Pergunta 9:** A imagem de entrada é realmente pública para a Meshy?
+- **Resposta:** `_validate_image_url_public(...)` testa acessibilidade; URLs privadas/tokens expirados causam rejeição.
+
+**Pergunta 10:** URL Firebase tem `token` na query string e ele ainda é válido?
+- **Resposta:** Sem token (ou com token expirado), a Meshy não consegue baixar a imagem e o job falha.
+
+**Pergunta 11:** O HEAD retornou 403 mas o GET de probe também falhou?
+- **Resposta:** Isso normalmente indica bloqueio de acesso real ao arquivo; resultado costuma evoluir para falha de submit/pipeline.
+
+## Bloco D — Diagnóstico de 502 (Bad Gateway)
+
+**Pergunta 12:** O 502 aconteceu imediatamente no submit do RunPod?
+- **Resposta:** Em geral aponta para `submitBlenderCloudJob(...)` (endpoint incorreto, worker offline, rota errada, timeout).
+
+**Pergunta 13:** O 502 aconteceu após vários polls?
+- **Resposta:** Indica falha tardia no worker/provider (`meshy_provider_error`, `meshy_task_failed`, cancelamento).
+
+**Pergunta 14:** O job completou mas sem `model_url` válido?
+- **Resposta:** `WardrobeService.generateModelFromImage(...)` lança 502 quando artifacts não têm URL HTTP utilizável.
+
+**Pergunta 15:** O proxy (`blender-api`) registrou “Worker unreachable”?
+- **Resposta:** O 502 vem da camada de gateway (rede/healthcheck do worker), não da lógica de modelagem 3D.
+
+**Pergunta 16:** Há sinais de DNS falhando no worker (`dns_resolution_failure`)?
+- **Resposta:** Esse cenário quebra create/poll/download e costuma virar erro de upstream no backend (muitas vezes 502).
+
+## Bloco E — Perguntas sobre travamento/intermitência
+
+**Pergunta 17:** O erro é constante ou intermitente?
+- **Resposta:**
+  - constante -> configuração (token, URL base, rota, permissões);
+  - intermitente -> rede, DNS, timeout, sobrecarga da Meshy/worker.
+
+**Pergunta 18:** O problema ocorre só em imagens específicas?
+- **Resposta:** Pode indicar URL de origem inacessível, formato inválido, bloqueio por ACL/CDN ou payload inadequado.
+
+**Pergunta 19:** A falha ocorre só em horários de pico?
+- **Resposta:** Sugere saturação/instabilidade externa (Meshy 5xx) ou gargalo de infraestrutura do RunPod.
+
+**Pergunta 20:** O fallback para Meshy direta (sem RunPod) também falha?
+- **Resposta:**
+  - se sim -> problema tende a estar na Meshy/credenciais/input;
+  - se não -> problema tende a estar na integração RunPod/worker/proxy.
+
+## Bloco F — Ações objetivas após cada diagnóstico
+
+- Se **401**: rotacionar/revalidar `MESHY_API_KEY`, checar Bearer do worker e logs de headers sanitizados.
+- Se **403**: revisar quota/permissões Meshy e tornar `image_url` realmente pública (token válido, sem bloqueio).
+- Se **502**: separar por camada (backend vs proxy vs worker) e agir no primeiro ponto de falha observado nos logs.
+
