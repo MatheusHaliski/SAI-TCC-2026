@@ -544,3 +544,10 @@ html.dark-mode body textarea::placeholder {
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   box-shadow: var(--liquid-glass-shadow);
 }
+
+:root[data-official-background='true'] .sa-home-shell .rounded-2xl,
+:root[data-official-background='true'] .sa-home-shell .rounded-3xl,
+:root[data-official-background='true'] .sa-home-shell [role='dialog'] {
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  background-color: rgba(8, 12, 24, 0.42) !important;
+}

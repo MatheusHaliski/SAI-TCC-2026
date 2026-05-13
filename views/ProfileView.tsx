@@ -64,6 +64,7 @@ export default function ProfileView() {
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [schemes, setSchemes] = useState<SchemeItem[]>([]);
   const [posts, setPosts] = useState<UserPostRecord[]>([]);
+  const [isPortuguese] = useState(() => (typeof window !== 'undefined' ? window.localStorage.getItem('sai-site-language') !== 'en' : false));
 
   const isOwnerView = Boolean(authUserId) && Boolean(userId) && authUserId === userId;
   const forcedPublicSection = publicUserFromPath && !isOwnerView ? 'user-info' : null;
@@ -134,15 +135,15 @@ export default function ProfileView() {
 
   const activeSectionLabel = useMemo(() => {
     const map: Record<ProfileSectionKey, string> = {
-      wardrobe: 'My Wardrobe Pieces',
-      'user-info': 'User Info',
-      'my-schemes': 'My Schemes',
-      'saved-schemes': 'Saved Schemes',
-      'my-posts': 'My Posts',
-      settings: 'Settings',
+      wardrobe: isPortuguese ? 'Meu Guarda-roupa' : 'My Wardrobe Pieces',
+      'user-info': isPortuguese ? 'Informações do usuário' : 'User Info',
+      'my-schemes': isPortuguese ? 'Meus esquemas' : 'My Schemes',
+      'saved-schemes': isPortuguese ? 'Esquemas salvos' : 'Saved Schemes',
+      'my-posts': isPortuguese ? 'Minhas postagens' : 'My Posts',
+      settings: isPortuguese ? 'Configurações' : 'Settings',
     };
     return map[selectedSection];
-  }, [selectedSection]);
+  }, [isPortuguese, selectedSection]);
 
   const updateSection = (section: ProfileSectionKey) => {
     const normalized = allowedSections.includes(section) ? section : allowedSections[0];
@@ -156,17 +157,17 @@ export default function ProfileView() {
       <ProfileContextMenu selectedSection={selectedSection} onSelectSection={updateSection} allowedSections={allowedSections} />
 
       <div className="space-y-6">
-        <PageHeader title={isOwnerView ? 'Profile' : `Creator Profile`} subtitle={isOwnerView ? 'Premium creator hub for wardrobe, schemes, publishing, and account controls.' : 'Public creator profile view.'} />
+        <PageHeader title={isOwnerView ? (isPortuguese ? 'Perfil' : 'Profile') : (isPortuguese ? 'Perfil do criador' : 'Creator Profile')} subtitle={isOwnerView ? (isPortuguese ? 'Central premium para guarda-roupa, esquemas, publicações e controles de conta.' : 'Premium creator hub for wardrobe, schemes, publishing, and account controls.') : (isPortuguese ? 'Visualização pública do perfil do criador.' : 'Public creator profile view.')} />
 
         <ProfileSummaryCard
           username={username}
           loginEmail={email}
-          loginStatus={isOwnerView ? 'Authenticated' : 'Public Profile'}
+          loginStatus={isOwnerView ? (isPortuguese ? 'Autenticado' : 'Authenticated') : (isPortuguese ? 'Perfil público' : 'Public Profile')}
           authSource="sai-usercontrol"
         />
 
         <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-2 text-sm text-white/85 backdrop-blur-md">
-          Active section: <span className="font-semibold text-cyan-100">{activeSectionLabel}</span>
+          {isPortuguese ? 'Seção ativa:' : 'Active section:'} <span className="font-semibold text-cyan-100">{activeSectionLabel}</span>
         </div>
 
         <ProfileSectionRenderer
