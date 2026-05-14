@@ -9,6 +9,9 @@ import {
   PageBackgroundConfig,
   PageBackgroundShape,
   readPageBackgroundConfig,
+  applySurfaceColorConfig,
+  readSurfaceColorConfig,
+  saveSurfaceColorConfig,
   savePageBackgroundConfig,
 } from '@/app/lib/pageBackground';
 import { clearAuthSessionProfile, clearAuthSessionToken, getAuthSessionProfile } from '@/app/lib/authSession';
@@ -37,12 +40,16 @@ function RightDrawer({ title, onClose, children }: { title: string; onClose: () 
 
 function PageBackgroundStudio({
   draft,
+  surfaceColor,
   onChange,
   onApply,
+  onSurfaceColorChange,
 }: {
   draft: PageBackgroundConfig;
+  surfaceColor: string;
   onChange: (next: PageBackgroundConfig) => void;
   onApply: (next: PageBackgroundConfig) => void;
+  onSurfaceColorChange: (next: string) => void;
 }) {
   const gradients = [
     'linear-gradient(135deg, #0b7a4a 0%, #075e39 45%, #05311f 100%)',
@@ -93,6 +100,15 @@ function PageBackgroundStudio({
       >
         Reset to official
       </button>
+      <label className="block rounded-lg border border-white/20 bg-white/10 p-2 text-xs">
+        Cor das divs
+        <input
+          type="color"
+          value={surfaceColor}
+          onChange={(event) => onSurfaceColorChange(event.target.value)}
+          className="mt-2 h-9 w-full cursor-pointer rounded border border-white/25 bg-transparent"
+        />
+      </label>
     </div>
   );
 }
@@ -177,6 +193,10 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   const [liquidMode, setLiquidMode] = useState<boolean>(readSavedTheme() === 'light');
   const [isPortuguese, setIsPortuguese] = useState(false);
   const [backgroundDraft, setBackgroundDraft] = useState<PageBackgroundConfig>(() => readPageBackgroundConfig());
+  const [surfaceColor, setSurfaceColor] = useState<string>(() => readSurfaceColorConfig().color);
+  useEffect(() => {
+    applySurfaceColorConfig({ color: surfaceColor });
+  }, [surfaceColor]);
   useEffect(() => {
     const refresh = () => setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
     refresh();
@@ -245,6 +265,7 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
       </div>
       <PageBackgroundStudio
         draft={backgroundDraft}
+        surfaceColor={surfaceColor}
         onChange={(next) => {
           setBackgroundDraft(next);
           savePageBackgroundConfig(next);
@@ -252,6 +273,10 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
         onApply={(next) => {
           setBackgroundDraft(next);
           savePageBackgroundConfig(next);
+        }}
+        onSurfaceColorChange={(next) => {
+          setSurfaceColor(next);
+          saveSurfaceColorConfig({ color: next });
         }}
       />
     </RightDrawer>
