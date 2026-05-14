@@ -23,7 +23,14 @@ export default function ProfileContextMenu({ selectedSection, onSelectSection, a
   const [isPortuguese, setIsPortuguese] = useState(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
+    const refresh = () => setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
+    refresh();
+    window.addEventListener('storage', refresh);
+    window.addEventListener('sai-language-change', refresh as EventListener);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener('sai-language-change', refresh as EventListener);
+    };
   }, []);
 
   const localizedConfig = sectionConfig.map((item) => ({
@@ -40,7 +47,7 @@ export default function ProfileContextMenu({ selectedSection, onSelectSection, a
 
   return (
     <ContextSectionMenu
-      title="Profile Menu"
+      title={isPortuguese ? 'Menu do perfil' : 'Profile Menu'}
       sections={filteredConfig.map((item) => item.label)}
       selectedSection={selectedLabel}
       onSelectSection={(label) => {
