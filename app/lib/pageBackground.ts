@@ -118,6 +118,7 @@ export const applySurfaceColorConfig = (config: SurfaceColorConfig): void => {
   const gradient = `linear-gradient(135deg, rgba(${r}, ${g}, ${b}, 0.72) 0%, rgba(${r}, ${g}, ${b}, 0.62) 46%, rgba(${r}, ${g}, ${b}, 0.55) 100%)`;
   document.documentElement.style.setProperty('--liquid-glass-gradient', gradient);
   document.documentElement.style.setProperty('--liquid-glass-border', `rgba(${Math.min(r + 40, 255)}, ${Math.min(g + 40, 255)}, ${Math.min(b + 40, 255)}, 0.34)`);
+  document.documentElement.style.setProperty('--user-surface-solid', `rgb(${r}, ${g}, ${b})`);
 };
 
 export const readSurfaceColorConfig = (): SurfaceColorConfig => {

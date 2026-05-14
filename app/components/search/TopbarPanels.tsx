@@ -41,12 +41,14 @@ function RightDrawer({ title, onClose, children }: { title: string; onClose: () 
 function PageBackgroundStudio({
   draft,
   surfaceColor,
+  isPortuguese,
   onChange,
   onApply,
   onSurfaceColorChange,
 }: {
   draft: PageBackgroundConfig;
   surfaceColor: string;
+  isPortuguese: boolean;
   onChange: (next: PageBackgroundConfig) => void;
   onApply: (next: PageBackgroundConfig) => void;
   onSurfaceColorChange: (next: string) => void;
@@ -66,7 +68,7 @@ function PageBackgroundStudio({
   };
   return (
     <div className="sa-page-studio space-y-3 rounded-xl border border-emerald-100/30 bg-emerald-950/40 p-3">
-      <p className="text-xs uppercase tracking-[0.12em] text-emerald-100/80">Page Background Studio</p>
+      <p className="text-xs uppercase tracking-[0.12em] text-emerald-100/80">{isPortuguese ? 'Estúdio de fundo' : 'Page Background Studio'}</p>
       <div className="grid grid-cols-3 gap-2">
         {gradients.map((gradient) => (
           <button
@@ -98,10 +100,10 @@ function PageBackgroundStudio({
           onApply(officialConfig);
         }}
       >
-        Reset to official
+        {isPortuguese ? 'Restaurar oficial' : 'Reset to official'}
       </button>
       <label className="block rounded-lg border border-white/20 bg-white/10 p-2 text-xs">
-        Cor das divs
+        {isPortuguese ? 'Cor das divs' : 'Div color'}
         <input
           type="color"
           value={surfaceColor}
@@ -163,12 +165,12 @@ export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; a
     };
   }, []);
   const links = [
-    { href: '/explore-scheme', label: 'Saved Outfit Cards' },
-    { href: '/create-my-scheme', label: 'Create my Outfit Card' },
-    { href: '/dress-tester', label: 'Dress Tester' },
-    { href: '/search-items', label: 'Search' },
-    { href: '/search-pieces', label: 'Search Pieces' },
-    { href: '/my-wardrobe', label: 'My Wardrobe Pieces' },
+    { href: '/explore-scheme', label: isPortuguese ? 'Cards salvos de look' : 'Saved Outfit Cards' },
+    { href: '/create-my-scheme', label: isPortuguese ? 'Criar meu card de look' : 'Create my Outfit Card' },
+    { href: '/dress-tester', label: isPortuguese ? 'Provador virtual' : 'Dress Tester' },
+    { href: '/search-items', label: isPortuguese ? 'Buscar' : 'Search' },
+    { href: '/search-pieces', label: isPortuguese ? 'Buscar peças' : 'Search Pieces' },
+    { href: '/my-wardrobe', label: isPortuguese ? 'Meu Guarda-roupa' : 'My Wardrobe Pieces' },
     { href: '/profile', label: isPortuguese ? 'Configurações' : 'Settings' },
   ];
 
@@ -266,6 +268,7 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
       <PageBackgroundStudio
         draft={backgroundDraft}
         surfaceColor={surfaceColor}
+        isPortuguese={isPortuguese}
         onChange={(next) => {
           setBackgroundDraft(next);
           savePageBackgroundConfig(next);
