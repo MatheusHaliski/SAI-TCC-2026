@@ -515,15 +515,15 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
       setForm((prev) => ({
         ...prev,
-        name: prev.name || data.pieceName || '',
-        color: prev.color || data.primaryColor || '',
-        material: prev.material || (data.materials && data.materials[0]) || '',
-        style_tags: prev.style_tags || (data.styles ? data.styles.join(', ') : ''),
-        occasion_tags: prev.occasion_tags || '',
-        gender: prev.gender || (data.gender === 'male' ? 'masculino' : data.gender === 'female' ? 'feminino' : prev.gender),
+        name: data.pieceName || prev.name || '',
+        color: data.primaryColor || prev.color || '',
+        material: (data.materials && data.materials[0]) || prev.material || '',
+        style_tags: (data.styles ? data.styles.join(', ') : '') || prev.style_tags || '',
+        occasion_tags: (data.occasions ? data.occasions.join(', ') : '') || prev.occasion_tags || '',
+        gender: (data.gender === 'male' ? 'masculino' : data.gender === 'female' ? 'feminino' : '') || prev.gender,
         piece_type: mappedPieceType,
       }));
-      setAlertMessage('AI Analysis complete! Suggestions applied to empty fields.');
+      setAlertMessage('AI Analysis complete! Suggestions applied to all available fields.');
     } catch (err: any) {
       setAlertMessage(err.message || 'Error during AI analysis.');
     } finally {
