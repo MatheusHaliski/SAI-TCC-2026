@@ -131,6 +131,7 @@ export default function ProfileView() {
 
   const email = viewedProfile.email?.trim() || authProfile.email?.trim() || 'not-available@user.local';
   const username = viewedProfile.username?.trim() || viewedProfile.name?.trim() || email.split('@')[0] || 'user';
+  const displayName = viewedProfile.name?.trim() || username;
 
   const updateSection = (section: ProfileSectionKey) => {
     const normalized = allowedSections.includes(section) ? section : allowedSections[0];
@@ -156,6 +157,10 @@ export default function ProfileView() {
         <ProfileSectionRenderer
           section={selectedSection}
           userId={userId}
+          username={username}
+          displayName={displayName}
+          email={email}
+          canEdit={isOwnerView}
           wardrobeItems={wardrobeItems}
           schemes={schemes}
           posts={posts}
