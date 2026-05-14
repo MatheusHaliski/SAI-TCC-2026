@@ -55,6 +55,14 @@
   --drawer-surface-shadow: var(--liquid-glass-shadow);
   --shell-foreground: #000000;
   --shell-theme-filter: none;
+  --liquid-glass-gradient:
+    linear-gradient(
+      135deg,
+      rgba(11, 18, 32, 0.58) 0%,
+      rgba(30, 41, 59, 0.52) 40%,
+      rgba(51, 65, 85, 0.48) 100%
+    );
+  --liquid-glass-border: rgba(255, 255, 255, 0.22);
 }
 
 @theme inline {
