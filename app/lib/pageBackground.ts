@@ -6,8 +6,12 @@ export interface PageBackgroundConfig {
   gradient: string;
   shape: PageBackgroundShape;
 }
+export interface SurfaceColorConfig {
+  color: string;
+}
 
 const PAGE_BACKGROUND_KEY = 'sai_page_background_config';
+const SURFACE_COLOR_KEY = 'sai_surface_color_config';
 export const DEFAULT_SHELL_BACKGROUND_IMAGE = '/Fart.png';
 export const GOLDEN_BACKGROUND_ASSET = '/Firefly_Consegue adicionar quebras de linha tech ao gradiente (adicionar ranhuras) 3787887.jpg';
 export const OFFICIAL_WEBSITE_BACKGROUND_GRADIENT = `url("data:image/svg+xml;utf8,${encodeURIComponent(
@@ -52,6 +56,7 @@ export const DEFAULT_PAGE_BACKGROUND_CONFIG: PageBackgroundConfig = {
   ].join(', '),
   shape: 'orb',
 };
+export const DEFAULT_SURFACE_COLOR_CONFIG: SurfaceColorConfig = { color: '#1e293b' };
 
 const withTechGrooves = (base: string, opacity = 0.1): string => [
   'linear-gradient(160deg, rgba(12, 10, 8, 0.74) 0%, rgba(22, 16, 8, 0.5) 58%, rgba(8, 6, 4, 0.82) 100%)',
@@ -98,6 +103,39 @@ export const savePageBackgroundConfig = (config: PageBackgroundConfig): void => 
   const normalized = normalizePageBackgroundConfig(config);
   setLS(PAGE_BACKGROUND_KEY, JSON.stringify(normalized));
   applyPageBackgroundConfig(normalized);
+};
+
+const hexToRgb = (hex: string): [number, number, number] => {
+  const value = hex.replace('#', '').trim();
+  const normalized = value.length === 3 ? value.split('').map((c) => `${c}${c}`).join('') : value.slice(0, 6);
+  const int = Number.parseInt(normalized || '1e293b', 16);
+  return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
+};
+
+export const applySurfaceColorConfig = (config: SurfaceColorConfig): void => {
+  if (typeof document === 'undefined') return;
+  const [r, g, b] = hexToRgb(config.color || DEFAULT_SURFACE_COLOR_CONFIG.color);
+  const gradient = `linear-gradient(135deg, rgba(${r}, ${g}, ${b}, 0.72) 0%, rgba(${r}, ${g}, ${b}, 0.62) 46%, rgba(${r}, ${g}, ${b}, 0.55) 100%)`;
+  document.documentElement.style.setProperty('--liquid-glass-gradient', gradient);
+  document.documentElement.style.setProperty('--liquid-glass-border', `rgba(${Math.min(r + 40, 255)}, ${Math.min(g + 40, 255)}, ${Math.min(b + 40, 255)}, 0.34)`);
+  document.documentElement.style.setProperty('--user-surface-solid', `rgb(${r}, ${g}, ${b})`);
+};
+
+export const readSurfaceColorConfig = (): SurfaceColorConfig => {
+  const raw = getLS(SURFACE_COLOR_KEY);
+  if (!raw) return DEFAULT_SURFACE_COLOR_CONFIG;
+  try {
+    const parsed = JSON.parse(raw) as Partial<SurfaceColorConfig>;
+    return { color: parsed.color || DEFAULT_SURFACE_COLOR_CONFIG.color };
+  } catch {
+    return DEFAULT_SURFACE_COLOR_CONFIG;
+  }
+};
+
+export const saveSurfaceColorConfig = (config: SurfaceColorConfig): void => {
+  const normalized = { color: config.color || DEFAULT_SURFACE_COLOR_CONFIG.color };
+  setLS(SURFACE_COLOR_KEY, JSON.stringify(normalized));
+  applySurfaceColorConfig(normalized);
 };
 
 export const ensureSavedPageBackgroundConfig = (): PageBackgroundConfig => {
