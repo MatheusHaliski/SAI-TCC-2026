@@ -14,6 +14,7 @@ import {
 import { clearAuthSessionProfile, clearAuthSessionToken, getAuthSessionProfile } from '@/app/lib/authSession';
 import { clearSharedAccessToken } from '@/app/lib/accessTokenShare';
 import { applyTheme, readSavedTheme } from '@/app/lib/theme';
+import { useEffect } from 'react';
 
 function Overlay({ onClose }: { onClose: () => void }) {
   return <button type="button" aria-label="Close panel" className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm" onClick={onClose} />;
@@ -134,6 +135,17 @@ export function SystemInboxPanel({ onClose }: { onClose: () => void }) {
 }
 
 export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; activePath: string }) {
+  const [isPortuguese, setIsPortuguese] = useState(false);
+  useEffect(() => {
+    const refresh = () => setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
+    refresh();
+    window.addEventListener('storage', refresh);
+    window.addEventListener('sai-language-change', refresh as EventListener);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener('sai-language-change', refresh as EventListener);
+    };
+  }, []);
   const links = [
     { href: '/explore-scheme', label: 'Saved Outfit Cards' },
     { href: '/create-my-scheme', label: 'Create my Outfit Card' },
@@ -141,11 +153,11 @@ export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; a
     { href: '/search-items', label: 'Search' },
     { href: '/search-pieces', label: 'Search Pieces' },
     { href: '/my-wardrobe', label: 'My Wardrobe Pieces' },
-    { href: '/profile', label: 'Settings' },
+    { href: '/profile', label: isPortuguese ? 'Configurações' : 'Settings' },
   ];
 
   return (
-    <RightDrawer title="Quick Navigation" onClose={onClose}>
+    <RightDrawer title={isPortuguese ? 'Navegação rápida' : 'Quick Navigation'} onClose={onClose}>
       {links.map((link) => (
         <Link
           key={`${link.href}-${link.label}`}
@@ -163,7 +175,18 @@ export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; a
 export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [liquidMode, setLiquidMode] = useState<boolean>(readSavedTheme() === 'light');
+  const [isPortuguese, setIsPortuguese] = useState(false);
   const [backgroundDraft, setBackgroundDraft] = useState<PageBackgroundConfig>(() => readPageBackgroundConfig());
+  useEffect(() => {
+    const refresh = () => setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
+    refresh();
+    window.addEventListener('storage', refresh);
+    window.addEventListener('sai-language-change', refresh as EventListener);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener('sai-language-change', refresh as EventListener);
+    };
+  }, []);
 
   const profile = useMemo(() => getAuthSessionProfile(), []);
   const userId = profile.user_id?.trim() || '';
@@ -185,14 +208,14 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   };
 
   const actionItems = [
-    { label: 'View Profile', icon: '👤', onClick: () => { onClose(); router.push(userId ? `/profile/${userId}` : '/profile'); } },
-    { label: liquidMode ? 'Liquid Mode: On' : 'Liquid Mode: Off', icon: '💧', onClick: () => setTheme(!liquidMode) },
-    { label: 'Account Settings', icon: '⚙️', onClick: () => { onClose(); router.push('/profile?section=settings'); } },
-    { label: 'Logout', icon: '🚪', onClick: handleLogout },
+    { label: isPortuguese ? 'Ver perfil' : 'View Profile', icon: '👤', onClick: () => { onClose(); router.push(userId ? `/profile/${userId}` : '/profile'); } },
+    { label: liquidMode ? (isPortuguese ? 'Modo líquido: Ativo' : 'Liquid Mode: On') : (isPortuguese ? 'Modo líquido: Inativo' : 'Liquid Mode: Off'), icon: '💧', onClick: () => setTheme(!liquidMode) },
+    { label: isPortuguese ? 'Configurações da conta' : 'Account Settings', icon: '⚙️', onClick: () => { onClose(); router.push('/profile?section=settings'); } },
+    { label: isPortuguese ? 'Sair' : 'Logout', icon: '🚪', onClick: handleLogout },
   ];
 
   return (
-    <RightDrawer title="Account" onClose={onClose}>
+    <RightDrawer title={isPortuguese ? 'Conta' : 'Account'} onClose={onClose}>
       <article className="sa-drawer-card sa-liquid-glass-token rounded-xl border border-emerald-100/30 bg-white/10 p-3">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 overflow-hidden rounded-full border border-emerald-100/40 bg-emerald-950/40">
