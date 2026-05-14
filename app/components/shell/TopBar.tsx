@@ -44,6 +44,7 @@ export default function TopBar({ pageTitle, onOpenAddPiece }: TopBarProps) {
   const pathname = usePathname();
   const { query, setQuery } = useDiscoverySearch();
   const [panel, setPanel] = useState<'notifications' | 'inbox' | 'menu' | 'account' | null>(null);
+  const [isPortuguese, setIsPortuguese] = useState(false);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -52,6 +53,16 @@ export default function TopBar({ pageTitle, onOpenAddPiece }: TopBarProps) {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+  useEffect(() => {
+    const refresh = () => setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
+    refresh();
+    window.addEventListener('storage', refresh);
+    window.addEventListener('sai-language-change', refresh as EventListener);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener('sai-language-change', refresh as EventListener);
+    };
   }, []);
 
   return (
@@ -64,7 +75,7 @@ export default function TopBar({ pageTitle, onOpenAddPiece }: TopBarProps) {
 
           <div className="hidden w-full max-w-xl lg:block">
             <SearchInput
-              placeholder="Search outfits, brands, styles, or wardrobe items"
+              placeholder={isPortuguese ? 'Buscar looks, marcas, estilos ou peças do guarda-roupa' : 'Search outfits, brands, styles, or wardrobe items'}
               value={query}
               onChange={setQuery}
             />
@@ -72,16 +83,16 @@ export default function TopBar({ pageTitle, onOpenAddPiece }: TopBarProps) {
 
           <div className="flex items-center gap-2">
             <OpenAddPieceButton onClick={onOpenAddPiece} />
-            <TopbarActionIcon label="Notifications" icon={<BellIcon />} onClick={() => setPanel('notifications')} />
-            <TopbarActionIcon label="System Inbox" icon={<MailIcon />} onClick={() => setPanel('inbox')} />
-            <TopbarActionIcon label="Quick Navigation" icon={<MenuIcon />} onClick={() => setPanel('menu')} />
-            <TopbarActionIcon label="Account" icon={<UserIcon />} onClick={() => setPanel('account')} />
+            <TopbarActionIcon label={isPortuguese ? 'Notificações' : 'Notifications'} icon={<BellIcon />} onClick={() => setPanel('notifications')} />
+            <TopbarActionIcon label={isPortuguese ? 'Caixa do sistema' : 'System Inbox'} icon={<MailIcon />} onClick={() => setPanel('inbox')} />
+            <TopbarActionIcon label={isPortuguese ? 'Navegação rápida' : 'Quick Navigation'} icon={<MenuIcon />} onClick={() => setPanel('menu')} />
+            <TopbarActionIcon label={isPortuguese ? 'Conta' : 'Account'} icon={<UserIcon />} onClick={() => setPanel('account')} />
           </div>
         </div>
 
         <div className="mt-3 lg:hidden">
           <SearchInput
-            placeholder="Search outfits, brands, styles, or wardrobe items"
+            placeholder={isPortuguese ? 'Buscar looks, marcas, estilos ou peças do guarda-roupa' : 'Search outfits, brands, styles, or wardrobe items'}
             value={query}
             onChange={setQuery}
           />
