@@ -1,5 +1,6 @@
 import { ProfileSectionKey, UserPostRecord } from '@/app/components/profile/types';
 import ProfileWardrobeSection from '@/app/components/profile/ProfileWardrobeSection';
+import ProfileUserInfoSection from '@/app/components/profile/ProfileUserInfoSection';
 import ProfileSettingsSection from '@/app/components/profile/ProfileSettingsSection';
 import ProfileMySchemesSection from '@/app/components/profile/ProfileMySchemesSection';
 import ProfileSavedSchemesSection from '@/app/components/profile/ProfileSavedSchemesSection';
@@ -28,6 +29,10 @@ interface SchemeItem {
 interface ProfileSectionRendererProps {
   section: ProfileSectionKey;
   userId: string;
+  username: string;
+  displayName: string;
+  email: string;
+  canEdit: boolean;
   wardrobeItems: WardrobeItem[];
   schemes: SchemeItem[];
   posts: UserPostRecord[];
@@ -36,13 +41,18 @@ interface ProfileSectionRendererProps {
 export default function ProfileSectionRenderer({
   section,
   userId,
+  username,
+  displayName,
+  email,
+  canEdit,
   wardrobeItems,
   schemes,
   posts,
 }: ProfileSectionRendererProps) {
   if (section === 'wardrobe') return <ProfileWardrobeSection items={wardrobeItems} />;
+  if (section === 'user-info') return <ProfileUserInfoSection userId={userId} displayName={displayName} username={username} email={email} canEdit={canEdit} />;
   if (section === 'my-schemes') return <ProfileMySchemesSection userId={userId} schemes={schemes} />;
-  if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} />;
+  if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} schemes={schemes.slice(0, 8)} />;
   if (section === 'my-posts') return <ProfileMyPostsSection posts={posts} />;
   return <ProfileSettingsSection />;
 }

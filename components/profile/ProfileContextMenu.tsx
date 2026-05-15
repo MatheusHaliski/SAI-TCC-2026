@@ -11,6 +11,7 @@ interface ProfileContextMenuProps {
 
 const sectionConfig: Array<{ key: ProfileSectionKey; label: string }> = [
   { key: 'wardrobe', label: 'My Wardrobe Pieces' },
+  { key: 'user-info', label: 'User Info' },
   { key: 'my-schemes', label: 'My Schemes' },
   { key: 'saved-schemes', label: 'Saved Schemes' },
   { key: 'my-posts', label: 'My Posts' },
@@ -22,7 +23,7 @@ export default function ProfileContextMenu({ selectedSection, onSelectSection, a
     ? sectionConfig.filter((item) => allowedSections.includes(item.key))
     : sectionConfig;
 
-  const selectedLabel = filteredConfig.find((item) => item.key === selectedSection)?.label ?? filteredConfig[0]?.label ?? 'My Wardrobe Pieces';
+  const selectedLabel = filteredConfig.find((item) => item.key === selectedSection)?.label ?? filteredConfig[0]?.label ?? 'User Info';
 
   return (
     <ContextSectionMenu
