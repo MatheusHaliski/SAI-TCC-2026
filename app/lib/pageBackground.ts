@@ -61,6 +61,7 @@ const withTechGrooves = (base: string, opacity = 0.1): string => [
 ].join(', ');
 
 const isGoldenBackground = (gradient: string): boolean => gradient.includes(GOLDEN_BACKGROUND_ASSET);
+const isOfficialBackground = (gradient: string): boolean => gradient.includes(DEFAULT_SHELL_BACKGROUND_IMAGE);
 const withDefaultBackgroundFallback = (gradient: string): string =>
   gradient.includes(DEFAULT_SHELL_BACKGROUND_IMAGE) ? gradient : `${gradient}, url('${DEFAULT_SHELL_BACKGROUND_IMAGE}')`;
 
@@ -89,6 +90,7 @@ export const applyPageBackgroundConfig = (config: PageBackgroundConfig): void =>
   document.documentElement.style.setProperty('--drawer-surface-bg', withTechGrooves(resolvedBackground, isGoldenBackground(resolvedBackground) ? 0.2 : 0.08));
   document.documentElement.style.setProperty('--drawer-surface-border', isGoldenBackground(resolvedBackground) ? 'rgba(255, 220, 150, 0.5)' : 'rgba(255, 255, 255, 0.3)');
   document.documentElement.style.setProperty('--drawer-surface-shadow', isGoldenBackground(resolvedBackground) ? '0 22px 50px rgba(92, 54, 8, 0.55)' : '0 22px 50px rgba(12, 24, 18, 0.45)');
+  document.documentElement.setAttribute('data-official-background', isOfficialBackground(resolvedBackground) ? 'true' : 'false');
   document.documentElement.setAttribute('data-home-shape', config.shape);
 };
 
