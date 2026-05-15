@@ -181,6 +181,7 @@ export class WardrobeItemsRepository extends BaseRepository {
         branding_error: (item.branding_error as WardrobeViewItem['branding_error']) ?? null,
         model_status: normalizedStatus,
         model_generation_error: (item.model_generation_error as string | null) ?? null,
+        processingStartedAt: (item.processingStartedAt as string | null) ?? null,
         fitProfile: (item.fitProfile as WardrobeViewItem['fitProfile'] | undefined) ?? undefined,
         brand: brandMap.get(String(item.brand_id ?? '')) ?? (item.brand_id === 'default' ? 'Default brand' : 'Unknown'),
         brand_detection_confidence: Number(item.brand_detection_confidence ?? 0) || null,
@@ -511,6 +512,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       // by POST /jobs — never a Meshy task ID or Firestore piece ID.
       cloud_job_id: cloudJobId,
       runpod_job_id: cloudJobId,
+      processingStartedAt: new Date().toISOString(),
       model_generation_error: null,
       updated_at: new Date().toISOString(),
     });

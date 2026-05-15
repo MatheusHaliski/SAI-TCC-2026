@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getAuthSessionProfile } from '@/app/lib/authSession';
 import { getServerSession } from '@/app/lib/clientSession';
 import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
@@ -31,6 +31,7 @@ interface WardrobeItem {
   model_branded_3d_url?: string | null;
   model_status?: string;
   model_generation_error?: string | null;
+  processingStartedAt?: string | null;
   cloud_job_id?: string | null;
   brand_applied?: boolean;
   fitProfile?: { preparationStatus?: string };
@@ -94,16 +95,15 @@ export default function MyWardrobeView() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchIntent, setSearchIntent] = useState<SearchIntentOutput | null>(null);
 
-  const assetJob = use3dAssetJob({
-    pollIntervalMs: 1200,
-    timeoutMs: 90000,
-    onCompleted: (artifactUrl) => {
-      if (!progressItem) return;
-      setViewerItem(progressItem);
-      setViewerUrl(artifactUrl);
-      setProgressItem(null);
-    },
-  });
+ const assetJob = use3dAssetJob({
+  timeoutMs: 12 * 60 * 1000,   // 12 minutes, covers Meshy + Blender
+  maxPollAttempts: 200,
+});
+
+
+  // Tracks which item last showed a stall error so the Retry click bypasses the stall check.
+  const stalledItemIdRef = useRef<string | null>(null);
+  const STALL_TTL_MS = 10 * 60 * 1000;
 
   useEffect(() => {
     const loadWardrobeData = async () => {
@@ -265,6 +265,23 @@ export default function MyWardrobeView() {
     const isInFlight = (modelStatus === 'processing' || modelStatus === 'processing_timeout') && Boolean(cloudJobId);
 
     setProgressItem(item);
+
+    // Stall detection: if this item has been in "processing" for more than 10 minutes,
+    // the pod likely restarted and lost the job. Show an error state with a Retry button
+    // rather than attempting to poll a dead job. The stalledItemIdRef bypass lets the
+    // Retry click skip this check and go straight to creating a new job.
+    if (
+      modelStatus === 'processing' &&
+      stalledItemIdRef.current !== item.wardrobe_item_id &&
+      item.processingStartedAt != null &&
+      Date.now() - new Date(item.processingStartedAt).getTime() > STALL_TTL_MS
+    ) {
+      stalledItemIdRef.current = item.wardrobe_item_id;
+      assetJob.setStatus('failed');
+      assetJob.setError('Generation stalled: the worker pod may have restarted. Click Retry to start a new generation.');
+      return;
+    }
+    stalledItemIdRef.current = null;
 
     if (isInFlight) {
       // One-shot check: try to reconcile the existing job eagerly.
