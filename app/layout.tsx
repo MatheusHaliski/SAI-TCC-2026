@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { shareTechMono } from "./fonts";
-import SiteLanguageBridge from "@/app/components/i18n/SiteLanguageBridge";
 
 export const metadata: Metadata = {
     title: "Create Next App",
@@ -16,7 +15,6 @@ export default function RootLayout({
     return (
         <html lang="en">
         <body className={`${shareTechMono.variable} min-h-screen antialiased`}>
-        <SiteLanguageBridge />
         {children}
         </body>
         </html>
