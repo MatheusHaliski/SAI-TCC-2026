@@ -54,6 +54,7 @@ const applySiteLanguage = (language: SiteLanguage): void => {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(SITE_LANGUAGE_STORAGE_KEY, language);
   document.documentElement.setAttribute('lang', language);
+  window.dispatchEvent(new Event('sai-language-change'));
 };
 
 const readSavedSiteLanguage = (): SiteLanguage => {
@@ -147,7 +148,7 @@ export default function ProfileSettingsSection() {
         </label>
         <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">
           <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="text-[11px] text-white/70">Current saved: {savedLanguage === 'pt-BR' ? 'Português (Brasil)' : 'English'}</p>
+            <p className="text-[11px] text-white/70">{siteLanguage === 'pt-BR' ? 'Idioma salvo atual:' : 'Current saved:'} {savedLanguage === 'pt-BR' ? 'Português (Brasil)' : 'English'}</p>
             <button type="button" onClick={saveLanguagePreference} className="rounded-lg border border-emerald-200/70 bg-emerald-500/25 px-2 py-1 text-[11px] font-semibold">
               Salvar
             </button>
