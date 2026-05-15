@@ -18,6 +18,7 @@ interface WardrobeItem {
   image_url: string;
   brand: string;
   piece_type: string;
+  gender?: string;
 }
 
 interface SchemeItem {

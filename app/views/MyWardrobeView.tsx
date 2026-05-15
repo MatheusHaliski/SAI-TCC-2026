@@ -368,7 +368,7 @@ export default function MyWardrobeView() {
         <div className="space-y-6">
           <PageHeader title="Virtual Wardrobe" subtitle="Classify pieces as available, unavailable, and favorites." />
 
-          <div className="sa-surface-header rounded-2xl border border-white/10 p-4">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <form onSubmit={handleSearch} className="flex flex-col gap-2 md:flex-row">
               <input
                 type="text"
