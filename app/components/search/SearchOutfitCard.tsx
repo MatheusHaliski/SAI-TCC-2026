@@ -1,4 +1,4 @@
-import OutfitCard from '@/app/components/outfit-card/OutfitCard';
+import CollapsibleOutfitCard from '@/app/components/outfit-card/CollapsibleOutfitCard';
 import { OutfitCardData } from '@/app/lib/outfit-card';
 
 interface SearchOutfitCardProps {
@@ -7,9 +7,5 @@ interface SearchOutfitCardProps {
 }
 
 export default function SearchOutfitCard({ data, onOpenDetail }: SearchOutfitCardProps) {
-  return (
-    <button type="button" className="w-full text-left" onClick={onOpenDetail}>
-      <OutfitCard data={data} variant="compact" />
-    </button>
-  );
+  return <CollapsibleOutfitCard card={data} showActions onViewDetails={onOpenDetail} />;
 }
