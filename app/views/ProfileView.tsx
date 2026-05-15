@@ -128,8 +128,14 @@ export default function ProfileView() {
     });
   }, [publicUserFromPath]);
 
-  const email = viewedProfile.email?.trim() || authProfile.email?.trim() || 'not-available@user.local';
-  const username = viewedProfile.username?.trim() || viewedProfile.name?.trim() || email.split('@')[0] || 'user';
+  const publicEmailFallback = 'not-available@user.local';
+  const ownerEmail = viewedProfile.email?.trim() || authProfile.email?.trim() || publicEmailFallback;
+  const publicEmail = viewedProfile.email?.trim() || publicEmailFallback;
+  const email = isOwnerView ? ownerEmail : publicEmail;
+
+  const ownerUsername = viewedProfile.username?.trim() || viewedProfile.name?.trim() || ownerEmail.split('@')[0] || 'user';
+  const publicUsername = viewedProfile.username?.trim() || viewedProfile.name?.trim() || 'user';
+  const username = isOwnerView ? ownerUsername : publicUsername;
   const displayName = viewedProfile.name?.trim() || username;
 
   const activeSectionLabel = useMemo(() => {
