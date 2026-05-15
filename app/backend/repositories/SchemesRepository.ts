@@ -56,13 +56,18 @@ export class SchemesRepository extends BaseRepository {
     const snapshot = await this.db
       .collection(SCHEMES_COLLECTION)
       .where('user_id', '==', userId)
-      .orderBy('created_at', 'desc')
       .get();
 
-    return snapshot.docs.map((doc) => ({
-      scheme_id: doc.id,
-      ...(doc.data() as Omit<Scheme, 'scheme_id'>),
-    }));
+    return snapshot.docs
+      .map((doc) => ({
+        scheme_id: doc.id,
+        ...(doc.data() as Omit<Scheme, 'scheme_id'>),
+      }))
+      .sort((a, b) => {
+        const aTime = Date.parse(a.created_at ?? '') || 0;
+        const bTime = Date.parse(b.created_at ?? '') || 0;
+        return bTime - aTime;
+      });
   }
 
   async findByIdWithItems(schemeId: string): Promise<SchemeWithItems | null> {
