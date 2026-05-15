@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  DEFAULT_PAGE_BACKGROUND_CONFIG,
+  OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
   PageBackgroundConfig,
   PageBackgroundShape,
   readPageBackgroundConfig,
@@ -53,8 +53,8 @@ function PageBackgroundStudio({
   ];
   const shapes: PageBackgroundShape[] = ['none', 'orb', 'diamond', 'mesh'];
   const officialConfig: PageBackgroundConfig = {
-    gradient: DEFAULT_PAGE_BACKGROUND_CONFIG.gradient,
-    shape: DEFAULT_PAGE_BACKGROUND_CONFIG.shape,
+    gradient: OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
+    shape: 'orb',
   };
   return (
     <div className="sa-page-studio space-y-3 rounded-xl border border-emerald-100/30 bg-emerald-950/40 p-3">

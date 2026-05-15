@@ -16,13 +16,13 @@ export default function DangerZoneCard() {
       </div>
 
       {confirmingDelete ? (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
-            <p className="text-sm font-semibold text-slate-900">Are you sure you want to delete your account?</p>
-            <p className="mt-1 text-xs text-slate-600">This action cannot be undone.</p>
+        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/25 bg-slate-950 p-4">
+            <p className="text-sm text-white">Are you sure you want to delete your account?</p>
+            <p className="mt-1 text-xs text-white/70">This action cannot be undone.</p>
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => setConfirmingDelete(false)} className="rounded-lg border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100">Cancel</button>
-              <button type="button" onClick={() => setConfirmingDelete(false)} className="rounded-lg border border-rose-300 bg-rose-600 px-3 py-1 text-xs font-medium text-white hover:bg-rose-700">Confirm delete</button>
+              <button type="button" onClick={() => setConfirmingDelete(false)} className="rounded-lg border border-white/20 px-3 py-1 text-xs text-white">Cancel</button>
+              <button type="button" onClick={() => setConfirmingDelete(false)} className="rounded-lg border border-rose-300/50 bg-rose-500/20 px-3 py-1 text-xs text-rose-100">Confirm delete</button>
             </div>
           </div>
         </div>

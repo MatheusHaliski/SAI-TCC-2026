@@ -1,66 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import DangerZoneCard from '@/app/components/profile/DangerZoneCard';
 import { applyTheme, readSavedTheme, type SaiTheme } from '@/app/lib/theme';
 import FancySelect from '@/app/components/ui/fancy-select';
 
 const LEGACY_DARK_MODE_STORAGE_KEY = 'sai-dark-mode-enabled';
-const SITE_LANGUAGE_STORAGE_KEY = 'sai-site-language';
-
-type SiteLanguage = 'en' | 'pt-BR';
-
-const TRANSLATIONS = {
-  en: {
-    sectionTitle: 'Settings',
-    sectionSubtitle: 'Manage account, security, privacy, and preference controls.',
-    changePassword: 'Change Password',
-    currentPassword: 'Current',
-    newPassword: 'New',
-    confirm: 'Confirm',
-    theme: 'Theme',
-    darkEnabled: 'Dark enabled',
-    darkDisabled: 'Dark disabled',
-    privacy: 'Privacy',
-    privacyPublic: 'Public',
-    privacyPrivate: 'Private',
-    siteLanguage: 'Site language',
-    siteLanguageHint: '(new) Choose the interface language.',
-    exportData: 'Export account data',
-    logout: 'Logout',
-  },
-  'pt-BR': {
-    sectionTitle: 'Configurações',
-    sectionSubtitle: 'Gerencie conta, segurança, privacidade e preferências.',
-    changePassword: 'Alterar senha',
-    currentPassword: 'Atual',
-    newPassword: 'Nova',
-    confirm: 'Confirmar',
-    theme: 'Tema',
-    darkEnabled: 'Escuro ativado',
-    darkDisabled: 'Escuro desativado',
-    privacy: 'Privacidade',
-    privacyPublic: 'Público',
-    privacyPrivate: 'Privado',
-    siteLanguage: 'Idioma do site',
-    siteLanguageHint: '(novo) Escolha o idioma da interface.',
-    exportData: 'Exportar dados da conta',
-    logout: 'Sair',
-  },
-} as const;
-
-const applySiteLanguage = (language: SiteLanguage): void => {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(SITE_LANGUAGE_STORAGE_KEY, language);
-  document.documentElement.setAttribute('lang', language);
-};
-
-const readSavedSiteLanguage = (): SiteLanguage => {
-  if (typeof window === 'undefined') return 'pt-BR';
-  const storedLanguage = window.localStorage.getItem(SITE_LANGUAGE_STORAGE_KEY);
-  return storedLanguage === 'en' ? 'en' : 'pt-BR';
-};
 
 export default function ProfileSettingsSection() {
   const [theme, setTheme] = useState<SaiTheme>(() => {
@@ -74,7 +20,6 @@ export default function ProfileSettingsSection() {
   const [savedLanguage, setSavedLanguage] = useState<SiteLanguage>(readSavedSiteLanguage);
   const [languageStatus, setLanguageStatus] = useState('');
   const darkMode = theme === 'dark';
-  const t = useMemo(() => TRANSLATIONS[siteLanguage], [siteLanguage]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -86,37 +31,27 @@ export default function ProfileSettingsSection() {
     window.localStorage.removeItem(LEGACY_DARK_MODE_STORAGE_KEY);
   }, []);
 
-  useEffect(() => {
-    applySiteLanguage(siteLanguage);
-  }, [siteLanguage]);
-
   const toggleDarkMode = () => {
     const nextTheme: SaiTheme = darkMode ? 'light' : 'dark';
     setTheme(nextTheme);
     applyTheme(nextTheme);
   };
 
-  const saveLanguagePreference = () => {
-    applySiteLanguage(siteLanguage);
-    setSavedLanguage(siteLanguage);
-    setLanguageStatus(siteLanguage === 'pt-BR' ? 'Idioma salvo: Português (Brasil).' : 'Language saved: English.');
-  };
-
   return (
-    <SectionBlock title={t.sectionTitle} subtitle={t.sectionSubtitle}>
+    <SectionBlock title="Settings" subtitle="Manage account, security, privacy, and preference controls.">
       <div className="mt-4 space-y-3 rounded-2xl border border-white/20 bg-white/10 p-4">
-        <h4 className="text-sm font-semibold text-white">{t.changePassword}</h4>
+        <h4 className="text-sm font-semibold text-white">Change Password</h4>
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-          <input type="password" placeholder={t.currentPassword} className="rounded-xl border border-white/25 bg-black/20 px-3 py-2 text-sm text-white" />
-          <input type="password" placeholder={t.newPassword} className="rounded-xl border border-white/25 bg-black/20 px-3 py-2 text-sm text-white" />
+          <input type="password" placeholder="Current" className="rounded-xl border border-white/25 bg-black/20 px-3 py-2 text-sm text-white" />
+          <input type="password" placeholder="New" className="rounded-xl border border-white/25 bg-black/20 px-3 py-2 text-sm text-white" />
           <button type="button" className="rounded-xl border border-emerald-200/70 bg-gradient-to-r from-emerald-500/45 to-cyan-500/45 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(16,185,129,0.35)]">
-            {t.confirm}
+            Confirm
           </button>
         </div>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <label className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">{t.theme}
-          <button type="button" onClick={toggleDarkMode} className="ml-2 rounded-lg border border-white/30 px-2 py-1 text-xs">{darkMode ? t.darkEnabled : t.darkDisabled}</button>
+        <label className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">Theme
+          <button type="button" onClick={toggleDarkMode} className="ml-2 rounded-lg border border-white/30 px-2 py-1 text-xs">{darkMode ? 'Dark enabled' : 'Dark disabled'}</button>
         </label>
         <label className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">{t.privacy}
           <div className="mt-2">
