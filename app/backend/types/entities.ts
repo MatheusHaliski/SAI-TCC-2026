@@ -218,6 +218,7 @@ export interface WardrobeViewItem {
   } | null;
   model_status?: ModelGenerationStatus;
   model_generation_error?: string | null;
+  processingStartedAt?: string | null;
   fitProfile?: {
     preparationStatus?: 'pending' | 'processing' | 'ready' | 'preview_only' | 'failed' | string;
     normalizedBBox?: Record<string, unknown> | null;

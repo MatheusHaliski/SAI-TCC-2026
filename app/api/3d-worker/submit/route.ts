@@ -264,6 +264,26 @@ export async function POST(req: Request) {
     );
   }
 
+  // Idempotency guard: if this piece already has an active job, return it instead of
+  // creating a duplicate. This prevents the race condition where the UI, the reconcile
+  // cron, or multiple browser tabs all call submit concurrently for the same piece.
+  if (pieceId) {
+    const repo = new WardrobeItemsRepository();
+    const existing = await repo.findById(pieceId).catch(() => null);
+    const existingJobId = typeof existing?.cloud_job_id === 'string' ? existing.cloud_job_id.trim() : '';
+    if (existing && existing.model_status === 'processing' && existingJobId) {
+      logStage('idempotent_return', { pieceId, existingJobId });
+      return NextResponse.json({
+        ok: true,
+        provider,
+        status: 'queued',
+        jobId: existingJobId,
+        runpod_job_id: existingJobId,
+        idempotent: true,
+      });
+    }
+  }
+
   try {
     if (provider === 'meshy') {
       const meshyUrl = buildMeshyCreateUrl(normalizeUrl(process.env.MESHY_BASE_URL));

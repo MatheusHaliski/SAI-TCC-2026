@@ -30,7 +30,7 @@ interface PodStatusResponse {
 }
 
 export interface SubmitBlenderCloudJobInput {
-  modelUrl: string;
+  modelUrl?: string;
   imageUrl?: string;
   jobType: string;
   options?: Record<string, unknown>;

@@ -2,6 +2,7 @@
 
 import ContextSectionMenu from '@/app/components/navigation/ContextSectionMenu';
 import { ProfileSectionKey } from '@/app/components/profile/types';
+import { useEffect, useState } from 'react';
 
 interface ProfileContextMenuProps {
   selectedSection: ProfileSectionKey;
@@ -19,9 +20,21 @@ const sectionConfig: Array<{ key: ProfileSectionKey; label: string }> = [
 ];
 
 export default function ProfileContextMenu({ selectedSection, onSelectSection, allowedSections }: ProfileContextMenuProps) {
+  const [isPortuguese, setIsPortuguese] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
+  }, []);
+
+  const localizedConfig = sectionConfig.map((item) => ({
+    ...item,
+    label: isPortuguese
+      ? ({ wardrobe: 'Meu Guarda-roupa', 'user-info': 'Informações do usuário', 'my-schemes': 'Meus esquemas', 'saved-schemes': 'Esquemas salvos', 'my-posts': 'Minhas postagens', settings: 'Configurações' }[item.key])
+      : item.label,
+  }));
   const filteredConfig = allowedSections?.length
-    ? sectionConfig.filter((item) => allowedSections.includes(item.key))
-    : sectionConfig;
+    ? localizedConfig.filter((item) => allowedSections.includes(item.key))
+    : localizedConfig;
 
   const selectedLabel = filteredConfig.find((item) => item.key === selectedSection)?.label ?? filteredConfig[0]?.label ?? 'User Info';
 

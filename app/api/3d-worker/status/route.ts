@@ -128,28 +128,41 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
   const repo = new WardrobeItemsRepository();
 
   if (FAILED_STATUSES.has(rawStatus)) {
-    const rawError =
+    // Python worker stores code/stage/details at the top level of the job dict.
+    // A JS-originated worker may nest them inside an `error` object instead.
+    const nestedError =
       jobData.error && typeof jobData.error === 'object'
         ? (jobData.error as Record<string, unknown>)
         : null;
-    const workerCode = rawError ? String(rawError.code ?? '') : '';
-    const errorMsg = rawError
-      ? String(rawError.message ?? `RunPod job ${rawStatus}`)
-      : `RunPod job ${rawStatus}`;
+
+    const workerCode = nestedError
+      ? String(nestedError.code ?? '')
+      : String(jobData.code ?? '');
+    const errorMsg = nestedError
+      ? String(nestedError.message ?? `RunPod job ${rawStatus}`)
+      : typeof jobData.error === 'string' && jobData.error.trim()
+        ? jobData.error.trim()
+        : `RunPod job ${rawStatus}`;
+    const errorStage = String(jobData.stage ?? nestedError?.stage ?? '');
+    const errorDetails = nestedError
+      ? ((nestedError.details as Record<string, unknown> | undefined) ?? {})
+      : ((jobData.details as Record<string, unknown> | undefined) ?? {});
 
     const isDnsFailure = workerCode === 'dns_resolution_failure';
     const isMeshyFailure = !isDnsFailure && workerCode.startsWith('meshy_');
+    const failedStage = errorStage || (isDnsFailure ? 'network_dns' : isMeshyFailure ? 'meshy_generate' : 'runpod_worker_failure');
+
     await repo.updatePipelineStatus(pieceId, 'failed', errorMsg, {
       stage: 'failed',
-      failedStage: isDnsFailure ? 'network_dns' : isMeshyFailure ? 'meshy_submit' : 'runpod_worker_failure',
+      failedStage,
       provider: 'runpod',
       errorCode: isDnsFailure ? 'DNS_RESOLUTION_FAILED' : workerCode.toUpperCase() || 'WORKER_FAILED',
       ...(isDnsFailure ? { kind: 'dns_resolution_failure' } : {}),
       retryable: true,
-      diagnostics: (rawError?.details as Record<string, unknown> | undefined) ?? {},
+      diagnostics: { ...errorDetails, workerStage: errorStage || undefined },
     });
 
-    return { ok: false, status: 'failed', jobId, rawStatus, error: rawError ?? errorMsg };
+    return { ok: false, status: 'failed', jobId, rawStatus, error: nestedError ?? { code: workerCode, message: errorMsg, stage: errorStage } };
   }
 
   if (rawStatus === 'completed' || rawStatus === 'succeeded' || rawStatus === 'done' || rawStatus === 'success') {

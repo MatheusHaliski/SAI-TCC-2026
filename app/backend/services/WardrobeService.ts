@@ -567,7 +567,6 @@ export class WardrobeService {
     let submitted;
     try {
       submitted = await this.blenderCloudService.submitBlenderCloudJob({
-        modelUrl: imageUrl,
         imageUrl,
         jobType: MODEL_GENERATION_JOB_TYPE,
         options: {
