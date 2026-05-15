@@ -94,7 +94,7 @@ function PageBackgroundStudio({
       </div>
       <button
         type="button"
-        className="w-full rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em]"
+        className="w-full overflow-hidden rounded-lg border border-white/30 bg-white/10 text-left"
         onClick={() => {
           onChange(officialConfig);
           onApply(officialConfig);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ProfileSummaryCard from '@/app/components/cards/ProfileSummaryCard';
 import PageHeader from '@/app/components/shell/PageHeader';
@@ -10,7 +10,7 @@ import ProfileContextMenu from '@/app/components/profile/ProfileContextMenu';
 import ProfileSectionRenderer from '@/app/components/profile/ProfileSectionRenderer';
 import { ProfileSectionKey, UserPostRecord } from '@/app/components/profile/types';
 
-const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
+const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -67,11 +67,8 @@ export default function ProfileView() {
   const [isPortuguese] = useState(() => (typeof window !== 'undefined' ? window.localStorage.getItem('sai-site-language') !== 'en' : false));
 
   const isOwnerView = Boolean(authUserId) && Boolean(userId) && authUserId === userId;
-  const forcedPublicSection = publicUserFromPath && !isOwnerView ? 'user-info' : null;
-  const selectedSection = forcedPublicSection ?? (pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section')));
-  const allowedSections: ProfileSectionKey[] = isOwnerView || !publicUserFromPath
-    ? ALLOWED_SECTIONS
-    : ['user-info'];
+  const selectedSection = pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section'));
+  const allowedSections: ProfileSectionKey[] = ALLOWED_SECTIONS;
 
   useEffect(() => {
     const loadProfileHubData = async () => {
@@ -108,16 +105,19 @@ export default function ProfileView() {
       }
 
       const [wardrobeResponse, schemesResponse, postsResponse] = await Promise.all([
-        fetch(`/api/wardrobe-items/user/${resolvedViewedUserId}`),
+        fetch(`/api/wardrobe-items/user/${resolvedViewedUserId}?status=active&limit=24`),
         fetch(`/api/schemes/user/${resolvedViewedUserId}`),
         fetch(`/api/user-posts?user_id=${encodeURIComponent(resolvedViewedUserId)}`),
       ]);
 
-      const wardrobeData = await wardrobeResponse.json().catch(() => []);
+      const wardrobeData = await wardrobeResponse.json().catch(() => ({ items: [] }));
       const schemesData = await schemesResponse.json().catch(() => []);
       const postsData = await postsResponse.json().catch(() => []);
 
-      setWardrobeItems(Array.isArray(wardrobeData) ? (wardrobeData as WardrobeItem[]) : []);
+      const wardrobeList = Array.isArray((wardrobeData as { items?: unknown })?.items)
+        ? ((wardrobeData as { items: WardrobeItem[] }).items)
+        : (Array.isArray(wardrobeData) ? (wardrobeData as WardrobeItem[]) : []);
+      setWardrobeItems(wardrobeList);
       setSchemes(Array.isArray(schemesData) ? (schemesData as SchemeItem[]) : []);
       setPosts(Array.isArray(postsData) ? (postsData as UserPostRecord[]) : []);
     };
