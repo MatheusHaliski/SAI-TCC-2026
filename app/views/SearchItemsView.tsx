@@ -19,6 +19,7 @@ type PublicScheme = {
   user_id: string;
   cover_image_url: string | null;
   description?: string | null;
+  description_json?: string | null;
   pieces?: SchemePieceSnapshot[];
 };
 
@@ -98,6 +99,14 @@ export default function SearchItemsView() {
               outfitName: scheme.title || 'Untitled Outfit',
             }),
         heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
+        outfitBackground: (() => {
+          try {
+            const parsed = JSON.parse(scheme.description_json || '{}') as { outfitBackground?: OutfitCardData['outfitBackground'] };
+            return parsed?.outfitBackground;
+          } catch {
+            return undefined;
+          }
+        })(),
         pieces,
         brands,
         schemeId: scheme.scheme_id,
