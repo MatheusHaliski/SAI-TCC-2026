@@ -6,6 +6,21 @@ import DangerZoneCard from '@/app/components/profile/DangerZoneCard';
 import { applyTheme, readSavedTheme, type SaiTheme } from '@/app/lib/theme';
 
 const LEGACY_DARK_MODE_STORAGE_KEY = 'sai-dark-mode-enabled';
+const SITE_LANGUAGE_STORAGE_KEY = 'sai-site-language';
+
+type SiteLanguage = 'en' | 'pt-BR';
+
+const applySiteLanguage = (language: SiteLanguage): void => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(SITE_LANGUAGE_STORAGE_KEY, language);
+  document.documentElement.setAttribute('lang', language);
+};
+
+const readSavedSiteLanguage = (): SiteLanguage => {
+  if (typeof window === 'undefined') return 'pt-BR';
+  const storedLanguage = window.localStorage.getItem(SITE_LANGUAGE_STORAGE_KEY);
+  return storedLanguage === 'en' ? 'en' : 'pt-BR';
+};
 
 export default function ProfileSettingsSection() {
   const [theme, setTheme] = useState<SaiTheme>(() => {
@@ -15,6 +30,9 @@ export default function ProfileSettingsSection() {
     return readSavedTheme();
   });
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
+  const [siteLanguage, setSiteLanguage] = useState<SiteLanguage>(readSavedSiteLanguage);
+  const [savedLanguage, setSavedLanguage] = useState<SiteLanguage>(readSavedSiteLanguage);
+  const [languageStatus, setLanguageStatus] = useState<string>('');
   const darkMode = theme === 'dark';
 
   useEffect(() => {
@@ -33,6 +51,12 @@ export default function ProfileSettingsSection() {
     applyTheme(nextTheme);
   };
 
+  const saveLanguagePreference = () => {
+    applySiteLanguage(siteLanguage);
+    setSavedLanguage(siteLanguage);
+    setLanguageStatus(siteLanguage === 'pt-BR' ? 'Idioma salvo: Português (Brasil).' : 'Language saved: English.');
+  };
+
   return (
     <SectionBlock title="Settings" subtitle="Manage account, security, privacy, and preference controls.">
       <div className="mt-4 space-y-3 rounded-2xl border border-white/20 bg-white/10 p-4">
@@ -45,7 +69,7 @@ export default function ProfileSettingsSection() {
           </button>
         </div>
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
         <label className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">Theme
           <button type="button" onClick={toggleDarkMode} className="ml-2 rounded-lg border border-white/30 px-2 py-1 text-xs">{darkMode ? 'Dark enabled' : 'Dark disabled'}</button>
         </label>
@@ -55,6 +79,21 @@ export default function ProfileSettingsSection() {
             <option value="private">Private</option>
           </select>
         </label>
+        <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">
+          <label className="block">Site language
+            <select value={siteLanguage} onChange={(e) => setSiteLanguage(e.target.value as SiteLanguage)} className="mt-2 w-full rounded-lg border border-white/30 bg-black/20 px-2 py-1 text-xs">
+              <option value="pt-BR">Português (Brasil)</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="text-[11px] text-white/70">Current saved: {savedLanguage === 'pt-BR' ? 'Português (Brasil)' : 'English'}</p>
+            <button type="button" onClick={saveLanguagePreference} className="rounded-lg border border-emerald-200/70 bg-emerald-500/25 px-2 py-1 text-[11px] font-semibold">
+              Salvar
+            </button>
+          </div>
+          {languageStatus ? <p className="mt-2 text-[11px] text-emerald-100">{languageStatus}</p> : null}
+        </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">Export account data</button>
