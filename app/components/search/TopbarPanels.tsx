@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
+  DEFAULT_SHELL_BACKGROUND_IMAGE,
   OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
   PageBackgroundConfig,
   PageBackgroundShape,
@@ -53,7 +54,7 @@ function PageBackgroundStudio({
   ];
   const shapes: PageBackgroundShape[] = ['none', 'orb', 'diamond', 'mesh'];
   const officialConfig: PageBackgroundConfig = {
-    gradient: OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
+    gradient: `${OFFICIAL_WEBSITE_BACKGROUND_GRADIENT}, url('${DEFAULT_SHELL_BACKGROUND_IMAGE}')`,
     shape: 'orb',
   };
   return (
@@ -90,7 +91,7 @@ function PageBackgroundStudio({
           onApply(officialConfig);
         }}
       >
-        Reset to official
+        Reset to Official
       </button>
     </div>
   );

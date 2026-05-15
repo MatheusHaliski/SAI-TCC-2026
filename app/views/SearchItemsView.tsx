@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import OutfitDetailModal from '@/app/components/search/OutfitDetailModal';
-import SearchOutfitCard from '@/app/components/search/SearchOutfitCard';
+import CollapsibleOutfitCard, { getSchemeFilterValue } from '@/app/components/outfit-card/CollapsibleOutfitCard';
 import SearchUserCard from '@/app/components/search/SearchUserCard';
 import { useDiscoverySearch } from '@/app/components/shell/DiscoverySearchContext';
 import { OutfitCardData, buildOutfitDescriptionFallback, buildOutfitDescriptionRich } from '@/app/lib/outfit-card';
@@ -52,6 +52,9 @@ export default function SearchItemsView() {
   const [schemes, setSchemes] = useState<PublicScheme[]>([]);
   const [users, setUsers] = useState<UserPreview[]>([]);
   const [selectedOutfit, setSelectedOutfit] = useState<OutfitCardData | null>(null);
+  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
+  const [filter, setFilter] = useState<'favorites'|'available'|'unavailable'>('available');
 
   useEffect(() => {
     fetch('/api/schemes/public')
@@ -129,8 +132,13 @@ export default function SearchItemsView() {
       return blob.includes(queryNorm);
     });
 
-    return { users: filteredUsers, outfits, brands: [], wardrobeItems: [], styles: [] };
-  }, [outfitsById, queryNorm, schemes, users]);
+    const filteredOutfits = outfits.filter((scheme) => {
+      const card = outfitsById[scheme.scheme_id];
+      if (!card) return false;
+      return getSchemeFilterValue(card, favorites, availability) === filter;
+    });
+    return { users: filteredUsers, outfits: filteredOutfits, brands: [], wardrobeItems: [], styles: [] };
+  }, [availability, favorites, filter, outfitsById, queryNorm, schemes, users]);
 
   return (
     <div className="space-y-6">
@@ -168,13 +176,20 @@ export default function SearchItemsView() {
         </div>
       </SectionBlock>
 
-      <SectionBlock title={`Outfits (${groupedSearch.outfits.length})`} subtitle="Public outfits in compact Saved Outfit Cards card mode.">
+      <SectionBlock title={`Cards de Look (${groupedSearch.outfits.length})`} subtitle="Cards públicos no mesmo visual dos Cards de Look Salvos.">
+
+      <div className="flex flex-wrap gap-2">
+        {([['favorites','Favoritos'],['available','Disponíveis'],['unavailable','Indisponíveis']] as const).map(([key,label]) => (
+          <button key={key} type="button" onClick={() => setFilter(key)} className={`rounded-full px-3 py-1 text-xs border ${filter===key?'border-cyan-300/80 bg-cyan-500/25 text-cyan-100':'border-white/25 bg-white/5 text-white/85'}`}>{label}</button>
+        ))}
+      </div>
+
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groupedSearch.outfits.map((scheme) => {
             const cardData = outfitsById[scheme.scheme_id];
             if (!cardData) return null;
 
-            return <SearchOutfitCard key={scheme.scheme_id} data={cardData} onOpenDetail={() => setSelectedOutfit(cardData)} />;
+            return <CollapsibleOutfitCard key={scheme.scheme_id} card={cardData} showActions onViewDetails={() => setSelectedOutfit(cardData)} onToggleFavorite={() => setFavorites((p)=> ({...p,[scheme.scheme_id]: !p[scheme.scheme_id]}))} onEdit={() => {}} onUseInDressTester={() => router.push('/dress-tester')} onDelete={() => setAvailability((p)=> ({...p,[scheme.scheme_id]:'unavailable'}))} />;
           })}
           {!groupedSearch.outfits.length ? <p className="text-sm text-white/70">No outfits found.</p> : null}
         </div>

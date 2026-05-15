@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import OutfitCard from '@/app/components/outfit-card/OutfitCard';
+import CollapsibleOutfitCard, { getSchemeFilterValue } from '@/app/components/outfit-card/CollapsibleOutfitCard';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import { OutfitCardData, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
@@ -66,6 +66,7 @@ export default function ExploreSchemeView() {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [itemsBySchemeId, setItemsBySchemeId] = useState<Record<string, SchemeDetailItem[]>>({});
+  const [filter, setFilter] = useState<'favorites'|'available'|'unavailable'>('available');
 
   useEffect(() => {
     const loadSchemesWithItems = async () => {
@@ -176,14 +177,15 @@ export default function ExploreSchemeView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Saved Outfit Cards" subtitle="Manage outfits by occasion, preference, favorite, and availability." />
+      <PageHeader title="Cards de Look Salvos" subtitle="Gerencie por ocasião, favoritos e disponibilidade." />
+      <div className="flex flex-wrap gap-2">{([['favorites','Favoritos'],['available','Disponíveis'],['unavailable','Indisponíveis']] as const).map(([key,label]) => (<button key={key} type="button" onClick={() => setFilter(key)} className={`rounded-full px-3 py-1 text-xs border ${filter===key?'border-cyan-300/80 bg-cyan-500/25 text-cyan-100':'border-white/25 bg-white/5 text-white/85'}`}>{label}</button>))}</div>
 
       {grouped.map(([occasion, occasionSchemes]) => (
         <SectionBlock key={occasion} title={`Occasion: ${occasion}`} subtitle="Outfits grouped by occasion.">
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {occasionSchemes.map((scheme) => (
+            {occasionSchemes.filter((scheme) => getSchemeFilterValue(buildOutfitPreviewData(scheme), favorites, availability) === filter).map((scheme) => (
               <article key={scheme.scheme_id} className="space-y-3 rounded-2xl border border-white/25 p-3">
-                <OutfitCard data={buildOutfitPreviewData(scheme)} />
+                <CollapsibleOutfitCard card={buildOutfitPreviewData(scheme)} onToggleFavorite={() => setFavorites((prev) => ({ ...prev, [scheme.scheme_id]: !prev[scheme.scheme_id] }))} onUseInDressTester={() => {}} onEdit={() => {}} onDelete={() => setAvailability((prev)=>({...prev,[scheme.scheme_id]:'unavailable'}))} />
                 <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/80">
                   <p>Status: {availability[scheme.scheme_id] ?? 'available'}</p>
                   <p>Favorite: {favorites[scheme.scheme_id] ? 'yes' : 'no'}</p>

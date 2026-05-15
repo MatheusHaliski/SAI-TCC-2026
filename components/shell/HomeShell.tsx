@@ -12,7 +12,7 @@ import Image from 'next/image';
 import { getAuthSessionToken } from '@/app/lib/authSession';
 import AddPieceModal from '@/app/components/pieces/AddPieceModal';
 import { applyPageBackgroundConfig, ensureSavedPageBackgroundConfig } from '@/app/lib/pageBackground';
-import { applyTheme, readSavedTheme } from '@/app/lib/theme';
+import { applyDivTint, applyTheme, readSavedTheme, readSavedDivTint } from '@/app/lib/theme';
 
 export default function HomeShell() {
   const pathname = usePathname();
@@ -38,6 +38,7 @@ export default function HomeShell() {
   useEffect(() => {
     applyPageBackgroundConfig(ensureSavedPageBackgroundConfig());
     applyTheme(readSavedTheme());
+    applyDivTint(readSavedDivTint());
   }, []);
 
   const token1 = getAuthSessionToken();
