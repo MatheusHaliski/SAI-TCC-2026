@@ -75,14 +75,14 @@ export default function ProfileSettingsSection() {
         <label className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">Theme
           <button type="button" onClick={toggleDarkMode} className="ml-2 rounded-lg border border-white/30 px-2 py-1 text-xs">{darkMode ? 'Dark enabled' : 'Dark disabled'}</button>
         </label>
-        <label className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">{t.privacy}
+        <label className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">Privacy
           <div className="mt-2">
             <FancySelect
               value={privacy}
               onChange={(value) => setPrivacy(value as 'public' | 'private')}
               options={[
-                { value: 'public', label: t.privacyPublic, hint: 'Visible to everyone' },
-                { value: 'private', label: t.privacyPrivate, hint: 'Only visible to you' },
+                { value: 'public', label: 'Public', hint: 'Visible to everyone' },
+                { value: 'private', label: 'Private', hint: 'Only visible to you' },
               ]}
             />
           </div>
@@ -104,7 +104,7 @@ export default function ProfileSettingsSection() {
         </div>
       </div>
       <div className="mt-3 rounded-2xl border border-emerald-200/45 bg-emerald-500/10 p-3 text-sm text-white">
-        <label className="flex flex-wrap items-center gap-2 font-medium">{t.siteLanguage}
+        <label className="flex flex-wrap items-center gap-2 font-medium">Site language
           <div className="min-w-[220px]">
             <FancySelect
               value={siteLanguage}
@@ -115,7 +115,7 @@ export default function ProfileSettingsSection() {
               ]}
             />
           </div>
-          <span className="text-xs font-normal text-white/75">{t.siteLanguageHint}</span>
+          <span className="text-xs font-normal text-white/75">Select the interface language.</span>
         </label>
         <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">
           <div className="mt-2 flex items-center justify-between gap-2">
@@ -128,8 +128,8 @@ export default function ProfileSettingsSection() {
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">{t.exportData}</button>
-        <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">{t.logout}</button>
+        <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">Export data</button>
+        <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">Logout</button>
       </div>
       <div className="mt-4">
         <DangerZoneCard />
