@@ -94,14 +94,13 @@ function PageBackgroundStudio({
       </div>
       <button
         type="button"
-        className="sa-liquid-glass-token group flex w-full items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-left text-sm font-medium text-white transition hover:border-emerald-200/70 hover:bg-emerald-400/15"
+        className="w-full overflow-hidden rounded-lg border border-white/30 bg-white/10 text-left"
         onClick={() => {
           onChange(officialConfig);
           onApply(officialConfig);
         }}
       >
-        <span className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-emerald-200/40 bg-emerald-400/20 text-emerald-100">↺</span>
-        <span>{isPortuguese ? 'Restaurar oficial' : 'Reset to official'}</span>
+        {isPortuguese ? 'Restaurar oficial' : 'Reset to official'}
       </button>
       <label className="block rounded-lg border border-white/20 bg-white/10 p-2 text-xs">
         {isPortuguese ? 'Cor das divs' : 'Div color'}
