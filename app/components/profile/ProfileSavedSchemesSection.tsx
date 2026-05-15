@@ -2,75 +2,33 @@
 
 import { useMemo, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
-import OutfitCard from '@/app/components/outfit-card/OutfitCard';
-import OutfitExportModal from '@/app/components/profile/OutfitExportModal';
+import CollapsibleOutfitCard from '@/app/components/outfit-card/CollapsibleOutfitCard';
 import { OutfitCardData } from '@/app/lib/outfit-card';
 
-interface SavedScheme {
-  scheme_id: string;
-  title: string;
-  style: string;
-  occasion: string;
-  description?: string | null;
-  cover_image_url?: string | null;
-  visibility: 'public' | 'private';
-}
+interface SavedScheme { scheme_id: string; title: string; style: string; occasion: string; description?: string | null; cover_image_url?: string | null; visibility: 'public' | 'private'; user_id?: string }
+interface Props { userId: string; schemes: SavedScheme[] }
 
-interface ProfileSavedSchemesSectionProps {
-  userId: string;
-  schemes: SavedScheme[];
-}
+const toData = (scheme: SavedScheme): OutfitCardData => ({ outfitName: scheme.title, outfitStyleLine: `${scheme.style} · ${scheme.occasion}`, outfitDescription: scheme.description || '', heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png', schemeId: scheme.scheme_id, creatorId: scheme.user_id, pieces: [] });
 
-const toData = (scheme: SavedScheme): OutfitCardData => ({
-  outfitName: scheme.title,
-  outfitStyleLine: `${scheme.style} · ${scheme.occasion}`,
-  outfitDescription: scheme.description || 'Saved outfit card with editable social-ready metadata.',
-  heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
-  metaBadges: [
-    { icon: '💾', label: 'Saved' },
-    { icon: scheme.visibility === 'public' ? '🌐' : '🔒', label: scheme.visibility === 'public' ? 'Public' : 'Private' },
-  ],
-  pieces: [],
-});
+export default function ProfileSavedSchemesSection({ userId, schemes }: Props) {
+  const [savedSchemes, setSavedSchemes] = useState<SavedScheme[]>([]);
 
-export default function ProfileSavedSchemesSection({ userId, schemes }: ProfileSavedSchemesSectionProps) {
-  const [exportingScheme, setExportingScheme] = useState<SavedScheme | null>(null);
-  const cards = useMemo(() => schemes.map((scheme) => ({ scheme, data: toData(scheme) })), [schemes]);
+  useEffect(() => {
+    const load = async () => {
+      const favoritesResponse = await fetch(`/api/outfit-favorites?userId=${encodeURIComponent(userId)}`);
+      const favoritesPayload = await favoritesResponse.json().catch(() => ({ favorites: [] }));
+      const favoriteIds = Array.isArray(favoritesPayload?.favorites) ? favoritesPayload.favorites.map((entry: { schemeId?: string }) => entry.schemeId).filter(Boolean) : [];
+      if (!favoriteIds.length) return setSavedSchemes([]);
+      const publicResponse = await fetch('/api/schemes/public');
+      const publicSchemes = await publicResponse.json().catch(() => []);
+      const onlyFavorites = Array.isArray(publicSchemes) ? publicSchemes.filter((scheme: SavedScheme) => favoriteIds.includes(scheme.scheme_id)) : [];
+      setSavedSchemes(onlyFavorites);
+    };
+    load().catch(() => setSavedSchemes([]));
+  }, [userId]);
 
-  return (
-    <>
-      <SectionBlock title="Saved Schemes" subtitle="Compact Saved Outfit Cards card family with premium visual continuity.">
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
-          {cards.map(({ scheme, data }) => (
-            <OutfitCard
-              key={scheme.scheme_id}
-              data={data}
-              variant="compact"
-              actions={[
-                { label: 'Open', tone: 'accent' },
-                { label: 'Edit' },
-                { label: 'Export to Social', onClick: () => setExportingScheme(scheme), tone: 'accent' },
-                { label: 'Duplicate' },
-                { label: 'Remove', tone: 'danger' },
-              ]}
-            />
-          ))}
-          {!cards.length ? <p className="text-sm text-white/80">No saved schemes available.</p> : null}
-        </div>
-      </SectionBlock>
+  const cards = useMemo(() => (savedSchemes.length ? savedSchemes : schemes).map((s) => ({ scheme: s, data: toData(s) })), [savedSchemes, schemes]);
+  const pt = typeof window !== 'undefined' && (window.localStorage.getItem('sai-site-language') ?? 'pt').startsWith('pt');
 
-      {exportingScheme ? (
-        <OutfitExportModal
-          open={Boolean(exportingScheme)}
-          onClose={() => setExportingScheme(null)}
-          userId={userId}
-          outfitId={exportingScheme.scheme_id}
-          schemeId={exportingScheme.scheme_id}
-          title={exportingScheme.title}
-          sourceImageUrl={exportingScheme.cover_image_url || '/welcome-newcomers.png'}
-          defaultCaption={`${exportingScheme.title} from my Saved Looks in SAI`}
-        />
-      ) : null}
-    </>
-  );
+  return <SectionBlock title={pt ? 'Esquemas Salvos' : 'Saved Schemes'} subtitle={pt ? 'Mesmos cards salvos da tela principal de cards.' : 'Same saved outfit cards from the main saved outfit cards view.'}><div className="mt-4 grid gap-3 lg:grid-cols-2">{cards.map(({scheme,data}) => <CollapsibleOutfitCard key={scheme.scheme_id} card={data} showActions />)}{!cards.length ? <p className="text-sm text-white/80">{pt ? 'Nenhum esquema salvo encontrado.' : 'No saved schemes available.'}</p> : null}</div></SectionBlock>;
 }

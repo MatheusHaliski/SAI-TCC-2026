@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import CollapsibleOutfitCard, { getSchemeFilterValue } from '@/app/components/outfit-card/CollapsibleOutfitCard';
+import CollapsibleOutfitCard from '@/app/components/outfit-card/CollapsibleOutfitCard';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import { OutfitCardData, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
@@ -66,7 +66,8 @@ export default function ExploreSchemeView() {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [itemsBySchemeId, setItemsBySchemeId] = useState<Record<string, SchemeDetailItem[]>>({});
-  const [filter, setFilter] = useState<'favorites'|'available'|'unavailable'>('available');
+  const [statusFilter, setStatusFilter] = useState<'favorites' | 'available' | 'unavailable'>('available');
+  const pt = typeof window !== 'undefined' && (window.localStorage.getItem('sai-site-language') ?? 'pt').startsWith('pt');
 
   useEffect(() => {
     const loadSchemesWithItems = async () => {
@@ -177,15 +178,15 @@ export default function ExploreSchemeView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Cards de Look Salvos" subtitle="Gerencie por ocasião, favoritos e disponibilidade." />
-      <div className="flex flex-wrap gap-2">{([['favorites','Favoritos'],['available','Disponíveis'],['unavailable','Indisponíveis']] as const).map(([key,label]) => (<button key={key} type="button" onClick={() => setFilter(key)} className={`rounded-full px-3 py-1 text-xs border ${filter===key?'border-cyan-300/80 bg-cyan-500/25 text-cyan-100':'border-white/25 bg-white/5 text-white/85'}`}>{label}</button>))}</div>
+      <PageHeader title={pt ? "Cards de Look Salvos" : "Saved Outfit Cards"} subtitle={pt ? "Gerencie looks por ocasião, favorito e disponibilidade." : "Manage outfits by occasion, preference, favorite, and availability."} />
+      <div className="inline-flex rounded-xl border border-white/20 bg-white/5 p-1">{[["favorites", pt ? "Favoritos" : "Favorites"],["available", pt ? "Disponíveis" : "Available"],["unavailable", pt ? "Indisponíveis" : "Unavailable"]].map(([key,label]) => <button key={key} type="button" onClick={() => setStatusFilter(key as 'favorites' | 'available' | 'unavailable')} className={`rounded-lg px-3 py-1 text-xs ${statusFilter===key?'bg-cyan-400/30 text-cyan-100':'text-white/80'}`}>{label}</button>)}</div>
 
       {grouped.map(([occasion, occasionSchemes]) => (
         <SectionBlock key={occasion} title={`Occasion: ${occasion}`} subtitle="Outfits grouped by occasion.">
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {occasionSchemes.filter((scheme) => getSchemeFilterValue(buildOutfitPreviewData(scheme), favorites, availability) === filter).map((scheme) => (
+            {occasionSchemes.filter((scheme, idx) => statusFilter === 'available' ? (availability[scheme.scheme_id] ?? 'available') === 'available' : statusFilter === 'unavailable' ? (availability[scheme.scheme_id] ?? 'available') === 'unavailable' : Boolean(favorites[scheme.scheme_id])).map((scheme) => (
               <article key={scheme.scheme_id} className="space-y-3 rounded-2xl border border-white/25 p-3">
-                <CollapsibleOutfitCard card={buildOutfitPreviewData(scheme)} onToggleFavorite={() => setFavorites((prev) => ({ ...prev, [scheme.scheme_id]: !prev[scheme.scheme_id] }))} onUseInDressTester={() => {}} onEdit={() => {}} onDelete={() => setAvailability((prev)=>({...prev,[scheme.scheme_id]:'unavailable'}))} />
+                <CollapsibleOutfitCard card={buildOutfitPreviewData(scheme)} onToggleFavorite={() => setFavorites((prev) => ({ ...prev, [scheme.scheme_id]: !prev[scheme.scheme_id] }))} />
                 <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/80">
                   <p>Status: {availability[scheme.scheme_id] ?? 'available'}</p>
                   <p>Favorite: {favorites[scheme.scheme_id] ? 'yes' : 'no'}</p>

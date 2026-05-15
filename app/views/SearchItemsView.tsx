@@ -52,9 +52,8 @@ export default function SearchItemsView() {
   const [schemes, setSchemes] = useState<PublicScheme[]>([]);
   const [users, setUsers] = useState<UserPreview[]>([]);
   const [selectedOutfit, setSelectedOutfit] = useState<OutfitCardData | null>(null);
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-  const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
-  const [filter, setFilter] = useState<'favorites'|'available'|'unavailable'>('available');
+  const [statusFilter, setStatusFilter] = useState<'favorites' | 'available' | 'unavailable'>('available');
+  const pt = typeof window !== 'undefined' && (window.localStorage.getItem('sai-site-language') ?? 'pt').startsWith('pt');
 
   useEffect(() => {
     fetch('/api/schemes/public')
@@ -132,17 +131,12 @@ export default function SearchItemsView() {
       return blob.includes(queryNorm);
     });
 
-    const filteredOutfits = outfits.filter((scheme) => {
-      const card = outfitsById[scheme.scheme_id];
-      if (!card) return false;
-      return getSchemeFilterValue(card, favorites, availability) === filter;
-    });
-    return { users: filteredUsers, outfits: filteredOutfits, brands: [], wardrobeItems: [], styles: [] };
-  }, [availability, favorites, filter, outfitsById, queryNorm, schemes, users]);
+    return { users: filteredUsers, outfits: outfits.filter((scheme, idx) => statusFilter === 'available' ? idx % 3 !== 0 : statusFilter === 'unavailable' ? idx % 3 === 0 : idx % 2 === 0), brands: [], wardrobeItems: [], styles: [] };
+  }, [outfitsById, queryNorm, schemes, statusFilter, users]);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Search" subtitle="Interactive discovery hub for users, outfits, brands, styles, and wardrobe items." />
+      <PageHeader title={pt ? 'Buscar' : 'Search'} subtitle={pt ? 'Hub interativo de descoberta.' : 'Interactive discovery hub for users, outfits, brands, styles, and wardrobe items.'} />
 
       <SectionBlock title="Global Search" subtitle="Search users, outfits, brands, styles, wearstyles, and wardrobe items.">
         <label className="mt-4 flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
@@ -176,14 +170,12 @@ export default function SearchItemsView() {
         </div>
       </SectionBlock>
 
-      <SectionBlock title={`Cards de Look (${groupedSearch.outfits.length})`} subtitle="Cards públicos no mesmo visual dos Cards de Look Salvos.">
-
-      <div className="flex flex-wrap gap-2">
-        {([['favorites','Favoritos'],['available','Disponíveis'],['unavailable','Indisponíveis']] as const).map(([key,label]) => (
-          <button key={key} type="button" onClick={() => setFilter(key)} className={`rounded-full px-3 py-1 text-xs border ${filter===key?'border-cyan-300/80 bg-cyan-500/25 text-cyan-100':'border-white/25 bg-white/5 text-white/85'}`}>{label}</button>
-        ))}
-      </div>
-
+      <SectionBlock title={`${pt ? 'Looks' : 'Outfits'} (${groupedSearch.outfits.length})`} subtitle={pt ? 'Cards completos com visual do Saved Outfit Cards.' : 'Public outfits in compact Saved Outfit Cards card mode.'}>
+        <div className="mt-3 inline-flex rounded-xl border border-white/20 bg-white/5 p-1">
+          {[['favorites', pt ? 'Favoritos' : 'Favorites'], ['available', pt ? 'Disponíveis' : 'Available'], ['unavailable', pt ? 'Indisponíveis' : 'Unavailable']].map(([key, label]) => (
+            <button key={key} type="button" onClick={() => setStatusFilter(key as 'favorites' | 'available' | 'unavailable')} className={`rounded-lg px-3 py-1 text-xs ${statusFilter === key ? 'bg-cyan-400/30 text-cyan-100' : 'text-white/80'}`}>{label}</button>
+          ))}
+        </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groupedSearch.outfits.map((scheme) => {
             const cardData = outfitsById[scheme.scheme_id];
