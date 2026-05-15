@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from controller import run_blender_pipeline
+from meshy_pipeline import MeshyPipeline, MeshyPipelineError
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -74,7 +75,7 @@ def _download_file(url: str, dest: Path) -> None:
 
 
 def _resolve_glb_url(payload: JobRequest) -> str | None:
-    """Return the GLB download URL from whichever field is populated."""
+    """Return a pre-built GLB download URL if one was explicitly provided."""
     return payload.meshyGlbUrl or payload.modelUrl
 
 
@@ -118,30 +119,75 @@ def create_job(
     started = time.perf_counter()
 
     # ── Step 1: resolve / download the input GLB ─────────────────────────
+    #
+    # Three accepted flows (in priority order):
+    #   A. meshyGlbUrl / modelUrl provided  → download directly
+    #   B. imageUrl provided                → call Meshy image-to-3d, then download
+    #   C. neither                          → 400 error
+    input_glb = job_dir / "base_meshy.glb"
+
     glb_url = _resolve_glb_url(payload)
 
-    if not glb_url:
+    if glb_url:
+        # Flow A: pre-built GLB URL
+        try:
+            print(f"[handler] downloading GLB from provided URL: {glb_url}")
+            _download_file(glb_url, input_glb)
+        except Exception as exc:
+            return JSONResponse(
+                status_code=502,
+                content={
+                    "ok": False,
+                    "jobId": job_id,
+                    "error": f"Failed to download GLB: {exc}",
+                    "glbUrl": glb_url,
+                },
+            )
+
+    elif payload.imageUrl:
+        # Flow B: generate GLB from image via Meshy, then run Blender
+        print(f"[handler] no GLB URL provided — generating from imageUrl via Meshy")
+        piece_type = str((payload.options or {}).get("pieceType") or "upper_piece")
+        try:
+            meshy = MeshyPipeline()
+            meshy_output = meshy.generate_base_model(
+                piece_type=piece_type,
+                source_image_url=payload.imageUrl,
+                output_dir=job_dir,
+            )
+            input_glb = meshy_output.base_model_path
+            print(f"[handler] Meshy generation done task_id={meshy_output.meshy_task_id} path={input_glb}")
+        except MeshyPipelineError as exc:
+            return JSONResponse(
+                status_code=502,
+                content={
+                    "ok": False,
+                    "jobId": job_id,
+                    "stage": "meshy_generate",
+                    "error": exc.message,
+                    "code": exc.code,
+                    "details": exc.details,
+                },
+            )
+        except Exception as exc:
+            return JSONResponse(
+                status_code=502,
+                content={
+                    "ok": False,
+                    "jobId": job_id,
+                    "stage": "meshy_generate",
+                    "error": f"Unexpected error during Meshy generation: {exc}",
+                },
+            )
+
+    else:
+        # Flow C: nothing usable provided
         return JSONResponse(
             status_code=400,
             content={
                 "ok": False,
                 "jobId": job_id,
-                "error": "No GLB URL provided. Supply meshyGlbUrl or modelUrl.",
-            },
-        )
-
-    input_glb = job_dir / "base_meshy.glb"
-    try:
-        print(f"[handler] downloading GLB: {glb_url}")
-        _download_file(glb_url, input_glb)
-    except Exception as exc:
-        return JSONResponse(
-            status_code=502,
-            content={
-                "ok": False,
-                "jobId": job_id,
-                "error": f"Failed to download GLB: {exc}",
-                "glbUrl": glb_url,
+                "error": "No GLB URL and no imageUrl provided. Supply meshyGlbUrl, modelUrl, or imageUrl.",
             },
         )
 
