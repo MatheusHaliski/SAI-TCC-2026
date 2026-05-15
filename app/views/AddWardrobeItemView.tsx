@@ -110,30 +110,6 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const normalizeToken = (value: string) => value.trim().toLowerCase();
-  const isGenericToken = (value: string) => {
-    const token = normalizeToken(value);
-    return ['', 'selection', 'color', 'style', 'style tag', 'occasion', 'occasion tag', 'material', 'brand', 'unknown', 'undefined'].includes(token);
-  };
-  const resolveOptionValue = (rawValue: string | undefined, options: string[]): string => {
-    if (!rawValue || isGenericToken(rawValue)) return '';
-    const token = normalizeToken(rawValue);
-    const exact = options.find((option) => normalizeToken(option) === token);
-    if (exact) return exact;
-    const partial = options.find((option) => token.includes(normalizeToken(option)) || normalizeToken(option).includes(token));
-    return partial || rawValue.trim();
-  };
-  const resolveBrandIdFromAI = (rawBrand: string | undefined, availableBrands: Brand[]): string => {
-    if (!rawBrand || isGenericToken(rawBrand)) return DEFAULT_BRAND_ID;
-    const token = normalizeToken(rawBrand);
-    const matched = availableBrands.find((brand) => {
-      const name = normalizeToken(brand.name);
-      const id = normalizeToken(brand.brand_id).replace(/^brand_/, '');
-      return token === name || token === id || token.includes(name) || name.includes(token);
-    });
-    return matched?.brand_id || DEFAULT_BRAND_ID;
-  };
-
   const [form, setForm] = useState({
     name: '',
     image_url: '',
@@ -539,16 +515,15 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
       setForm((prev) => ({
         ...prev,
-        name: data.pieceName || prev.name || '',
-        color: resolveOptionValue(data.primaryColor, COLOR_OPTIONS) || prev.color || '',
-        material: resolveOptionValue(data.materials?.[0], MATERIAL_OPTIONS) || prev.material || '',
-        style_tags: resolveOptionValue(data.styles?.[0], STYLE_TAG_OPTIONS) || prev.style_tags || '',
-        occasion_tags: resolveOptionValue(data.occasions?.[0], OCCASION_TAG_OPTIONS) || prev.occasion_tags || '',
-        gender: (data.gender === 'male' ? 'masculino' : data.gender === 'female' ? 'feminino' : '') || prev.gender,
+        name: prev.name || data.pieceName || '',
+        color: prev.color || data.primaryColor || '',
+        material: prev.material || (data.materials && data.materials[0]) || '',
+        style_tags: prev.style_tags || (data.styles ? data.styles.join(', ') : ''),
+        occasion_tags: prev.occasion_tags || '',
+        gender: prev.gender || (data.gender === 'male' ? 'masculino' : data.gender === 'female' ? 'feminino' : prev.gender),
         piece_type: mappedPieceType,
-        brand_id: resolveBrandIdFromAI(data.brand, brands) || prev.brand_id,
       }));
-      setAlertMessage('AI Analysis complete! Suggestions applied to all available fields.');
+      setAlertMessage('AI Analysis complete! Suggestions applied to empty fields.');
     } catch (err: any) {
       setAlertMessage(err.message || 'Error during AI analysis.');
     } finally {

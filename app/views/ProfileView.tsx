@@ -165,7 +165,7 @@ export default function ProfileView() {
           authSource="sai-usercontrol"
         />
 
-        <div className="rounded-2xl border border-white/30 bg-slate-950/40 px-4 py-2 text-sm text-white/90 backdrop-blur-md">
+        <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-2 text-sm text-white/85 backdrop-blur-md">
           Active section: <span className="font-semibold text-cyan-100">{activeSectionLabel}</span>
         </div>
 

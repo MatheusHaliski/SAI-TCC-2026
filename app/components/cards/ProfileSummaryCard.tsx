@@ -9,7 +9,7 @@ interface ProfileSummaryCardProps {
 
 export default function ProfileSummaryCard({ username, loginEmail, loginStatus, authSource }: ProfileSummaryCardProps) {
   return (
-    <article className="rounded-2xl border border-white/20 p-5 shadow-lg" style={{ backgroundColor: 'var(--user-surface-solid, #ea580c)' }}>
+    <article className="bg-orange-600 rounded-2xl border border-white/20 p-5 shadow-lg">
       <div className="mb-4 flex items-center gap-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-white/10 text-xl text-white">
           {username.charAt(0).toUpperCase()}
