@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ProfileSummaryCard from '@/app/components/cards/ProfileSummaryCard';
 import PageHeader from '@/app/components/shell/PageHeader';
@@ -134,18 +134,6 @@ export default function ProfileView() {
   const displayName = viewedProfile.name?.trim() || username;
   const bio = viewedProfile.bio?.trim() || `@${username}`;
 
-  const activeSectionLabel = useMemo(() => {
-    const map: Record<ProfileSectionKey, string> = {
-      wardrobe: isPortuguese ? 'Meu Guarda-roupa' : 'My Wardrobe Pieces',
-      'user-info': isPortuguese ? 'Informações do usuário' : 'User Info',
-      'my-schemes': isPortuguese ? 'Meus esquemas' : 'My Schemes',
-      'saved-schemes': isPortuguese ? 'Esquemas salvos' : 'Saved Schemes',
-      'my-posts': isPortuguese ? 'Minhas postagens' : 'My Posts',
-      settings: isPortuguese ? 'Configurações' : 'Settings',
-    };
-    return map[selectedSection];
-  }, [isPortuguese, selectedSection]);
-
   const updateSection = (section: ProfileSectionKey) => {
     const normalized = allowedSections.includes(section) ? section : allowedSections[0];
     const query = new URLSearchParams(searchParams.toString());
@@ -168,10 +156,6 @@ export default function ProfileView() {
           loginStatus={isOwnerView ? (isPortuguese ? 'Autenticado' : 'Authenticated') : (isPortuguese ? 'Perfil público' : 'Public Profile')}
           authSource="sai-usercontrol"
         />
-
-        <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-2 text-sm text-white/85 backdrop-blur-md">
-          {isPortuguese ? 'Seção ativa:' : 'Active section:'} <span className="font-semibold text-cyan-100">{activeSectionLabel}</span>
-        </div>
 
         <ProfileSectionRenderer
           section={selectedSection}
