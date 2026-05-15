@@ -123,15 +123,26 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     const partial = options.find((option) => token.includes(normalizeToken(option)) || normalizeToken(option).includes(token));
     return partial || rawValue.trim();
   };
-  const resolveBrandIdFromAI = (rawBrand: string | undefined, availableBrands: Brand[]): string => {
-    if (!rawBrand || isGenericToken(rawBrand)) return DEFAULT_BRAND_ID;
-    const token = normalizeToken(rawBrand);
-    const matched = availableBrands.find((brand) => {
-      const name = normalizeToken(brand.name);
-      const id = normalizeToken(brand.brand_id).replace(/^brand_/, '');
-      return token === name || token === id || token.includes(name) || name.includes(token);
-    });
-    return matched?.brand_id || DEFAULT_BRAND_ID;
+  const resolveBrandIdFromAI = (
+    rawBrand: string | undefined,
+    availableBrands: Brand[],
+    fallbackCandidates: string[] = [],
+  ): string => {
+    const candidates = [rawBrand || '', ...fallbackCandidates]
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0 && !isGenericToken(value));
+
+    for (const candidate of candidates) {
+      const token = normalizeToken(candidate);
+      const matched = availableBrands.find((brand) => {
+        const name = normalizeToken(brand.name);
+        const id = normalizeToken(brand.brand_id).replace(/^brand_/, '');
+        return token === name || token === id || token.includes(name) || name.includes(token);
+      });
+      if (matched?.brand_id) return matched.brand_id;
+    }
+
+    return DEFAULT_BRAND_ID;
   };
 
   const [form, setForm] = useState({
@@ -537,20 +548,35 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         else if (data.bodyRegion === 'accessory') mappedPieceType = 'accessory_piece';
       }
 
+      const aiOccasionCandidate = [
+        ...(Array.isArray(data.occasions) ? data.occasions : []),
+        ...(Array.isArray(data.semanticTags) ? data.semanticTags : []),
+        data.shortDescription || '',
+      ]
+        .map((value) => String(value || '').trim())
+        .find((value) => value.length > 0);
+
+      const resolvedBrandId = resolveBrandIdFromAI(data.brand, brands, [
+        data.pieceName || '',
+        data.shortDescription || '',
+        ...(Array.isArray(data.semanticTags) ? data.semanticTags : []),
+      ]);
+
       setForm((prev) => ({
         ...prev,
         name: data.pieceName || prev.name || '',
         color: resolveOptionValue(data.primaryColor, COLOR_OPTIONS) || prev.color || '',
         material: resolveOptionValue(data.materials?.[0], MATERIAL_OPTIONS) || prev.material || '',
         style_tags: resolveOptionValue(data.styles?.[0], STYLE_TAG_OPTIONS) || prev.style_tags || '',
-        occasion_tags: resolveOptionValue(data.occasions?.[0], OCCASION_TAG_OPTIONS) || prev.occasion_tags || '',
+        occasion_tags: resolveOptionValue(aiOccasionCandidate, OCCASION_TAG_OPTIONS) || prev.occasion_tags || '',
         gender: (data.gender === 'male' ? 'masculino' : data.gender === 'female' ? 'feminino' : '') || prev.gender,
         piece_type: mappedPieceType,
-        brand_id: resolveBrandIdFromAI(data.brand, brands) || prev.brand_id,
+        brand_id: resolvedBrandId !== DEFAULT_BRAND_ID ? resolvedBrandId : prev.brand_id,
       }));
       setAlertMessage('AI Analysis complete! Suggestions applied to all available fields.');
-    } catch (err: any) {
-      setAlertMessage(err.message || 'Error during AI analysis.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error during AI analysis.';
+      setAlertMessage(message);
     } finally {
       setIsAnalyzing(false);
     }
