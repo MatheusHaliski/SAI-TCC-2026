@@ -14,13 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     libegl1 \
-    libegl-mesa0 \
     libgl1 \
-    libgl1-mesa-dri \
     libgles2 \
     libglx0 \
     libglvnd0 \
-    libgbm1 \
     libx11-6 \
     libxext6 \
     libxrender1 \
@@ -42,7 +39,6 @@ COPY blender-worker/handler.py /app/handler.py
 COPY blender-worker/controller.py /app/controller.py
 COPY blender-worker/meshy_pipeline.py /app/meshy_pipeline.py
 COPY blender-worker/blender_pipeline.py /app/blender_pipeline.py
-COPY blender-worker/firestore_state.py /app/firestore_state.py
 COPY blender-worker/blender-scripts /app/blender-scripts
 
 # 🔥 ESSENCIAL
