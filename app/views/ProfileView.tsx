@@ -22,6 +22,7 @@ interface WardrobeItem {
 
 interface SchemeItem {
   scheme_id: string;
+  user_id: string;
   title: string;
   style: string;
   occasion: string;
