@@ -4,22 +4,7 @@ import { useMemo, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import OutfitExportModal from '@/app/components/profile/OutfitExportModal';
-import { OutfitCardData, OutfitBackgroundConfig } from '@/app/lib/outfit-card';
-
-interface SchemePieceSnapshot {
-  id?: string;
-  piece_id?: string;
-  name?: string;
-  piece_name?: string;
-  brand?: string;
-  brand_name?: string;
-  brandLogoUrl?: string;
-  brand_logo_url?: string;
-  pieceType?: string;
-  piece_type?: string;
-  category?: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
-  wearstyles?: string[];
-}
+import { OutfitCardData } from '@/app/lib/outfit-card';
 
 interface Scheme {
   scheme_id: string;
@@ -31,7 +16,6 @@ interface Scheme {
   visibility: 'public' | 'private';
   creation_mode?: 'manual' | 'ai';
   updated_at?: string;
-  pieces?: SchemePieceSnapshot[];
 }
 
 interface ProfileMySchemesSectionProps {
@@ -39,44 +23,18 @@ interface ProfileMySchemesSectionProps {
   schemes: Scheme[];
 }
 
-// Parses outfitBackground from the scheme.description JSON field (same logic as ExploreSchemeView)
-function parseBackground(description?: string | null): OutfitBackgroundConfig | undefined {
-  if (!description) return undefined;
-  try {
-    const parsed = JSON.parse(description) as { outfitBackground?: OutfitBackgroundConfig };
-    return parsed?.outfitBackground ?? undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-const buildData = (scheme: Scheme): OutfitCardData => {
-  const pieces = Array.isArray(scheme.pieces)
-    ? scheme.pieces.map((piece, index) => ({
-        id: piece.id ?? piece.piece_id ?? `${scheme.scheme_id}-piece-${index}`,
-        name: piece.name ?? piece.piece_name ?? 'Selected piece',
-        brand: piece.brand ?? piece.brand_name ?? 'Brand',
-        brandLogoUrl: piece.brandLogoUrl ?? piece.brand_logo_url,
-        pieceType: piece.pieceType ?? piece.piece_type ?? 'Garment',
-        category: piece.category,
-        wearstyles: piece.wearstyles,
-      }))
-    : [];
-
-  return {
-    outfitName: scheme.title,
-    outfitStyleLine: `${scheme.style} · ${scheme.occasion}`,
-    outfitDescription: undefined, // let OutfitCard build fallback from pieces
-    heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
-    outfitBackground: parseBackground(scheme.description),
-    metaBadges: [
-      { icon: scheme.creation_mode === 'ai' ? '✨' : '✍️', label: scheme.creation_mode === 'ai' ? 'AI' : 'Manual' },
-      { icon: scheme.visibility === 'public' ? '🌐' : '🔒', label: scheme.visibility === 'public' ? 'Público' : 'Privado' },
-      { icon: '🕒', label: scheme.updated_at ? new Date(scheme.updated_at).toLocaleDateString('pt-BR') : 'recente' },
-    ],
-    pieces,
-  };
-};
+const buildData = (scheme: Scheme): OutfitCardData => ({
+  outfitName: scheme.title,
+  outfitStyleLine: `${scheme.style} · ${scheme.occasion}`,
+  outfitDescription: scheme.description || 'Creator scheme ready for editing and publishing.',
+  heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
+  metaBadges: [
+    { icon: scheme.creation_mode === 'ai' ? '✨' : '✍️', label: scheme.creation_mode === 'ai' ? 'AI' : 'Manual' },
+    { icon: scheme.visibility === 'public' ? '🌐' : '🔒', label: scheme.visibility === 'public' ? 'Public' : 'Private' },
+    { icon: '🕒', label: scheme.updated_at ? new Date(scheme.updated_at).toLocaleDateString() : 'recent' },
+  ],
+  pieces: [],
+});
 
 export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySchemesSectionProps) {
   const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null);
@@ -86,7 +44,7 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
 
   return (
     <>
-      <SectionBlock title="Meus Esquemas" subtitle="Cards de look criados por você com visualização premium compacta.">
+      <SectionBlock title="My Schemes" subtitle="Authored creative assets with compact premium outfit cards.">
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
           {cards.map(({ scheme, data }) => (
             <OutfitCard
@@ -94,15 +52,15 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
               data={data}
               variant="compact"
               actions={[
-                { label: 'Abrir', onClick: () => setSelectedScheme(scheme), tone: 'accent' },
-                { label: 'Editar' },
-                { label: 'Exportar', onClick: () => setExportingScheme(scheme), tone: 'accent' },
-                { label: scheme.visibility === 'public' ? 'Despublicar' : 'Publicar' },
-                { label: 'Excluir', tone: 'danger' },
+                { label: 'Open', onClick: () => setSelectedScheme(scheme), tone: 'accent' },
+                { label: 'Edit' },
+                { label: 'Export', onClick: () => setExportingScheme(scheme), tone: 'accent' },
+                { label: scheme.visibility === 'public' ? 'Unpublish' : 'Publish' },
+                { label: 'Delete', tone: 'danger' },
               ]}
             />
           ))}
-          {!cards.length ? <p className="text-sm text-white/80">Nenhum esquema criado ainda.</p> : null}
+          {!cards.length ? <p className="text-sm text-white/80">No authored schemes yet.</p> : null}
         </div>
       </SectionBlock>
 

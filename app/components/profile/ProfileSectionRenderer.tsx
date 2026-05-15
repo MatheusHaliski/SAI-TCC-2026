@@ -12,7 +12,6 @@ interface WardrobeItem {
   image_url: string;
   brand: string;
   piece_type: string;
-  gender?: string;
 }
 
 interface SchemeItem {
@@ -39,9 +38,6 @@ interface ProfileSectionRendererProps {
   posts: UserPostRecord[];
 }
 
-// SchemeItem is used by ProfileMySchemesSection only.
-// ProfileSavedSchemesSection fetches its own data from the outfit_favorites collection.
-
 export default function ProfileSectionRenderer({
   section,
   userId,
@@ -56,7 +52,7 @@ export default function ProfileSectionRenderer({
   if (section === 'wardrobe') return <ProfileWardrobeSection items={wardrobeItems} />;
   if (section === 'user-info') return <ProfileUserInfoSection userId={userId} displayName={displayName} username={username} email={email} canEdit={canEdit} />;
   if (section === 'my-schemes') return <ProfileMySchemesSection userId={userId} schemes={schemes} />;
-  if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} />;
+  if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} schemes={schemes.slice(0, 8)} />;
   if (section === 'my-posts') return <ProfileMyPostsSection posts={posts} />;
   return <ProfileSettingsSection />;
 }

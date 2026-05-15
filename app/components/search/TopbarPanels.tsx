@@ -5,19 +5,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  DEFAULT_PAGE_BACKGROUND_CONFIG,
+  OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
   PageBackgroundConfig,
   PageBackgroundShape,
   readPageBackgroundConfig,
-  applySurfaceColorConfig,
-  readSurfaceColorConfig,
-  saveSurfaceColorConfig,
   savePageBackgroundConfig,
 } from '@/app/lib/pageBackground';
 import { clearAuthSessionProfile, clearAuthSessionToken, getAuthSessionProfile } from '@/app/lib/authSession';
 import { clearSharedAccessToken } from '@/app/lib/accessTokenShare';
 import { applyTheme, readSavedTheme } from '@/app/lib/theme';
-import { useEffect } from 'react';
 
 function Overlay({ onClose }: { onClose: () => void }) {
   return <button type="button" aria-label="Close panel" className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm" onClick={onClose} />;
@@ -40,18 +36,12 @@ function RightDrawer({ title, onClose, children }: { title: string; onClose: () 
 
 function PageBackgroundStudio({
   draft,
-  surfaceColor,
-  isPortuguese,
   onChange,
   onApply,
-  onSurfaceColorChange,
 }: {
   draft: PageBackgroundConfig;
-  surfaceColor: string;
-  isPortuguese: boolean;
   onChange: (next: PageBackgroundConfig) => void;
   onApply: (next: PageBackgroundConfig) => void;
-  onSurfaceColorChange: (next: string) => void;
 }) {
   const gradients = [
     'linear-gradient(135deg, #0b7a4a 0%, #075e39 45%, #05311f 100%)',
@@ -63,12 +53,12 @@ function PageBackgroundStudio({
   ];
   const shapes: PageBackgroundShape[] = ['none', 'orb', 'diamond', 'mesh'];
   const officialConfig: PageBackgroundConfig = {
-    gradient: DEFAULT_PAGE_BACKGROUND_CONFIG.gradient,
-    shape: DEFAULT_PAGE_BACKGROUND_CONFIG.shape,
+    gradient: OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
+    shape: 'orb',
   };
   return (
     <div className="sa-page-studio space-y-3 rounded-xl border border-emerald-100/30 bg-emerald-950/40 p-3">
-      <p className="text-xs uppercase tracking-[0.12em] text-emerald-100/80">{isPortuguese ? 'Estúdio de fundo' : 'Page Background Studio'}</p>
+      <p className="text-xs uppercase tracking-[0.12em] text-emerald-100/80">Page Background Studio</p>
       <div className="grid grid-cols-3 gap-2">
         {gradients.map((gradient) => (
           <button
@@ -94,23 +84,14 @@ function PageBackgroundStudio({
       </div>
       <button
         type="button"
-        className="w-full overflow-hidden rounded-lg border border-white/30 bg-white/10 text-left"
+        className="w-full rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em]"
         onClick={() => {
           onChange(officialConfig);
           onApply(officialConfig);
         }}
       >
-        {isPortuguese ? 'Restaurar oficial' : 'Reset to official'}
+        Reset to official
       </button>
-      <label className="block rounded-lg border border-white/20 bg-white/10 p-2 text-xs">
-        {isPortuguese ? 'Cor das divs' : 'Div color'}
-        <input
-          type="color"
-          value={surfaceColor}
-          onChange={(event) => onSurfaceColorChange(event.target.value)}
-          className="mt-2 h-9 w-full cursor-pointer rounded border border-white/25 bg-transparent"
-        />
-      </label>
     </div>
   );
 }
@@ -153,29 +134,18 @@ export function SystemInboxPanel({ onClose }: { onClose: () => void }) {
 }
 
 export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; activePath: string }) {
-  const [isPortuguese, setIsPortuguese] = useState(false);
-  useEffect(() => {
-    const refresh = () => setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
-    refresh();
-    window.addEventListener('storage', refresh);
-    window.addEventListener('sai-language-change', refresh as EventListener);
-    return () => {
-      window.removeEventListener('storage', refresh);
-      window.removeEventListener('sai-language-change', refresh as EventListener);
-    };
-  }, []);
   const links = [
-    { href: '/explore-scheme', label: isPortuguese ? 'Cards salvos de look' : 'Saved Outfit Cards' },
-    { href: '/create-my-scheme', label: isPortuguese ? 'Criar meu card de look' : 'Create my Outfit Card' },
-    { href: '/dress-tester', label: isPortuguese ? 'Provador virtual' : 'Dress Tester' },
-    { href: '/search-items', label: isPortuguese ? 'Buscar' : 'Search' },
-    { href: '/search-pieces', label: isPortuguese ? 'Buscar peças' : 'Search Pieces' },
-    { href: '/my-wardrobe', label: isPortuguese ? 'Meu Guarda-roupa' : 'My Wardrobe Pieces' },
-    { href: '/profile', label: isPortuguese ? 'Configurações' : 'Settings' },
+    { href: '/explore-scheme', label: 'Saved Outfit Cards' },
+    { href: '/create-my-scheme', label: 'Create my Outfit Card' },
+    { href: '/dress-tester', label: 'Dress Tester' },
+    { href: '/search-items', label: 'Search' },
+    { href: '/search-pieces', label: 'Search Pieces' },
+    { href: '/my-wardrobe', label: 'My Wardrobe Pieces' },
+    { href: '/profile', label: 'Settings' },
   ];
 
   return (
-    <RightDrawer title={isPortuguese ? 'Navegação rápida' : 'Quick Navigation'} onClose={onClose}>
+    <RightDrawer title="Quick Navigation" onClose={onClose}>
       {links.map((link) => (
         <Link
           key={`${link.href}-${link.label}`}
@@ -193,22 +163,7 @@ export function QuickNavDrawer({ onClose, activePath }: { onClose: () => void; a
 export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [liquidMode, setLiquidMode] = useState<boolean>(readSavedTheme() === 'light');
-  const [isPortuguese, setIsPortuguese] = useState(false);
   const [backgroundDraft, setBackgroundDraft] = useState<PageBackgroundConfig>(() => readPageBackgroundConfig());
-  const [surfaceColor, setSurfaceColor] = useState<string>(() => readSurfaceColorConfig().color);
-  useEffect(() => {
-    applySurfaceColorConfig({ color: surfaceColor });
-  }, [surfaceColor]);
-  useEffect(() => {
-    const refresh = () => setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
-    refresh();
-    window.addEventListener('storage', refresh);
-    window.addEventListener('sai-language-change', refresh as EventListener);
-    return () => {
-      window.removeEventListener('storage', refresh);
-      window.removeEventListener('sai-language-change', refresh as EventListener);
-    };
-  }, []);
 
   const profile = useMemo(() => getAuthSessionProfile(), []);
   const userId = profile.user_id?.trim() || '';
@@ -230,14 +185,14 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
   };
 
   const actionItems = [
-    { label: isPortuguese ? 'Ver perfil' : 'View Profile', icon: '👤', onClick: () => { onClose(); router.push(userId ? `/profile/${userId}` : '/profile'); } },
-    { label: liquidMode ? (isPortuguese ? 'Modo líquido: Ativo' : 'Liquid Mode: On') : (isPortuguese ? 'Modo líquido: Inativo' : 'Liquid Mode: Off'), icon: '💧', onClick: () => setTheme(!liquidMode) },
-    { label: isPortuguese ? 'Configurações da conta' : 'Account Settings', icon: '⚙️', onClick: () => { onClose(); router.push('/profile?section=settings'); } },
-    { label: isPortuguese ? 'Sair' : 'Logout', icon: '🚪', onClick: handleLogout },
+    { label: 'View Profile', icon: '👤', onClick: () => { onClose(); router.push(userId ? `/profile/${userId}` : '/profile'); } },
+    { label: liquidMode ? 'Liquid Mode: On' : 'Liquid Mode: Off', icon: '💧', onClick: () => setTheme(!liquidMode) },
+    { label: 'Account Settings', icon: '⚙️', onClick: () => { onClose(); router.push('/profile?section=settings'); } },
+    { label: 'Logout', icon: '🚪', onClick: handleLogout },
   ];
 
   return (
-    <RightDrawer title={isPortuguese ? 'Conta' : 'Account'} onClose={onClose}>
+    <RightDrawer title="Account" onClose={onClose}>
       <article className="sa-drawer-card sa-liquid-glass-token rounded-xl border border-emerald-100/30 bg-white/10 p-3">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 overflow-hidden rounded-full border border-emerald-100/40 bg-emerald-950/40">
@@ -267,8 +222,6 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
       </div>
       <PageBackgroundStudio
         draft={backgroundDraft}
-        surfaceColor={surfaceColor}
-        isPortuguese={isPortuguese}
         onChange={(next) => {
           setBackgroundDraft(next);
           savePageBackgroundConfig(next);
@@ -276,10 +229,6 @@ export function UserAccountDrawer({ onClose }: { onClose: () => void }) {
         onApply={(next) => {
           setBackgroundDraft(next);
           savePageBackgroundConfig(next);
-        }}
-        onSurfaceColorChange={(next) => {
-          setSurfaceColor(next);
-          saveSurfaceColorConfig({ color: next });
         }}
       />
     </RightDrawer>
