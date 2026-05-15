@@ -42,7 +42,7 @@ export default function ProfileSectionRenderer({
 }: ProfileSectionRendererProps) {
   if (section === 'wardrobe') return <ProfileWardrobeSection items={wardrobeItems} />;
   if (section === 'my-schemes') return <ProfileMySchemesSection userId={userId} schemes={schemes} />;
-  if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} schemes={schemes.slice(0, 8)} />;
+  if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} />;
   if (section === 'my-posts') return <ProfileMyPostsSection posts={posts} />;
   return <ProfileSettingsSection />;
 }
