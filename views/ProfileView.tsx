@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ProfileSummaryCard from '@/app/components/cards/ProfileSummaryCard';
 import PageHeader from '@/app/components/shell/PageHeader';
