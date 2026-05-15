@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
+  DEFAULT_PAGE_BACKGROUND_CONFIG,
   PageBackgroundConfig,
   PageBackgroundShape,
   readPageBackgroundConfig,
@@ -53,8 +53,8 @@ function PageBackgroundStudio({
   ];
   const shapes: PageBackgroundShape[] = ['none', 'orb', 'diamond', 'mesh'];
   const officialConfig: PageBackgroundConfig = {
-    gradient: OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
-    shape: 'orb',
+    gradient: DEFAULT_PAGE_BACKGROUND_CONFIG.gradient,
+    shape: DEFAULT_PAGE_BACKGROUND_CONFIG.shape,
   };
   return (
     <div className="sa-page-studio space-y-3 rounded-xl border border-emerald-100/30 bg-emerald-950/40 p-3">
@@ -84,13 +84,26 @@ function PageBackgroundStudio({
       </div>
       <button
         type="button"
-        className="w-full rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em]"
+        className="w-full overflow-hidden rounded-lg border border-white/30 bg-white/10 text-left"
         onClick={() => {
           onChange(officialConfig);
           onApply(officialConfig);
         }}
       >
-        Reset to official
+        <div className="relative h-20 w-full">
+          <Image
+            src="/Fart.png"
+            alt="Reset to official preview"
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, 320px"
+            priority={false}
+          />
+          <div className="absolute inset-0 bg-black/35" />
+          <span className="absolute bottom-2 left-3 text-xs font-semibold uppercase tracking-[0.1em] text-white">
+            Reset to official
+          </span>
+        </div>
       </button>
     </div>
   );

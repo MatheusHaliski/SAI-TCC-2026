@@ -95,24 +95,6 @@ export default function ProfileSettingsSection() {
           {languageStatus ? <p className="mt-2 text-[11px] text-emerald-100">{languageStatus}</p> : null}
         </div>
       </div>
-      <div className="mt-3 rounded-2xl border border-emerald-200/45 bg-emerald-500/10 p-3 text-sm text-white">
-        <label className="flex flex-wrap items-center gap-2 font-medium">Idioma do site
-          <select value={siteLanguage} onChange={(e) => setSiteLanguage(e.target.value as SiteLanguage)} className="rounded-lg border border-white/30 bg-black/20 px-2 py-1 text-xs">
-            <option value="pt-BR">Português (Brasil)</option>
-            <option value="en">English</option>
-          </select>
-          <span className="text-xs font-normal text-white/75">(novo) Escolha o idioma da interface.</span>
-        </label>
-      </div>
-      <div className="mt-3 rounded-2xl border border-emerald-200/45 bg-emerald-500/10 p-3 text-sm text-white">
-        <label className="flex flex-wrap items-center gap-2 font-medium">Idioma do site
-          <select value={siteLanguage} onChange={(e) => setSiteLanguage(e.target.value as SiteLanguage)} className="rounded-lg border border-white/30 bg-black/20 px-2 py-1 text-xs">
-            <option value="pt-BR">Português (Brasil)</option>
-            <option value="en">English</option>
-          </select>
-          <span className="text-xs font-normal text-white/75">(novo) Escolha o idioma da interface.</span>
-        </label>
-      </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">Export account data</button>
         <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">Logout</button>
