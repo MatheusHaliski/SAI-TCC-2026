@@ -132,6 +132,7 @@ export default function ProfileView() {
   const email = viewedProfile.email?.trim() || authProfile.email?.trim() || 'not-available@user.local';
   const username = viewedProfile.username?.trim() || viewedProfile.name?.trim() || email.split('@')[0] || 'user';
   const displayName = viewedProfile.name?.trim() || username;
+  const bio = viewedProfile.bio?.trim() || `@${username}`;
 
   const activeSectionLabel = useMemo(() => {
     const map: Record<ProfileSectionKey, string> = {
@@ -161,6 +162,8 @@ export default function ProfileView() {
 
         <ProfileSummaryCard
           username={username}
+          displayName={displayName}
+          bio={bio}
           loginEmail={email}
           loginStatus={isOwnerView ? 'Authenticated' : 'Public Profile'}
           authSource="sai-usercontrol"
