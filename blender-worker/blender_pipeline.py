@@ -302,6 +302,118 @@ def _select_front_faces(
     return len(final_faces)
 
 
+# ── Back-face sanitisation ────────────────────────────────────────────────────
+
+def _extract_dominant_color(mat: "bpy.types.Material") -> tuple[float, float, float]:
+    """Sample a representative RGB (linear) from a material's base texture or BSDF color."""
+    fallback = (0.70, 0.70, 0.70)
+    if mat is None or not mat.use_nodes:
+        return fallback
+    for node in mat.node_tree.nodes:
+        if node.type != "BSDF_PRINCIPLED":
+            continue
+        color_input = node.inputs.get("Base Color")
+        if color_input is None:
+            continue
+        if color_input.is_linked:
+            for link in color_input.links:
+                src = link.from_node
+                if src.type == "TEX_IMAGE" and src.image:
+                    img = src.image
+                    w, h = img.size
+                    if w < 1 or h < 1:
+                        break
+                    # Sample a uniform grid from the center quarter of the image.
+                    # img.pixels is a flat RGBA sequence — use a large stride to avoid
+                    # reading millions of floats for high-res textures.
+                    pixels = img.pixels[:]
+                    stride = max(1, (w * h) // 1024)  # at most ~1 K samples
+                    r_sum = g_sum = b_sum = n = 0.0
+                    y0, y1 = h // 4, 3 * h // 4
+                    x0, x1 = w // 4, 3 * w // 4
+                    step = max(1, stride)
+                    for row in range(y0, y1, step):
+                        for col in range(x0, x1, step):
+                            base = (row * w + col) * 4
+                            if base + 3 >= len(pixels):
+                                continue
+                            a = pixels[base + 3]
+                            if a < 0.5:
+                                continue
+                            r_sum += pixels[base];  g_sum += pixels[base + 1];  b_sum += pixels[base + 2]
+                            n += 1.0
+                    if n > 0:
+                        return (r_sum / n, g_sum / n, b_sum / n)
+        else:
+            col = color_input.default_value
+            return (float(col[0]), float(col[1]), float(col[2]))
+    return fallback
+
+
+def _sanitize_back_faces(
+    obj: "bpy.types.Object",
+    front_dir: "Vector",
+    dot_threshold: float = 0.0,
+) -> int:
+    """Replace the material on back-facing faces with a plain solid-color material.
+
+    When Meshy generates a 3D garment from a front-view photo it wraps the
+    front texture cylindrically around the whole mesh.  Any logo, stain, or
+    pattern from the source photo therefore ends up on the back too.
+
+    This function assigns a clean, textureless material to every face whose
+    normal points away from the camera (dot(normal, front_dir) < dot_threshold).
+    The color is sampled from the dominant hue of the existing front texture so
+    the back looks like plain fabric of the same color.
+
+    Returns the number of faces reassigned.
+    """
+    # Derive back color from current material
+    back_rgb = _extract_dominant_color(obj.data.materials[0] if obj.data.materials else None)
+    print(f"[pipeline] back_plain_color_rgb: ({back_rgb[0]:.3f}, {back_rgb[1]:.3f}, {back_rgb[2]:.3f})")
+
+    # Build the plain back material
+    back_mat_name = "SAI_Back_Plain"
+    existing = bpy.data.materials.get(back_mat_name)
+    if existing:
+        bpy.data.materials.remove(existing)
+    back_mat = bpy.data.materials.new(name=back_mat_name)
+    back_mat.use_nodes = True
+    nodes = back_mat.node_tree.nodes
+    links = back_mat.node_tree.links
+    nodes.clear()
+    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.location = (0, 0)
+    bsdf.inputs["Base Color"].default_value = (*back_rgb, 1.0)
+    bsdf.inputs["Roughness"].default_value = 0.80
+    out = nodes.new("ShaderNodeOutputMaterial")
+    out.location = (300, 0)
+    links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+
+    obj.data.materials.append(back_mat)
+    back_idx = len(obj.data.materials) - 1
+
+    # Assign back material to all faces that face away from the camera
+    mat_inv = obj.matrix_world.inverted()
+    local_front = (mat_inv.to_3x3() @ front_dir).normalized()
+
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode="EDIT")
+    bm = bmesh.from_edit_mesh(obj.data)
+    bm.faces.ensure_lookup_table()
+
+    back_count = 0
+    for face in bm.faces:
+        if face.normal.dot(local_front) < dot_threshold:
+            face.material_index = back_idx
+            back_count += 1
+
+    bmesh.update_edit_mesh(obj.data)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    print(f"[pipeline] sanitize_back_faces: {back_count}/{len(bm.faces)} faces → SAI_Back_Plain")
+    return back_count
+
+
 # ── Decal / logo application ─────────────────────────────────────────────────
 
 def _create_decal_material(logo_path: str) -> "bpy.types.Material":
@@ -674,6 +786,11 @@ def main() -> None:
     garment = _isolate_garment_mesh(mesh_objects)
     total_faces = len(garment.data.polygons)
     print(f"[pipeline] garment_object: '{garment.name}' with {total_faces} faces")
+
+    # 4b. Sanitise back faces: replace Meshy's baked-front texture on back-facing
+    #     polygons with a plain solid-color material so logos/patterns from the
+    #     source photo never appear on the back of the garment.
+    _sanitize_back_faces(garment, front_dir)
 
     # 5. Apply decal / logo if provided
     if args.logo_path and Path(args.logo_path).exists():
