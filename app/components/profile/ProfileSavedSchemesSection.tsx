@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import OutfitExportModal from '@/app/components/profile/OutfitExportModal';
@@ -35,7 +35,36 @@ const toData = (scheme: SavedScheme): OutfitCardData => ({
 
 export default function ProfileSavedSchemesSection({ userId, schemes }: ProfileSavedSchemesSectionProps) {
   const [exportingScheme, setExportingScheme] = useState<SavedScheme | null>(null);
-  const cards = useMemo(() => schemes.map((scheme) => ({ scheme, data: toData(scheme) })), [schemes]);
+  const [favoriteSchemes, setFavoriteSchemes] = useState<SavedScheme[]>([]);
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (!userId) return;
+      const favoritesResponse = await fetch(`/api/outfit-favorites?userId=${encodeURIComponent(userId)}`);
+      const favoritesPayload = await favoritesResponse.json().catch(() => ({ favorites: [] }));
+      const favoriteIds = Array.isArray(favoritesPayload?.favorites)
+        ? favoritesPayload.favorites.map((entry: { schemeId?: string }) => entry.schemeId).filter(Boolean)
+        : [];
+      if (!favoriteIds.length) {
+        setFavoriteSchemes([]);
+        return;
+      }
+
+      const publicResponse = await fetch('/api/schemes/public');
+      const publicSchemes = await publicResponse.json().catch(() => []);
+      const onlyFavorites = Array.isArray(publicSchemes)
+        ? publicSchemes.filter((scheme: SavedScheme) => favoriteIds.includes(scheme.scheme_id))
+        : [];
+      setFavoriteSchemes(onlyFavorites);
+    };
+
+    loadFavorites().catch(() => setFavoriteSchemes([]));
+  }, [userId]);
+
+  const cards = useMemo(() => {
+    const source = favoriteSchemes.length ? favoriteSchemes : schemes;
+    return source.map((scheme) => ({ scheme, data: toData(scheme) }));
+  }, [favoriteSchemes, schemes]);
 
   return (
     <>
