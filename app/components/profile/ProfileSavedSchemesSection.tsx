@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import CollapsibleOutfitCard from '@/app/components/outfit-card/CollapsibleOutfitCard';
 import { OutfitCardData } from '@/app/lib/outfit-card';

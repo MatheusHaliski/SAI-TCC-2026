@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import OutfitDetailModal from '@/app/components/search/OutfitDetailModal';
-import SearchOutfitCard from '@/app/components/search/SearchOutfitCard';
+import CollapsibleOutfitCard, { getSchemeFilterValue } from '@/app/components/outfit-card/CollapsibleOutfitCard';
 import SearchUserCard from '@/app/components/search/SearchUserCard';
 import { useDiscoverySearch } from '@/app/components/shell/DiscoverySearchContext';
 import { OutfitCardData, buildOutfitDescriptionFallback, buildOutfitDescriptionRich } from '@/app/lib/outfit-card';
@@ -19,7 +19,6 @@ type PublicScheme = {
   user_id: string;
   cover_image_url: string | null;
   description?: string | null;
-  description_json?: string | null;
   pieces?: SchemePieceSnapshot[];
 };
 
@@ -101,14 +100,6 @@ export default function SearchItemsView() {
               outfitName: scheme.title || 'Untitled Outfit',
             }),
         heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
-        outfitBackground: (() => {
-          try {
-            const parsed = JSON.parse(scheme.description_json || '{}') as { outfitBackground?: OutfitCardData['outfitBackground'] };
-            return parsed?.outfitBackground;
-          } catch {
-            return undefined;
-          }
-        })(),
         pieces,
         brands,
         schemeId: scheme.scheme_id,
@@ -190,7 +181,7 @@ export default function SearchItemsView() {
             const cardData = outfitsById[scheme.scheme_id];
             if (!cardData) return null;
 
-            return <SearchOutfitCard key={scheme.scheme_id} data={cardData} onOpenDetail={() => setSelectedOutfit(cardData)} />;
+            return <CollapsibleOutfitCard key={scheme.scheme_id} card={cardData} showActions onViewDetails={() => setSelectedOutfit(cardData)} onToggleFavorite={() => setFavorites((p)=> ({...p,[scheme.scheme_id]: !p[scheme.scheme_id]}))} onEdit={() => {}} onUseInDressTester={() => router.push('/dress-tester')} onDelete={() => setAvailability((p)=> ({...p,[scheme.scheme_id]:'unavailable'}))} />;
           })}
           {!groupedSearch.outfits.length ? <p className="text-sm text-white/70">No outfits found.</p> : null}
         </div>

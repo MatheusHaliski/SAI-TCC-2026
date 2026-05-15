@@ -41,16 +41,3 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Unable to update profile.' }, { status: 500 });
   }
 }
-
-export async function DELETE(request: NextRequest) {
-  try {
-    const userId = request.nextUrl.searchParams.get('userId')?.trim();
-    if (!userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-
-    const db = getAdminFirestore();
-    await db.collection(USERS_COLLECTION).doc(userId).delete();
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: 'Unable to delete account.' }, { status: 500 });
-  }
-}

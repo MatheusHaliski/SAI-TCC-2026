@@ -2,6 +2,8 @@
 
 import { AppRoute, NAV_ITEMS } from '@/app/lib/stylist-shell';
 import SidebarNavItem from './SidebarNavItem';
+import { applyDivTint, readSavedDivTint } from '@/app/lib/theme';
+import { useState } from 'react';
 
 interface SidebarNavProps {
   activeRoute: AppRoute;
@@ -14,6 +16,7 @@ function NavContent({
   activeRoute,
   onRouteChange,
 }: Pick<SidebarNavProps, 'activeRoute' | 'onRouteChange'>) {
+  const [divTint, setDivTint] = useState(readSavedDivTint());
   return (
     <div className="flex h-full flex-col gap-4 p-4 pt-4">
       <div className="flex items-center justify-between">
@@ -33,6 +36,12 @@ function NavContent({
           />
         ))}
       </nav>
+
+      <div className="rounded-xl border border-white/20 bg-white/10 p-2">
+        <p className="text-[10px] uppercase tracking-[0.15em] text-white/70">Cor das divs</p>
+        <input type="color" value={divTint.slice(0,7)} onChange={(e)=>{ const next=`${e.target.value}33`; setDivTint(next); applyDivTint(next); }} className="mt-2 h-8 w-full rounded" />
+      </div>
+
     </div>
   );
 }
