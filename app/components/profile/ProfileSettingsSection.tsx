@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import DangerZoneCard from '@/app/components/profile/DangerZoneCard';
 import { applyTheme, readSavedTheme, type SaiTheme } from '@/app/lib/theme';
+import FancySelect from '@/app/components/ui/fancy-select';
 
 const LEGACY_DARK_MODE_STORAGE_KEY = 'sai-dark-mode-enabled';
 
@@ -15,6 +16,9 @@ export default function ProfileSettingsSection() {
     return readSavedTheme();
   });
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
+  const [siteLanguage, setSiteLanguage] = useState<SiteLanguage>(readSavedSiteLanguage);
+  const [savedLanguage, setSavedLanguage] = useState<SiteLanguage>(readSavedSiteLanguage);
+  const [languageStatus, setLanguageStatus] = useState('');
   const darkMode = theme === 'dark';
 
   useEffect(() => {
@@ -49,16 +53,46 @@ export default function ProfileSettingsSection() {
         <label className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">Theme
           <button type="button" onClick={toggleDarkMode} className="ml-2 rounded-lg border border-white/30 px-2 py-1 text-xs">{darkMode ? 'Dark enabled' : 'Dark disabled'}</button>
         </label>
-        <label className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">Privacy
-          <select value={privacy} onChange={(e) => setPrivacy(e.target.value as 'public' | 'private')} className="ml-2 rounded-lg border border-white/30 bg-black/20 px-2 py-1 text-xs">
-            <option value="public">Public</option>
-            <option value="private">Private</option>
-          </select>
+        <label className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">{t.privacy}
+          <div className="mt-2">
+            <FancySelect
+              value={privacy}
+              onChange={(value) => setPrivacy(value as 'public' | 'private')}
+              options={[
+                { value: 'public', label: t.privacyPublic, hint: 'Visible to everyone' },
+                { value: 'private', label: t.privacyPrivate, hint: 'Only visible to you' },
+              ]}
+            />
+          </div>
         </label>
       </div>
+      <div className="mt-3 rounded-2xl border border-emerald-200/45 bg-emerald-500/10 p-3 text-sm text-white">
+        <label className="flex flex-wrap items-center gap-2 font-medium">{t.siteLanguage}
+          <div className="min-w-[220px]">
+            <FancySelect
+              value={siteLanguage}
+              onChange={(value) => setSiteLanguage(value as SiteLanguage)}
+              options={[
+                { value: 'pt-BR', label: 'Português (Brasil)', hint: 'Interface em português' },
+                { value: 'en', label: 'English', hint: 'English interface' },
+              ]}
+            />
+          </div>
+          <span className="text-xs font-normal text-white/75">{t.siteLanguageHint}</span>
+        </label>
+        <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-sm text-white">
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="text-[11px] text-white/70">Current saved: {savedLanguage === 'pt-BR' ? 'Português (Brasil)' : 'English'}</p>
+            <button type="button" onClick={saveLanguagePreference} className="rounded-lg border border-emerald-200/70 bg-emerald-500/25 px-2 py-1 text-[11px] font-semibold">
+              Salvar
+            </button>
+          </div>
+          {languageStatus ? <p className="mt-2 text-[11px] text-emerald-100">{languageStatus}</p> : null}
+        </div>
+      </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">Export account data</button>
-        <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">Logout</button>
+        <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">{t.exportData}</button>
+        <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white">{t.logout}</button>
       </div>
       <div className="mt-4">
         <DangerZoneCard />
