@@ -12,6 +12,7 @@ from urllib.parse import parse_qs, urlparse
 import re
 
 import requests
+import firestore_state
 
 logger = logging.getLogger("stylistai.meshy_pipeline")
 
@@ -21,11 +22,16 @@ def _redact_url_token(url: str) -> str:
 
 MESHY_BASE_URL = os.getenv("MESHY_BASE_URL", "https://api.meshy.ai")
 MESHY_IMAGE_TO_3D_PATH = os.getenv("MESHY_IMAGE_TO_3D_PATH", "/openapi/v1/image-to-3d")
-MESHY_POLL_DELAY_SECONDS = float(os.getenv("MESHY_POLL_DELAY_SECONDS", "3"))
-MESHY_MAX_POLL_ATTEMPTS = int(os.getenv("MESHY_MAX_POLL_ATTEMPTS", "80"))
+MESHY_REQUEST_TIMEOUT_SECONDS = int(os.getenv("MESHY_REQUEST_TIMEOUT_SECONDS", "30"))
+MESHY_TOTAL_TIMEOUT_SECONDS = int(os.getenv("MESHY_TOTAL_TIMEOUT_SECONDS", "900"))
 MESHY_NETWORK_RETRIES = int(os.getenv("MESHY_NETWORK_RETRIES", "3"))
 MESHY_NETWORK_RETRY_BASE_SECONDS = float(os.getenv("MESHY_NETWORK_RETRY_BASE_SECONDS", "1.5"))
 MESHY_TEST_IMAGE_URL = os.getenv("MESHY_TEST_IMAGE_URL", "").strip()
+
+# Exponential backoff delays between polls (seconds); caps at last value
+POLL_BACKOFF_SECONDS = [2, 4, 8, 15, 30]
+# First 4 bytes of every valid binary glTF file
+GLB_MAGIC = b"glTF"
 MESHY_VALID_CREATE_FIELDS = {
     "image_url",
     "model_type",
@@ -69,11 +75,18 @@ class MeshyPipelineError(RuntimeError):
 
 
 class MeshyPipeline:
-    def __init__(self, *, api_key: str | None = None, timeout_seconds: int = 45):
+    def __init__(
+        self,
+        *,
+        api_key: str | None = None,
+        timeout_seconds: int = MESHY_REQUEST_TIMEOUT_SECONDS,
+        total_timeout_seconds: int = MESHY_TOTAL_TIMEOUT_SECONDS,
+    ):
         self.api_key = (api_key or os.getenv("MESHY_API_KEY", "")).strip()
-        self.timeout_seconds = timeout_seconds
+        self.timeout_seconds = timeout_seconds          # per HTTP-request timeout
+        self.total_timeout_seconds = total_timeout_seconds  # total Meshy job budget
         self.create_url = self._build_url(MESHY_IMAGE_TO_3D_PATH)
-        logger.info("[meshy] initialized create_url=%s", self.create_url)
+        logger.info("[meshy] initialized create_url=%s request_timeout=%ss total_timeout=%ss", self.create_url, timeout_seconds, total_timeout_seconds)
 
     def generate_base_model(
         self,
@@ -82,6 +95,7 @@ class MeshyPipeline:
         source_image_url: str | None,
         output_dir: Path,
         preferred_format: str = "glb",
+        job_id: str | None = None,
     ) -> MeshyOutput:
         if not self.api_key:
             raise MeshyPipelineError("meshy_auth_not_configured", "MESHY_API_KEY is required.")
@@ -93,6 +107,7 @@ class MeshyPipeline:
 
         logger.info("[meshy] create url=%s", self.create_url)
         task_id = self._create_task(image_url=source_image_url, piece_type=piece_type)
+        firestore_state.upsert_job(job_id or "", {"status": "meshy_polling", "meshyTaskId": task_id})
         task = self._wait_for_completion(task_id)
 
         model_url = (
@@ -213,22 +228,27 @@ class MeshyPipeline:
         )
 
         if response.status_code in {401, 403}:
-            raise MeshyPipelineError("meshy_auth_failed", "Meshy authentication failed (401/403).", {"url": self.create_url, "status": response.status_code, "body": response.text})
-        if response.status_code == 404 and "/openapi/v1/openapi/v1" in self.create_url:
-            raise MeshyPipelineError(
-                "meshy_endpoint_misconfigured",
-                "MESHY_BASE_URL is duplicating /openapi/v1. Use https://api.meshy.ai or normalize the URL builder.",
-                {"url": self.create_url, "failedStage": "meshy_submit", "hint": "MESHY_BASE_URL is duplicating /openapi/v1. Use https://api.meshy.ai or normalize the URL builder."},
-            )
+            raise MeshyPipelineError("meshy_unauthorized", "Meshy API key is invalid or has been revoked.", {"url": self.create_url, "status": response.status_code, "body": response.text[:500]})
+        if response.status_code == 402:
+            raise MeshyPipelineError("meshy_insufficient_funds", "Meshy account has insufficient credits to start a new task.", {"url": self.create_url, "status": 402, "body": response.text[:500]})
+        if response.status_code == 404:
+            if "/openapi/v1/openapi/v1" in self.create_url:
+                raise MeshyPipelineError(
+                    "meshy_endpoint_misconfigured",
+                    "MESHY_BASE_URL is duplicating /openapi/v1. Use https://api.meshy.ai.",
+                    {"url": self.create_url, "failedStage": "meshy_submit", "hint": "MESHY_BASE_URL is duplicating /openapi/v1. Use https://api.meshy.ai or normalize the URL builder."},
+                )
+            raise MeshyPipelineError("meshy_task_not_found", "Meshy image-to-3d endpoint returned 404.", {"url": self.create_url, "status": 404, "body": response.text[:500]})
+        if response.status_code == 429:
+            raise MeshyPipelineError("meshy_rate_limited", "Meshy API rate limit exceeded. Retry after a short delay.", {"url": self.create_url, "status": 429, "body": response.text[:500]})
         if 400 <= response.status_code < 500:
-            message = "Meshy rejected request payload. Verify image URL is publicly reachable and request fields are valid."
             raise MeshyPipelineError(
-                "meshy_bad_request",
-                message,
-                {"url": self.create_url, "status": response.status_code, "body": response.text, "pieceType": piece_type, "requestPayload": payload},
+                "meshy_invalid_request",
+                "Meshy rejected the request payload. Verify the image URL is publicly reachable and fields are valid.",
+                {"url": self.create_url, "status": response.status_code, "body": response.text[:500], "pieceType": piece_type, "requestPayload": payload},
             )
         if response.status_code >= 500:
-            raise MeshyPipelineError("meshy_provider_error", "Meshy provider error.", {"url": self.create_url, "status": response.status_code, "body": response.text})
+            raise MeshyPipelineError("meshy_provider_error", "Meshy provider error.", {"url": self.create_url, "status": response.status_code, "body": response.text[:500]})
 
         payload_json = response.json()
         task_id = str(payload_json.get("result") or payload_json.get("id") or "").strip()
@@ -343,40 +363,94 @@ class MeshyPipeline:
             ) from exc
 
     def _wait_for_completion(self, task_id: str) -> dict[str, Any]:
-        status = "unknown"
         poll_url = f"{self.build_meshy_create_url(MESHY_BASE_URL)}/{task_id}"
-        logger.info("[meshy] poll url=%s", poll_url)
+        poll_headers = {"Authorization": f"Bearer {self.api_key}"}
+        logger.info("[meshy] poll start task_id=%s url=%s total_timeout=%ss", task_id, poll_url, self.total_timeout_seconds)
 
-        for attempt in range(1, MESHY_MAX_POLL_ATTEMPTS + 1):
-            response = self._request_with_retry("GET", poll_url, headers={"Authorization": f"Bearer {self.api_key}"})
+        status = "unknown"
+        attempt = 0
+        started_at = time.monotonic()
+
+        while True:
+            elapsed = time.monotonic() - started_at
+            if elapsed >= self.total_timeout_seconds:
+                raise MeshyPipelineError(
+                    "meshy_timeout",
+                    f"Meshy task timed out after {int(elapsed)}s. Last status={status}.",
+                    {"taskId": task_id, "status": status, "elapsedSeconds": int(elapsed), "totalTimeoutSeconds": self.total_timeout_seconds},
+                )
+
+            response = self._request_with_retry("GET", poll_url, headers=poll_headers)
 
             if response.status_code in {401, 403}:
-                raise MeshyPipelineError("meshy_auth_failed", "Meshy authentication failed during polling (401/403).", {"url": poll_url, "status": response.status_code, "body": response.text[:500]})
+                raise MeshyPipelineError("meshy_unauthorized", "Meshy authentication failed during polling.", {"url": poll_url, "status": response.status_code, "body": response.text[:500]})
+            if response.status_code == 402:
+                raise MeshyPipelineError("meshy_insufficient_funds", "Meshy account has insufficient credits.", {"url": poll_url, "status": 402, "body": response.text[:500]})
+            if response.status_code == 404:
+                raise MeshyPipelineError("meshy_task_not_found", f"Meshy task {task_id} not found during polling.", {"url": poll_url, "status": 404, "body": response.text[:500]})
+            if response.status_code == 429:
+                raise MeshyPipelineError("meshy_rate_limited", "Meshy API rate limit exceeded during polling.", {"url": poll_url, "status": 429, "body": response.text[:500]})
             if 400 <= response.status_code < 500:
-                raise MeshyPipelineError("meshy_bad_request", "Meshy polling request rejected.", {"url": poll_url, "status": response.status_code, "body": response.text[:500]})
+                raise MeshyPipelineError("meshy_invalid_request", "Meshy polling request rejected.", {"url": poll_url, "status": response.status_code, "body": response.text[:500]})
             if response.status_code >= 500:
                 raise MeshyPipelineError("meshy_provider_error", "Meshy provider error during polling.", {"url": poll_url, "status": response.status_code, "body": response.text[:500]})
 
             payload = response.json()
             status = str(payload.get("status", "")).strip().lower() or status
-            logger.info("[meshy] poll task_id=%s attempt=%s/%s status=%s", task_id, attempt, MESHY_MAX_POLL_ATTEMPTS, status)
+            progress = payload.get("progress", 0)
+            task_error = payload.get("task_error") or {}
+            task_error_msg = str(task_error.get("message", "") if isinstance(task_error, dict) else "").strip()
+
+            attempt += 1
+            logger.info(
+                "[meshy] poll task_id=%s attempt=%d status=%s progress=%s elapsed=%.1fs remaining=%.0fs",
+                task_id, attempt, status, progress,
+                elapsed, max(0.0, self.total_timeout_seconds - elapsed),
+            )
 
             if status in {"succeeded", "success", "completed"}:
                 return payload
+
             if status in {"failed", "error", "cancelled"}:
-                raise MeshyPipelineError("meshy_task_failed", f"Meshy task {task_id} finished with status={status}.", {"taskId": task_id, "status": status})
+                detail = task_error_msg or f"Meshy task finished with status={status}"
+                raise MeshyPipelineError(
+                    "meshy_task_failed",
+                    detail,
+                    {"taskId": task_id, "status": status, "task_error": task_error, "elapsedSeconds": int(elapsed)},
+                )
 
-            time.sleep(MESHY_POLL_DELAY_SECONDS)
-
-        raise MeshyPipelineError("meshy_timeout", f"Meshy task timed out before completion. Last status={status}.", {"taskId": task_id, "status": status})
+            backoff_idx = min(attempt - 1, len(POLL_BACKOFF_SECONDS) - 1)
+            sleep_s = POLL_BACKOFF_SECONDS[backoff_idx]
+            remaining = self.total_timeout_seconds - (time.monotonic() - started_at)
+            sleep_s = min(sleep_s, max(1.0, remaining - 1))
+            logger.debug("[meshy] sleeping %.1fs before next poll", sleep_s)
+            time.sleep(sleep_s)
 
     def _download(self, url: str, destination: Path) -> None:
-        logger.info("[meshy] download url=%s", url)
+        logger.info("[meshy] download url=%s dest=%s", url, destination)
         response = self._request_with_retry("GET", url)
         if response.status_code in {401, 403}:
-            raise MeshyPipelineError("meshy_auth_failed", "Meshy asset download auth failed (401/403).", {"url": url, "status": response.status_code, "body": response.text[:500]})
+            raise MeshyPipelineError("meshy_unauthorized", "Meshy asset download auth failed.", {"url": url, "status": response.status_code, "body": response.text[:500]})
         if 400 <= response.status_code < 500:
-            raise MeshyPipelineError("meshy_bad_request", "Meshy asset download request rejected.", {"url": url, "status": response.status_code, "body": response.text[:500]})
+            raise MeshyPipelineError("meshy_artifact_download_failed", "Meshy artifact download request failed.", {"url": url, "status": response.status_code, "body": response.text[:500]})
         if response.status_code >= 500:
-            raise MeshyPipelineError("meshy_provider_error", "Meshy provider error during asset download.", {"url": url, "status": response.status_code, "body": response.text[:500]})
-        destination.write_bytes(response.content)
+            raise MeshyPipelineError("meshy_artifact_download_failed", "Meshy artifact download server error.", {"url": url, "status": response.status_code, "body": response.text[:500]})
+
+        content = response.content
+
+        if destination.suffix.lower() == ".glb":
+            if len(content) < 4 or content[:4] != GLB_MAGIC:
+                raw_preview = content[:300].decode("utf-8", errors="replace")
+                logger.error(
+                    "[meshy] downloaded file is not a valid GLB url=%s first_bytes=%s preview=%r",
+                    url, content[:8].hex(), raw_preview[:120],
+                )
+                raise MeshyPipelineError(
+                    "meshy_invalid_glb_artifact",
+                    "Meshy returned a file that is not a valid GLB (missing glTF magic bytes). "
+                    "The task may have returned an error page or JSON instead of the model.",
+                    {"url": url, "firstBytesHex": content[:8].hex(), "rawPreview": raw_preview},
+                )
+
+        destination.write_bytes(content)
+        logger.info("[meshy] download complete dest=%s size=%d bytes", destination, len(content))
