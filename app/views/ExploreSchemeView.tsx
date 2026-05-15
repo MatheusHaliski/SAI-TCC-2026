@@ -41,8 +41,6 @@ type SchemeDetailsResponse = {
   items: SchemeDetailItem[];
 };
 
-type FilterTab = 'all' | 'favorites' | 'available' | 'unavailable';
-
 const SLOT_PREVIEW_DEFAULTS: Record<
   SlotKey,
   { pieceType: string; category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare'; wearstyles: string[] }
@@ -63,19 +61,11 @@ const toReadableSuggestedName = (value: string) => {
     .join(' ');
 };
 
-const FILTER_TABS: Array<{ key: FilterTab; label: string }> = [
-  { key: 'all', label: 'Todos' },
-  { key: 'favorites', label: 'Favoritos' },
-  { key: 'available', label: 'Disponíveis' },
-  { key: 'unavailable', label: 'Indisponíveis' },
-];
-
 export default function ExploreSchemeView() {
   const [schemes, setSchemes] = useState<Scheme[]>([]);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [itemsBySchemeId, setItemsBySchemeId] = useState<Record<string, SchemeDetailItem[]>>({});
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
 
   useEffect(() => {
     const loadSchemesWithItems = async () => {
@@ -108,6 +98,15 @@ export default function ExploreSchemeView() {
       setItemsBySchemeId({});
     });
   }, []);
+
+  const grouped = useMemo(() => {
+    const byOccasion = new Map<string, Scheme[]>();
+    schemes.forEach((scheme) => {
+      const key = scheme.occasion || 'General';
+      byOccasion.set(key, [...(byOccasion.get(key) ?? []), scheme]);
+    });
+    return Array.from(byOccasion.entries());
+  }, [schemes]);
 
   const buildOutfitPreviewData = (scheme: Scheme): OutfitCardData => {
     const styleLine = `${scheme.style || 'Streetwear'} • ${scheme.occasion || 'General'}`;
@@ -175,99 +174,30 @@ export default function ExploreSchemeView() {
     };
   };
 
-  const filteredSchemes = useMemo(() => {
-    switch (activeFilter) {
-      case 'favorites':
-        return schemes.filter((s) => favorites[s.scheme_id]);
-      case 'available':
-        return schemes.filter((s) => (availability[s.scheme_id] ?? 'available') === 'available');
-      case 'unavailable':
-        return schemes.filter((s) => availability[s.scheme_id] === 'unavailable');
-      default:
-        return schemes;
-    }
-  }, [activeFilter, favorites, availability, schemes]);
-
-  const grouped = useMemo(() => {
-    const byOccasion = new Map<string, Scheme[]>();
-    filteredSchemes.forEach((scheme) => {
-      const key = scheme.occasion || 'Geral';
-      byOccasion.set(key, [...(byOccasion.get(key) ?? []), scheme]);
-    });
-    return Array.from(byOccasion.entries());
-  }, [filteredSchemes]);
-
-  const emptyMessage: Record<FilterTab, string> = {
-    all: 'Nenhum card de look disponível.',
-    favorites: 'Nenhum card favoritado ainda.',
-    available: 'Nenhum card disponível.',
-    unavailable: 'Nenhum card indisponível.',
-  };
-
   return (
     <div className="space-y-6">
-      <PageHeader title="Cards de Look Salvos" subtitle="Gerencie looks por ocasião, preferência, favoritos e disponibilidade." />
+      <PageHeader title="Saved Outfit Cards" subtitle="Manage outfits by occasion, preference, favorite, and availability." />
 
-      {/* Filter pills */}
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-white/15 bg-white/5 p-3">
-        {FILTER_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveFilter(tab.key)}
-            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
-              activeFilter === tab.key
-                ? 'border-cyan-400/70 bg-cyan-500/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
-                : 'border-white/20 bg-white/5 text-white/70 hover:border-white/35 hover:bg-white/10 hover:text-white'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {grouped.length === 0 ? (
-        <p className="text-sm text-white/70">{emptyMessage[activeFilter]}</p>
-      ) : (
-        grouped.map(([occasion, occasionSchemes]) => (
-          <SectionBlock key={occasion} title={`Ocasião: ${occasion}`} subtitle="Looks agrupados por ocasião.">
-            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {occasionSchemes.map((scheme) => (
-                <article key={scheme.scheme_id} className="space-y-3 rounded-2xl border border-white/25 p-3">
-                  <OutfitCard data={buildOutfitPreviewData(scheme)} />
-                  <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/80">
-                    <p>Status: {availability[scheme.scheme_id] === 'unavailable' ? 'indisponível' : 'disponível'}</p>
-                    <p>Favorito: {favorites[scheme.scheme_id] ? 'sim' : 'não'}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setFavorites((prev) => ({ ...prev, [scheme.scheme_id]: !prev[scheme.scheme_id] }))}
-                        className={`rounded-lg border px-2 py-1 text-xs transition ${favorites[scheme.scheme_id] ? 'border-amber-300/50 bg-amber-500/20 text-amber-100' : 'border-white/30 text-white hover:bg-white/10'}`}
-                      >
-                        ★ Favorito
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'available' }))}
-                        className={`rounded-lg border px-2 py-1 text-xs transition ${(availability[scheme.scheme_id] ?? 'available') === 'available' ? 'border-emerald-300/50 bg-emerald-500/20 text-emerald-100' : 'border-white/30 text-white hover:bg-white/10'}`}
-                      >
-                        Disponível
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'unavailable' }))}
-                        className={`rounded-lg border px-2 py-1 text-xs transition ${availability[scheme.scheme_id] === 'unavailable' ? 'border-rose-300/50 bg-rose-500/20 text-rose-100' : 'border-white/30 text-white hover:bg-white/10'}`}
-                      >
-                        Indisponível
-                      </button>
-                    </div>
+      {grouped.map(([occasion, occasionSchemes]) => (
+        <SectionBlock key={occasion} title={`Occasion: ${occasion}`} subtitle="Outfits grouped by occasion.">
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {occasionSchemes.map((scheme) => (
+              <article key={scheme.scheme_id} className="space-y-3 rounded-2xl border border-white/25 p-3">
+                <OutfitCard data={buildOutfitPreviewData(scheme)} />
+                <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/80">
+                  <p>Status: {availability[scheme.scheme_id] ?? 'available'}</p>
+                  <p>Favorite: {favorites[scheme.scheme_id] ? 'yes' : 'no'}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button type="button" onClick={() => setFavorites((prev) => ({ ...prev, [scheme.scheme_id]: !prev[scheme.scheme_id] }))} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">★ Favorite</button>
+                    <button type="button" onClick={() => setAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'available' }))} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">Available</button>
+                    <button type="button" onClick={() => setAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'unavailable' }))} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">Unavailable</button>
                   </div>
-                </article>
-              ))}
-            </div>
-          </SectionBlock>
-        ))
-      )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </SectionBlock>
+      ))}
     </div>
   );
 }

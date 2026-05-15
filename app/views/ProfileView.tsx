@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ProfileSummaryCard from '@/app/components/cards/ProfileSummaryCard';
 import PageHeader from '@/app/components/shell/PageHeader';
@@ -18,7 +18,6 @@ interface WardrobeItem {
   image_url: string;
   brand: string;
   piece_type: string;
-  gender?: string;
 }
 
 interface SchemeItem {
@@ -108,19 +107,16 @@ export default function ProfileView() {
       }
 
       const [wardrobeResponse, schemesResponse, postsResponse] = await Promise.all([
-        fetch(`/api/wardrobe-items/user/${resolvedViewedUserId}?status=active&limit=24`),
+        fetch(`/api/wardrobe-items/user/${resolvedViewedUserId}`),
         fetch(`/api/schemes/user/${resolvedViewedUserId}`),
         fetch(`/api/user-posts?user_id=${encodeURIComponent(resolvedViewedUserId)}`),
       ]);
 
-      const wardrobeData = await wardrobeResponse.json().catch(() => ({ items: [] }));
+      const wardrobeData = await wardrobeResponse.json().catch(() => []);
       const schemesData = await schemesResponse.json().catch(() => []);
       const postsData = await postsResponse.json().catch(() => []);
 
-      const normalizedWardrobeItems = Array.isArray((wardrobeData as { items?: unknown })?.items)
-        ? ((wardrobeData as { items: WardrobeItem[] }).items)
-        : [];
-      setWardrobeItems(normalizedWardrobeItems);
+      setWardrobeItems(Array.isArray(wardrobeData) ? (wardrobeData as WardrobeItem[]) : []);
       setSchemes(Array.isArray(schemesData) ? (schemesData as SchemeItem[]) : []);
       setPosts(Array.isArray(postsData) ? (postsData as UserPostRecord[]) : []);
     };
@@ -132,16 +128,21 @@ export default function ProfileView() {
     });
   }, [publicUserFromPath]);
 
-  const publicEmailFallback = 'not-available@user.local';
-  const ownerEmail = viewedProfile.email?.trim() || authProfile.email?.trim() || publicEmailFallback;
-  const publicEmail = viewedProfile.email?.trim() || publicEmailFallback;
-  const email = isOwnerView ? ownerEmail : publicEmail;
-
-  const ownerUsername = viewedProfile.username?.trim() || viewedProfile.name?.trim() || ownerEmail.split('@')[0] || 'user';
-  const publicUsername = viewedProfile.username?.trim() || viewedProfile.name?.trim() || 'user';
-  const username = isOwnerView ? ownerUsername : publicUsername;
+  const email = viewedProfile.email?.trim() || authProfile.email?.trim() || 'not-available@user.local';
+  const username = viewedProfile.username?.trim() || viewedProfile.name?.trim() || email.split('@')[0] || 'user';
   const displayName = viewedProfile.name?.trim() || username;
-  const bio = viewedProfile.bio?.trim() || `@${username}`;
+
+  const activeSectionLabel = useMemo(() => {
+    const map: Record<ProfileSectionKey, string> = {
+      wardrobe: 'My Wardrobe Pieces',
+      'user-info': 'User Info',
+      'my-schemes': 'My Schemes',
+      'saved-schemes': 'Saved Schemes',
+      'my-posts': 'My Posts',
+      settings: 'Settings',
+    };
+    return map[selectedSection];
+  }, [selectedSection]);
 
   const updateSection = (section: ProfileSectionKey) => {
     const normalized = allowedSections.includes(section) ? section : allowedSections[0];
@@ -159,12 +160,14 @@ export default function ProfileView() {
 
         <ProfileSummaryCard
           username={username}
-          displayName={displayName}
-          bio={bio}
           loginEmail={email}
           loginStatus={isOwnerView ? 'Authenticated' : 'Public Profile'}
           authSource="sai-usercontrol"
         />
+
+        <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-2 text-sm text-white/85 backdrop-blur-md">
+          Active section: <span className="font-semibold text-cyan-100">{activeSectionLabel}</span>
+        </div>
 
         <ProfileSectionRenderer
           section={selectedSection}
