@@ -53,6 +53,8 @@ export default function SearchItemsView() {
   const [users, setUsers] = useState<UserPreview[]>([]);
   const [selectedOutfit, setSelectedOutfit] = useState<OutfitCardData | null>(null);
   const [statusFilter, setStatusFilter] = useState<'favorites' | 'available' | 'unavailable'>('available');
+  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const pt = typeof window !== 'undefined' && (window.localStorage.getItem('sai-site-language') ?? 'pt').startsWith('pt');
 
   useEffect(() => {
@@ -129,14 +131,21 @@ export default function SearchItemsView() {
       const pieceNames = card?.pieces?.map((piece) => `${piece.name} ${piece.pieceType}`).join(' ') ?? '';
       const blob = `${scheme.title} ${scheme.style} ${scheme.occasion} ${scheme.description ?? ''} ${brands} ${pieceNames}`.toLowerCase();
       return blob.includes(queryNorm);
+    }).filter((scheme) => {
+      if (statusFilter === 'favorites') return favorites[scheme.scheme_id] === true;
+      if (statusFilter === 'unavailable') return availability[scheme.scheme_id] === 'unavailable';
+      return availability[scheme.scheme_id] !== 'unavailable';
     });
 
-    return { users: filteredUsers, outfits: outfits.filter((scheme, idx) => statusFilter === 'available' ? idx % 3 !== 0 : statusFilter === 'unavailable' ? idx % 3 === 0 : idx % 2 === 0), brands: [], wardrobeItems: [], styles: [] };
-  }, [outfitsById, queryNorm, schemes, statusFilter, users]);
+    return { users: filteredUsers, outfits, brands: [], wardrobeItems: [], styles: [] };
+  }, [outfitsById, queryNorm, schemes, statusFilter, users, favorites, availability]);
 
   return (
     <div className="space-y-6">
-      <PageHeader title={pt ? 'Buscar' : 'Search'} subtitle={pt ? 'Hub interativo de descoberta.' : 'Interactive discovery hub for users, outfits, brands, styles, and wardrobe items.'} />
+      <PageHeader
+        title={pt ? 'Buscar' : 'Search'}
+        subtitle={pt ? 'Hub interativo de descoberta.' : 'Interactive discovery hub for users, outfits, brands, styles, and wardrobe items.'}
+      />
 
       <SectionBlock title="Global Search" subtitle="Search users, outfits, brands, styles, wearstyles, and wardrobe items.">
         <label className="mt-4 flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
@@ -170,18 +179,38 @@ export default function SearchItemsView() {
         </div>
       </SectionBlock>
 
-      <SectionBlock title={`${pt ? 'Looks' : 'Outfits'} (${groupedSearch.outfits.length})`} subtitle={pt ? 'Cards completos com visual do Saved Outfit Cards.' : 'Public outfits in compact Saved Outfit Cards card mode.'}>
+      <SectionBlock
+        title={`${pt ? 'Looks' : 'Outfits'} (${groupedSearch.outfits.length})`}
+        subtitle={pt ? 'Cards completos com visual do Saved Outfit Cards.' : 'Public outfits in compact Saved Outfit Cards card mode.'}
+      >
         <div className="mt-3 inline-flex rounded-xl border border-white/20 bg-white/5 p-1">
-          {[['favorites', pt ? 'Favoritos' : 'Favorites'], ['available', pt ? 'Disponíveis' : 'Available'], ['unavailable', pt ? 'Indisponíveis' : 'Unavailable']].map(([key, label]) => (
-            <button key={key} type="button" onClick={() => setStatusFilter(key as 'favorites' | 'available' | 'unavailable')} className={`rounded-lg px-3 py-1 text-xs ${statusFilter === key ? 'bg-cyan-400/30 text-cyan-100' : 'text-white/80'}`}>{label}</button>
+          {([['favorites', pt ? 'Favoritos' : 'Favorites'], ['available', pt ? 'Disponíveis' : 'Available'], ['unavailable', pt ? 'Indisponíveis' : 'Unavailable']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setStatusFilter(key)}
+              className={`rounded-lg px-3 py-1 text-xs ${statusFilter === key ? 'bg-cyan-400/30 text-cyan-100' : 'text-white/80'}`}
+            >
+              {label}
+            </button>
           ))}
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groupedSearch.outfits.map((scheme) => {
             const cardData = outfitsById[scheme.scheme_id];
             if (!cardData) return null;
-
-            return <CollapsibleOutfitCard key={scheme.scheme_id} card={cardData} showActions onViewDetails={() => setSelectedOutfit(cardData)} onToggleFavorite={() => setFavorites((p)=> ({...p,[scheme.scheme_id]: !p[scheme.scheme_id]}))} onEdit={() => {}} onUseInDressTester={() => router.push('/dress-tester')} onDelete={() => setAvailability((p)=> ({...p,[scheme.scheme_id]:'unavailable'}))} />;
+            return (
+              <CollapsibleOutfitCard
+                key={scheme.scheme_id}
+                card={cardData}
+                showActions
+                onViewDetails={() => setSelectedOutfit(cardData)}
+                onToggleFavorite={() => setFavorites((p) => ({ ...p, [scheme.scheme_id]: !p[scheme.scheme_id] }))}
+                onEdit={() => {}}
+                onUseInDressTester={() => router.push('/dress-tester')}
+                onDelete={() => setAvailability((p) => ({ ...p, [scheme.scheme_id]: 'unavailable' }))}
+              />
+            );
           })}
           {!groupedSearch.outfits.length ? <p className="text-sm text-white/70">No outfits found.</p> : null}
         </div>
