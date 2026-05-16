@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { shareTechMono } from "./fonts";
+// ❌ REMOVER esta linha:
+// import SiteLanguageBridge from "@/app/components/i18n/SiteLanguageBridge";
 
 export const metadata: Metadata = {
     title: "Create Next App",
@@ -8,13 +10,15 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
+    children,
+}: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
         <html lang="en">
         <body className={`${shareTechMono.variable} min-h-screen antialiased`}>
+        {/* ❌ REMOVER esta linha: */}
+        {/* <SiteLanguageBridge /> */}
         {children}
         </body>
         </html>
