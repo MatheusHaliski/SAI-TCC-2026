@@ -204,8 +204,14 @@ export default function SiteLanguageBridge() {
 
     applyLanguage();
 
-    const observer = new MutationObserver(() => applyLanguage());
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    const observerOptions: MutationObserverInit = { childList: true, subtree: true };
+
+    const observer = new MutationObserver(() => {
+      observer.disconnect();
+      applyLanguage();
+      observer.observe(document.body, observerOptions);
+    });
+    observer.observe(document.body, observerOptions);
 
     const onStorage = (event: StorageEvent) => {
       if (event.key === SITE_LANGUAGE_STORAGE_KEY) applyLanguage();

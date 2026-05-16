@@ -75,7 +75,7 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
       title="User Info"
       subtitle={canEdit ? 'Edit your profile identity and public creator metadata.' : 'Public creator profile metadata.'}
     >
-      <article className="mt-4 overflow-hidden rounded-3xl border border-white/20 bg-[linear-gradient(145deg,rgba(249,115,22,0.88),rgba(234,88,12,0.9))] shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
+      <article className="mt-4 overflow-hidden rounded-3xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.25)]" style={{ backgroundColor: 'var(--user-surface-solid, #ea580c)' }}>
         <div className="relative h-56 w-full border-b border-white/20 bg-black/20">
           {form.avatarUrl ? (
             <Image src={form.avatarUrl} alt={`${form.displayName || form.username} profile`} fill className="object-cover" sizes="(max-width: 768px) 100vw, 60vw" unoptimized />

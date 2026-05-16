@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { shareTechMono } from "@/app/fonts";
@@ -82,11 +82,16 @@ export default function AuthViewClient() {
         ensureSharedAccessToken();
     }, [router]);
 
+    // Use a ref so the token clear only runs ONCE on mount.
+    // Without this, Next.js Turbopack can re-trigger this effect during
+    // navigation, wiping the token just after login writes it.
+    const didClearOnMount = useRef(false);
     useEffect(() => {
-        if (pathname !== "/authview") return;
+        if (didClearOnMount.current) return;
+        didClearOnMount.current = true;
         clearAuthSessionToken();
         clearSharedAccessToken();
-    }, [pathname]);
+    }, []);
 
     useEffect(() => {
         if (typeof window === "undefined") return;

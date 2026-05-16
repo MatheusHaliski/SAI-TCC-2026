@@ -12,11 +12,11 @@ interface WardrobeItem {
   image_url: string;
   brand: string;
   piece_type: string;
+  gender?: string;
 }
 
 interface SchemeItem {
   scheme_id: string;
-  user_id: string;
   title: string;
   style: string;
   occasion: string;
@@ -39,6 +39,9 @@ interface ProfileSectionRendererProps {
   posts: UserPostRecord[];
 }
 
+// SchemeItem is used by ProfileMySchemesSection only.
+// ProfileSavedSchemesSection fetches its own data from the outfit_favorites collection.
+
 export default function ProfileSectionRenderer({
   section,
   userId,
@@ -52,10 +55,8 @@ export default function ProfileSectionRenderer({
 }: ProfileSectionRendererProps) {
   if (section === 'wardrobe') return <ProfileWardrobeSection items={wardrobeItems} />;
   if (section === 'user-info') return <ProfileUserInfoSection userId={userId} displayName={displayName} username={username} email={email} canEdit={canEdit} />;
-  if (section === 'my-schemes') return <ProfileMySchemesSection userId={userId} schemes={schemes.filter((scheme) => scheme.user_id === userId)} />;
-  // Saved schemes currently use the same collection as authored schemes in this data model.
-  // We surface the same normalized list used by Saved Outfit Cards to avoid empty states.
-  if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} schemes={schemes} />;
+  if (section === 'my-schemes') return <ProfileMySchemesSection userId={userId} schemes={schemes} />;
+  if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} />;
   if (section === 'my-posts') return <ProfileMyPostsSection posts={posts} />;
   return <ProfileSettingsSection />;
 }
