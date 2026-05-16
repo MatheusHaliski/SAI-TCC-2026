@@ -368,12 +368,12 @@ export default function MyWardrobeView() {
         <div className="space-y-6">
           <PageHeader title="Virtual Wardrobe" subtitle="Classify pieces as available, unavailable, and favorites." />
 
-          <div className="sa-surface-header rounded-2xl border border-white/10 p-4">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <form onSubmit={handleSearch} className="flex flex-col gap-2 md:flex-row">
               <input
                 type="text"
                 placeholder="✨ Semantic search (e.g. roupas de inverno pretas)"
-                className="flex-1 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm text-white placeholder-white/50"
+                className="flex-1 rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white placeholder-white/50"
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);

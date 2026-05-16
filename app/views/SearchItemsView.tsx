@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import OutfitDetailModal from '@/app/components/search/OutfitDetailModal';
-import CollapsibleOutfitCard, { getSchemeFilterValue } from '@/app/components/outfit-card/CollapsibleOutfitCard';
+import SearchOutfitCard from '@/app/components/search/SearchOutfitCard';
 import SearchUserCard from '@/app/components/search/SearchUserCard';
 import { useDiscoverySearch } from '@/app/components/shell/DiscoverySearchContext';
 import { OutfitCardData, buildOutfitDescriptionFallback, buildOutfitDescriptionRich } from '@/app/lib/outfit-card';
@@ -18,6 +18,7 @@ type PublicScheme = {
   occasion: string;
   user_id: string;
   cover_image_url: string | null;
+  // description may be a JSON string containing { outfitBackground, ... } when saved from Background Studio
   description?: string | null;
   pieces?: SchemePieceSnapshot[];
 };
@@ -46,16 +47,24 @@ const SLOT_PREVIEW_DEFAULTS: Record<
   accessory: { pieceType: 'Accessory', category: 'Limited Edition', wearstyles: ['Style Accent', 'Attention Grabber'] },
 };
 
+type OutfitFilter = 'all' | 'favorites' | 'available' | 'unavailable';
+
+const OUTFIT_FILTER_TABS: Array<{ key: OutfitFilter; label: string }> = [
+  { key: 'all', label: 'Todos' },
+  { key: 'favorites', label: 'Favoritos' },
+  { key: 'available', label: 'Disponíveis' },
+  { key: 'unavailable', label: 'Indisponíveis' },
+];
+
 export default function SearchItemsView() {
   const router = useRouter();
   const { query, debouncedQuery, setQuery } = useDiscoverySearch();
   const [schemes, setSchemes] = useState<PublicScheme[]>([]);
   const [users, setUsers] = useState<UserPreview[]>([]);
   const [selectedOutfit, setSelectedOutfit] = useState<OutfitCardData | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'favorites' | 'available' | 'unavailable'>('available');
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-  const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
-  const pt = typeof window !== 'undefined' && (window.localStorage.getItem('sai-site-language') ?? 'pt').startsWith('pt');
+  const [outfitFilter, setOutfitFilter] = useState<OutfitFilter>('all');
+  const [outfitFavorites, setOutfitFavorites] = useState<Record<string, boolean>>({});
+  const [outfitAvailability, setOutfitAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
 
   useEffect(() => {
     fetch('/api/schemes/public')
@@ -102,6 +111,14 @@ export default function SearchItemsView() {
               outfitName: scheme.title || 'Untitled Outfit',
             }),
         heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
+        outfitBackground: (() => {
+          try {
+            const parsed = JSON.parse(scheme.description || '{}') as { outfitBackground?: OutfitCardData['outfitBackground'] };
+            return parsed?.outfitBackground;
+          } catch {
+            return undefined;
+          }
+        })(),
         pieces,
         brands,
         schemeId: scheme.scheme_id,
@@ -124,30 +141,31 @@ export default function SearchItemsView() {
       return blob.includes(queryNorm);
     });
 
-    const outfits = schemes.filter((scheme) => {
+    const textFiltered = schemes.filter((scheme) => {
       if (!queryNorm) return true;
       const card = outfitsById[scheme.scheme_id];
       const brands = card?.brands?.join(' ') ?? '';
       const pieceNames = card?.pieces?.map((piece) => `${piece.name} ${piece.pieceType}`).join(' ') ?? '';
       const blob = `${scheme.title} ${scheme.style} ${scheme.occasion} ${scheme.description ?? ''} ${brands} ${pieceNames}`.toLowerCase();
       return blob.includes(queryNorm);
-    }).filter((scheme) => {
-      if (statusFilter === 'favorites') return favorites[scheme.scheme_id] === true;
-      if (statusFilter === 'unavailable') return availability[scheme.scheme_id] === 'unavailable';
-      return availability[scheme.scheme_id] !== 'unavailable';
+    });
+
+    // Apply local filter tab
+    const outfits = textFiltered.filter((scheme) => {
+      if (outfitFilter === 'favorites') return outfitFavorites[scheme.scheme_id];
+      if (outfitFilter === 'available') return (outfitAvailability[scheme.scheme_id] ?? 'available') === 'available';
+      if (outfitFilter === 'unavailable') return outfitAvailability[scheme.scheme_id] === 'unavailable';
+      return true;
     });
 
     return { users: filteredUsers, outfits, brands: [], wardrobeItems: [], styles: [] };
-  }, [outfitsById, queryNorm, schemes, statusFilter, users, favorites, availability]);
+  }, [outfitsById, queryNorm, schemes, users, outfitFilter, outfitFavorites, outfitAvailability]);
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={pt ? 'Buscar' : 'Search'}
-        subtitle={pt ? 'Hub interativo de descoberta.' : 'Interactive discovery hub for users, outfits, brands, styles, and wardrobe items.'}
-      />
+      <PageHeader title="Buscar" subtitle="Hub de descoberta interativa de usuários, looks, marcas, estilos e roupas." />
 
-      <SectionBlock title="Global Search" subtitle="Search users, outfits, brands, styles, wearstyles, and wardrobe items.">
+      <SectionBlock title="Busca Global" subtitle="Busque usuários, looks, marcas, estilos e roupas.">
         <label className="mt-4 flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
           <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.8">
             <circle cx="11" cy="11" r="6" />
@@ -157,13 +175,13 @@ export default function SearchItemsView() {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search outfits, brands, styles, or wardrobe items"
+            placeholder="Busque looks, marcas, estilos ou roupas"
             className="w-full bg-transparent text-white placeholder:text-white/60 focus:outline-none"
           />
         </label>
       </SectionBlock>
 
-      <SectionBlock title={`Users (${groupedSearch.users.length})`} subtitle="Profiles matching the search.">
+      <SectionBlock title={`Usuários (${groupedSearch.users.length})`} subtitle="Perfis que correspondem à busca.">
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {groupedSearch.users.map((user) => (
             <SearchUserCard
@@ -175,52 +193,79 @@ export default function SearchItemsView() {
               onOpenProfile={() => router.push(`/profile/${user.user_id}?section=user-info`)}
             />
           ))}
-          {!groupedSearch.users.length ? <p className="text-sm text-white/70">No users found.</p> : null}
+          {!groupedSearch.users.length ? <p className="text-sm text-white/70">Nenhum usuário encontrado.</p> : null}
         </div>
       </SectionBlock>
 
-      <SectionBlock
-        title={`${pt ? 'Looks' : 'Outfits'} (${groupedSearch.outfits.length})`}
-        subtitle={pt ? 'Cards completos com visual do Saved Outfit Cards.' : 'Public outfits in compact Saved Outfit Cards card mode.'}
-      >
-        <div className="mt-3 inline-flex rounded-xl border border-white/20 bg-white/5 p-1">
-          {([['favorites', pt ? 'Favoritos' : 'Favorites'], ['available', pt ? 'Disponíveis' : 'Available'], ['unavailable', pt ? 'Indisponíveis' : 'Unavailable']] as const).map(([key, label]) => (
+      <SectionBlock title={`Looks (${groupedSearch.outfits.length})`} subtitle="Looks públicos no modo compacto de Cards de Look.">
+        {/* Filter pills */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {OUTFIT_FILTER_TABS.map((tab) => (
             <button
-              key={key}
+              key={tab.key}
               type="button"
-              onClick={() => setStatusFilter(key)}
-              className={`rounded-lg px-3 py-1 text-xs ${statusFilter === key ? 'bg-cyan-400/30 text-cyan-100' : 'text-white/80'}`}
+              onClick={() => setOutfitFilter(tab.key)}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                outfitFilter === tab.key
+                  ? 'border-cyan-400/70 bg-cyan-500/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.18)]'
+                  : 'border-white/20 bg-white/5 text-white/65 hover:border-white/35 hover:bg-white/10 hover:text-white'
+              }`}
             >
-              {label}
+              {tab.label}
             </button>
           ))}
         </div>
+
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groupedSearch.outfits.map((scheme) => {
             const cardData = outfitsById[scheme.scheme_id];
             if (!cardData) return null;
+
             return (
-              <CollapsibleOutfitCard
-                key={scheme.scheme_id}
-                card={cardData}
-                showActions
-                onViewDetails={() => setSelectedOutfit(cardData)}
-                onToggleFavorite={() => setFavorites((p) => ({ ...p, [scheme.scheme_id]: !p[scheme.scheme_id] }))}
-                onEdit={() => {}}
-                onUseInDressTester={() => router.push('/dress-tester')}
-                onDelete={() => setAvailability((p) => ({ ...p, [scheme.scheme_id]: 'unavailable' }))}
-              />
+              <div key={scheme.scheme_id} className="space-y-2">
+                <SearchOutfitCard data={cardData} onOpenDetail={() => setSelectedOutfit(cardData)} />
+                <div className="flex flex-wrap gap-1.5 px-1">
+                  <button
+                    type="button"
+                    onClick={() => setOutfitFavorites((prev) => ({ ...prev, [scheme.scheme_id]: !prev[scheme.scheme_id] }))}
+                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${outfitFavorites[scheme.scheme_id] ? 'border-amber-300/50 bg-amber-500/20 text-amber-100' : 'border-white/25 text-white/60 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    ★ Favorito
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOutfitAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'available' }))}
+                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${(outfitAvailability[scheme.scheme_id] ?? 'available') === 'available' ? 'border-emerald-300/50 bg-emerald-500/20 text-emerald-100' : 'border-white/25 text-white/60 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    Disponível
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOutfitAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'unavailable' }))}
+                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${outfitAvailability[scheme.scheme_id] === 'unavailable' ? 'border-rose-300/50 bg-rose-500/20 text-rose-100' : 'border-white/25 text-white/60 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    Indisponível
+                  </button>
+                </div>
+              </div>
             );
           })}
-          {!groupedSearch.outfits.length ? <p className="text-sm text-white/70">No outfits found.</p> : null}
+          {!groupedSearch.outfits.length ? (
+            <p className="text-sm text-white/70">
+              {outfitFilter === 'favorites' && 'Nenhum look favoritado ainda.'}
+              {outfitFilter === 'available' && 'Nenhum look disponível.'}
+              {outfitFilter === 'unavailable' && 'Nenhum look indisponível.'}
+              {outfitFilter === 'all' && 'Nenhum look encontrado.'}
+            </p>
+          ) : null}
         </div>
       </SectionBlock>
 
-      <SectionBlock title="Expandable Discovery Groups" subtitle="Structured results model is ready for Brands, Wardrobe Items, and Styles.">
+      <SectionBlock title="Grupos de Descoberta" subtitle="Resultados organizados para marcas, roupas e estilos.">
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/75">
-          <span className="rounded-full border border-white/25 px-2 py-1">Brands: {groupedSearch.brands.length}</span>
-          <span className="rounded-full border border-white/25 px-2 py-1">Wardrobe Items: {groupedSearch.wardrobeItems.length}</span>
-          <span className="rounded-full border border-white/25 px-2 py-1">Styles: {groupedSearch.styles.length}</span>
+          <span className="rounded-full border border-white/25 px-2 py-1">Marcas: {groupedSearch.brands.length}</span>
+          <span className="rounded-full border border-white/25 px-2 py-1">Roupas: {groupedSearch.wardrobeItems.length}</span>
+          <span className="rounded-full border border-white/25 px-2 py-1">Estilos: {groupedSearch.styles.length}</span>
         </div>
       </SectionBlock>
 
