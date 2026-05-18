@@ -6,7 +6,7 @@ import { BrandsRepository } from './BrandsRepository';
 import { MarketsRepository } from './MarketsRepository';
 import { UsersRepository } from './UsersRepository';
 
-const WARDROBE_ITEMS_COLLECTION = 'sai-wardrobeItems';
+const WARDROBE_ITEMS_COLLECTION = 'saiWardrobeItems';
 
 function assertPublicModelUrl(url: string | null | undefined, field: string): void {
   if (url == null) return;
@@ -88,7 +88,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       limit: pageSize,
       queryFieldsUsed,
       requiredCompositeIndex: [
-        'collection: sai-wardrobeItems',
+        'collection: saiWardrobeItems',
         'userId Ascending',
         'status Ascending',
         'createdAt Descending',
@@ -103,7 +103,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       const legacySnapshot = await adminDb
         .collection(WARDROBE_ITEMS_COLLECTION)
         .where('user_id', '==', userId)
-        .orderBy('created_at', 'desc')
+        .orderBy('createdAt', 'desc')
         .limit(pageSize)
         .get();
 
@@ -202,7 +202,7 @@ export class WardrobeItemsRepository extends BaseRepository {
   }
 
   private extractCreatedAtCursor(doc: FirebaseFirestore.QueryDocumentSnapshot): string | null {
-    const value = doc.get('createdAt') ?? doc.get('created_at') ?? null;
+    const value = doc.get('createdAt') ?? doc.get('createdAt') ?? null;
     if (typeof value === 'string') return value;
     if (value instanceof Date) return value.toISOString();
     if (value && typeof value === 'object') {
@@ -366,8 +366,8 @@ export class WardrobeItemsRepository extends BaseRepository {
       userId: input.user_id,
       createdAt: now,
       status: 'active',
-      created_at: now,
-      updated_at: now,
+      createdAt: now,
+      updatedAt: now,
     };
     const ref = await this.db.collection(WARDROBE_ITEMS_COLLECTION).add(payload);
     return { wardrobe_item_id: ref.id };
@@ -420,7 +420,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       catalog_readiness_score: input.image_analysis.catalog_readiness_score,
       recommended_action: input.image_analysis.recommended_action,
       pipeline_stage_details: input.stage_details,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 
@@ -470,7 +470,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       model_status: status,
       model_generation_error: modelGenerationError,
       ...(stageDetails ? { pipeline_stage_details: stageDetails } : {}),
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 
@@ -501,7 +501,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       model_3d_url: resolvedModel3dUrl,
       model_status: 'completed',
       model_generation_error: input.model_generation_error ?? null,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 
@@ -514,7 +514,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       runpod_job_id: cloudJobId,
       processingStartedAt: new Date().toISOString(),
       model_generation_error: null,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 
@@ -546,7 +546,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       cloud_job_id: cloudJobId,
       runpod_job_id: cloudJobId,
       completedAt: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
     if (assets.meshy_task_id != null) {
       update.meshy_task_id = assets.meshy_task_id;
@@ -557,7 +557,7 @@ export class WardrobeItemsRepository extends BaseRepository {
   async updateGenerationAttempt(wardrobeItemId: string, generationAttemptCount: number): Promise<void> {
     await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
       generation_attempt_count: generationAttemptCount,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 
@@ -571,7 +571,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       model_3d_url: normalized,
       model_status: 'completed',
       model_generation_error: null,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 
@@ -581,7 +581,7 @@ export class WardrobeItemsRepository extends BaseRepository {
 
     await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update({
       cleaned_png_url: normalized,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 

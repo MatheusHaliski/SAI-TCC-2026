@@ -2,30 +2,30 @@
 
 ## Root collections
 - `sai-users`
-- `sai-brands`
+- `saiBrands`
 - `sai-brandLogoCatalog`
-- `sai-markets`
-- `sai-pieceItems`
-- `sai-wardrobeItems`
-- `sai-schemes`
+- `saiMarkets`
+- `saiPieceItems`
+- `saiWardrobeItems`
+- `saiSchemess`
 
 - `sai-userPosts`
 - `sai-outfitExports`
 
 ## Subcollection
-- `sai-schemes/{schemeId}/items`
+- `saiSchemess/{schemeId}/items`
 
 ## Relationship simulation via IDs
-- `sai-pieceItems.brand_id -> sai-brands.brand_id`
-- `sai-pieceItems.market_id -> sai-markets.market_id`
-- `sai-wardrobeItems.user_id -> sai-users.user_id`
-- `sai-wardrobeItems.brand_id -> sai-brands.brand_id`
-- `sai-wardrobeItems.market_id -> sai-markets.market_id`
-- `sai-brandLogoCatalog.brand_id -> sai-brands.brand_id`
-- `sai-schemes.user_id -> sai-users.user_id`
-- `sai-schemes/{schemeId}/items/{schemeItemId}.wardrobe_item_id -> sai-wardrobeItems.wardrobe_item_id`
+- `saiPieceItems.brand_id -> saiBrands.brand_id`
+- `saiPieceItems.market_id -> saiMarkets.market_id`
+- `saiWardrobeItems.user_id -> sai-users.user_id`
+- `saiWardrobeItems.brand_id -> saiBrands.brand_id`
+- `saiWardrobeItems.market_id -> saiMarkets.market_id`
+- `sai-brandLogoCatalog.brand_id -> saiBrands.brand_id`
+- `saiSchemess.user_id -> sai-users.user_id`
+- `saiSchemess/{schemeId}/items/{schemeItemId}.wardrobe_item_id -> saiWardrobeItems.wardrobe_item_id`
 
-## 3D pipeline fields on `sai-wardrobeItems`
+## 3D pipeline fields on `saiWardrobeItems`
 - `model_status`: `queued_base | base_done | queued_branding | done | failed | needs_brand_review`
 - `model_base_3d_url`, `model_branded_3d_url`, `model_3d_url`, `model_preview_url`
 - `brand_id_selected`, `brand_id_detected`, `brand_detection_confidence`, `brand_detection_source`
@@ -37,7 +37,7 @@ All relationship integrity is validated in the Service layer before writes.
 ## Dress tester 2D collections
 - `mannequin_2d`
 - `wardrobe_piece_2d`
-- `outfit_selection_2d`
+- `outfitSelections`
 
 ### 2D asset pipeline lifecycle
 `wardrobe_piece_2d.asset_status`

@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
       hair_front_url: body.hair_front_url ? String(body.hair_front_url) : '',
       face_layer_url: body.face_layer_url ? String(body.face_layer_url) : '',
       active: true,
-      created_at: now,
-      updated_at: now,
+      createdAt: now,
+      updatedAt: now,
     };
 
     await ref.set(payload);

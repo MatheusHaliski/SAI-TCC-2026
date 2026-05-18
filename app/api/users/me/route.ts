@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest) {
       email: body.email?.trim() || '',
       bio: body.bio?.trim() || '',
       photo_url: body.avatarUrl || '',
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     const db = getAdminFirestore();

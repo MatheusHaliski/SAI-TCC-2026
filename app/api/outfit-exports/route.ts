@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
 
   const db = getAdminFirestore();
-  const snapshot = await db.collection(COLLECTION).where('user_id', '==', userId).orderBy('created_at', 'desc').get();
+  const snapshot = await db.collection(COLLECTION).where('user_id', '==', userId).orderBy('createdAt', 'desc').get();
   const records = snapshot.docs.map((doc) => ({ export_id: doc.id, ...doc.data() }));
   return NextResponse.json(records);
 }
@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
       pipeline_phase: 'phase-1-downloadable-export',
       ready_for_publishing: true,
     },
-    created_at: now,
-    updated_at: now,
+    createdAt: now,
+    updatedAt: now,
   };
 
   const created = await db.collection(COLLECTION).add(record);

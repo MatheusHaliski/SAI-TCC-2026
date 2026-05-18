@@ -31,7 +31,7 @@ export const getAdminFirestore = () => {
         });
     }
 
-    firestoreInstance = getFirestore();
+    firestoreInstance = getFirestore(getApp(), process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "newsaidb");
     return firestoreInstance;
 };
 

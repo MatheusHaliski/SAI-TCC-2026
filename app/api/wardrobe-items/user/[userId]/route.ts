@@ -4,7 +4,7 @@ import { getApps } from 'firebase-admin/app';
 import { NextResponse } from 'next/server';
 
 const wardrobeController = new WardrobeController();
-const WARDROBE_ITEMS_COLLECTION = 'sai-wardrobeItems';
+const WARDROBE_ITEMS_COLLECTION = 'saiWardrobeItems';
 const INDEX_URL_REGEX = /(https:\/\/console\.firebase\.google\.com\/[^\s]+)/i;
 
 type ParsedRequestParams = {

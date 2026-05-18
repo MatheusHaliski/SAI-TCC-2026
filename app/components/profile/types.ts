@@ -36,8 +36,8 @@ export interface UserPostRecord {
   preview_image_url: string;
   export_image_url?: string;
   visibility: 'public' | 'private';
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   published_at?: string;
 }
 
@@ -53,7 +53,7 @@ export interface OutfitExportRecord {
   asset_url: string;
   thumbnail_url: string;
   status: 'queued' | 'ready' | 'downloaded' | 'published' | 'failed';
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   error_message?: string;
 }

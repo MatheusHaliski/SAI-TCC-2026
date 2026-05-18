@@ -13,14 +13,14 @@ It also includes:
 Based on repository layer constants, the main collections are:
 
 - `users`
-- `sai-brands`
+- `saiBrands`
 - `sai-brandLogoCatalog`
-- `sai-markets`
-- `sai-pieceItems`
-- `sai-wardrobeItems`
-- `sai-usersavedschemes`
-- `sai-schemeitem`
-- `sai-pipelineJobs`
+- `saiMarkets`
+- `saiPieceItems`
+- `saiWardrobeItems`
+- `saiUserSavedSchemes`
+- `saiSchemeItems`
+- `saiPipelineJobs`
 - `fai-artworkAssets`
 
 > Note: This project uses Firestore (document DB). “Relational” links are maintained in application logic with IDs (not hard DB foreign keys).
@@ -47,7 +47,7 @@ Based on repository layer constants, the main collections are:
 
 ---
 
-### 2.2 `sai-brands`
+### 2.2 `saiBrands`
 
 **Purpose**
 - Master brand catalog (active/inactive, display metadata).
@@ -83,7 +83,7 @@ Based on repository layer constants, the main collections are:
 
 ---
 
-### 2.4 `sai-markets`
+### 2.4 `saiMarkets`
 
 **Purpose**
 - Stores market dimensions (season + gender) reused by items.
@@ -101,7 +101,7 @@ Based on repository layer constants, the main collections are:
 
 ---
 
-### 2.5 `sai-pieceItems`
+### 2.5 `saiPieceItems`
 
 **Purpose**
 - Curated catalog inventory (suggested/store items), distinct from user-owned wardrobe.
@@ -118,7 +118,7 @@ Based on repository layer constants, the main collections are:
 
 ---
 
-### 2.6 `sai-wardrobeItems`
+### 2.6 `saiWardrobeItems`
 
 **Purpose**
 - Core user collection for uploaded garments and generated assets.
@@ -147,7 +147,7 @@ Based on repository layer constants, the main collections are:
 
 ---
 
-### 2.7 `sai-usersavedschemes`
+### 2.7 `saiUserSavedSchemes`
 
 **Purpose**
 - Stores outfit/scheme metadata authored by users.
@@ -163,13 +163,13 @@ Based on repository layer constants, the main collections are:
 
 ---
 
-### 2.8 `sai-schemeitem`
+### 2.8 `saiSchemeItems`
 
 **Purpose**
 - Stores composition links between a scheme and its selected pieces/slots.
 
 **Main fields**
-- `scheme_item_id`, `scheme_id`, `wardrobe_item_id` (or suggested token), `slot`, `sort_order`, `created_at`.
+- `scheme_item_id`, `scheme_id`, `wardrobe_item_id` (or suggested token), `slot`, `sort_order`, `createdAt`.
 
 **Where it is used**
 - Resolves ordered piece list for a saved scheme.
@@ -180,7 +180,7 @@ Based on repository layer constants, the main collections are:
 
 ---
 
-### 2.9 `sai-pipelineJobs`
+### 2.9 `saiPipelineJobs`
 
 **Purpose**
 - Tracks asynchronous UV/RunPod job lifecycle.
@@ -221,19 +221,19 @@ flowchart TD
   UI --> PJ[GET /api/pipeline-jobs/:jobId]
 
   ADD --> WS[WardrobeService]
-  WS --> WR[(sai-wardrobeItems)]
-  WS --> BR[(sai-brands)]
+  WS --> WR[(saiWardrobeItems)]
+  WS --> BR[(saiBrands)]
   WS --> BLC[(sai-brandLogoCatalog)]
-  WS --> MC[(sai-markets)]
+  WS --> MC[(saiMarkets)]
 
   SCH --> SS[SchemesService]
-  SS --> SC[(sai-usersavedschemes)]
-  SS --> SI[(sai-schemeitem)]
+  SS --> SC[(saiUserSavedSchemes)]
+  SS --> SI[(saiSchemeItems)]
   SS --> WR
   SS --> US[(users)]
 
   UV --> BPS[BlenderPipelineService]
-  BPS --> PJC[(sai-pipelineJobs)]
+  BPS --> PJC[(saiPipelineJobs)]
   BPS --> BCS[BlenderCloudService]
   BPS --> WR
 
@@ -241,7 +241,7 @@ flowchart TD
   ART --> AR[(fai-artworkAssets)]
 
   UI --> PI[GET /api/piece-items]
-  PI --> PIC[(sai-pieceItems)]
+  PI --> PIC[(saiPieceItems)]
   PI --> BR
   PI --> MC
 ```
@@ -271,7 +271,7 @@ sequenceDiagram
   participant UI as Frontend
   participant APP as Next API (/api/wardrobe-items/generate-uv)
   participant BPS as BlenderPipelineService
-  participant DB as sai-pipelineJobs
+  participant DB as saiPipelineJobs
   participant ORCH as blender-api orchestrator
   participant W as blender-worker (RunPod)
 
@@ -318,8 +318,8 @@ classDiagram
     +string photo_url
     +string role
     +string[] preferred_styles
-    +string created_at
-    +string updated_at
+    +string createdAt
+    +string updatedAt
   }
 
   class Brand {
@@ -327,8 +327,8 @@ classDiagram
     +string name
     +string logo_url
     +boolean is_active
-    +string created_at
-    +string updated_at
+    +string createdAt
+    +string updatedAt
   }
 
   class BrandLogoCatalog {
@@ -339,16 +339,16 @@ classDiagram
     +PlacementProfile[] placement_profiles
     +string[] detection_aliases
     +boolean is_active
-    +string created_at
-    +string updated_at
+    +string createdAt
+    +string updatedAt
   }
 
   class Market {
     +string market_id
     +string season
     +string gender
-    +string created_at
-    +string updated_at
+    +string createdAt
+    +string updatedAt
   }
 
   class PieceItem {
@@ -361,8 +361,8 @@ classDiagram
     +string color
     +string material
     +boolean is_active
-    +string created_at
-    +string updated_at
+    +string createdAt
+    +string updatedAt
   }
 
   class WardrobeItem {
@@ -381,8 +381,8 @@ classDiagram
     +boolean geometry_scope_passed
     +string[] style_tags
     +string[] occasion_tags
-    +string created_at
-    +string updated_at
+    +string createdAt
+    +string updatedAt
   }
 
   class Scheme {
@@ -397,8 +397,8 @@ classDiagram
     +boolean community_indexed
     +string cover_image_url
     +SchemePieceSnapshot[] pieces
-    +string created_at
-    +string updated_at
+    +string createdAt
+    +string updatedAt
   }
 
   class SchemeItem {
@@ -407,7 +407,7 @@ classDiagram
     +string wardrobe_item_id
     +string slot
     +number sort_order
-    +string created_at
+    +string createdAt
   }
 
   class PipelineJob {
@@ -422,8 +422,8 @@ classDiagram
     +object artifacts
     +object metrics
     +string error_message
-    +string created_at
-    +string updated_at
+    +string createdAt
+    +string updatedAt
   }
 
   class ArtworkAsset {
@@ -431,8 +431,8 @@ classDiagram
     +string user_id
     +string prompt
     +string image_url
-    +string created_at
-    +string updated_at
+    +string createdAt
+    +string updatedAt
   }
 
   Brand "1" --> "many" BrandLogoCatalog : has
@@ -479,5 +479,5 @@ erDiagram
 
 - Firestore does not enforce foreign keys; all integrity checks are in services/repositories.
 - Use repository constants as source of truth for collection names.
-- Keep status transitions explicit for `sai-wardrobeItems` and `sai-pipelineJobs`.
+- Keep status transitions explicit for `saiWardrobeItems` and `saiPipelineJobs`.
 - Prefer updating this document when introducing a new collection or a new async pipeline stage.

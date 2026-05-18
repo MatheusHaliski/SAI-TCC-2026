@@ -1,7 +1,7 @@
 import { Brand, BrandLogoCatalog } from '@/app/backend/types/entities';
 import { BaseRepository } from './BaseRepository';
 
-const BRANDS_COLLECTION = 'sai-brands';
+const BRANDS_COLLECTION = 'saiBrands';
 const BRAND_LOGO_CATALOG_COLLECTION = 'sai-brandLogoCatalog';
 
 export class BrandsRepository extends BaseRepository {
@@ -107,8 +107,8 @@ export class BrandsRepository extends BaseRepository {
           placement_profiles: input.placementProfiles,
           detection_aliases: input.detectionAliases ?? [],
           is_active: true,
-          updated_at: now,
-          created_at: now,
+          updatedAt: now,
+          createdAt: now,
         },
         { merge: true },
       );

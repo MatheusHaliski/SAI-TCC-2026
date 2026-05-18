@@ -38,8 +38,8 @@ export interface BrandLogoCatalog {
   placement_profiles: PlacementProfile[];
   detection_aliases: string[];
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface User {
@@ -49,8 +49,8 @@ export interface User {
   photo_url: string | null;
   role: string;
   preferred_styles: string[];
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Brand {
@@ -58,16 +58,16 @@ export interface Brand {
   name: string;
   logo_url: string | null;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Market {
   market_id: EntityId;
   season: string;
   gender: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PieceItem {
@@ -82,8 +82,8 @@ export interface PieceItem {
   store_url: string | null;
   price_range: string | null;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 
@@ -150,8 +150,8 @@ export interface WardrobeItem {
   style_tags: string[];
   occasion_tags: string[];
   is_favorite: boolean;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Scheme {
@@ -166,8 +166,8 @@ export interface Scheme {
   community_indexed: boolean;
   cover_image_url: string | null;
   pieces?: SchemePieceSnapshot[];
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SchemePieceSnapshot {
@@ -189,7 +189,7 @@ export interface SchemeItem {
   wardrobe_item_id: EntityId;
   slot: 'upper' | 'lower' | 'shoes' | 'accessory';
   sort_order: number;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface WardrobeViewItem {
@@ -298,8 +298,8 @@ export interface Mannequin2D {
   hair_front_url?: string;
   face_layer_url?: string;
   active: boolean;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface WardrobePiece2D {
@@ -328,8 +328,8 @@ export interface WardrobePiece2D {
   gender: string;
   asset_status: PieceAssetStatus;
   active: boolean;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface OutfitSelection2D {
@@ -342,8 +342,8 @@ export interface OutfitSelection2D {
   bag: EntityId | null;
   outerwear: EntityId | null;
   accessory: EntityId | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type UserPostStatus = 'draft' | 'ready' | 'exported' | 'published' | 'failed';
@@ -364,8 +364,8 @@ export interface UserPost {
   export_image_url?: string;
   visibility: 'public' | 'private';
   platform_metadata?: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   published_at?: string;
 }
 
@@ -382,6 +382,6 @@ export interface OutfitExport {
   thumbnail_url: string;
   status: OutfitExportStatus;
   error_message?: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }

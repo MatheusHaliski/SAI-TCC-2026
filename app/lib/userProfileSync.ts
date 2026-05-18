@@ -1,6 +1,6 @@
 import { FieldValue, type Firestore } from "firebase-admin/firestore";
 
-const USER_COLLECTION = "sai-usercontrol";
+const USER_COLLECTION = "saiUsers";
 
 export type SyncUserProfileInput = {
     uid: string;

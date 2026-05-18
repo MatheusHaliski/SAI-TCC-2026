@@ -12,7 +12,7 @@ import {
   where,
 } from 'firebase/firestore';
 
-const COLLECTION = 'sai-wardrobeItems';
+const COLLECTION = 'saiWardrobeItems';
 const DEFAULT_LIMIT = 24;
 
 export type WardrobeItem = {

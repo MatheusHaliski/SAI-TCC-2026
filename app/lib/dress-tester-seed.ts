@@ -22,8 +22,8 @@ export const DRESS_TESTER_SEED_MANNEQUINS: Mannequin2D[] = [
     hair_front_url: '/dress-tester/muse/hair-front.png',
     face_layer_url: '/dress-tester/muse/face.png',
     active: true,
-    created_at: now,
-    updated_at: now,
+    createdAt: now,
+    updatedAt: now,
   },
   {
     mannequin_id: 'mannequin_street_m_01',
@@ -41,8 +41,8 @@ export const DRESS_TESTER_SEED_MANNEQUINS: Mannequin2D[] = [
     hair_front_url: '/dress-tester/muse/hair-front.png',
     face_layer_url: '/dress-tester/muse/face.png',
     active: true,
-    created_at: now,
-    updated_at: now,
+    createdAt: now,
+    updatedAt: now,
   },
   {
     mannequin_id: 'mannequin_minimal_f_02',
@@ -60,8 +60,8 @@ export const DRESS_TESTER_SEED_MANNEQUINS: Mannequin2D[] = [
     hair_front_url: '/dress-tester/muse/hair-front.png',
     face_layer_url: '/dress-tester/muse/face.png',
     active: true,
-    created_at: now,
-    updated_at: now,
+    createdAt: now,
+    updatedAt: now,
   },
 ];
 
@@ -100,8 +100,8 @@ const makePiece = (
   render_image_url: null,
   asset_status: 'published',
   active: true,
-  created_at: now,
-  updated_at: now,
+  createdAt: now,
+  updatedAt: now,
   ...extras,
 });
 

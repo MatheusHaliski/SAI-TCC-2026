@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { getAdminFirestore } from "@/app/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
-const USER_COLLECTION = "sai-usercontrol";
+const USER_COLLECTION = "saiUsers";
 
 type ResetPayload = {
     email?: string;

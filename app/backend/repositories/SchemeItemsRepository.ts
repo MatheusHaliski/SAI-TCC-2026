@@ -1,7 +1,7 @@
 import { SchemeItem } from '@/app/backend/types/entities';
 import { BaseRepository } from './BaseRepository';
 
-const SCHEME_ITEMS_COLLECTION = 'sai-schemeitem';
+const SCHEME_ITEMS_COLLECTION = 'saiSchemeItems';
 
 interface CreateSchemeItemInput {
   scheme_id: string;
@@ -22,10 +22,10 @@ export class SchemeItemsRepository extends BaseRepository {
         wardrobe_item_id: item.wardrobe_item_id,
         slot: item.slot,
         sort_order: item.sort_order,
-        created_at: now,
+        createdAt: now,
       });
 
-      created.push({ scheme_item_id: ref.id, ...item, created_at: now });
+      created.push({ scheme_item_id: ref.id, ...item, createdAt: now });
     }
 
     return created;

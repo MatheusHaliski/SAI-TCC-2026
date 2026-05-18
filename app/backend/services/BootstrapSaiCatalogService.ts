@@ -100,15 +100,15 @@ export async function ensureSaiCatalogSeeded() {
 
   const brandWrites = BRAND_NAMES.map((brandName) =>
     db
-      .collection('sai-brands')
+      .collection('saiBrands')
       .doc(getBrandDocId(brandName))
       .set(
         {
           name: brandName,
           logo_url: getBrandLogoUrl(brandName),
           is_active: true,
-          created_at: now,
-          updated_at: now,
+          createdAt: now,
+          updatedAt: now,
         },
         { merge: true },
       ),
@@ -117,14 +117,14 @@ export async function ensureSaiCatalogSeeded() {
   const marketWrites = SEASONS.flatMap((season) =>
     GENDERS.map((gender) =>
       db
-        .collection('sai-markets')
+        .collection('saiMarkets')
         .doc(getMarketDocId(season, gender))
         .set(
           {
             season,
             gender,
-            created_at: now,
-            updated_at: now,
+            createdAt: now,
+            updatedAt: now,
           },
           { merge: true },
         ),
@@ -133,7 +133,7 @@ export async function ensureSaiCatalogSeeded() {
 
   const pieceItemWrites = SAMPLE_ITEMS.map((item) =>
     db
-      .collection('sai-pieceItems')
+      .collection('saiPieceItems')
       .doc(item.id)
       .set(
         {
@@ -148,8 +148,8 @@ export async function ensureSaiCatalogSeeded() {
           store_url: null,
           price_range: '$$',
           is_active: true,
-          created_at: now,
-          updated_at: now,
+          createdAt: now,
+          updatedAt: now,
         },
         { merge: true },
       ),
@@ -173,8 +173,8 @@ export async function ensureSaiCatalogSeeded() {
             { profile_id: 'accessory_front_center', piece_type: 'accessory_piece', anchor: 'front_center', offset: { x: 0, y: 0, z: 0.02 }, rotation: { x: 0, y: 0, z: 0 }, scale: 0.08 },
           ],
           is_active: true,
-          created_at: now,
-          updated_at: now,
+          createdAt: now,
+          updatedAt: now,
         },
         { merge: true },
       ),
