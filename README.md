@@ -57,3 +57,65 @@ docker push <registry>/stylistai-worker:runpod-2026-04-09
 ## RunPod guidance
 
 See `docs/runpod-separated-deployment.md` for full pod/env/startup/volume guidance.
+
+---
+
+## Firestore Migration Script (funcionarioslistaapp2025 -> newsaidb)
+
+### Requisitos
+
+- Node.js 18+
+- Dependências: `firebase-admin` e `dotenv`
+- Chaves de serviço válidas para os dois projetos
+
+### Arquivos
+
+- `migrate.js`: script principal
+- `firestore.indexes.json`: índices recomendados (gerado/atualizado pelo script)
+- `migration-report.json`: relatório final (gerado ao final da execução)
+- `.env.example`: exemplo das variáveis de ambiente
+
+### Configuração
+
+1. Copie o arquivo de exemplo:
+
+```bash
+cp .env.example .env
+```
+
+2. Ajuste os caminhos:
+
+```env
+SOURCE_KEY=./keys/source-serviceAccount.json
+DEST_KEY=./keys/dest-serviceAccount.json
+```
+
+### Execução
+
+**Dry-run (sem escrita no destino):**
+
+```bash
+node migrate.js --dry-run
+```
+
+**Execução real:**
+
+```bash
+node migrate.js
+```
+
+### O que o script aplica
+
+1. Renomeação de coleções para padrão camelCase.
+2. Conversão de datas ISO string para `Firestore Timestamp`.
+3. Remoção de `logo_url: null` em `sai-brands`.
+4. Normalização de tipos (`is_active` boolean, `passwordIterations` number).
+5. Migração de credenciais de `saiUsers` para subcoleção `credentials/primary`.
+6. Inclusão de `slug` para IDs semânticos em marcas.
+7. Escrita com batches (até 500 operações) + atraso de 100ms entre batches.
+8. Relatório de migração com progresso, erros e métricas.
+
+### Idempotência
+
+- O script verifica se o documento já existe no destino antes de escrever.
+- Rodadas subsequentes não duplicam documentos já migrados.
