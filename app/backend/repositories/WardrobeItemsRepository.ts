@@ -202,7 +202,7 @@ export class WardrobeItemsRepository extends BaseRepository {
   }
 
   private extractCreatedAtCursor(doc: FirebaseFirestore.QueryDocumentSnapshot): string | null {
-    const value = doc.get('createdAt') ?? doc.get('created_at') ?? null;
+    const value = doc.get('createdAt') ?? doc.get('createdAt') ?? null;
     if (typeof value === 'string') return value;
     if (value instanceof Date) return value.toISOString();
     if (value && typeof value === 'object') {
