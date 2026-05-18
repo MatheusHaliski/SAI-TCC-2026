@@ -125,7 +125,7 @@ function normalizeBaseFields(input, stats) {
       continue;
     }
 
-    if (key === 'createdAt' || key === 'createdAt') {
+    if (key === 'createdAt' || key === 'created_at') {
       const converted = convertIsoToTimestamp(value);
       output.createdAt = converted || value;
       if (converted) stats.dateFieldsConverted += 1;

@@ -28,7 +28,7 @@ type UserRecord = {
 };
 
 const HASH_ALGORITHM = "SHA-256";
-const APP_PEPPER = "saiUsers-v1";
+const APP_PEPPER = "sai-usercontrol-v1";
 const USER_COLLECTION = "saiUsers";
 const AUTH_VERIFY_IP_LIMIT_MAX = Number(
     process.env.AUTH_VERIFY_RATE_LIMIT_IP_MAX ?? "10"
