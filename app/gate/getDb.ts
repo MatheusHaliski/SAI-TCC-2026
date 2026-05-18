@@ -14,7 +14,7 @@ export function getDb(): Firestore | null {
     const { firebaseApp, hasFirebaseConfig } = firebaseAuthGate();
     if (!firebaseApp || !hasFirebaseConfig) return null;
 
-    _db = getFirestore(firebaseApp);
+    _db = getFirestore(firebaseApp, process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "newsaidb");
     return _db;
 }
 export function getDbOrThrow(): Firestore {

@@ -9,7 +9,7 @@ export async function GET() {
     const db = getAdminFirestore();
     const [mannequins, wardrobeSnap] = await Promise.all([
       mannequinRepository.list(),
-      db.collection('sai-wardrobeItems').orderBy('updated_at', 'desc').limit(300).get(),
+      db.collection('saiWardrobeItems').orderBy('updatedAt', 'desc').limit(300).get(),
     ]);
 
     const pieces = wardrobeSnap.docs.map((doc) => {

@@ -18,7 +18,7 @@ export default function ProfileMyPostsSection({ posts }: ProfileMyPostsSectionPr
             <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-white/90">
               <span className="rounded-full border border-white/30 px-2 py-0.5">{post.status}</span>
               <span className="rounded-full border border-cyan-300/50 bg-cyan-500/20 px-2 py-0.5">{post.platforms.join(' · ')}</span>
-              <span className="rounded-full border border-white/30 px-2 py-0.5">{new Date(post.created_at).toLocaleDateString()}</span>
+              <span className="rounded-full border border-white/30 px-2 py-0.5">{new Date(post.createdAt).toLocaleDateString()}</span>
             </div>
             <CompactCardActionBar
               actions={[

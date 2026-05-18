@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "sai-wardrobeItems",
+      "collectionGroup": "saiWardrobeItems",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
@@ -10,7 +10,7 @@
       ]
     },
     {
-      "collectionGroup": "sai-wardrobeItems",
+      "collectionGroup": "saiWardrobeItems",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
@@ -19,7 +19,7 @@
       ]
     },
     {
-      "collectionGroup": "sai-wardrobeItems",
+      "collectionGroup": "saiWardrobeItems",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "brand_id", "order": "ASCENDING" },
@@ -27,7 +27,7 @@
       ]
     },
     {
-      "collectionGroup": "sai-wardrobeItems",
+      "collectionGroup": "saiWardrobeItems",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "market_id", "order": "ASCENDING" },

@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
       render_image_url: null as string | null,
       asset_status: 'asset_pending',
       active: true,
-      created_at: now,
-      updated_at: now,
+      createdAt: now,
+      updatedAt: now,
     };
 
     await ref.set(payload);
@@ -79,7 +79,7 @@ async function generateAndSaveRenderImage(
       console.warn('[dress-tester/pieces] no active mannequin found, skipping Replicate generation for piece', pieceId);
       await db.collection('wardrobe_piece_2d').doc(pieceId).update({
         asset_status: 'asset_review',
-        updated_at: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
       return;
     }
@@ -89,13 +89,13 @@ async function generateAndSaveRenderImage(
     await db.collection('wardrobe_piece_2d').doc(pieceId).update({
       render_image_url: renderUrl ?? null,
       asset_status: renderUrl ? 'ready_for_tester' : 'asset_review',
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error('[dress-tester/pieces] Replicate generation failed for piece', pieceId, error);
     await db.collection('wardrobe_piece_2d').doc(pieceId).update({
       asset_status: 'asset_review',
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }).catch(() => undefined);
   }
 }

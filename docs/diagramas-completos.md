@@ -200,14 +200,14 @@ erDiagram
       varchar email
       varchar name
       varchar password_hash
-      datetime created_at
+      datetime createdAt
     }
 
     BRANDS {
       bigint id PK
       varchar name
       varchar logo_url
-      datetime created_at
+      datetime createdAt
     }
 
     MARKETS {
@@ -225,7 +225,7 @@ erDiagram
       varchar material
       varchar image_url
       varchar model_3d_url
-      datetime created_at
+      datetime createdAt
     }
 
     PIECE_ITEMS {
@@ -243,7 +243,7 @@ erDiagram
       varchar title
       text description
       boolean is_public
-      datetime created_at
+      datetime createdAt
     }
 
     SCHEME_ITEMS {
@@ -258,7 +258,7 @@ erDiagram
       bigint id PK
       bigint user_id FK
       bigint scheme_id FK
-      datetime created_at
+      datetime createdAt
     }
 
     PIPELINE_JOBS {
@@ -267,7 +267,7 @@ erDiagram
       varchar status
       varchar provider
       text error_message
-      datetime created_at
+      datetime createdAt
     }
 ```
 

@@ -180,7 +180,7 @@ export class BlenderPipelineService {
       error: job.error_message,
       startedAt: job.started_at,
       finishedAt: job.finished_at,
-      updatedAt: job.updated_at,
+      updatedAt: job.updatedAt,
     };
   }
 

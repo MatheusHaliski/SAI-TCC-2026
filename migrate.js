@@ -13,16 +13,16 @@ const DOC_CHUNK_SIZE = 100;
 const BATCH_DELAY_MS = 150;
 
 const COLLECTION_MAP = {
-  'sai-brands': 'saiBrands',
-  'sai-markets': 'saiMarkets',
-  'sai-pieceItems': 'saiPieceItems',
-  'sai-pipelineJobs': 'saiPipelineJobs',
-  'sai-scheme': 'saiSchemes',
-  'sai-schemeitem': 'saiSchemeItems',
-  'sai-usercontrol': 'saiUsers',
-  'sai-usersavedschemes': 'saiUserSavedSchemes',
-  'sai-wardrobeItems': 'saiWardrobeItems',
-  outfit_selection_2d: 'outfitSelections',
+  'saiBrands': 'saiBrands',
+  'saiMarkets': 'saiMarkets',
+  'saiPieceItems': 'saiPieceItems',
+  'saiPipelineJobs': 'saiPipelineJobs',
+  'saiSchemes': 'saiSchemes',
+  'saiSchemeItems': 'saiSchemeItems',
+  'saiUsers': 'saiUsers',
+  'saiUserSavedSchemes': 'saiUserSavedSchemes',
+  'saiWardrobeItems': 'saiWardrobeItems',
+  outfitSelections: 'outfitSelections',
 };
 
 const INDEXES_PAYLOAD = {
@@ -125,14 +125,14 @@ function normalizeBaseFields(input, stats) {
       continue;
     }
 
-    if (key === 'created_at' || key === 'createdAt') {
+    if (key === 'createdAt' || key === 'created_at') {
       const converted = convertIsoToTimestamp(value);
       output.createdAt = converted || value;
       if (converted) stats.dateFieldsConverted += 1;
       continue;
     }
 
-    if (key === 'updated_at') {
+    if (key === 'updatedAt') {
       const converted = convertIsoToTimestamp(value);
       output.updatedAt = converted || value;
       if (converted) stats.dateFieldsConverted += 1;
@@ -211,7 +211,7 @@ async function migrateCollection(sourceDb, destDb, sourceName, destName, dryRun,
         const sourceData = doc.data();
         const normalized = normalizeBaseFields(sourceData, report.convertedFields);
 
-        if (sourceName === 'sai-brands' && isSemanticBrandId(doc.id)) {
+        if (sourceName === 'saiBrands' && isSemanticBrandId(doc.id)) {
           normalized.slug = doc.id;
           report.convertedFields.slugAdded += 1;
         }

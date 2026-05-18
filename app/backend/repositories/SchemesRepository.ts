@@ -2,9 +2,9 @@ import { CreateSchemeInput, Scheme, SchemeWithItems } from '@/app/backend/types/
 import { BaseRepository } from './BaseRepository';
 import { UsersRepository } from './UsersRepository';
 
-const SCHEMES_COLLECTION = 'sai-usersavedschemes';
-const SCHEME_ITEMS_COLLECTION = 'sai-schemeitem';
-const WARDROBE_ITEMS_COLLECTION = 'sai-wardrobeItems';
+const SCHEMES_COLLECTION = 'saiUserSavedSchemes';
+const SCHEME_ITEMS_COLLECTION = 'saiSchemeItems';
+const WARDROBE_ITEMS_COLLECTION = 'saiWardrobeItems';
 
 const toReadableSuggestedName = (input: string) => {
   const [, , slug = 'selected-piece'] = input.split(':');
@@ -34,8 +34,8 @@ export class SchemesRepository extends BaseRepository {
       community_indexed: input.community_indexed ?? false,
       cover_image_url: input.cover_image_url ?? null,
       pieces: input.pieces ?? [],
-      created_at: now,
-      updated_at: now,
+      createdAt: now,
+      updatedAt: now,
     };
 
     const ref = await this.db.collection(SCHEMES_COLLECTION).add(payload);
@@ -64,8 +64,8 @@ export class SchemesRepository extends BaseRepository {
         ...(doc.data() as Omit<Scheme, 'scheme_id'>),
       }))
       .sort((a, b) => {
-        const aTime = Date.parse(a.created_at ?? '') || 0;
-        const bTime = Date.parse(b.created_at ?? '') || 0;
+        const aTime = Date.parse(a.createdAt ?? '') || 0;
+        const bTime = Date.parse(b.createdAt ?? '') || 0;
         return bTime - aTime;
       });
   }
@@ -96,7 +96,7 @@ export class SchemesRepository extends BaseRepository {
         wardrobe_item_id: wardrobeItemId,
         slot: itemDoc.data().slot,
         sort_order: itemDoc.data().sort_order,
-        created_at: itemDoc.data().created_at,
+        createdAt: itemDoc.data().createdAt,
         wardrobe_name: wardrobe?.name ?? (isSuggested ? toReadableSuggestedName(wardrobeItemId) : 'Selected piece'),
         image_url: wardrobe?.image_url ?? '',
       };

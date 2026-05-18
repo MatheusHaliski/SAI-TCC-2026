@@ -366,8 +366,8 @@ export class ArtworkStudioService {
       tags: promptBuild.tags,
       width: request.variation.width ?? null,
       height: request.variation.height ?? null,
-      created_at: now,
-      updated_at: now,
+      createdAt: now,
+      updatedAt: now,
     });
   }
 

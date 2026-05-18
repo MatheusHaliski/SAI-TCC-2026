@@ -1,6 +1,6 @@
 import { BaseRepository } from './BaseRepository';
 
-const PIPELINE_JOBS_COLLECTION = 'sai-pipelineJobs';
+const PIPELINE_JOBS_COLLECTION = 'saiPipelineJobs';
 
 export type UvPipelineStatus = 'queued' | 'submitted' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
 
@@ -15,19 +15,19 @@ export interface UvPipelineJobRecord {
   artifacts: Record<string, unknown> | null;
   metrics: Record<string, unknown> | null;
   error_message: string | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   started_at: string | null;
   finished_at: string | null;
 }
 
 export class PipelineJobsRepository extends BaseRepository {
-  async create(input: Omit<UvPipelineJobRecord, 'created_at' | 'updated_at'>): Promise<{ pipeline_job_id: string }> {
+  async create(input: Omit<UvPipelineJobRecord, 'createdAt' | 'updatedAt'>): Promise<{ pipeline_job_id: string }> {
     const now = new Date().toISOString();
     const payload: UvPipelineJobRecord = {
       ...input,
-      created_at: now,
-      updated_at: now,
+      createdAt: now,
+      updatedAt: now,
     };
 
     const ref = await this.db.collection(PIPELINE_JOBS_COLLECTION).add(payload);
@@ -60,11 +60,11 @@ export class PipelineJobsRepository extends BaseRepository {
 
   async update(
     pipelineJobId: string,
-    input: Partial<Omit<UvPipelineJobRecord, 'created_at' | 'user_id' | 'wardrobe_item_id' | 'input_payload'>>,
+    input: Partial<Omit<UvPipelineJobRecord, 'createdAt' | 'user_id' | 'wardrobe_item_id' | 'input_payload'>>,
   ): Promise<void> {
     await this.db.collection(PIPELINE_JOBS_COLLECTION).doc(pipelineJobId).update({
       ...input,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 }

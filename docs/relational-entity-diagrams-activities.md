@@ -24,8 +24,8 @@ erDiagram
       string user_id PK
       string name
       string email
-      datetime created_at
-      datetime updated_at
+      datetime createdAt
+      datetime updatedAt
     }
 
     BRANDS {
@@ -56,8 +56,8 @@ erDiagram
       string piece_type
       string image_url
       string model_status
-      datetime created_at
-      datetime updated_at
+      datetime createdAt
+      datetime updatedAt
     }
 
     PIPELINE_JOBS {
@@ -65,8 +65,8 @@ erDiagram
       string wardrobe_item_id FK
       string job_type
       string status
-      datetime created_at
-      datetime updated_at
+      datetime createdAt
+      datetime updatedAt
     }
 ```
 
@@ -95,8 +95,8 @@ erDiagram
       string visibility
       string cover_image_url
       string creation_mode
-      datetime created_at
-      datetime updated_at
+      datetime createdAt
+      datetime updatedAt
     }
 
     SCHEME_ITEMS {
@@ -105,7 +105,7 @@ erDiagram
       string wardrobe_item_id "logical ref: wardrobe item or suggested:*"
       string slot
       int sort_order
-      datetime created_at
+      datetime createdAt
     }
 
     WARDROBE_ITEMS {
@@ -142,7 +142,7 @@ erDiagram
       string image_url
       string model_status
       string model_3d_url
-      datetime updated_at
+      datetime updatedAt
     }
 
     PIPELINE_JOBS {
@@ -154,8 +154,8 @@ erDiagram
       string status_message
       string artifact_model_url
       string artifact_uv_url
-      datetime created_at
-      datetime updated_at
+      datetime createdAt
+      datetime updatedAt
       datetime completed_at
     }
 ```

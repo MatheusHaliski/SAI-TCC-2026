@@ -15,11 +15,11 @@ export async function POST(request: NextRequest) {
       mannequin_id: String(body.mannequin_id),
       pose_code: String(body.pose_code),
       selection: body.selection,
-      created_at: now,
-      updated_at: now,
+      createdAt: now,
+      updatedAt: now,
     };
 
-    const ref = await db.collection('outfit_selection_2d').add(payload);
+    const ref = await db.collection('outfitSelections').add(payload);
     return NextResponse.json({ outfit_id: ref.id, ...payload }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Unable to save outfit.' }, { status: 500 });

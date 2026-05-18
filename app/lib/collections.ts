@@ -1,0 +1,25 @@
+export const COLLECTIONS = {
+  BRANDS: 'saiBrands',
+  MARKETS: 'saiMarkets',
+  PIECE_ITEMS: 'saiPieceItems',
+  PIPELINE_JOBS: 'saiPipelineJobs',
+  SCHEMES: 'saiSchemes',
+  SCHEME_ITEMS: 'saiSchemeItems',
+  USERS: 'saiUsers',
+  USER_SAVED_SCHEMES: 'saiUserSavedSchemes',
+  WARDROBE_ITEMS: 'saiWardrobeItems',
+  OUTFIT_SELECTIONS: 'outfitSelections',
+} as const;
+
+export const LEGACY_COLLECTIONS = [
+  'sai-brands',
+  'sai-markets',
+  'sai-pieceItems',
+  'sai-pipelineJobs',
+  'sai-scheme',
+  'sai-schemeitem',
+  'sai-usercontrol',
+  'sai-usersavedschemes',
+  'sai-wardrobeItems',
+  'outfit_selection_2d',
+] as const;

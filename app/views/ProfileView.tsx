@@ -30,7 +30,7 @@ interface SchemeItem {
   cover_image_url?: string | null;
   visibility: 'public' | 'private';
   creation_mode?: 'manual' | 'ai';
-  updated_at?: string;
+  updatedAt?: string;
 }
 
 interface PublicProfile {
@@ -163,7 +163,7 @@ export default function ProfileView() {
           bio={bio}
           loginEmail={email}
           loginStatus={isOwnerView ? 'Authenticated' : 'Public Profile'}
-          authSource="sai-usercontrol"
+          authSource="saiUsers"
         />
 
         <ProfileSectionRenderer
