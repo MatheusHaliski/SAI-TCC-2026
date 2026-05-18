@@ -1,121 +1,66 @@
-# FAI Cloud Blender Pipeline (RunPod Separated Runtime)
+# Firestore Migration `(default)` → `newsaidb`
 
-This repository now supports a **separated RunPod deployment**:
+Projeto: **FuncionariosListaApp2025**  
+Runtime: **Node.js 18+**
 
-- `blender-api/`: lightweight FastAPI orchestrator (submit/status/health/diagnostics)
-- `blender-worker/`: heavy GPU worker runtime (RunPod PyTorch base image)
-- `blender_common/`: shared status contracts used by both runtimes
+## 1) Baixar a Service Account Key
+1. Acesse o Firebase Console do projeto `FuncionariosListaApp2025`.
+2. Vá em **Project settings** → **Service accounts**.
+3. Clique em **Generate new private key**.
+4. Salve o arquivo JSON em `./keys/serviceAccount.json`.
 
-## Why this architecture
-
-- API starts quickly on `python:3.11-slim` and avoids CUDA/PyTorch pull penalties.
-- Worker uses RunPod-native PyTorch image (`runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404`) so the heavy CUDA stack aligns with RunPod template caches.
-- Small code changes can be shipped without rebuilding the heavy worker base by syncing code from a mounted volume or Git at startup.
-
-## Runtime contracts
-
-The API/orchestrator and worker preserve the normalized terminal state behavior:
-
-- terminal statuses: `completed`, `failed`, `cancelled`
-- artifact-first completion logic
-- error-first failure logic (except explicit `cancelled`)
-
-Primary endpoints:
-
-- `POST /submit` (alias: `POST /jobs`, `POST /` LB-compatible)
-- `GET /status/{jobId}` (alias: `GET /jobs/{jobId}`)
-- `GET /health` (plus `GET /ping`)
-- `GET /diagnostics`
-
-## Build images (immutable tags)
-
+## 2) Instalar dependências
 ```bash
-# API orchestrator image
-DOCKER_BUILDKIT=1 docker build -f blender-api/Dockerfile -t stylistai-api:runpod-2026-04-09 .
-
-# GPU worker image
-DOCKER_BUILDKIT=1 docker build -f blender-worker/Dockerfile -t stylistai-worker:runpod-2026-04-09 .
+npm install firebase-admin dotenv
 ```
 
-Optional moving aliases **after** versioned tags are published:
-
-```bash
-docker tag stylistai-api:runpod-2026-04-09 stylistai-api:latest
-docker tag stylistai-worker:runpod-2026-04-09 stylistai-worker:latest
-```
-
-## Push images
-
-```bash
-docker tag stylistai-api:runpod-2026-04-09 <registry>/stylistai-api:runpod-2026-04-09
-docker tag stylistai-worker:runpod-2026-04-09 <registry>/stylistai-worker:runpod-2026-04-09
-
-docker push <registry>/stylistai-api:runpod-2026-04-09
-docker push <registry>/stylistai-worker:runpod-2026-04-09
-```
-
-## RunPod guidance
-
-See `docs/runpod-separated-deployment.md` for full pod/env/startup/volume guidance.
-
----
-
-## Firestore Migration Script (funcionarioslistaapp2025 -> newsaidb)
-
-### Requisitos
-
-- Node.js 18+
-- Dependências: `firebase-admin` e `dotenv`
-- Chaves de serviço válidas para os dois projetos
-
-### Arquivos
-
-- `migrate.js`: script principal
-- `firestore.indexes.json`: índices recomendados (gerado/atualizado pelo script)
-- `migration-report.json`: relatório final (gerado ao final da execução)
-- `.env.example`: exemplo das variáveis de ambiente
-
-### Configuração
-
-1. Copie o arquivo de exemplo:
-
+## 3) Configurar variáveis de ambiente
 ```bash
 cp .env.example .env
 ```
+Ajuste o `.env` se necessário.
 
-2. Ajuste os caminhos:
-
-```env
-SOURCE_KEY=./keys/source-serviceAccount.json
-DEST_KEY=./keys/dest-serviceAccount.json
-```
-
-### Execução
-
-**Dry-run (sem escrita no destino):**
-
+## 4) Rodar dry-run (simulação)
 ```bash
 node migrate.js --dry-run
 ```
 
-**Execução real:**
-
+## 5) Rodar migração completa
 ```bash
 node migrate.js
 ```
 
-### O que o script aplica
+## 6) Rodar migração de coleção específica
+```bash
+node migrate.js --collection=saiUsers
+```
 
-1. Renomeação de coleções para padrão camelCase.
-2. Conversão de datas ISO string para `Firestore Timestamp`.
-3. Remoção de `logo_url: null` em `sai-brands`.
-4. Normalização de tipos (`is_active` boolean, `passwordIterations` number).
-5. Migração de credenciais de `saiUsers` para subcoleção `credentials/primary`.
-6. Inclusão de `slug` para IDs semânticos em marcas.
-7. Escrita com batches (até 500 operações) + atraso de 100ms entre batches.
-8. Relatório de migração com progresso, erros e métricas.
+## 7) Verificar resultado no Firebase Console
+1. Abra Firestore Database no projeto `FuncionariosListaApp2025`.
+2. Selecione banco `newsaidb`.
+3. Verifique as coleções de destino:
+   - `saiBrands`
+   - `saiMarkets`
+   - `saiPieceItems`
+   - `saiPipelineJobs`
+   - `saiSchemes`
+   - `saiSchemeItems`
+   - `saiUsers`
+   - `saiUserSavedSchemes`
+   - `saiWardrobeItems`
+   - `outfitSelections`
+4. Na coleção `saiUsers`, confirme a subcoleção `credentials`.
 
-### Idempotência
+## 8) Deploy dos índices
+```bash
+firebase deploy --only firestore:indexes --project funcionarioslistaapp2025
+```
 
-- O script verifica se o documento já existe no destino antes de escrever.
-- Rodadas subsequentes não duplicam documentos já migrados.
+## Saídas geradas
+- `migration-report.json`: relatório completo da execução.
+- `firestore.indexes.json`: índices compostos para deploy.
+
+## Observações
+- O script ignora totalmente qualquer referência a `novobancosai1`.
+- Logs sempre usam timestamp no formato `[HH:MM:SS]`.
+- Em caso de erro por documento, a migração continua e o erro é registrado no relatório.
