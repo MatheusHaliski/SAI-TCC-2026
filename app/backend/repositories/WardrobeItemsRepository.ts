@@ -366,7 +366,6 @@ export class WardrobeItemsRepository extends BaseRepository {
       userId: input.user_id,
       createdAt: now,
       status: 'active',
-      createdAt: now,
       updatedAt: now,
     };
     const ref = await this.db.collection(WARDROBE_ITEMS_COLLECTION).add(payload);
