@@ -2,7 +2,7 @@ import { getAdminFirestore } from '@/app/lib/firebaseAdmin';
 import { WardrobeFitProfile, WardrobeItemDocument } from '@/app/lib/fashion-ai/types/wardrobe-fit';
 import { FieldPath } from 'firebase-admin/firestore';
 
-const COLLECTION = 'sai-wardrobeItems';
+const COLLECTION = 'saiWardrobeItems';
 
 export class WardrobeRepository {
   private mapDoc(doc: FirebaseFirestore.QueryDocumentSnapshot): WardrobeItemDocument {
@@ -13,8 +13,8 @@ export class WardrobeRepository {
       image_url: String(data.image_url ?? ''),
       piece_type: typeof data.piece_type === 'string' ? data.piece_type : undefined,
       gender: typeof data.gender === 'string' ? data.gender : undefined,
-      createdAt: typeof data.created_at === 'string' ? data.created_at : undefined,
-      updatedAt: typeof data.updated_at === 'string' ? data.updated_at : undefined,
+      createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
+      updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : undefined,
       fitProfile: (data.fitProfile as WardrobeFitProfile | undefined) ?? undefined,
     };
   }
@@ -56,8 +56,8 @@ export class WardrobeRepository {
       image_url: String(data.image_url ?? ''),
       piece_type: typeof data.piece_type === 'string' ? data.piece_type : undefined,
       gender: typeof data.gender === 'string' ? data.gender : undefined,
-      createdAt: typeof data.created_at === 'string' ? data.created_at : undefined,
-      updatedAt: typeof data.updated_at === 'string' ? data.updated_at : undefined,
+      createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
+      updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : undefined,
       fitProfile: (data.fitProfile as WardrobeFitProfile | undefined) ?? undefined,
     };
   }
@@ -74,7 +74,7 @@ export class WardrobeRepository {
     await getAdminFirestore().collection(COLLECTION).doc(pieceId).set({
       fitProfile,
       ...(debugMeta ?? {}),
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }, { merge: true });
   }
 
@@ -93,7 +93,7 @@ export class WardrobeRepository {
         preparedAt: null,
         updatedAt: now,
       },
-      updated_at: now,
+      updatedAt: now,
     }, { merge: true });
   }
 }

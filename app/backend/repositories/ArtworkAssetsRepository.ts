@@ -13,7 +13,7 @@ export class ArtworkAssetsRepository extends BaseRepository {
     const snapshot = await this.db
       .collection(COLLECTION)
       .where('user_id', '==', userId)
-      .orderBy('created_at', 'desc')
+      .orderBy('createdAt', 'desc')
       .limit(80)
       .get();
 
@@ -29,7 +29,7 @@ export class ArtworkAssetsRepository extends BaseRepository {
   async update(artworkId: string, patch: Partial<Omit<ArtworkAsset, 'artwork_id'>>) {
     await this.db.collection(COLLECTION).doc(artworkId).update({
       ...patch,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 }

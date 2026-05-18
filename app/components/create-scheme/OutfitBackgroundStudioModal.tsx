@@ -1714,8 +1714,8 @@ export default function OutfitBackgroundStudioModal({
         provider_model: variation.provider_model ?? null,
         preview_url: variation.preview_url,
         output_url: variation.output_url,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       }, aiCompositionType === 'overlay' ? 'overlay' : aiCompositionType === 'frame' ? 'frame' : aiCompositionType === 'shape_pack' ? 'shape_pack' : 'background'),
       // preserve user-selected decorative controls when replacing the AI source image
       shape: prev.shape,

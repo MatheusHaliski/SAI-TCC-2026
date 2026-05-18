@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
 
   const db = getAdminFirestore();
-  const snapshot = await db.collection(COLLECTION).where('user_id', '==', userId).orderBy('created_at', 'desc').get();
+  const snapshot = await db.collection(COLLECTION).where('user_id', '==', userId).orderBy('createdAt', 'desc').get();
   const posts = snapshot.docs.map((doc) => ({ post_id: doc.id, ...doc.data() }));
   return NextResponse.json(posts);
 }
@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
     export_image_url: body.export_image_url ? String(body.export_image_url) : undefined,
     visibility: body.visibility || 'private',
     platform_metadata: body.platform_metadata || {},
-    created_at: now,
-    updated_at: now,
+    createdAt: now,
+    updatedAt: now,
     published_at: body.published_at ? String(body.published_at) : undefined,
   };
 

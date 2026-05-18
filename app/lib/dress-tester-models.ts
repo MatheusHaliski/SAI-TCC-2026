@@ -29,8 +29,8 @@ export interface Mannequin2D {
   hair_front_url?: string;
   face_layer_url?: string;
   active: boolean;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface WardrobePiece2D {
@@ -62,8 +62,8 @@ export interface WardrobePiece2D {
   render_image_url: string | null;
   asset_status: PieceAssetStatus;
   active: boolean;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type OutfitSelection = {

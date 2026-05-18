@@ -1,7 +1,7 @@
 import { Market } from '@/app/backend/types/entities';
 import { BaseRepository } from './BaseRepository';
 
-const MARKETS_COLLECTION = 'sai-markets';
+const MARKETS_COLLECTION = 'saiMarkets';
 
 export class MarketsRepository extends BaseRepository {
   async listAll(): Promise<Market[]> {

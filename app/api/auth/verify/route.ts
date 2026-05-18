@@ -14,6 +14,7 @@ type AuthPayload = {
 };
 
 type UserRecord = {
+    userId?: string;
     user_id?: string;
     uid?: string;
     name?: string;
@@ -27,8 +28,8 @@ type UserRecord = {
 };
 
 const HASH_ALGORITHM = "SHA-256";
-const APP_PEPPER = "sai-usercontrol-v1";
-const USER_COLLECTION = "sai-usercontrol";
+const APP_PEPPER = "saiUsers-v1";
+const USER_COLLECTION = "saiUsers";
 const AUTH_VERIFY_IP_LIMIT_MAX = Number(
     process.env.AUTH_VERIFY_RATE_LIMIT_IP_MAX ?? "10"
 );
@@ -234,6 +235,14 @@ export async function POST(request: NextRequest): Promise<Response> {
         const matchedDoc = snapshot.empty ? null : snapshot.docs[0] ?? null;
         const record = matchedDoc ? (matchedDoc.data() as UserRecord) : null;
         const firestoreDocId = matchedDoc?.id ?? "";
+        const userId = (record?.uid ?? record?.user_id ?? firestoreDocId).trim();
+
+        const credentialsSnapshot = userId
+            ? await db.collection(USER_COLLECTION).doc(userId).collection("credentials").limit(1).get()
+            : null;
+        const credentialDoc = credentialsSnapshot && !credentialsSnapshot.empty
+            ? (credentialsSnapshot.docs[0].data() as UserRecord)
+            : null;
 
         if (!record) {
             return NextResponse.json(
@@ -242,9 +251,10 @@ export async function POST(request: NextRequest): Promise<Response> {
             );
         }
 
-        const usesDigest = Boolean(record.passwordHash && record.passwordSalt);
+        const digestSource = credentialDoc ?? record;
+        const usesDigest = Boolean(digestSource?.passwordHash && digestSource?.passwordSalt);
         const isValid = usesDigest
-            ? await verifyPassword(password, record)
+            ? await verifyPassword(password, digestSource as UserRecord)
             : record.password === password;
 
         if (!isValid) {

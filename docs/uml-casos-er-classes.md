@@ -73,8 +73,8 @@ erDiagram
       string name
       string email
       string role
-      datetime created_at
-      datetime updated_at
+      datetime createdAt
+      datetime updatedAt
     }
 
     BRANDS {
@@ -82,16 +82,16 @@ erDiagram
       string name
       string logo_url
       boolean is_active
-      datetime created_at
-      datetime updated_at
+      datetime createdAt
+      datetime updatedAt
     }
 
     MARKETS {
       string market_id PK
       string season
       string gender
-      datetime created_at
-      datetime updated_at
+      datetime createdAt
+      datetime updatedAt
     }
 
     WARDROBE_ITEMS {
@@ -103,8 +103,8 @@ erDiagram
       string piece_type
       string image_url
       string model_status
-      datetime created_at
-      datetime updated_at
+      datetime createdAt
+      datetime updatedAt
     }
 
     SCHEMES {
@@ -116,8 +116,8 @@ erDiagram
       string occasion
       string visibility
       string cover_image_url
-      datetime created_at
-      datetime updated_at
+      datetime createdAt
+      datetime updatedAt
     }
 
     SCHEME_ITEMS {
@@ -126,7 +126,7 @@ erDiagram
       string wardrobe_item_id // referência lógica: wardrobe_item_id ou suggested:*
       string slot
       int sort_order
-      datetime created_at
+      datetime createdAt
     }
 ```
 

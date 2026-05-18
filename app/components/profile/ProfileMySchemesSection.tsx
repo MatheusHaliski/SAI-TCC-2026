@@ -30,7 +30,7 @@ interface Scheme {
   cover_image_url?: string | null;
   visibility: 'public' | 'private';
   creation_mode?: 'manual' | 'ai';
-  updated_at?: string;
+  updatedAt?: string;
   pieces?: SchemePieceSnapshot[];
 }
 
@@ -72,7 +72,7 @@ const buildData = (scheme: Scheme): OutfitCardData => {
     metaBadges: [
       { icon: scheme.creation_mode === 'ai' ? '✨' : '✍️', label: scheme.creation_mode === 'ai' ? 'AI' : 'Manual' },
       { icon: scheme.visibility === 'public' ? '🌐' : '🔒', label: scheme.visibility === 'public' ? 'Público' : 'Privado' },
-      { icon: '🕒', label: scheme.updated_at ? new Date(scheme.updated_at).toLocaleDateString('pt-BR') : 'recente' },
+      { icon: '🕒', label: scheme.updatedAt ? new Date(scheme.updatedAt).toLocaleDateString('pt-BR') : 'recente' },
     ],
     pieces,
   };

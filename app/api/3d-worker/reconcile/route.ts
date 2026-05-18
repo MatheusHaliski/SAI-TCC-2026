@@ -152,10 +152,10 @@ async function recoverStalledPiece(
   const repo = new WardrobeItemsRepository();
 
   const resetToPending = async (detail: string): Promise<RecoveryResult> => {
-    await adminDb.collection('sai-wardrobeItems').doc(pieceId).update({
+    await adminDb.collection('saiWardrobeItems').doc(pieceId).update({
       model_status: 'pending',
       model_generation_error: detail,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
     return { pieceId, jobId: cloudJobId, workerJobsStatus: null, action: 'reset_pending', detail };
   };
@@ -282,14 +282,14 @@ export async function GET(req: NextRequest) {
   const tenMinutesAgo = new Date(Date.now() - STALL_TTL_MS).toISOString();
 
   // ── Phase 1: recover stalled "processing" pieces ─────────────────────────
-  // Requires composite index: sai-wardrobeItems / model_status ASC + processingStartedAt ASC
+  // Requires composite index: saiWardrobeItems / model_status ASC + processingStartedAt ASC
   let stalledSummary: RecoveryResult[] = [];
   let stalledCount = 0;
   let stalledCounts: Record<string, number> = {};
 
   try {
     const stalledDocs = await adminDb
-      .collection('sai-wardrobeItems')
+      .collection('saiWardrobeItems')
       .where('model_status', '==', 'processing')
       .where('processingStartedAt', '<', tenMinutesAgo)
       .get();
@@ -333,7 +333,7 @@ export async function GET(req: NextRequest) {
   } else {
     try {
       const candidateDocs = await adminDb
-        .collection('sai-wardrobeItems')
+        .collection('saiWardrobeItems')
         .where('model_status', 'in', ['pending', 'failed'])
         .get();
 
@@ -376,7 +376,7 @@ export async function GET(req: NextRequest) {
 
           const repo = new WardrobeItemsRepository();
           await repo.updateProcessingState(pieceId, newJobId);
-          await adminDb.collection('sai-wardrobeItems').doc(pieceId).update({
+          await adminDb.collection('saiWardrobeItems').doc(pieceId).update({
             generation_attempt_count: currentAttempts + 1,
           });
 

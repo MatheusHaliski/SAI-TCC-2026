@@ -24,7 +24,7 @@ interface SchemeItem {
   cover_image_url?: string | null;
   visibility: 'public' | 'private';
   creation_mode?: 'manual' | 'ai';
-  updated_at?: string;
+  updatedAt?: string;
 }
 
 interface ProfileSectionRendererProps {

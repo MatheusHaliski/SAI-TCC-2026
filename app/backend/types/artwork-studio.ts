@@ -70,8 +70,8 @@ export type ArtworkAsset = {
   tags?: string[];
   width?: number | null;
   height?: number | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ArtworkPromptBuildResult = {

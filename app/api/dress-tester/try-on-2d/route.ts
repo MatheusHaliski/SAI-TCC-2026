@@ -87,10 +87,10 @@ export async function POST(request: NextRequest) {
         const rawOutput = statusPayload.output;
         const resultImageUrl = statusPayload.resultImageUrl ?? (Array.isArray(rawOutput) ? rawOutput[0] : rawOutput) ?? null;
         if (resultImageUrl) {
-          await getAdminFirestore().collection('sai-wardrobeItems').doc(body.garmentId).set(
+          await getAdminFirestore().collection('saiWardrobeItems').doc(body.garmentId).set(
             {
               tryOn2dResultUrl: resultImageUrl,
-              updated_at: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
             },
             { merge: true },
           );

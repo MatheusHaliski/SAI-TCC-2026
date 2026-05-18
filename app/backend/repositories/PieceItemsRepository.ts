@@ -3,7 +3,7 @@ import { BaseRepository } from './BaseRepository';
 import { BrandsRepository } from './BrandsRepository';
 import { MarketsRepository } from './MarketsRepository';
 
-const PIECE_ITEMS_COLLECTION = 'sai-pieceItems';
+const PIECE_ITEMS_COLLECTION = 'saiPieceItems';
 
 interface PieceItemFilters {
   season?: string;
