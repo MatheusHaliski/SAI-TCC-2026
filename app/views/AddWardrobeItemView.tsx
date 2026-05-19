@@ -18,13 +18,6 @@ type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type Market = { market_id: string; season: string; gender: string };
 
 const DEFAULT_BRAND_ID = 'default';
-const FALLBACK_BRANDS: Brand[] = [
-  {
-    brand_id: 'lacoste',
-    name: 'Lacoste',
-    logo_url: '/lacoste.jpg',
-  },
-];
 const BRAND_LOGO_FALLBACKS: Record<string, string> = {
   adidas: '/adidas.png',
   nike: '/nike.png',
@@ -35,6 +28,15 @@ const BRAND_LOGO_FALLBACKS: Record<string, string> = {
   'c&a': '/cea.jpg',
   cea: '/cea.jpg',
 };
+const FALLBACK_BRANDS: Brand[] = [
+  { brand_id: 'adidas', name: 'Adidas', logo_url: '/adidas.png' },
+  { brand_id: 'nike', name: 'Nike', logo_url: '/nike.png' },
+  { brand_id: 'zara', name: 'Zara', logo_url: '/zara.jpg' },
+  { brand_id: 'puma', name: 'Puma', logo_url: '/puma.jpg' },
+  { brand_id: 'lacoste', name: 'Lacoste', logo_url: '/lacoste.jpg' },
+  { brand_id: 'levis', name: "Levi's", logo_url: '/levis.jpg' },
+  { brand_id: 'cea', name: 'C&A', logo_url: '/cea.jpg' },
+];
 const COLOR_OPTIONS = [
   'Blue',
   'Red',
@@ -556,11 +558,26 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         .map((value) => String(value || '').trim())
         .find((value) => value.length > 0);
 
-      const resolvedBrandId = resolveBrandIdFromAI(data.brand, brands, [
+      let currentBrands = brands;
+      let resolvedBrandId = resolveBrandIdFromAI(data.brand, currentBrands, [
         data.pieceName || '',
         data.shortDescription || '',
         ...(Array.isArray(data.semanticTags) ? data.semanticTags : []),
       ]);
+
+      if (
+        resolvedBrandId === DEFAULT_BRAND_ID &&
+        data.brand &&
+        !isGenericToken(data.brand) &&
+        data.brand.toLowerCase() !== 'unknown' &&
+        (data.brandConfidence === 'High' || data.brandConfidence === 'Medium')
+      ) {
+        const newBrandId = data.brand.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const newBrand: Brand = { brand_id: newBrandId, name: data.brand };
+        currentBrands = [...currentBrands, newBrand];
+        setBrands(currentBrands);
+        resolvedBrandId = newBrandId;
+      }
 
       setForm((prev) => ({
         ...prev,
