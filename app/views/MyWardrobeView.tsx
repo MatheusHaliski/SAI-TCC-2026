@@ -18,6 +18,7 @@ import {
   submitBlenderWorkerJob,
 } from '@/app/services/blenderWorkerClient';
 import type { SearchIntentOutput } from '@/app/lib/ai/providers/types';
+import { incrementSystemInboxUnreadCount } from '@/app/lib/systemInboxNotifications';
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -104,6 +105,7 @@ export default function MyWardrobeView() {
   // Tracks which item last showed a stall error so the Retry click bypasses the stall check.
   const stalledItemIdRef = useRef<string | null>(null);
   const STALL_TTL_MS = 10 * 60 * 1000;
+  const completionNotifiedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const loadWardrobeData = async () => {
@@ -247,6 +249,17 @@ export default function MyWardrobeView() {
       setIsSearching(false);
     }
   };
+
+  useEffect(() => {
+    if (!progressItem) return;
+    if (assetJob.status !== 'completed') return;
+
+    const notifyKey = `${progressItem.wardrobe_item_id}:${assetJob.jobId ?? 'no-job'}`;
+    if (completionNotifiedRef.current === notifyKey) return;
+
+    incrementSystemInboxUnreadCount(1);
+    completionNotifiedRef.current = notifyKey;
+  }, [assetJob.jobId, assetJob.status, progressItem]);
 
   const handleOpenViewerIntent = async (item: WardrobeItem) => {
     if (progressItem !== null && !['completed', 'failed', 'timed_out', 'cancelled', 'idle'].includes(assetJob.status)) {
