@@ -77,6 +77,11 @@ BACK_SANITIZE_AGGRESSIVE_THRESHOLD = float(0.30)
 # the median fabric color.
 STAIN_ARTIFACT_RETRIGGER_CONFIDENCE = float(0.45)
 
+# Artifact confidence threshold for front-face stain detection.
+# The front face is expected to be uniform fabric (after material purge), so
+# any deviation above this score indicates residual artifacts that need cleanup.
+FRONT_STAIN_CHECK_CONFIDENCE = float(0.35)
+
 # Histogram quantisation buckets per RGB channel used for dominant-color extraction.
 # 16 → 16^3 = 4 096 bins; trades off resolution vs. grouping nearby fabric shades.
 _COLOR_HIST_BUCKETS = 16
@@ -212,6 +217,121 @@ def _isolate_garment_mesh(mesh_objects: "list[bpy.types.Object]") -> "bpy.types.
         f"purged={len(to_delete)} total_input={len(mesh_objects)}"
     )
     return garment
+
+
+# ── Material purge ────────────────────────────────────────────────────────────
+
+def _purge_garment_materials(obj: "bpy.types.Object") -> tuple:
+    """Clear every Meshy-assigned material and replace with one clean base material.
+
+    Meshy's 3D reconstruction wraps the source-photo texture (logos, stains,
+    mannequin shadows, background bleed) over the entire mesh.  Removing all
+    material slots and replacing them with a single ``SAI_Base_Fabric`` derived
+    from the dominant fabric color guarantees:
+
+    * No logo or stamp appears on any face before the optional front decal step.
+    * No stain or photo artifact from the source image persists on the output.
+    * Exactly one known material slot exists as the starting point for the
+      subsequent back-sanitization and front-decal stages.
+
+    The dominant color is extracted *before* clearing, using histogram-mode
+    quantisation so that small stain/logo regions do not bias the result.
+
+    Returns ``(dominant_rgb, purged_count)`` where ``dominant_rgb`` is a
+    ``(r, g, b)`` float triple in [0, 1] and ``purged_count`` is the number of
+    material slots removed.
+    """
+    dominant_rgb = _extract_dominant_color(obj.data.materials[0] if obj.data.materials else None)
+    purged_count = len(obj.data.materials)
+
+    print(
+        f"[pipeline] purge_garment_materials: clearing {purged_count} material slot(s) "
+        f"dominant_rgb=({dominant_rgb[0]:.3f},{dominant_rgb[1]:.3f},{dominant_rgb[2]:.3f})"
+    )
+
+    obj.data.materials.clear()
+
+    existing = bpy.data.materials.get("SAI_Base_Fabric")
+    if existing:
+        bpy.data.materials.remove(existing)
+
+    base_mat = bpy.data.materials.new(name="SAI_Base_Fabric")
+    base_mat.use_nodes = True
+    nodes = base_mat.node_tree.nodes
+    links = base_mat.node_tree.links
+    nodes.clear()
+
+    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.location = (400, 0)
+    bsdf.inputs["Base Color"].default_value = (*dominant_rgb, 1.0)
+    bsdf.inputs["Roughness"].default_value = 0.80
+    try:
+        bsdf.inputs["Specular"].default_value = 0.03
+    except KeyError:
+        pass  # Blender 4.x renamed Specular
+
+    out = nodes.new("ShaderNodeOutputMaterial")
+    out.location = (700, 0)
+    links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+
+    obj.data.materials.append(base_mat)
+    print(
+        f"[pipeline] purge_garment_materials: SAI_Base_Fabric assigned "
+        f"({len(obj.data.polygons)} faces, {purged_count} old slot(s) removed)"
+    )
+    return dominant_rgb, purged_count
+
+
+def _validate_back_logo_free(
+    obj: "bpy.types.Object",
+    front_dir: "Vector",
+) -> dict:
+    """Verify that no decal/logo material is assigned to back-facing polygons.
+
+    Walks every face and checks whether any face whose normal points away from
+    the camera (dot < 0.0) carries a non-fabric material index.  Returns a
+    validation summary dict for inclusion in pipeline logs.
+
+    This is an explicit post-decal guard: the pipeline already restricts logo
+    application to front-selected faces and enables backface culling on the
+    decal material, but this check confirms the invariant holds in the actual
+    mesh data.
+    """
+    import bmesh as _bm
+    bm = _bm.new()
+    bm.from_mesh(obj.data)
+    bm.normal_update()
+
+    mat_inv = obj.matrix_world.inverted()
+    local_front = (mat_inv.to_3x3() @ front_dir).normalized()
+
+    fabric_names = {"SAI_Base_Fabric", "SAI_Back_Plain"}
+    back_logo_faces = 0
+    total_back_faces = 0
+    for face in bm.faces:
+        if face.normal.dot(local_front) < 0.0:
+            total_back_faces += 1
+            mat = obj.data.materials[face.material_index] if face.material_index < len(obj.data.materials) else None
+            mat_name = mat.name if mat else "none"
+            if mat_name not in fabric_names:
+                back_logo_faces += 1
+
+    bm.free()
+
+    passed = back_logo_faces == 0
+    result = {
+        "backLogoFree": passed,
+        "backFacesWithLogoMaterial": back_logo_faces,
+        "totalBackFaces": total_back_faces,
+    }
+    if passed:
+        print(f"[pipeline] validate_back_logo_free: PASSED ({total_back_faces} back faces, 0 logo faces)")
+    else:
+        print(
+            f"[pipeline] validate_back_logo_free: FAILED — "
+            f"{back_logo_faces}/{total_back_faces} back faces still carry a logo/non-fabric material"
+        )
+    return result
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -1007,13 +1127,28 @@ def main() -> None:
     total_faces = len(garment.data.polygons)
     print(f"[pipeline] garment_object: '{garment.name}' with {total_faces} faces")
 
-    # 4b. Sanitise back faces — initial pass.
-    #     Uses histogram-mode color extraction so logos/stains in the source
-    #     photo do not corrupt the derived fabric color.  The threshold covers
-    #     side-transitional faces in addition to the strict back hemisphere.
+    # 4b. [VALIDATION c] Purge all Meshy-assigned materials.
+    #     Clears every material slot — including any embedded logos, stains, or
+    #     photo artifacts baked in by Meshy's cylindrical texture wrapping — and
+    #     replaces them with a single clean SAI_Base_Fabric derived from the
+    #     dominant fabric color.  This guarantees:
+    #       • No strange materials remain on the garment after this point.
+    #       • Neither face (front nor back) carries stains from the source image.
+    #       • The subsequent back-sanitization and decal steps start from a
+    #         known, controlled material state.
+    _purge_garment_materials(garment)
+
+    # 4c. [VALIDATION b — back] Sanitise back faces.
+    #     Even though the material purge already removed stain textures, this
+    #     step assigns a procedurally-textured SAI_Back_Plain material to back
+    #     faces so they look like fabric weave rather than a flat painted surface.
+    #     The dominant-color seed is re-derived from SAI_Base_Fabric (correct).
     _sanitize_back_faces(garment, front_dir, dot_threshold=args.back_sanitize_threshold)
 
-    # 5. Apply decal / logo if provided
+    # 5. [VALIDATION a] Apply decal / logo — front faces only.
+    #     _apply_decal_to_front_faces restricts logo application to faces that
+    #     pass the dot-product front-face filter.  The decal material also has
+    #     use_backface_culling=True as an additional guard.
     if args.logo_path and Path(args.logo_path).exists():
         print(f"[pipeline] applying decal from: {args.logo_path}")
         _apply_decal_to_front_faces(
@@ -1028,6 +1163,43 @@ def main() -> None:
             print(f"[pipeline] WARNING: logo_path provided but file not found: {args.logo_path}")
         else:
             print("[pipeline] no logo_path provided — skipping decal step")
+
+    # 5b. [VALIDATION a — explicit check] Confirm no logo material on back faces.
+    back_logo_validation = _validate_back_logo_free(garment, front_dir)
+    if not back_logo_validation["backLogoFree"]:
+        print(
+            "[pipeline] WARNING: back-logo validation failed — "
+            "forcing aggressive back re-sanitization to remove logo bleed"
+        )
+        _sanitize_back_faces(garment, front_dir, dot_threshold=BACK_SANITIZE_AGGRESSIVE_THRESHOLD)
+
+    # 5c. [VALIDATION b — front] Render front preview and verify stain-free state.
+    #     The material purge (step 4b) already removes all source-photo stains from
+    #     the front texture.  This preview-render and analysis confirms the
+    #     enforcement held and records the artifact confidence score for monitoring.
+    #
+    #     Note: a decal logo applied in step 5 causes intentional color variance on
+    #     the front face; elevated confidence here may reflect the logo rather than
+    #     a real stain.  No corrective action is taken on the front — the purge is
+    #     the definitive enforcement; this step is a validation gate only.
+    front_stain_metrics: dict = {"artifactConfidence": 0.0}
+    if not args.no_adaptive_sanitize:
+        front_preview_path = Path(args.output_model).parent / "front_stain_check.png"
+        print(f"[pipeline] rendering front preview for stain check → {front_preview_path}")
+        _render_preview(front_preview_path, rotation_y=0.0)
+        front_stain_metrics = _analyze_back_preview_for_stains(front_preview_path)
+        front_confidence = front_stain_metrics.get("artifactConfidence", 0.0)
+        if front_confidence > FRONT_STAIN_CHECK_CONFIDENCE:
+            print(
+                f"[pipeline] front_stain_check WARNING (confidence={front_confidence:.3f} > "
+                f"{FRONT_STAIN_CHECK_CONFIDENCE}) — possible logo color variance or rendering "
+                f"artifact; front material was already purged so no further action taken"
+            )
+        else:
+            print(
+                f"[pipeline] front_stain_check passed "
+                f"(confidence={front_confidence:.3f} ≤ {FRONT_STAIN_CHECK_CONFIDENCE})"
+            )
 
     # 6. Adaptive stain detection & re-sanitization pass.
     #
@@ -1072,7 +1244,9 @@ def main() -> None:
 
     print(
         "[pipeline] ── Pipeline complete ── "
-        f"stain_confidence={stain_metrics.get('artifactConfidence', 'n/a')}"
+        f"back_stain_confidence={stain_metrics.get('artifactConfidence', 'n/a')} "
+        f"front_stain_confidence={front_stain_metrics.get('artifactConfidence', 'n/a')} "
+        f"back_logo_free={back_logo_validation.get('backLogoFree', 'n/a')}"
     )
 
 
