@@ -753,9 +753,20 @@ function buildEditorialLogoComposition(referenceImage: string, context: PresetCo
         <filter id='softShadow' x='-18%' y='-18%' width='136%' height='136%'>
           <feGaussianBlur stdDeviation='10'/>
         </filter>
+        <linearGradient id='editorialBg' x1='0%' y1='0%' x2='100%' y2='100%'>
+          <stop offset='0%' stop-color='#f8fafc'/>
+          <stop offset='55%' stop-color='#f1f5f9'/>
+          <stop offset='100%' stop-color='#e2e8f0'/>
+        </linearGradient>
+        <pattern id='editorialGrid' width='80' height='80' patternUnits='userSpaceOnUse'>
+          <line x1='80' y1='0' x2='0' y2='0' stroke='rgba(148,163,184,0.18)' stroke-width='1'/>
+          <line x1='0' y1='0' x2='0' y2='80' stroke='rgba(148,163,184,0.18)' stroke-width='1'/>
+        </pattern>
       </defs>
-      <rect width='1200' height='800' fill='#ffffff'/>
-      <image href='${TONAL_GEOMETRY_BACKGROUND_IMAGE}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.34'/>
+      <rect width='1200' height='800' fill='url(#editorialBg)'/>
+      <rect width='1200' height='800' fill='url(#editorialGrid)'/>
+      <path d='M-60,370 C220,290 500,430 820,350 C980,308 1100,238 1260,168' stroke='rgba(148,163,184,0.28)' stroke-width='90' fill='none'/>
+      <path d='M-60,520 C220,440 480,580 800,498' stroke='rgba(148,163,184,0.18)' stroke-width='60' fill='none'/>
       <rect width='1200' height='800' fill='rgba(255,255,255,0.54)'/>
       <g transform='translate(726 140)' filter='url(#softShadow)'>
         <rect x='0' y='0' width='332' height='486' rx='32' fill='rgba(255,255,255,0.90)'/>
@@ -836,8 +847,23 @@ function buildTonalGeometryConfig(context: PresetContext, referenceImage?: strin
   const composedTonalGeometry = tonalReferenceImage
     ? asDataUri(
         `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-          <rect width='1200' height='800' fill='#0f172a'/>
-          <image href='${TONAL_GEOMETRY_BACKGROUND_IMAGE}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice'/>
+          <defs>
+            <linearGradient id='tonalBase' x1='0%' y1='0%' x2='100%' y2='100%'>
+              <stop offset='0%' stop-color='#0f172a'/>
+              <stop offset='55%' stop-color='#1e293b'/>
+              <stop offset='100%' stop-color='#334155'/>
+            </linearGradient>
+            <pattern id='tonalMesh' width='60' height='60' patternUnits='userSpaceOnUse'>
+              <line x1='60' y1='0' x2='0' y2='60' stroke='rgba(148,163,184,0.14)' stroke-width='1'/>
+              <line x1='0' y1='0' x2='60' y2='60' stroke='rgba(148,163,184,0.08)' stroke-width='1'/>
+            </pattern>
+          </defs>
+          <rect width='1200' height='800' fill='url(#tonalBase)'/>
+          <rect width='1200' height='800' fill='url(#tonalMesh)'/>
+          <path d='M-80,800 L200,-40 L350,-40 L70,800 Z' fill='rgba(148,163,184,0.08)'/>
+          <path d='M160,800 L440,-40 L590,-40 L310,800 Z' fill='rgba(148,163,184,0.10)'/>
+          <path d='M400,800 L680,-40 L830,-40 L550,800 Z' fill='rgba(148,163,184,0.08)'/>
+          <path d='M640,800 L920,-40 L1070,-40 L790,800 Z' fill='rgba(148,163,184,0.06)'/>
           <rect width='1200' height='800' fill='rgba(15,23,42,0.28)'/>
           <g transform='translate(710 128)'>
             <rect x='0' y='0' width='368' height='508' rx='38' fill='rgba(15,23,42,0.42)'/>
@@ -1000,8 +1026,22 @@ function buildNeonMotionGridConfig(context: PresetContext, referenceImage?: stri
   const safeReferenceImage = referenceImage || context.brandLogoUrl || '';
   const composedNeonGrid = asDataUri(
     `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-      <rect width='1200' height='800' fill='#020617'/>
-      <image href='${NEON_MOTION_GRID_IMAGE}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice'/>
+      <defs>
+        <linearGradient id='neonBase' x1='0%' y1='0%' x2='100%' y2='100%'>
+          <stop offset='0%' stop-color='#020617'/>
+          <stop offset='48%' stop-color='#0f172a'/>
+          <stop offset='100%' stop-color='#0c1e3d'/>
+        </linearGradient>
+        <filter id='neonGlow' x='-20%' y='-20%' width='140%' height='140%'>
+          <feGaussianBlur stdDeviation='6' result='blur'/>
+          <feMerge><feMergeNode in='blur'/><feMergeNode in='SourceGraphic'/></feMerge>
+        </filter>
+      </defs>
+      <rect width='1200' height='800' fill='url(#neonBase)'/>
+      ${Array.from({ length: 14 }).map((_, i) => `<line x1='${i * 95}' y1='0' x2='${i * 95 + 230}' y2='800' stroke='rgba(56,189,248,0.22)' stroke-width='1.5'/>`).join('')}
+      ${Array.from({ length: 10 }).map((_, i) => `<line x1='0' y1='${i * 88}' x2='1200' y2='${i * 88 + 66}' stroke='rgba(56,189,248,0.15)' stroke-width='1'/>`).join('')}
+      <circle cx='300' cy='280' r='220' fill='rgba(56,189,248,0.10)' filter='url(#neonGlow)'/>
+      <circle cx='950' cy='520' r='170' fill='rgba(139,92,246,0.09)' filter='url(#neonGlow)'/>
       <rect width='1200' height='800' fill='rgba(15,23,42,0.22)'/>
       <path d='M0,620 C220,540 460,690 760,598 C930,546 1090,458 1200,396 V800 H0 Z' fill='rgba(2,6,23,0.36)'/>
       ${safeReferenceImage ? `<image href='${safeReferenceImage}' x='760' y='140' width='316' height='420' preserveAspectRatio='xMidYMid slice' opacity='0.9'/>` : ''}
@@ -1102,9 +1142,30 @@ function buildSurfaceFromRecipe(
     selection_tech_amber_energy: () => buildTechAmberEnergyConfig(context, safeReferenceImage),
     selection_metallic_sport_identity: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='metal' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='42%' stop-color='#374151'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#metal)'/><path d='M0,560 L1200,190 L1200,380 L0,760 Z' fill='rgba(148,163,184,0.24)'/><image href='${safeReferenceImage || ''}' x='100' y='120' width='420' height='420' opacity='0.22' preserveAspectRatio='xMidYMid meet'/><image href='${safeReferenceImage || ''}' x='760' y='170' width='330' height='330' opacity='0.92' preserveAspectRatio='xMidYMid meet'/><rect x='742' y='150' width='366' height='366' rx='34' fill='none' stroke='rgba(226,232,240,0.62)' stroke-width='4'/><text x='84' y='716' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>METALLIC SPORT IDENTITY</text></svg>`, 'diamond'),
     selection_neon_motion_grid: () => buildNeonMotionGridConfig(context, safeReferenceImage),
-    selection_luxury_fabric_monogram: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#1f2937'/></svg>`, 'none'),
-    selection_editorial_collage: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#111827'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='620' height='800' opacity='0.66' preserveAspectRatio='xMidYMid slice'/><image href='${safeReferenceImage || ''}' x='540' y='110' width='610' height='540' opacity='0.84' preserveAspectRatio='xMidYMid slice'/><rect x='520' y='90' width='640' height='570' fill='none' stroke='rgba(248,250,252,0.32)' stroke-width='3'/><text x='560' y='706' font-size='58' fill='rgba(248,250,252,0.9)' font-family='Arial Black,Arial,sans-serif'>EDITORIAL COLLAGE</text></svg>`, 'mesh'),
-    selection_soft_premium_minimal: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#e2c28c'/></svg>`, 'none'),
+    selection_editorial_collage: () => {
+      const collageSvg = safeReferenceImage
+        ? `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+            <rect width='1200' height='800' fill='#111827'/>
+            <image href='${safeReferenceImage}' x='0' y='0' width='620' height='800' opacity='0.62' preserveAspectRatio='xMidYMid slice'/>
+            <rect x='0' y='0' width='620' height='800' fill='rgba(15,23,42,0.32)'/>
+            <image href='${safeReferenceImage}' x='540' y='110' width='610' height='540' opacity='0.88' preserveAspectRatio='xMidYMid slice'/>
+            <rect x='518' y='88' width='644' height='572' fill='none' stroke='rgba(248,250,252,0.35)' stroke-width='3'/>
+            <path d='M0,660 C200,620 420,720 680,670 C880,638 1040,580 1200,540 V800 H0 Z' fill='rgba(2,6,23,0.48)'/>
+            <text x='56' y='726' font-size='48' fill='rgba(248,250,252,0.85)' font-family='Arial Black,Arial,sans-serif'>${brand} · EDITORIAL</text>
+          </svg>`
+        : `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+            <defs>
+              <linearGradient id='collageBase' x1='0%' y1='0%' x2='100%' y2='100%'>
+                <stop offset='0%' stop-color='#111827'/><stop offset='100%' stop-color='#1f2937'/>
+              </linearGradient>
+            </defs>
+            <rect width='1200' height='800' fill='url(#collageBase)'/>
+            ${Array.from({ length: 5 }).map((_, i) => `<rect x='${56 + i * 220}' y='${60 + (i % 2) * 80}' width='190' height='${280 + (i % 3) * 60}' rx='18' fill='rgba(255,255,255,0.06)' stroke='rgba(255,255,255,0.15)' stroke-width='1.5'/>`).join('')}
+            <path d='M0,620 C260,560 520,700 820,630 C1000,590 1120,530 1200,480 V800 H0 Z' fill='rgba(2,6,23,0.42)'/>
+            <text x='60' y='730' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>${brand} · EDITORIAL COLLAGE</text>
+          </svg>`;
+      return buildImageSurface(collageSvg, 'mesh');
+    },
   };
   const generator = generators[recipe.presetId];
   if (generator) return generator();
@@ -1656,36 +1717,25 @@ export default function OutfitBackgroundStudioModal({
       
       const data = payload.data;
       
-      const stops = data.cssSuggestion?.stops || data.palette.slice(0, 3).map((color: string, i: number) => ({
+      const paletteColors: string[] = Array.isArray(data.palette) ? data.palette : [];
+      const stops = data.cssSuggestion?.stops || paletteColors.slice(0, 3).map((color: string, i: number) => ({
         color,
-        position: i === 0 ? 0 : i === data.palette.length - 1 ? 100 : 50
+        position: i === 0 ? 0 : i === paletteColors.length - 1 ? 100 : 50,
       }));
-      
+
       const gradient = {
-        type: data.cssSuggestion?.type || 'linear',
+        type: (data.cssSuggestion?.type as 'linear' | 'radial' | 'conic') || 'linear',
         angle: data.cssSuggestion?.angle || 135,
         intensity: 100,
-        stops
+        stops: stops.length ? stops : [{ color: '#0f172a', position: 0 }, { color: '#4c1d95', position: 100 }],
       };
 
       setDraft(prev => ({
         ...prev,
-        background_mode: data.backgroundType === 'image' ? 'gradient' : 'gradient', // Force gradient as fallback for now since image gen is mocked
+        background_mode: 'gradient',
         gradient,
-        shape: 'none'
+        shape: 'none',
       }));
-      
-      if (data.backgroundType === 'image') {
-         setDraft(prev => ({
-            ...prev,
-            background_mode: 'ai_artwork',
-            ai_artwork: {
-               prompt: data.promptForImageGeneration,
-               image_url: '', // Fallback empty
-               generation_status: 'done'
-            }
-         }));
-      }
       
       void Swal.fire({
         toast: true, position: 'top-end', icon: 'success', title: 'Google AI Background Applied!', timer: 3000, showConfirmButton: false
@@ -2103,25 +2153,32 @@ export default function OutfitBackgroundStudioModal({
 
                 <div className="grid grid-cols-3 gap-2">
                   {aiResults.map((result, index) => {
-                    const previewSource = result.thumbnail_url || result.preview_url || result.output_url;
-                    const fallbackPreviewStyle = `linear-gradient(145deg, rgba(30,41,59,0.92), rgba(15,23,42,0.84)), repeating-linear-gradient(125deg, rgba(148,163,184,0.18) 0 6px, transparent 6px 16px)`;
+                    const previewSource = result.thumbnail_url || result.preview_url || result.output_url || '';
+                    const fallbackPreviewStyle = `linear-gradient(145deg, rgba(30,41,59,0.95), rgba(15,23,42,0.88)), repeating-linear-gradient(125deg, rgba(148,163,184,0.22) 0 6px, transparent 6px 16px)`;
+                    const isSelected = selectedAiResult?.variation_id === result.variation_id;
                     return (
                     <button
                       key={result.variation_id}
                       type="button"
-                      className={`h-20 rounded-xl border ${selectedAiResult?.variation_id === result.variation_id ? 'border-violet-300 shadow-[0_0_0_1px_rgba(196,181,253,0.5)]' : 'border-white/20'}`}
+                      className={`relative h-20 overflow-hidden rounded-xl border transition ${isSelected ? 'border-violet-300 shadow-[0_0_0_2px_rgba(196,181,253,0.5)]' : 'border-white/20 hover:border-white/40'}`}
                       style={{
+                        backgroundColor: '#0f172a',
                         backgroundImage: previewSource ? `url(${previewSource})` : fallbackPreviewStyle,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                       }}
-                      title={previewSource ? `Variation ${index + 1}` : `Variation ${index + 1} (procedural placeholder preview)`}
+                      title={`Variation ${index + 1}${result.provider ? ` · ${result.provider}` : ''}`}
                       onClick={() => {
                         setSelectedAiResult(result);
                         applyVariationToDraft(result);
                         console.debug('artwork_studio.selected_variation', result);
                       }}
-                    />
+                    >
+                      <span className="absolute bottom-1 right-1.5 rounded bg-black/50 px-1 py-0.5 text-[9px] font-semibold text-white/80">{index + 1}</span>
+                      {!previewSource && (
+                        <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white/40">Generating…</span>
+                      )}
+                    </button>
                     );
                   })}
                 </div>
@@ -2311,8 +2368,11 @@ export default function OutfitBackgroundStudioModal({
                       <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
                       <p className={`mt-1 text-[10px] ${isAvailable ? 'text-emerald-200' : 'text-amber-200'}`}>{badgeLabel}</p>
                       <span
-                        className="mt-2 block h-9 rounded-lg border border-white/15"
-                        style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig))}
+                        className="mt-2 block h-14 rounded-lg border border-white/15"
+                        style={{
+                          ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)),
+                          backgroundColor: '#0f172a',
+                        }}
                       />
                     </button>
                   );
