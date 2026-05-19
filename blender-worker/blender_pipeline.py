@@ -9,6 +9,7 @@ Run as:
         [--logo-path /path/to/logo.png]
         [--logo-scale 0.25]
         [--logo-offset-v 0.1]
+        [--back-sanitize-threshold 0.15]  # dot-product cutoff for back sanitization
 
 Fixes applied vs previous version:
 - Front-face detection uses dot product against the configured front axis
@@ -18,6 +19,11 @@ Fixes applied vs previous version:
 - Detailed face counts are logged at every filtering stage so you can audit
   the result in the RunPod log output.
 - No UV-projection onto back faces.
+- Back-face sanitization now uses histogram-mode color extraction so logos
+  and stains from the source photo do not pollute the derived fabric color.
+- Adaptive re-sanitization: a lightweight stain analysis runs on the rendered
+  back preview; if artifacts are detected the sanitization pass is repeated
+  with a more aggressive dot-product threshold before final export.
 """
 from __future__ import annotations
 
@@ -56,6 +62,25 @@ TORSO_VERTICAL_RANGE = (0.45, 0.85)  # keep upper 40 % of height (normalised, 0=
 
 DECAL_MATERIAL_NAME = "SAI_Decal_Front"
 
+# Back-face sanitization dot-product threshold.
+# A face with dot(normal, front_dir) < BACK_SANITIZE_DOT_THRESHOLD is treated as
+# a back/side face and replaced with the plain fabric material.
+# 0.00 → exact back hemisphere only
+# 0.15 → back hemisphere + ~9° of side-transitional faces (recommended default)
+# 0.30 → aggressive mode: used for adaptive re-sanitization pass when initial
+#        stain analysis still detects artifacts in the rendered back preview
+BACK_SANITIZE_DOT_THRESHOLD = float(0.15)
+BACK_SANITIZE_AGGRESSIVE_THRESHOLD = float(0.30)
+
+# Artifact confidence score above which the adaptive re-sanitization pass triggers.
+# Range 0–1; 0.45 means >45% of garment back pixels deviate significantly from
+# the median fabric color.
+STAIN_ARTIFACT_RETRIGGER_CONFIDENCE = float(0.45)
+
+# Histogram quantisation buckets per RGB channel used for dominant-color extraction.
+# 16 → 16^3 = 4 096 bins; trades off resolution vs. grouping nearby fabric shades.
+_COLOR_HIST_BUCKETS = 16
+
 # ── Garment isolation ─────────────────────────────────────────────────────────
 
 # Substrings in object/mesh names that identify a human body mesh.
@@ -92,6 +117,22 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--logo-path",    default=None,   help="Path to logo PNG (optional)")
     parser.add_argument("--logo-scale",   type=float, default=0.25, help="Logo UV scale (0–1)")
     parser.add_argument("--logo-offset-v", type=float, default=0.10, help="Vertical UV offset for logo placement")
+    parser.add_argument(
+        "--back-sanitize-threshold",
+        type=float,
+        default=BACK_SANITIZE_DOT_THRESHOLD,
+        help=(
+            "Dot-product threshold for back-face sanitization (default: %(default)s). "
+            "Faces with dot(normal, front_axis) < threshold are replaced with plain fabric. "
+            "Increase toward 0.30 to cover more side-transitional faces."
+        ),
+    )
+    parser.add_argument(
+        "--no-adaptive-sanitize",
+        action="store_true",
+        default=False,
+        help="Disable the adaptive re-sanitization pass that runs after stain detection.",
+    )
     return parser.parse_args(argv)
 
 
@@ -305,7 +346,21 @@ def _select_front_faces(
 # ── Back-face sanitisation ────────────────────────────────────────────────────
 
 def _extract_dominant_color(mat: "bpy.types.Material") -> tuple[float, float, float]:
-    """Sample a representative RGB (linear) from a material's base texture or BSDF color."""
+    """Extract the dominant fabric color from a material's base texture.
+
+    Uses histogram-mode quantisation instead of a simple mean so that small but
+    vivid regions — logos, stains, printed text — do not shift the result away
+    from the garment's actual fabric color.  The algorithm:
+
+    1. Samples a uniform grid from the central 60 % of the image (avoids edge
+       artifacts and seam stitching).
+    2. Quantises each pixel into a (_COLOR_HIST_BUCKETS)³ color-bin grid.
+    3. Returns the weighted centroid of the *most-populated* bin.
+
+    The most-populated bin reliably corresponds to the background fabric shade
+    because fabric covers the majority of the garment surface whereas logos and
+    stains are confined to a much smaller area.
+    """
     fallback = (0.70, 0.70, 0.70)
     if mat is None or not mat.use_nodes:
         return fallback
@@ -323,14 +378,14 @@ def _extract_dominant_color(mat: "bpy.types.Material") -> tuple[float, float, fl
                     w, h = img.size
                     if w < 1 or h < 1:
                         break
-                    # Sample a uniform grid from the center quarter of the image.
-                    # img.pixels is a flat RGBA sequence — use a large stride to avoid
-                    # reading millions of floats for high-res textures.
                     pixels = img.pixels[:]
-                    stride = max(1, (w * h) // 1024)  # at most ~1 K samples
-                    r_sum = g_sum = b_sum = n = 0.0
-                    y0, y1 = h // 4, 3 * h // 4
-                    x0, x1 = w // 4, 3 * w // 4
+                    # Sample at most ~2 K pixels from the central 60 % crop.
+                    y0, y1 = int(h * 0.20), int(h * 0.80)
+                    x0, x1 = int(w * 0.20), int(w * 0.80)
+                    crop_pixels = (y1 - y0) * (x1 - x0)
+                    stride = max(1, crop_pixels // 2048)
+
+                    buckets: dict[tuple[int, int, int], list] = {}
                     step = max(1, stride)
                     for row in range(y0, y1, step):
                         for col in range(x0, x1, step):
@@ -340,10 +395,32 @@ def _extract_dominant_color(mat: "bpy.types.Material") -> tuple[float, float, fl
                             a = pixels[base + 3]
                             if a < 0.5:
                                 continue
-                            r_sum += pixels[base];  g_sum += pixels[base + 1];  b_sum += pixels[base + 2]
-                            n += 1.0
-                    if n > 0:
-                        return (r_sum / n, g_sum / n, b_sum / n)
+                            r = pixels[base]
+                            g = pixels[base + 1]
+                            b = pixels[base + 2]
+                            # Quantise to _COLOR_HIST_BUCKETS bins per channel.
+                            key = (
+                                min(_COLOR_HIST_BUCKETS - 1, int(r * _COLOR_HIST_BUCKETS)),
+                                min(_COLOR_HIST_BUCKETS - 1, int(g * _COLOR_HIST_BUCKETS)),
+                                min(_COLOR_HIST_BUCKETS - 1, int(b * _COLOR_HIST_BUCKETS)),
+                            )
+                            if key not in buckets:
+                                buckets[key] = [0, 0.0, 0.0, 0.0]
+                            buckets[key][0] += 1
+                            buckets[key][1] += r
+                            buckets[key][2] += g
+                            buckets[key][3] += b
+
+                    if not buckets:
+                        break
+                    best = max(buckets.values(), key=lambda v: v[0])
+                    n = best[0]
+                    dominant = (best[1] / n, best[2] / n, best[3] / n)
+                    print(
+                        f"[pipeline] dominant_color_histogram: bins={len(buckets)} "
+                        f"best_bin_count={n} rgb=({dominant[0]:.3f},{dominant[1]:.3f},{dominant[2]:.3f})"
+                    )
+                    return dominant
         else:
             col = color_input.default_value
             return (float(col[0]), float(col[1]), float(col[2]))
@@ -353,9 +430,9 @@ def _extract_dominant_color(mat: "bpy.types.Material") -> tuple[float, float, fl
 def _sanitize_back_faces(
     obj: "bpy.types.Object",
     front_dir: "Vector",
-    dot_threshold: float = 0.0,
+    dot_threshold: float = BACK_SANITIZE_DOT_THRESHOLD,
 ) -> int:
-    """Replace the material on back-facing faces with a plain solid-color material.
+    """Replace the material on back-facing faces with a clean fabric material.
 
     When Meshy generates a 3D garment from a front-view photo it wraps the
     front texture cylindrically around the whole mesh.  Any logo, stain, or
@@ -363,37 +440,76 @@ def _sanitize_back_faces(
 
     This function assigns a clean, textureless material to every face whose
     normal points away from the camera (dot(normal, front_dir) < dot_threshold).
-    The color is sampled from the dominant hue of the existing front texture so
-    the back looks like plain fabric of the same color.
+    The color is derived from the *dominant* hue of the front texture via
+    histogram-mode quantisation — this ensures that logos and stains do not
+    shift the back color away from the actual fabric shade.
+
+    The back material uses a procedural noise displacement to simulate fabric
+    weave so the back looks like plain fabric rather than a painted surface.
+
+    dot_threshold controls coverage:
+      0.00 → exact back hemisphere (original behaviour)
+      0.15 → back + side-transitional faces (default, recommended)
+      0.30 → aggressive mode for re-sanitization after stain detection
 
     Returns the number of faces reassigned.
     """
-    # Derive back color from current material
+    # Derive back color using histogram-mode (stain-resistant) extraction
     back_rgb = _extract_dominant_color(obj.data.materials[0] if obj.data.materials else None)
-    print(f"[pipeline] back_plain_color_rgb: ({back_rgb[0]:.3f}, {back_rgb[1]:.3f}, {back_rgb[2]:.3f})")
+    print(
+        f"[pipeline] back_fabric_color: rgb=({back_rgb[0]:.3f},{back_rgb[1]:.3f},{back_rgb[2]:.3f}) "
+        f"dot_threshold={dot_threshold:.2f}"
+    )
 
-    # Build the plain back material
+    # Remove stale back material from a previous sanitization pass
     back_mat_name = "SAI_Back_Plain"
     existing = bpy.data.materials.get(back_mat_name)
     if existing:
         bpy.data.materials.remove(existing)
+
     back_mat = bpy.data.materials.new(name=back_mat_name)
     back_mat.use_nodes = True
     nodes = back_mat.node_tree.nodes
     links = back_mat.node_tree.links
     nodes.clear()
+
+    # ── Material graph: Principled BSDF + subtle noise for fabric texture ──
     bsdf = nodes.new("ShaderNodeBsdfPrincipled")
-    bsdf.location = (0, 0)
+    bsdf.location = (400, 0)
     bsdf.inputs["Base Color"].default_value = (*back_rgb, 1.0)
-    bsdf.inputs["Roughness"].default_value = 0.80
+    # Fabric roughness: 0.80 for matte cloth; specular near zero avoids sheen
+    bsdf.inputs["Roughness"].default_value = 0.82
+    try:
+        bsdf.inputs["Specular"].default_value = 0.02
+    except KeyError:
+        pass  # Blender 4.x renamed Specular to IOR; ignore if not present
+
+    # Noise texture drives subtle color variation (~±2 % brightness) simulating
+    # the micro-structure of woven fabric and prevents the back from looking
+    # like a painted flat surface.
+    noise = nodes.new("ShaderNodeTexNoise")
+    noise.location = (-200, 0)
+    noise.inputs["Scale"].default_value = 120.0   # high frequency = fine weave
+    noise.inputs["Detail"].default_value = 6.0
+    noise.inputs["Roughness"].default_value = 0.65
+    noise.inputs["Distortion"].default_value = 0.10
+
+    mix_rgb = nodes.new("ShaderNodeMixRGB")
+    mix_rgb.location = (200, 0)
+    mix_rgb.blend_type = "MULTIPLY"
+    mix_rgb.inputs["Fac"].default_value = 0.06   # 6 % noise intensity
+    mix_rgb.inputs["Color1"].default_value = (*back_rgb, 1.0)
+    links.new(noise.outputs["Color"], mix_rgb.inputs["Color2"])
+    links.new(mix_rgb.outputs["Color"], bsdf.inputs["Base Color"])
+
     out = nodes.new("ShaderNodeOutputMaterial")
-    out.location = (300, 0)
+    out.location = (700, 0)
     links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
 
     obj.data.materials.append(back_mat)
     back_idx = len(obj.data.materials) - 1
 
-    # Assign back material to all faces that face away from the camera
+    # Assign back material to all faces that do not face the camera
     mat_inv = obj.matrix_world.inverted()
     local_front = (mat_inv.to_3x3() @ front_dir).normalized()
 
@@ -402,6 +518,7 @@ def _sanitize_back_faces(
     bm = bmesh.from_edit_mesh(obj.data)
     bm.faces.ensure_lookup_table()
 
+    total_faces = len(bm.faces)
     back_count = 0
     for face in bm.faces:
         if face.normal.dot(local_front) < dot_threshold:
@@ -410,7 +527,10 @@ def _sanitize_back_faces(
 
     bmesh.update_edit_mesh(obj.data)
     bpy.ops.object.mode_set(mode="OBJECT")
-    print(f"[pipeline] sanitize_back_faces: {back_count}/{len(bm.faces)} faces → SAI_Back_Plain")
+    print(
+        f"[pipeline] sanitize_back_faces: {back_count}/{total_faces} faces → SAI_Back_Plain "
+        f"(dot<{dot_threshold:.2f})"
+    )
     return back_count
 
 
@@ -748,6 +868,104 @@ def _apply_decal_to_front_faces(
     print("[pipeline] UV scaling applied to decal faces")
 
 
+# ── Back-stain detection ──────────────────────────────────────────────────────
+
+def _analyze_back_preview_for_stains(preview_path: "Path") -> dict:
+    """Analyze the rendered back-view preview for front-texture bleed-through.
+
+    Meshy wraps the front photo texture cylindrically around the mesh, causing
+    logos, prints, and stains from the source image to appear on the garment
+    back even after an initial sanitization pass.  This function renders the
+    back preview, loads it via Blender's image system, and applies a
+    histogram-based outlier test using NumPy (bundled with Blender) to quantify
+    the presence of such artifacts.
+
+    Algorithm:
+    1. Load rendered PNG pixels as a (H, W, 4) float32 array.
+    2. Isolate garment pixels: discard near-black background and near-white
+       highlight pixels based on luminance.
+    3. Compute the per-channel median color (robust to outlier stain pixels).
+    4. Measure the fraction of garment pixels whose RGB distance from the median
+       exceeds a perceptual threshold (``hotspot_ratio``).
+    5. Derive an ``artifactConfidence`` score: 0.0 = clean, 1.0 = heavy stains.
+
+    Returns a dict suitable for JSON logging:
+      artifactConfidence  — 0.0–1.0 composite score
+      hotspotRatio        — fraction of garment pixels that are clear outliers
+      colorVariance       — mean RGB distance from median across garment pixels
+      garmentPixels       — number of usable garment pixels in the preview
+      medianColorRGB      — [r, g, b] median fabric color in [0, 1]
+      error               — only present if analysis could not be completed
+    """
+    try:
+        import numpy as np  # NumPy is bundled with Blender >= 2.82
+    except ImportError:
+        print("[pipeline] back_stain_analysis: numpy not available — skipping")
+        return {"artifactConfidence": 0.0, "error": "numpy_not_available"}
+
+    if not preview_path.exists():
+        print(f"[pipeline] back_stain_analysis: preview not found at {preview_path}")
+        return {"artifactConfidence": 0.0, "error": "preview_not_found"}
+
+    img = bpy.data.images.load(str(preview_path), check_existing=False)
+    w, h = img.size
+    if w < 1 or h < 1:
+        bpy.data.images.remove(img)
+        return {"artifactConfidence": 0.0, "error": "empty_preview"}
+
+    # img.pixels is a flat RGBA float32 array in [0, 1], row-major bottom-up
+    pixels = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)
+    bpy.data.images.remove(img)
+
+    rgb = pixels[:, :, :3]
+
+    # Garment mask: exclude near-black background (lum < 0.08) and blown-out
+    # highlights (lum > 0.93); also exclude low-alpha edge antialiasing pixels.
+    lum = rgb.mean(axis=2)
+    alpha_ch = pixels[:, :, 3]
+    garment_mask = (lum > 0.08) & (lum < 0.93) & (alpha_ch > 0.15)
+
+    garment_count = int(np.count_nonzero(garment_mask))
+    if garment_count < 200:
+        return {
+            "artifactConfidence": 0.0,
+            "garmentPixels": garment_count,
+            "error": "too_few_garment_pixels",
+        }
+
+    garment_rgb = rgb[garment_mask]  # shape (N, 3)
+
+    # Median is robust to stain outliers — gives us the true fabric color.
+    median_color = np.median(garment_rgb, axis=0)
+
+    # Per-pixel Euclidean distance from the median in RGB [0, 1] space.
+    diffs = garment_rgb - median_color
+    distances = np.sqrt((diffs * diffs).sum(axis=1))
+
+    # Stain threshold: > 0.20 in normalised RGB ≈ a clearly visible color shift
+    hotspot_ratio = float(np.mean(distances > 0.20))
+    color_variance = float(distances.mean())
+
+    # Composite artifact confidence:
+    # hotspot_ratio drives the score strongly; variance adds a softer signal.
+    # Clean plain fabric:  hotspot_ratio ~0.03, variance ~0.05 → score ~0.05
+    # Mild stain leakage:  hotspot_ratio ~0.12, variance ~0.12 → score ~0.50
+    # Heavy stain leakage: hotspot_ratio ~0.25, variance ~0.20 → score ~1.00
+    artifact_confidence = min(1.0, max(0.0,
+        hotspot_ratio * 3.5 + max(0.0, color_variance - 0.08) * 2.5
+    ))
+
+    result = {
+        "artifactConfidence": round(artifact_confidence, 4),
+        "hotspotRatio": round(hotspot_ratio, 4),
+        "colorVariance": round(color_variance, 4),
+        "garmentPixels": garment_count,
+        "medianColorRGB": [round(float(c), 3) for c in median_color],
+    }
+    print(f"[pipeline] back_stain_analysis: {result}")
+    return result
+
+
 # ── Main pipeline ─────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -763,6 +981,8 @@ def main() -> None:
     print(f"[pipeline] output : {args.output_model}")
     print(f"[pipeline] front_axis : {args.front_axis} → {front_dir}")
     print(f"[pipeline] logo_path  : {args.logo_path}")
+    print(f"[pipeline] back_sanitize_threshold : {args.back_sanitize_threshold}")
+    print(f"[pipeline] adaptive_sanitize : {not args.no_adaptive_sanitize}")
 
     # 1. Clean scene
     _clear_scene()
@@ -787,10 +1007,11 @@ def main() -> None:
     total_faces = len(garment.data.polygons)
     print(f"[pipeline] garment_object: '{garment.name}' with {total_faces} faces")
 
-    # 4b. Sanitise back faces: replace Meshy's baked-front texture on back-facing
-    #     polygons with a plain solid-color material so logos/patterns from the
-    #     source photo never appear on the back of the garment.
-    _sanitize_back_faces(garment, front_dir)
+    # 4b. Sanitise back faces — initial pass.
+    #     Uses histogram-mode color extraction so logos/stains in the source
+    #     photo do not corrupt the derived fabric color.  The threshold covers
+    #     side-transitional faces in addition to the strict back hemisphere.
+    _sanitize_back_faces(garment, front_dir, dot_threshold=args.back_sanitize_threshold)
 
     # 5. Apply decal / logo if provided
     if args.logo_path and Path(args.logo_path).exists():
@@ -808,10 +1029,51 @@ def main() -> None:
         else:
             print("[pipeline] no logo_path provided — skipping decal step")
 
-    # 6. Export
+    # 6. Adaptive stain detection & re-sanitization pass.
+    #
+    #    Render an intermediate back-view preview, analyze it for front-texture
+    #    bleed-through artifacts, and if the confidence score exceeds the trigger
+    #    threshold run a second sanitization pass with a more aggressive
+    #    dot-product cutoff before the final export.
+    #
+    #    This loop catches stains that survive the initial pass because:
+    #      - Meshy's UV seam placement causes the front texture to wrap further
+    #        around the sides than expected.
+    #      - The initial threshold was tuned conservatively to avoid hiding
+    #        legitimate side-panel fabric.
+    stain_metrics: dict = {"artifactConfidence": 0.0}
+    if not args.no_adaptive_sanitize:
+        check_preview_path = Path(args.output_model).parent / "back_stain_check.png"
+        print(f"[pipeline] rendering back preview for stain check → {check_preview_path}")
+        _render_preview(check_preview_path, rotation_y=math.pi)
+
+        stain_metrics = _analyze_back_preview_for_stains(check_preview_path)
+        artifact_confidence = stain_metrics.get("artifactConfidence", 0.0)
+
+        if artifact_confidence > STAIN_ARTIFACT_RETRIGGER_CONFIDENCE:
+            print(
+                f"[pipeline] STAIN DETECTED (confidence={artifact_confidence:.3f} > "
+                f"{STAIN_ARTIFACT_RETRIGGER_CONFIDENCE}) — running aggressive re-sanitization "
+                f"(threshold={BACK_SANITIZE_AGGRESSIVE_THRESHOLD})"
+            )
+            _sanitize_back_faces(
+                garment,
+                front_dir,
+                dot_threshold=BACK_SANITIZE_AGGRESSIVE_THRESHOLD,
+            )
+        else:
+            print(
+                f"[pipeline] back_stain_check passed "
+                f"(confidence={artifact_confidence:.3f} ≤ {STAIN_ARTIFACT_RETRIGGER_CONFIDENCE})"
+            )
+
+    # 7. Export final GLB
     _export_glb(args.output_model)
 
-    print("[pipeline] ── Pipeline complete ──")
+    print(
+        "[pipeline] ── Pipeline complete ── "
+        f"stain_confidence={stain_metrics.get('artifactConfidence', 'n/a')}"
+    )
 
 
 if __name__ == "__main__":

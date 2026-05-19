@@ -23,6 +23,7 @@ from pydantic import BaseModel
 
 from controller import run_blender_pipeline
 from meshy_pipeline import MeshyPipeline, MeshyPipelineError
+from pipeline import detect_back_texture_artifacts
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -48,6 +49,9 @@ class JobRequest(BaseModel):
     frontAxis: str = "Y"                 # world axis facing the camera
     logoScale: float = 0.25
     logoOffsetV: float = 0.10
+    # Back-face sanitization tuning.  0.15 covers back + side-transitional faces;
+    # increase to 0.30 for aggressively stained inputs.
+    backSanitizeThreshold: float = 0.15
     # Legacy fields forwarded from orchestrator
     imageUrl: str | None = None
     pieceId: str | None = None
@@ -208,6 +212,7 @@ def create_job(
         "front-axis": payload.frontAxis,
         "logo-scale": payload.logoScale,
         "logo-offset-v": payload.logoOffsetV,
+        "back-sanitize-threshold": payload.backSanitizeThreshold,
     }
     if logo_path:
         extra_args["logo-path"] = logo_path
@@ -237,7 +242,30 @@ def create_job(
 
         return JSONResponse(status_code=500, content=error_body)
 
-    # ── Step 4: respond with success ──────────────────────────────────────
+    # ── Step 4: post-render stain quality check ───────────────────────────
+    # Analyze the rendered back preview for residual stain/texture artifacts.
+    # This is a non-blocking quality signal — a high confidence score means the
+    # adaptive re-sanitization inside Blender may not have been sufficient and
+    # the operator should inspect the back preview manually.
+    back_stain_metrics: dict[str, Any] = {}
+    preview_back = job_dir / "preview_back.png"
+    # The adaptive pass renders "back_stain_check.png"; the final preview is
+    # written by the standard render step if present, otherwise fall back.
+    for candidate in (preview_back, job_dir / "back_stain_check.png"):
+        if candidate.exists():
+            try:
+                back_stain_metrics = detect_back_texture_artifacts(candidate)
+                if back_stain_metrics.get("artifactConfidence", 0.0) > 0.50:
+                    print(
+                        f"[handler] WARNING: residual back stain artifacts detected "
+                        f"jobId={job_id} confidence={back_stain_metrics['artifactConfidence']:.3f}"
+                    )
+            except Exception as exc:
+                print(f"[handler] WARNING: back stain detection failed: {exc}")
+                back_stain_metrics = {"error": str(exc)}
+            break
+
+    # ── Step 5: respond with success ──────────────────────────────────────
     return JSONResponse(
         status_code=200,
         content={
@@ -252,5 +280,6 @@ def create_job(
                 "totalMs": elapsed_ms,
                 "blenderMs": result["elapsed_ms"],
             },
+            "backStainMetrics": back_stain_metrics,
         },
     )
