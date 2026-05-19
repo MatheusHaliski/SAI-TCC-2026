@@ -7,6 +7,7 @@ import TopbarActionIcon from '@/app/components/search/TopbarActionIcon';
 import { NotificationsPanel, QuickNavDrawer, SystemInboxPanel, UserAccountDrawer } from '@/app/components/search/TopbarPanels';
 import OpenAddPieceButton from '@/app/components/pieces/OpenAddPieceButton';
 import { useDiscoverySearch } from '@/app/components/shell/DiscoverySearchContext';
+import { clearSystemInboxUnreadCount, getSystemInboxUnreadCount, SYSTEM_INBOX_UNREAD_EVENT } from '@/app/lib/systemInboxNotifications';
 
 interface TopBarProps {
   pageTitle: string;
@@ -24,6 +25,7 @@ export default function TopBar({ pageTitle, onOpenAddPiece }: TopBarProps) {
   const { query, setQuery } = useDiscoverySearch();
   const [panel, setPanel] = useState<'notifications' | 'inbox' | 'menu' | 'account' | null>(null);
   const [isPortuguese, setIsPortuguese] = useState(false);
+  const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
 
   const handleGlobalSearchSubmit = (rawValue: string) => {
     const value = rawValue.trim().toLowerCase();
@@ -39,6 +41,17 @@ export default function TopBar({ pageTitle, onOpenAddPiece }: TopBarProps) {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const refreshUnread = () => setInboxUnreadCount(getSystemInboxUnreadCount());
+    refreshUnread();
+    window.addEventListener('storage', refreshUnread);
+    window.addEventListener(SYSTEM_INBOX_UNREAD_EVENT, refreshUnread as EventListener);
+    return () => {
+      window.removeEventListener('storage', refreshUnread);
+      window.removeEventListener(SYSTEM_INBOX_UNREAD_EVENT, refreshUnread as EventListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -63,7 +76,16 @@ export default function TopBar({ pageTitle, onOpenAddPiece }: TopBarProps) {
           <div className="flex items-center gap-2">
             <OpenAddPieceButton onClick={onOpenAddPiece} />
             <TopbarActionIcon label={isPortuguese ? 'Notificações' : 'Notifications'} icon={<BellIcon />} onClick={() => setPanel('notifications')} />
-            <TopbarActionIcon label={isPortuguese ? 'Caixa do sistema' : 'System Inbox'} icon={<MailIcon />} onClick={() => setPanel('inbox')} />
+            <TopbarActionIcon
+              label={isPortuguese ? 'Caixa do sistema' : 'System Inbox'}
+              icon={<MailIcon />}
+              badgeCount={inboxUnreadCount}
+              onClick={() => {
+                clearSystemInboxUnreadCount();
+                setInboxUnreadCount(0);
+                setPanel('inbox');
+              }}
+            />
             <TopbarActionIcon label={isPortuguese ? 'Navegação rápida' : 'Quick Navigation'} icon={<MenuIcon />} onClick={() => setPanel('menu')} />
             <TopbarActionIcon label={isPortuguese ? 'Conta' : 'Account'} icon={<UserIcon />} onClick={() => setPanel('account')} />
           </div>
