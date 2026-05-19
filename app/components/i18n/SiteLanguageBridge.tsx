@@ -59,6 +59,13 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Available Pieces': 'Peças Disponíveis',
   'Unavailable Pieces': 'Peças Indisponíveis',
   'Favorite Pieces': 'Peças Favoritas',
+  'Add Piece': 'Adicionar Peça',
+  'Quick creator action to publish a new wardrobe piece.': 'Ação rápida do criador para publicar uma nova peça do guarda-roupa.',
+  'Export data': 'Exportar dados',
+  Notifications: 'Notificações',
+  'System Inbox': 'Caixa do sistema',
+  'Quick Navigation': 'Navegação rápida',
+  Account: 'Conta',
 
   // Outfit card actions
   'View details': 'Ver detalhes',
@@ -127,6 +134,16 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Are you sure?': 'Tem certeza?',
   'This action cannot be undone.': 'Esta ação não pode ser desfeita.',
   'Confirm delete': 'Confirmar exclusão',
+  'Please fill name, image file and market before saving.': 'Preencha nome, arquivo de imagem e mercado antes de salvar.',
+  'User session not found. Please sign in again.': 'Sessão do usuário não encontrada. Faça login novamente.',
+  'Unable to load form data. Please try again.': 'Não foi possível carregar os dados do formulário. Tente novamente.',
+  'Piece added and 3D generation started successfully.': 'Peça adicionada e geração 3D iniciada com sucesso.',
+  'Failed to create piece. Please verify your fields and try again.': 'Falha ao criar peça. Verifique os campos e tente novamente.',
+  'No file selected': 'Nenhum arquivo selecionado',
+  'Analyze with AI': 'Analisar com IA',
+  'Analyzing...': 'Analisando...',
+  'Publishing...': 'Publicando...',
+  'Publish Piece': 'Publicar Peça',
 
   // Misc badges
   AI: 'IA',

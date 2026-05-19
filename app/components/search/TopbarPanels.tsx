@@ -94,13 +94,25 @@ function PageBackgroundStudio({
       </div>
       <button
         type="button"
-        className="w-full overflow-hidden rounded-lg border border-white/30 bg-white/10 text-left"
+        className="group w-full rounded-xl border border-emerald-200/45 bg-[linear-gradient(135deg,rgba(16,185,129,0.24),rgba(6,78,59,0.58))] px-3 py-2.5 text-left shadow-[0_10px_25px_rgba(16,185,129,0.25)] transition hover:-translate-y-[1px] hover:border-emerald-100/70 hover:shadow-[0_14px_30px_rgba(16,185,129,0.33)]"
         onClick={() => {
           onChange(officialConfig);
           onApply(officialConfig);
         }}
       >
-        {isPortuguese ? 'Restaurar oficial' : 'Reset to official'}
+        <span className="flex items-center justify-between gap-3">
+          <span>
+            <span className="block text-sm font-semibold text-emerald-50">
+              {isPortuguese ? 'Restaurar visual oficial' : 'Reset to official look'}
+            </span>
+            <span className="mt-0.5 block text-[11px] text-emerald-100/85">
+              {isPortuguese ? 'Retorna gradiente e forma padrão da SAI.' : 'Reapply default SAI gradient and shape.'}
+            </span>
+          </span>
+          <span className="rounded-full border border-emerald-100/60 bg-emerald-300/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-50">
+            SAI
+          </span>
+        </span>
       </button>
       <label className="block rounded-lg border border-white/20 bg-white/10 p-2 text-xs">
         {isPortuguese ? 'Cor das divs' : 'Div color'}
