@@ -654,6 +654,82 @@ def score_cleaned_image(cleaned_path: Path) -> dict[str, Any]:
     return report
 
 
+def detect_back_texture_artifacts(preview_back_path: Path) -> dict[str, Any]:
+    """Analyze a rendered back-view PNG for front-texture bleed-through artifacts.
+
+    A garment back sanitized correctly should display a nearly uniform fabric
+    color.  This function loads the rendered preview with OpenCV and applies a
+    median-based outlier test in LAB color space (perceptually uniform) to
+    quantify any residual stain or pattern leakage from Meshy's cylindrical
+    texture wrapping.
+
+    Intended use: called from handler.py after the Blender pipeline completes
+    to populate the ``backStainMetrics`` field in the job response, enabling
+    monitoring dashboards and automated quality gates.
+
+    Returns a dict with:
+      artifactConfidence — 0.0 (clean) to 1.0 (heavy stain leakage)
+      hotspotRatio       — fraction of garment pixels significantly off-color
+      colorVarianceLab   — mean LAB distance from median across garment pixels
+      dominantColorBGR   — [B, G, R] median fabric color 0–255
+      garmentPixels      — usable pixel count
+    """
+    bgr = cv2.imread(str(preview_back_path), cv2.IMREAD_COLOR)
+    if bgr is None:
+        logger.warning("detect_back_texture_artifacts: could not read %s", preview_back_path)
+        return {"artifactConfidence": 0.0, "error": "could_not_read_preview"}
+
+    # Convert to LAB for perceptually uniform distance measurement
+    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB).astype(np.float32)
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+
+    # Garment mask: exclude near-black background and overexposed highlights
+    garment_mask = (gray > 20) & (gray < 235)
+    garment_count = int(np.count_nonzero(garment_mask))
+
+    if garment_count < 500:
+        return {
+            "artifactConfidence": 0.0,
+            "garmentPixels": garment_count,
+            "error": "too_few_garment_pixels",
+        }
+
+    garment_lab = lab[garment_mask]  # (N, 3)
+
+    # Median is robust to stain/logo outliers — estimates true fabric color
+    median_lab = np.median(garment_lab, axis=0)
+
+    # Per-pixel LAB Euclidean distance from median
+    diffs = garment_lab - median_lab
+    distances = np.sqrt((diffs * diffs).sum(axis=1))
+
+    # > 25 LAB units = clearly visible color difference on a uniform garment back
+    hotspot_ratio = float(np.mean(distances > 25.0))
+    color_variance_lab = float(distances.mean())
+
+    # Artifact confidence:
+    # Clean fabric:       hotspot ~0.03, variance ~8  → score ~0.05
+    # Mild stain leakage: hotspot ~0.12, variance ~18 → score ~0.50
+    # Heavy leakage:      hotspot ~0.25, variance ~30 → score ~1.00
+    artifact_confidence = min(1.0, max(0.0,
+        hotspot_ratio * 3.0 + max(0.0, color_variance_lab - 10.0) / 35.0
+    ))
+
+    # Reconstruct median BGR for reporting
+    median_lab_pixel = median_lab.reshape(1, 1, 3).astype(np.uint8)
+    median_bgr = cv2.cvtColor(median_lab_pixel, cv2.COLOR_LAB2BGR).reshape(3).tolist()
+
+    report = {
+        "artifactConfidence": round(artifact_confidence, 4),
+        "hotspotRatio": round(hotspot_ratio, 4),
+        "colorVarianceLab": round(color_variance_lab, 4),
+        "dominantColorBGR": [int(c) for c in median_bgr],
+        "garmentPixels": garment_count,
+    }
+    logger.info("detect_back_texture_artifacts: %s", report)
+    return report
+
+
 def build_meshy_prompt(clean_meta: dict[str, Any], options: dict[str, Any]) -> str:
     garment = str(options.get("garmentType") or options.get("category") or "garment")
     color = str(options.get("color") or "neutral")
