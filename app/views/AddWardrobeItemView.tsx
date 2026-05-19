@@ -594,13 +594,13 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
         <SectionBlock
           title="Formulário de peça de guarda-roupa"
-          subtitle="Register a piece and classify it with tags and metadata."
+          subtitle="Cadastre uma peça e classifique com tags e metadados."
         >
           <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={handleSubmit}>
             <input
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Piece name"
+              placeholder="Nome da peça"
               className={inputClassName}
             />
 
@@ -628,17 +628,17 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
               value={form.piece_type}
               onChange={(pieceType) => setForm((prev) => ({ ...prev, piece_type: pieceType }))}
               options={[
-                { value: 'upper_piece', label: 'Upper piece', icon: { type: 'emoji', value: '👕', alt: 'T-shirt' } },
-                { value: 'lower_piece', label: 'Lower piece', icon: { type: 'emoji', value: '👖', alt: 'Pants' } },
-                { value: 'shoes_piece', label: 'Shoes', icon: { type: 'emoji', value: '👟', alt: 'Shoes' } },
-                { value: 'accessory_piece', label: 'Accessory', icon: { type: 'emoji', value: '🧢', alt: 'Accessory' } },
+                { value: 'upper_piece', label: 'Parte de cima', icon: { type: 'emoji', value: '👕', alt: 'Camiseta' } },
+                { value: 'lower_piece', label: 'Parte de baixo', icon: { type: 'emoji', value: '👖', alt: 'Calça' } },
+                { value: 'shoes_piece', label: 'Calçados', icon: { type: 'emoji', value: '👟', alt: 'Calçados' } },
+                { value: 'accessory_piece', label: 'Acessório', icon: { type: 'emoji', value: '🧢', alt: 'Acessório' } },
               ]}
             />
 
             <FancySelect
               value={form.market_id}
               onChange={(marketId) => setForm((prev) => ({ ...prev, market_id: marketId }))}
-              placeholder="Select market"
+              placeholder="Selecionar mercado"
               options={markets.map((market) => ({
                 value: market.market_id,
                 label: marketLabel.get(market.market_id) ?? market.market_id,
@@ -649,7 +649,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
               value={form.brand_id}
               onChange={(brandId) => setForm((prev) => ({ ...prev, brand_id: brandId }))}
               options={[
-                { value: DEFAULT_BRAND_ID, label: 'Default brand', icon: { type: 'emoji', value: '🏷️', alt: 'Default brand' } },
+                { value: DEFAULT_BRAND_ID, label: 'Marca padrão', icon: { type: 'emoji', value: '🏷️', alt: 'Marca padrão' } },
                 ...brands.map((brand) => {
                   const logoUrl = resolveBrandLogoUrl(brand);
                   return {
@@ -666,8 +666,8 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
             <FancySelect
               value={form.color}
               onChange={(color) => setForm((prev) => ({ ...prev, color }))}
-              placeholder="Color"
-              options={COLOR_OPTIONS.map((color) => ({ value: color, label: color, group: 'Color' }))}
+              placeholder="Cor"
+              options={COLOR_OPTIONS.map((color) => ({ value: color, label: color, group: 'Cor' }))}
             />
 
             <FancySelect
@@ -684,37 +684,37 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
             <FancySelect
               value={form.style_tags}
               onChange={(styleTag) => setForm((prev) => ({ ...prev, style_tags: styleTag }))}
-              placeholder="Style tag"
+              placeholder="Tag de estilo"
               options={STYLE_TAG_OPTIONS.map((styleTag) => ({
                 value: styleTag,
                 label: styleTag,
-                group: 'Style Tags',
+                group: 'Tags de estilo',
               }))}
             />
 
             <FancySelect
               value={form.occasion_tags}
               onChange={(occasionTag) => setForm((prev) => ({ ...prev, occasion_tags: occasionTag }))}
-              placeholder="Occasion tag"
+              placeholder="Tag de ocasião"
               options={OCCASION_TAG_OPTIONS.map((occasionTag) => ({
                 value: occasionTag,
                 label: occasionTag,
-                group: 'Occasion Tags',
+                group: 'Tags de ocasião',
               }))}
             />
 
             <div className={`${infoBoxClassName} md:col-span-2`}>
               <p className="text-sm text-white/80">
                 {selectedImageName
-                  ? `Selected file: ${selectedImageName}`
-                  : 'Select an image file to continue.'}
+                  ? `Arquivo selecionado: ${selectedImageName}`
+                  : 'Selecione um arquivo de imagem para continuar.'}
               </p>
 
               {imagePreview ? (
                 <div className="mt-3 flex flex-col items-start gap-3">
                   <Image
                     src={imagePreview}
-                    alt="Selected clothing piece preview"
+                    alt="Pré-visualização da peça selecionada"
                     width={512}
                     height={320}
                     className="h-40 w-auto rounded-xl border border-white/20 object-cover"
@@ -727,7 +727,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
                     className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:scale-105 hover:brightness-110 disabled:opacity-50"
                   >
                     <span>✨</span>
-                    {isAnalyzing ? 'Analyzing with Google AI...' : 'Analyze with Google AI'}
+                    {isAnalyzing ? 'Analisando com Google IA...' : 'Analisar com Google IA'}
                   </button>
                 </div>
               ) : null}
@@ -738,7 +738,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
               disabled={submitting || uploadingImage}
               className={`${submitButtonClassName} md:col-span-2`}
             >
-              {uploadingImage ? 'Uploading image...' : submitting ? 'Saving...' : 'Add piece'}
+              {uploadingImage ? 'Enviando imagem...' : submitting ? 'Salvando...' : 'Adicionar peça'}
             </button>
 
             {submitting ? (
@@ -755,7 +755,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
             {uvJobId ? (
               <p className="md:col-span-2 text-xs text-white/80">
-                UV job <span className="font-mono">{uvJobId}</span> status: {uvJobStatus ?? 'pending'}
+                Processo UV <span className="font-mono">{uvJobId}</span> status: {uvJobStatus ?? 'pendente'}
               </p>
             ) : null}
           </form>

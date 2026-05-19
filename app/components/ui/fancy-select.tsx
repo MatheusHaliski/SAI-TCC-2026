@@ -165,14 +165,14 @@ export default function FancySelect({
       >
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
-            Selection
+            Seleção
           </div>
           <div className={`flex items-center gap-2 truncate text-sm font-medium ${selected ? 'text-white' : 'text-white/55'}`}>
             {renderOptionIcon(selected)}
             <span className="truncate">{selected?.label ?? placeholder}</span>
           </div>
           <div className="truncate text-xs text-white/45">
-            {selected?.hint ?? 'Open to choose an item'}
+            {selected?.hint ?? 'Abra para escolher um item'}
           </div>
         </div>
 
@@ -204,7 +204,7 @@ export default function FancySelect({
               >
                 {groupedOptions.length === 0 ? (
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/55">
-                    No options available
+                    Nenhuma opção disponível
                   </div>
                 ) : (
                   groupedOptions.map(([groupName, groupItems]) => (
