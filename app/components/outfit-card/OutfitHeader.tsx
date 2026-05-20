@@ -10,6 +10,7 @@ interface OutfitHeaderProps {
   compact?: boolean;
   brandBadges?: Array<{ name: string; logoUrl?: string }>;
   titleFontFamily?: string;
+  creatorName?: string;
 }
 
 export default function OutfitHeader({
@@ -20,12 +21,13 @@ export default function OutfitHeader({
   compact = false,
   brandBadges = [],
   titleFontFamily,
+  creatorName,
 }: OutfitHeaderProps) {
   return (
-    <header className={`space-y-2 rounded-2xl border border-white/20 bg-[linear-gradient(135deg,rgba(67,56,202,0.42),rgba(14,116,144,0.35),rgba(51,65,85,0.5))] shadow-[0_0_30px_rgba(34,211,238,0.18)] backdrop-blur-md ${compact ? 'p-3' : 'p-4'}`}>
+    <header className={`space-y-2 rounded-2xl border border-white/20 bg-black/25 shadow-[0_8px_24px_rgba(15,23,42,0.22)] backdrop-blur-md ${compact ? 'p-3' : 'p-4'}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-2">
-          <h3 className={`truncate font-semibold text-white ${compact ? 'text-base' : 'text-xl sm:text-2xl'}`} style={titleFontFamily ? { fontFamily: titleFontFamily } : undefined}>{outfitName}</h3>
+          <div className="flex flex-wrap items-center gap-2"><h3 className={`truncate font-semibold text-white ${compact ? 'text-base' : 'text-xl sm:text-2xl'}`} style={titleFontFamily ? { fontFamily: titleFontFamily } : undefined}>{outfitName}</h3>{creatorName ? <span className="text-xs text-white/70">por @{creatorName}</span> : null}</div>
           {brandBadges.length ? (
             <div className="flex flex-wrap items-center gap-2">
               {brandBadges.slice(0, 4).map((brand) => (

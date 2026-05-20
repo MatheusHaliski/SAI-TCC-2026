@@ -131,7 +131,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
 
   return (
     <section
-      className={`relative overflow-hidden rounded-3xl border border-slate-200/70 shadow-[0_12px_45px_rgba(15,23,42,0.08)] ${variant === 'compact' ? 'space-y-3 p-3' : 'space-y-4 p-4 sm:p-6'}`}
+      className={`relative overflow-hidden rounded-2xl border border-slate-200/60 shadow-[0_8px_24px_rgba(15,23,42,0.08)] ${variant === 'compact' ? 'space-y-2 p-2.5' : 'space-y-3 p-3 sm:p-4'}`}
       style={backgroundStyle}
     >
       {materialRender.textureDataUrl ? (
@@ -163,7 +163,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
         />
       ) : null}
       <div className={`relative z-[1] ${variant === 'compact' ? 'space-y-3' : 'space-y-4'}`}>
-        <OutfitHeroImage src={data.heroImageUrl} alt={`${data.outfitName} hero preview`} className={variant === 'compact' ? 'h-32 rounded-2xl' : ''} />
+        <OutfitHeroImage src={data.heroImageUrl} alt={`${data.outfitName} hero preview`} className={variant === 'compact' ? 'h-24 rounded-xl' : 'h-44 rounded-xl'} />
         <OutfitHeader
           outfitName={data.outfitName}
           outfitStyleLine={data.outfitStyleLine}
@@ -172,6 +172,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
           compact={variant === 'compact'}
           brandBadges={brandBadges}
           titleFontFamily={data.titleFontFamily}
+          creatorName={data.creatorName}
         />
         <OutfitPieceList pieces={data.pieces} compact={variant === 'compact'} />
         {actions.length ? <CompactCardActionBar actions={actions} /> : null}
