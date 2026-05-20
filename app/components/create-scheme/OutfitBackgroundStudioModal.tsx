@@ -1228,51 +1228,195 @@ function buildTonalGeometryConfig(context: PresetContext, referenceImage?: strin
   };
 }
 
+// Tech Amber gradient matches the preset gradient tab values:
+// angle 271° (nearly vertical top→bottom), intensity 120%,
+// stops: #7c2d12 → #ea580c → #f59e0b → #fef3c7
+const TECH_AMBER_GRADIENT: NonNullable<OutfitBackgroundConfig['gradient']> = {
+  type: 'linear',
+  angle: 271,
+  intensity: 120,
+  stops: [
+    { color: '#7c2d12', position: 0 },
+    { color: '#ea580c', position: 34 },
+    { color: '#f59e0b', position: 68 },
+    { color: '#fef3c7', position: 100 },
+  ],
+};
+
 function buildTechAmberEnergyConfig(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
   const safeReferenceImage = referenceImage || context.brandLogoUrl || '';
+  const brand = escapeSvgAttribute(context.brandName);
   const amberSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
     <defs>
-      <linearGradient id='amberPremium' x1='4%' y1='8%' x2='96%' y2='92%'>
-        <stop offset='0%' stop-color='#2b1606'/>
-        <stop offset='35%' stop-color='#8a4b0f'/>
+      <linearGradient id='amberBg' x1='0%' y1='0%' x2='0%' y2='100%'>
+        <stop offset='0%' stop-color='#7c2d12'/>
+        <stop offset='34%' stop-color='#ea580c'/>
         <stop offset='68%' stop-color='#f59e0b'/>
-        <stop offset='100%' stop-color='#fde68a'/>
+        <stop offset='100%' stop-color='#fef3c7'/>
       </linearGradient>
-      <filter id='amberGlow'>
-        <feGaussianBlur stdDeviation='8'/>
+      <filter id='amberGlow' x='-20%' y='-20%' width='140%' height='140%'>
+        <feGaussianBlur stdDeviation='14' result='blur'/>
+        <feMerge><feMergeNode in='blur'/><feMergeNode in='SourceGraphic'/></feMerge>
       </filter>
+      <clipPath id='imgClip'><rect x='694' y='88' width='448' height='612' rx='0'/></clipPath>
     </defs>
-    <rect width='1200' height='800' fill='url(#amberPremium)'/>
-    <rect width='1200' height='800' fill='rgba(17,24,39,0.24)'/>
-    <g stroke='rgba(253,230,138,0.34)' stroke-width='1.8'>
-      ${Array.from({ length: 12 }).map((_, i) => `<line x1='${i * 115}' y1='-20' x2='${i * 115 + 240}' y2='820'/>`).join('')}
-    </g>
-    <circle cx='340' cy='260' r='188' fill='rgba(251,191,36,0.36)' filter='url(#amberGlow)'/>
-    ${safeReferenceImage ? `<image href='${safeReferenceImage}' x='760' y='132' width='308' height='436' opacity='0.92' preserveAspectRatio='xMidYMid slice'/>` : ''}
-    ${safeReferenceImage ? `<rect x='736' y='108' width='356' height='486' rx='36' fill='none' stroke='rgba(254,243,199,0.62)' stroke-width='3'/>` : ''}
-    <text x='82' y='712' font-size='54' fill='rgba(17,24,39,0.74)' font-family='Arial Black,Arial,sans-serif'>${escapeSvgAttribute(context.brandName)} · TECH AMBER ENERGY</text>
+    <rect width='1200' height='800' fill='url(#amberBg)'/>
+    <rect width='1200' height='800' fill='rgba(15,10,2,0.28)'/>
+    ${Array.from({ length: 5 }, (_, i) => `<path d='M${-80 + i * 290},0 L${i * 290 + 80},800' stroke='rgba(253,186,116,0.22)' stroke-width='${3 - i * 0.4 > 0.5 ? (3 - i * 0.4).toFixed(1) : 0.8}'/>`).join('')}
+    <path d='M0,0 L580,0 L440,800 L0,800 Z' fill='rgba(124,45,18,0.40)'/>
+    <path d='M0,0 L560,0 L420,800 L0,800 Z' fill='rgba(234,88,12,0.18)'/>
+    <circle cx='260' cy='300' r='220' fill='rgba(251,191,36,0.28)' filter='url(#amberGlow)'/>
+    <circle cx='260' cy='300' r='110' fill='rgba(253,230,138,0.18)'/>
+    ${Array.from({ length: 6 }, (_, i) => `<circle cx='260' cy='300' r='${55 + i * 48}' fill='none' stroke='rgba(253,186,116,${(0.40 - i * 0.05).toFixed(2)})' stroke-width='${2 - i * 0.25 > 0.3 ? (2 - i * 0.25).toFixed(1) : 0.3}'/>`).join('')}
+    <path d='M0,520 L560,440 L440,800 L0,800 Z' fill='rgba(124,45,18,0.50)'/>
+    <path d='M0,580 L530,510 L440,800 L0,800 Z' fill='rgba(120,53,15,0.62)'/>
+    ${safeReferenceImage ? `
+      <rect x='694' y='88' width='448' height='612' fill='rgba(124,45,18,0.55)'/>
+      <image href='${safeReferenceImage}' x='694' y='88' width='448' height='612' preserveAspectRatio='xMidYMid meet' opacity='0.92' clip-path='url(#imgClip)'/>
+      <rect x='694' y='88' width='448' height='612' fill='none' stroke='rgba(254,243,199,0.75)' stroke-width='3'/>
+      <line x1='694' y1='88' x2='1142' y2='88' stroke='rgba(251,191,36,0.55)' stroke-width='6'/>
+      <line x1='694' y1='700' x2='1142' y2='700' stroke='rgba(251,191,36,0.55)' stroke-width='6'/>
+    ` : ''}
+    <text x='56' y='718' font-size='48' fill='rgba(254,243,199,0.90)' font-family='Arial Black,Arial,sans-serif' letter-spacing='2'>${brand}</text>
+    <text x='56' y='762' font-size='22' fill='rgba(253,186,116,0.70)' font-family='Arial,sans-serif' letter-spacing='8'>TECH AMBER ENERGY</text>
   </svg>`;
   return {
     background_mode: 'ai_artwork',
     ai_artwork: {
-      prompt: `${context.brandName} amber energy premium tech treatment`,
+      prompt: `${context.brandName} tech amber energy — amber gradient diagonal composition`,
       image_url: asDataUri(amberSvg),
+      generation_status: 'done',
+    },
+    gradient: TECH_AMBER_GRADIENT,
+    shape: 'none',
+  };
+}
+
+async function buildEditorialCollageAsync(
+  uploadedImage: string | null,
+  context: PresetContext,
+): Promise<OutfitBackgroundConfig> {
+  const CW = 1200;
+  const CH = 800;
+  const canvas = createOffscreenCanvas(CW, CH);
+  if (!canvas) throw new Error('canvas_unavailable');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('canvas_context_unavailable');
+
+  const SPLIT = 576; // pixel where streetvibes ends / upload begins
+
+  // Dark editorial base
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, CW, CH);
+
+  // LEFT PANEL — streetvibes.jpg
+  let streetImg: HTMLImageElement | null = null;
+  try { streetImg = await loadImageFromSource('/streetvibes.jpg'); } catch { /* no-op */ }
+
+  if (streetImg) {
+    ctx.drawImage(streetImg, 0, 0, SPLIT + 80, CH);
+    const overlay = ctx.createLinearGradient(0, 0, SPLIT + 80, 0);
+    overlay.addColorStop(0, 'rgba(2,6,23,0.15)');
+    overlay.addColorStop(1, 'rgba(2,6,23,0.60)');
+    ctx.fillStyle = overlay;
+    ctx.fillRect(0, 0, SPLIT + 80, CH);
+  } else {
+    // Geometric placeholder when asset unavailable
+    const grd = ctx.createLinearGradient(0, 0, SPLIT, CH);
+    grd.addColorStop(0, '#1e293b');
+    grd.addColorStop(1, '#0f172a');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, SPLIT, CH);
+    ctx.strokeStyle = 'rgba(148,163,184,0.20)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 7; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, i * 120); ctx.lineTo(SPLIT, i * 120 + 80);
+      ctx.stroke();
+    }
+  }
+
+  // Diagonal separator — two lines for editorial look
+  ctx.save();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(248,250,252,0.65)';
+  ctx.beginPath(); ctx.moveTo(SPLIT - 30, 0); ctx.lineTo(SPLIT + 100, CH); ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(248,250,252,0.25)';
+  ctx.beginPath(); ctx.moveTo(SPLIT - 10, 0); ctx.lineTo(SPLIT + 120, CH); ctx.stroke();
+  ctx.restore();
+
+  // RIGHT PANEL — uploaded image
+  let uploadedImg: HTMLImageElement | null = null;
+  if (uploadedImage) {
+    try { uploadedImg = await loadImageFromSource(uploadedImage); } catch { /* no-op */ }
+  }
+
+  if (uploadedImg) {
+    const rx = SPLIT + 40;
+    ctx.drawImage(uploadedImg, rx, 0, CW - rx, CH);
+    const rightOverlay = ctx.createLinearGradient(rx, 0, CW, 0);
+    rightOverlay.addColorStop(0, 'rgba(2,6,23,0.48)');
+    rightOverlay.addColorStop(0.5, 'rgba(2,6,23,0.08)');
+    rightOverlay.addColorStop(1, 'rgba(2,6,23,0.04)');
+    ctx.fillStyle = rightOverlay;
+    ctx.fillRect(rx, 0, CW - rx, CH);
+  } else {
+    // Diamond grid placeholder on right
+    ctx.strokeStyle = 'rgba(226,232,240,0.20)';
+    ctx.lineWidth = 1;
+    for (let row = 0; row < 6; row++) {
+      for (let col = 0; col < 5; col++) {
+        const cx = SPLIT + 80 + col * 120;
+        const cy = 60 + row * 130;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 44); ctx.lineTo(cx + 56, cy);
+        ctx.lineTo(cx, cy + 44); ctx.lineTo(cx - 56, cy);
+        ctx.closePath(); ctx.stroke();
+      }
+    }
+  }
+
+  // Diamond frame border on the right panel
+  ctx.strokeStyle = 'rgba(248,250,252,0.32)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(SPLIT + 80, 52, CW - SPLIT - 130, CH - 104);
+
+  // Bottom vignette
+  const vignette = ctx.createLinearGradient(0, CH - 200, 0, CH);
+  vignette.addColorStop(0, 'rgba(2,6,23,0)');
+  vignette.addColorStop(1, 'rgba(2,6,23,0.72)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, CH - 200, CW, 200);
+
+  // Brand text
+  ctx.fillStyle = 'rgba(248,250,252,0.88)';
+  ctx.font = 'bold 48px Arial Black, Arial, sans-serif';
+  ctx.fillText(`${context.brandName}`, 52, 726);
+  ctx.fillStyle = 'rgba(203,213,225,0.65)';
+  ctx.font = '22px Arial, sans-serif';
+  ctx.letterSpacing = '8px';
+  ctx.fillText('EDITORIAL COLLAGE', 52, 764);
+
+  const outputUrl = canvas.toDataURL('image/png');
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: {
+      prompt: `${context.brandName} editorial collage — streetvibes × uploaded reference`,
+      image_url: outputUrl,
       generation_status: 'done',
     },
     gradient: {
       type: 'linear',
-      angle: 128,
-      intensity: 108,
-      stops: [
-        { color: '#2b1606', position: 0 },
-        { color: '#8a4b0f', position: 40 },
-        { color: '#f59e0b', position: 76 },
-        { color: '#fde68a', position: 100 },
-      ],
+      angle: 135,
+      intensity: 100,
+      stops: [{ color: '#0f172a', position: 0 }, { color: '#1e293b', position: 100 }],
     },
-    shape: 'none',
+    shape: 'mesh',
   };
 }
+
+
 
 function buildTonalGeometryPreset(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
   return buildTonalGeometryConfig(context, referenceImage);
@@ -1915,6 +2059,34 @@ export default function OutfitBackgroundStudioModal({
     setBackendWarning(null);
     setPresetRequirementMessage(null);
     const uploadedReferenceImage = getUploadedReferenceImage();
+
+    if (selectedRecommendedPreset === 'selection_editorial_collage') {
+      let collageConfig: OutfitBackgroundConfig;
+      try {
+        collageConfig = await buildEditorialCollageAsync(uploadedReferenceImage, presetContext);
+      } catch {
+        setAiLoading(false);
+        setAiError('Could not build editorial collage.');
+        return;
+      }
+      const collageUrl = collageConfig.ai_artwork?.image_url || '';
+      const collageVariation: ArtworkVariation = {
+        variation_id: `editorial_collage_${Date.now()}`,
+        preview_url: collageUrl,
+        output_url: collageUrl,
+        thumbnail_url: collageUrl,
+        provider: 'procedural',
+        provider_job_id: null,
+        provider_model: 'editorial-collage-canvas',
+        metadata: { source: 'editorial_collage' },
+      };
+      setAiLoading(false);
+      setDraft((prev) => ({ ...prev, ...collageConfig }));
+      setAiResults([collageVariation]);
+      setSelectedAiResult(collageVariation);
+      setAiGradientResults([]);
+      return;
+    }
 
     if (selectedRecommendedPreset === 'selection_tiled_motif') {
       if (!uploadedReferenceImage) {
