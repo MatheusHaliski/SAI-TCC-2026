@@ -1420,19 +1420,14 @@ async function buildEditorialLogoAsync(
   const ctx = canvas.getContext('2d');
   if (!ctx) return buildEditorialLogoComposition(referenceImage || context.brandLogoUrl || '', context);
 
-  // Step 1: background — curated image from gradient picker or gradient
-  const pickerImgUrl = currentDraft.ai_artwork?.image_url;
-  const isServerImage = pickerImgUrl && !pickerImgUrl.startsWith('data:') && !pickerImgUrl.startsWith('blob:');
+  // Step 1: fixed background — Premium Fashion Artwork (same pattern as Editorial Collage uses streetvibes)
   let bgLoaded = false;
-  if (isServerImage) {
-    try {
-      const bgImg = await loadImageFromSource(pickerImgUrl as string);
-      ctx.drawImage(bgImg, 0, 0, CW, CH);
-      bgLoaded = true;
-    } catch { /* fall through */ }
-  }
+  try {
+    const bgImg = await loadImageFromSource('/Fart.png');
+    ctx.drawImage(bgImg, 0, 0, CW, CH);
+    bgLoaded = true;
+  } catch { /* fall through to gradient */ }
   if (!bgLoaded) {
-    // Draw from gradient
     drawGradientOnCanvas(ctx, CW, CH, currentDraft.gradient ?? { type: 'linear', angle: 135, intensity: 100, stops: [{ color: '#f8fafc', position: 0 }, { color: '#e2e8f0', position: 100 }] });
   }
 
@@ -1496,10 +1491,12 @@ async function buildEditorialLogoAsync(
   ctx.fillText(context.brandName || '', 88, 120);
 
   const imageUrl = canvas.toDataURL('image/png');
-  const bg = bgLoaded
-    ? { ...currentDraft, background_mode: 'ai_artwork' as const, ai_artwork: { prompt: 'editorial logo canvas composition', image_url: imageUrl, generation_status: 'done' as const }, shape: 'none' as const }
-    : { background_mode: 'ai_artwork' as const, ai_artwork: { prompt: 'editorial logo canvas composition', image_url: imageUrl, generation_status: 'done' as const }, gradient: currentDraft.gradient, shape: 'none' as const };
-  return bg;
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: { prompt: 'editorial logo — Premium Fashion Artwork + uploaded reference', image_url: imageUrl, generation_status: 'done' },
+    gradient: currentDraft.gradient,
+    shape: 'none',
+  };
 }
 
 async function buildEditorialCollageAsync(
