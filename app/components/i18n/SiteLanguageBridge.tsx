@@ -164,6 +164,108 @@ const PT_TRANSLATIONS: Record<string, string> = {
   Indisponíveis: 'Indisponíveis',
   Favoritos: 'Favoritos',
 
+  // ── Background Studio — select list option names ─────────────────────────
+
+  // Gradient preset names
+  'Deep Violet Gradient': 'Gradiente Violeta Profundo',
+  'Emerald Glow': 'Brilho Esmeralda',
+  'Silver Mist': 'Névoa Prateada',
+  'Sunset Editorial': 'Editorial Sunset',
+  'Luxury Warm Fade': 'Fade Quente Luxuoso',
+  'Blue-to-Green Premium': 'Azul para Verde Premium',
+  'Night Runway': 'Passarela Noturna',
+  'Graphite Pulse': 'Pulso Grafite',
+  'Applies gradient + geometry recipe': 'Aplica gradiente + receita de geometria',
+
+  // Gradient picker curated images
+  'Urban Texture Grid': 'Grade de Textura Urbana',
+  'Neon Pattern Overlay': 'Sobreposição Neon',
+  'Editorial Surface III': 'Superfície Editorial III',
+  'Dark Weave Pattern': 'Trama Escura',
+  'Premium Tonal Pattern': 'Padrão Tonal Premium',
+  'Minimal Canvas Layer': 'Camada Minimal',
+  'Premium Fashion Artwork': 'Arte Fashion Premium',
+  'Abstract Surface': 'Superfície Abstrata',
+  'LEGO Mini Logo': 'Logo Mini LEGO',
+  'Brand Symbol Alpha': 'Símbolo de Marca Alpha',
+  'Geometric Artwork': 'Arte Geométrica',
+  'New Birds': 'Pássaros',
+  'Street Vibes': 'Vibes de Rua',
+  'Fashion Flow': 'Fluxo Fashion',
+  'Modern Fashion UI': 'UI Moda Moderna',
+  'Flower': 'Flores',
+  'Applies flower motif artwork surface': 'Aplica superfície artística floral',
+
+  // Composition types
+  'background': 'fundo',
+  'shape pack': 'pacote de formas',
+  'overlay': 'sobreposição',
+  'frame': 'moldura',
+
+  // Style presets
+  'editorial fashion': 'moda editorial',
+  'luxury minimal': 'luxo minimalista',
+  'futuristic sport': 'esporte futurista',
+  'streetwear': 'streetwear',
+  'monochrome premium': 'monocromático premium',
+
+  // Palette modes
+  'cool luxury': 'luxo frio',
+  'warm neutral': 'neutro quente',
+  'custom': 'personalizado',
+
+  // Geometry family
+  'arrows': 'setas',
+  'waves': 'ondas',
+  'diamond': 'diamantes',
+  'mesh': 'malha',
+  'circles': 'círculos',
+  'triangles': 'triângulos',
+  'stars': 'estrelas',
+  'flowers': 'flores',
+  'beams': 'feixes',
+  'panels': 'painéis',
+  'mixed': 'misto',
+
+  // Shape segment
+  'Orb': 'Orbe',
+  'Diamond': 'Diamante',
+  'Mesh': 'Malha',
+  'Stars': 'Estrelas',
+  'Circles': 'Círculos',
+  'Triangles': 'Triângulos',
+  'Waves': 'Ondas',
+  'Beams': 'Feixes',
+  'Flowers': 'Flores',
+  'Arrows': 'Setas',
+
+  // Generation modes
+  'Prompt driven': 'Baseado no Prompt',
+  'Preset guided': 'Guiado por Preset',
+
+  // Contrast levels
+  'Soft contrast with subtle transitions': 'Contraste suave com transições sutis',
+  'Balanced contrast for readability and depth': 'Contraste equilibrado para legibilidade e profundidade',
+  'Strong contrast for bold visual impact': 'Contraste forte para impacto visual marcante',
+
+  // Material type labels
+  'Embroidered Fabric / Textile Material': 'Tecido Bordado / Material Têxtil',
+  'Lego Material': 'Material Lego',
+  'Glass Material': 'Material Vidro',
+  'Water Material': 'Material Água',
+  'None': 'Nenhum',
+  'Color and gradient only.': 'Somente cor e gradiente.',
+  'Premium woven textile with stitched details and soft embossed depth.': 'Têxtil premium com detalhes bordados e profundidade em relevo.',
+  'Chunkier block-like structure with bold thread highlights.': 'Estrutura de blocos com destaques de fio marcantes.',
+  'Translucent textile sheen with satin-like highlights.': 'Brilho têxtil translúcido com realces tipo cetim.',
+  'Fluid directional streaks with deeper tonal movement.': 'Listras direcionais fluidas com movimento tonal profundo.',
+
+  // Preset description texts
+  'Uses the uploaded logo as a hero element in a clean campaign-style composition.': 'Usa o logo enviado como elemento principal em uma composição estilo campanha.',
+  'Fuses uploaded logo with high-energy amber/orange AI-tech visual treatment.': 'Combina o logo enviado com tratamento visual amber/laranja de alta energia.',
+  'Turns the uploaded logo into a repeated premium motif surface.': 'Transforma o logo enviado em uma superfície de motivo premium repetido.',
+  'Upload reference image': 'Enviar imagem de referência',
+
   // ── Background Studio modal ───────────────────────────────────────────────
   'Customize the visual surface of your outfit card': 'Personalize a superfície visual do seu card de look',
   'Close ✕': 'Fechar ✕',

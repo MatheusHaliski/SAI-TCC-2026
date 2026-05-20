@@ -109,7 +109,7 @@ const GRADIENT_PRESETS: Array<{ label: string; config: OutfitBackgroundConfig }>
     label: 'Deep Violet Gradient',
     config: {
       background_mode: 'gradient',
-      gradient: { type: 'linear', angle: 135, intensity: 100, stops: [{ color: '#0f172a', position: 0 }, { color: '#6d28d9', position: 100 }] },
+      gradient: { type: 'linear', angle: 135, intensity: 110, stops: [{ color: '#2e1065', position: 0 }, { color: '#7c3aed', position: 55 }, { color: '#a78bfa', position: 100 }] },
       shape: 'orb',
     },
   },
@@ -117,7 +117,7 @@ const GRADIENT_PRESETS: Array<{ label: string; config: OutfitBackgroundConfig }>
     label: 'Emerald Glow',
     config: {
       background_mode: 'gradient',
-      gradient: { type: 'radial', intensity: 110, stops: [{ color: '#022c22', position: 5 }, { color: '#10b981', position: 100 }] },
+      gradient: { type: 'radial', intensity: 115, stops: [{ color: '#6ee7b7', position: 0 }, { color: '#059669', position: 45 }, { color: '#064e3b', position: 100 }] },
       shape: 'mesh',
     },
   },
@@ -125,10 +125,51 @@ const GRADIENT_PRESETS: Array<{ label: string; config: OutfitBackgroundConfig }>
     label: 'Silver Mist',
     config: {
       background_mode: 'gradient',
-      gradient: { type: 'linear', angle: 145, intensity: 80, stops: [{ color: '#0f172a', position: 0 }, { color: '#cbd5e1', position: 100 }] },
+      gradient: { type: 'linear', angle: 145, intensity: 95, stops: [{ color: '#64748b', position: 0 }, { color: '#cbd5e1', position: 50 }, { color: '#f1f5f9', position: 100 }] },
       shape: 'diamond',
     },
   },
+  {
+    label: 'Sunset Editorial',
+    config: {
+      background_mode: 'gradient',
+      gradient: { type: 'linear', angle: 150, intensity: 105, stops: [{ color: '#7c2d12', position: 0 }, { color: '#f97316', position: 60 }, { color: '#fde68a', position: 100 }] },
+      shape: 'orb',
+    },
+  },
+  {
+    label: 'Luxury Warm Fade',
+    config: {
+      background_mode: 'gradient',
+      gradient: { type: 'linear', angle: 125, intensity: 85, stops: [{ color: '#d6c2a5', position: 0 }, { color: '#f7f0e4', position: 100 }] },
+      shape: 'none',
+    },
+  },
+  {
+    label: 'Blue-to-Green Premium',
+    config: {
+      background_mode: 'gradient',
+      gradient: { type: 'linear', angle: 120, intensity: 105, stops: [{ color: '#1d4ed8', position: 0 }, { color: '#059669', position: 100 }] },
+      shape: 'mesh',
+    },
+  },
+  {
+    label: 'Night Runway',
+    config: {
+      background_mode: 'gradient',
+      gradient: { type: 'conic', angle: 180, intensity: 100, stops: [{ color: '#020617', position: 0 }, { color: '#0f172a', position: 45 }, { color: '#7e22ce', position: 100 }] },
+      shape: 'diamond',
+    },
+  },
+  {
+    label: 'Graphite Pulse',
+    config: {
+      background_mode: 'gradient',
+      gradient: { type: 'linear', angle: 110, intensity: 108, stops: [{ color: '#020617', position: 0 }, { color: '#1e293b', position: 52 }, { color: '#334155', position: 100 }] },
+      shape: 'mesh',
+    },
+  },
+];
   {
     label: 'Sunset Editorial',
     config: {
@@ -2968,10 +3009,6 @@ export default function OutfitBackgroundStudioModal({
                   <p className="mt-1"><span className="font-semibold text-white/85">Contrast:</span> {CONTRAST_LEVEL_DESCRIPTIONS[aiContrast]}</p>
                   <p className="mt-1"><span className="font-semibold text-white/85">Geometry:</span> {GEOMETRY_DESCRIPTION_MAP[aiGeometry]}</p>
                 </div>
-                <label className="flex items-center gap-2 text-xs">
-                  <input type="checkbox" checked={aiSafeArea} onChange={(event) => setAiSafeArea(event.target.checked)} />
-                  Safe area mode for text and subject
-                </label>
                 <div className="flex flex-wrap gap-2">
                   <button disabled={aiLoading} type="button" className="rounded-lg border border-violet-300/60 bg-violet-500/40 px-3 py-2 text-xs font-semibold disabled:opacity-60" onClick={() => void generateAiBackground()}>{aiLoading ? 'Generating...' : 'Generate AI Background'}</button>
                   <button
