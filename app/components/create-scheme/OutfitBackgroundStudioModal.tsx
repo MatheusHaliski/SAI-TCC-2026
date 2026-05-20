@@ -433,6 +433,62 @@ function getRelativeLuminance(hexColor: string) {
   return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
 }
 
+type ColorTokens = { light: string; mid: string; dark: string };
+const COLOR_KEYWORD_MAP: Record<string, ColorTokens> = {
+  amarelo:  { light: '#fef9c3', mid: '#eab308', dark: '#713f12' },
+  dourado:  { light: '#fef3c7', mid: '#d97706', dark: '#78350f' },
+  laranja:  { light: '#ffedd5', mid: '#f97316', dark: '#7c2d12' },
+  vermelho: { light: '#fee2e2', mid: '#ef4444', dark: '#7f1d1d' },
+  rosa:     { light: '#fce7f3', mid: '#ec4899', dark: '#831843' },
+  roxo:     { light: '#f3e8ff', mid: '#a855f7', dark: '#3b0764' },
+  violeta:  { light: '#ede9fe', mid: '#8b5cf6', dark: '#2e1065' },
+  azul:     { light: '#dbeafe', mid: '#3b82f6', dark: '#1e3a5f' },
+  ciano:    { light: '#cffafe', mid: '#06b6d4', dark: '#164e63' },
+  verde:    { light: '#dcfce7', mid: '#22c55e', dark: '#14532d' },
+  branco:   { light: '#f8fafc', mid: '#e2e8f0', dark: '#94a3b8' },
+  cinza:    { light: '#f1f5f9', mid: '#64748b', dark: '#1e293b' },
+  preto:    { light: '#334155', mid: '#1e293b', dark: '#020617' },
+  prata:    { light: '#f8fafc', mid: '#94a3b8', dark: '#334155' },
+  yellow:   { light: '#fef9c3', mid: '#eab308', dark: '#713f12' },
+  gold:     { light: '#fef3c7', mid: '#d97706', dark: '#78350f' },
+  orange:   { light: '#ffedd5', mid: '#f97316', dark: '#7c2d12' },
+  red:      { light: '#fee2e2', mid: '#ef4444', dark: '#7f1d1d' },
+  pink:     { light: '#fce7f3', mid: '#ec4899', dark: '#831843' },
+  purple:   { light: '#f3e8ff', mid: '#a855f7', dark: '#3b0764' },
+  violet:   { light: '#ede9fe', mid: '#8b5cf6', dark: '#2e1065' },
+  blue:     { light: '#dbeafe', mid: '#3b82f6', dark: '#1e3a5f' },
+  cyan:     { light: '#cffafe', mid: '#06b6d4', dark: '#164e63' },
+  green:    { light: '#dcfce7', mid: '#22c55e', dark: '#14532d' },
+  white:    { light: '#f8fafc', mid: '#e2e8f0', dark: '#94a3b8' },
+  gray:     { light: '#f1f5f9', mid: '#64748b', dark: '#1e293b' },
+  grey:     { light: '#f1f5f9', mid: '#64748b', dark: '#1e293b' },
+  black:    { light: '#334155', mid: '#1e293b', dark: '#020617' },
+  silver:   { light: '#f8fafc', mid: '#94a3b8', dark: '#334155' },
+};
+
+function detectColorFromPrompt(prompt: string): ColorTokens | null {
+  const normalized = prompt.toLowerCase().trim();
+  for (const [keyword, tokens] of Object.entries(COLOR_KEYWORD_MAP)) {
+    if (normalized.includes(keyword)) return tokens;
+  }
+  return null;
+}
+
+function buildColorGradientVariations(t: ColorTokens): OutfitBackgroundConfig[] {
+  const g = (angle: number, stops: Array<{ color: string; position: number }>, type: 'linear' | 'radial' = 'linear'): OutfitBackgroundConfig => ({
+    background_mode: 'gradient',
+    gradient: { type, angle, intensity: 100, stops },
+  });
+  return [
+    g(135, [{ color: t.light, position: 0 }, { color: t.mid,  position: 100 }]),
+    g(145, [{ color: t.dark,  position: 0 }, { color: t.mid,  position: 100 }]),
+    g(0,   [{ color: t.mid,   position: 0 }, { color: t.dark, position: 100 }], 'radial'),
+    g(60,  [{ color: t.light, position: 0 }, { color: t.mid,  position: 50 }, { color: t.dark,  position: 100 }]),
+    g(180, [{ color: '#020617', position: 0 }, { color: t.dark, position: 40 }, { color: t.mid, position: 100 }]),
+    g(120, [{ color: t.light, position: 0 }, { color: '#0f172a', position: 100 }]),
+  ];
+}
+
 function detectGeometryFromPrompt(prompt: string): GeometryFamily | null {
   const normalized = prompt.toLowerCase();
   const entries: Array<{ geometry: GeometryFamily; aliases: string[] }> = [
@@ -1983,6 +2039,17 @@ export default function OutfitBackgroundStudioModal({
   const generateWithGoogleAI = async () => {
     setAiLoading(true);
     setAiError(null);
+
+    // Detect colour keywords first — instant local gradients, correct hues, no API.
+    const colorTokens = detectColorFromPrompt(aiPrompt);
+    if (colorTokens) {
+      const variations = buildColorGradientVariations(colorTokens);
+      setAiGradientResults(variations);
+      setDraft((prev) => ({ ...prev, ...variations[0] }));
+      setAiLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/ai/fashion/background-studio', {
         method: 'POST',
