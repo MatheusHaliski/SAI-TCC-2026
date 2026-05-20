@@ -404,38 +404,338 @@ function getRelativeLuminance(hexColor: string) {
 function detectGeometryFromPrompt(prompt: string): GeometryFamily | null {
   const normalized = prompt.toLowerCase();
   const entries: Array<{ geometry: GeometryFamily; aliases: string[] }> = [
-    { geometry: 'arrows', aliases: ['arrow', 'arrows', 'chevron', 'chevrons'] },
-    { geometry: 'waves', aliases: ['wave', 'waves', 'ripple', 'ripples'] },
-    { geometry: 'diamond', aliases: ['diamond', 'rhombus', 'rhombus'] },
-    { geometry: 'mesh', aliases: ['mesh', 'lattice', 'net'] },
-    { geometry: 'circles', aliases: ['circle', 'circles', 'orbital', 'ring'] },
-    { geometry: 'triangles', aliases: ['triangle', 'triangles'] },
-    { geometry: 'stars', aliases: ['star', 'stars', 'constellation'] },
-    { geometry: 'flowers', aliases: ['flower', 'flowers', 'petal', 'floral'] },
-    { geometry: 'beams', aliases: ['beam', 'beams', 'streak', 'streaks'] },
-    { geometry: 'panels', aliases: ['panel', 'panels', 'editorial block', 'segmented'] },
-    { geometry: 'mixed', aliases: ['mixed', 'hybrid geometry'] },
+    { geometry: 'arrows', aliases: ['arrow', 'arrows', 'chevron', 'chevrons', 'seta', 'setas', 'flecha', 'flechas'] },
+    { geometry: 'waves', aliases: ['wave', 'waves', 'ripple', 'ripples', 'onda', 'ondas'] },
+    { geometry: 'diamond', aliases: ['diamond', 'rhombus', 'diamante', 'losango'] },
+    { geometry: 'mesh', aliases: ['mesh', 'lattice', 'net', 'malha', 'rede', 'grade'] },
+    { geometry: 'circles', aliases: ['circle', 'circles', 'orbital', 'ring', 'circulo', 'circulos', 'anel', 'aneis'] },
+    { geometry: 'triangles', aliases: ['triangle', 'triangles', 'triangulo', 'triangulos'] },
+    { geometry: 'stars', aliases: ['star', 'stars', 'constellation', 'estrela', 'estrelas'] },
+    { geometry: 'flowers', aliases: ['flower', 'flowers', 'petal', 'floral', 'flor', 'flores'] },
+    { geometry: 'beams', aliases: ['beam', 'beams', 'streak', 'streaks', 'raio', 'raios', 'feixe', 'feixes'] },
+    { geometry: 'panels', aliases: ['panel', 'panels', 'editorial block', 'segmented', 'painel', 'paineis'] },
+    { geometry: 'mixed', aliases: ['mixed', 'hybrid geometry', 'misto', 'hibrido'] },
   ];
   const match = entries.find((entry) => entry.aliases.some((alias) => normalized.includes(alias)));
   return match?.geometry || null;
 }
 
-function buildGeometryPreviewSvg(geometry: GeometryFamily, baseColor: string) {
+function buildGeometryVariantSvg(geometry: GeometryFamily, variant: 0 | 1 | 2, baseColor: string): string {
   const base = `<rect width='1200' height='800' fill='#0b1120'/><rect width='1200' height='800' fill='${baseColor}' opacity='0.22'/>`;
-  const geometryMarkup: Record<GeometryFamily, string> = {
-    arrows: Array.from({ length: 8 }).map((_, i) => `<path d='M${70 + i * 140},90 L${190 + i * 140},200 L${70 + i * 140},310' stroke='rgba(248,250,252,0.48)' stroke-width='20' fill='none'/>`).join(''),
-    waves: Array.from({ length: 7 }).map((_, i) => `<path d='M-40,${120 + i * 92} C180,${80 + i * 92} 360,${170 + i * 92} 560,${132 + i * 92} C760,${95 + i * 92} 950,${186 + i * 92} 1240,${142 + i * 92}' stroke='rgba(226,232,240,0.45)' stroke-width='12' fill='none'/>`).join(''),
-    diamond: Array.from({ length: 6 }).map((_, row) => Array.from({ length: 9 }).map((__, col) => `<path d='M${65 + col * 132},${86 + row * 118} L${118 + col * 132},${142 + row * 118} L${65 + col * 132},${198 + row * 118} L${12 + col * 132},${142 + row * 118} Z' fill='rgba(226,232,240,0.24)'/>`).join('')).join(''),
-    mesh: Array.from({ length: 18 }).map((_, i) => `<line x1='${i * 70}' y1='0' x2='${i * 70 + 200}' y2='800' stroke='rgba(148,163,184,0.3)'/>`).join('') + Array.from({ length: 10 }).map((_, i) => `<line x1='0' y1='${i * 90}' x2='1200' y2='${i * 90 + 90}' stroke='rgba(226,232,240,0.24)'/>`).join(''),
-    circles: Array.from({ length: 18 }).map((_, i) => `<circle cx='${80 + (i % 6) * 200}' cy='${90 + Math.floor(i / 6) * 220}' r='${32 + (i % 3) * 14}' fill='none' stroke='rgba(226,232,240,0.45)' stroke-width='5'/>`).join(''),
-    triangles: Array.from({ length: 7 }).map((_, row) => Array.from({ length: 10 }).map((__, col) => `<path d='M${30 + col * 120},${190 + row * 90} L${90 + col * 120},${70 + row * 90} L${150 + col * 120},${190 + row * 90} Z' fill='rgba(203,213,225,0.3)'/>`).join('')).join(''),
-    stars: Array.from({ length: 24 }).map((_, i) => `<path d='M${95 + (i % 8) * 140},${80 + Math.floor(i / 8) * 220} l14,38 h38 l-30,22 10,40 -32,-24 -32,24 10,-40 -30,-22 h38 Z' fill='rgba(248,250,252,0.38)'/>`).join(''),
-    flowers: Array.from({ length: 12 }).map((_, i) => `<g transform='translate(${80 + (i % 4) * 280} ${96 + Math.floor(i / 4) * 220})'><circle cx='50' cy='52' r='14' fill='rgba(253,230,138,0.8)'/><ellipse cx='50' cy='24' rx='14' ry='24' fill='rgba(244,114,182,0.48)'/><ellipse cx='78' cy='52' rx='14' ry='24' fill='rgba(244,114,182,0.48)' transform='rotate(90 78 52)'/><ellipse cx='50' cy='80' rx='14' ry='24' fill='rgba(244,114,182,0.48)'/><ellipse cx='22' cy='52' rx='14' ry='24' fill='rgba(244,114,182,0.48)' transform='rotate(90 22 52)'/></g>`).join(''),
-    beams: Array.from({ length: 12 }).map((_, i) => `<rect x='${i * 110}' y='0' width='24' height='800' fill='rgba(56,189,248,0.25)' transform='rotate(11 ${i * 110} 0)'/>`).join(''),
-    panels: Array.from({ length: 8 }).map((_, i) => `<rect x='${40 + (i % 4) * 280}' y='${70 + Math.floor(i / 4) * 330}' width='240' height='300' rx='24' fill='rgba(226,232,240,0.2)' stroke='rgba(226,232,240,0.42)'/>`).join(''),
-    mixed: `<g opacity='0.72'>${Array.from({ length: 8 }).map((_, i) => `<line x1='${i * 150}' y1='0' x2='${i * 150 + 150}' y2='800' stroke='rgba(56,189,248,0.22)'/>`).join('')}${Array.from({ length: 8 }).map((_, i) => `<circle cx='${120 + i * 130}' cy='${220 + ((i % 3) * 120)}' r='26' stroke='rgba(248,250,252,0.42)' fill='none'/>`).join('')}</g>`,
+
+  const starPoly = (cx: number, cy: number, n: number, R: number, r: number, fill: string, stroke?: string, opacity = 0.85): string => {
+    const pts = Array.from({ length: n * 2 }, (_, i) => {
+      const ang = ((i * 180) / n - 90) * (Math.PI / 180);
+      const rad = i % 2 === 0 ? R : r;
+      return `${(cx + rad * Math.cos(ang)).toFixed(1)},${(cy + rad * Math.sin(ang)).toFixed(1)}`;
+    }).join(' ');
+    return `<polygon points='${pts}' fill='${fill}' ${stroke ? `stroke='${stroke}' stroke-width='2.5'` : ''} opacity='${opacity}'/>`;
   };
-  return asDataUri(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>${base}${geometryMarkup[geometry]}<rect width='1200' height='800' fill='rgba(2,6,23,0.2)'/></svg>`);
+
+  const solidArrow = (x: number, y: number, w: number, h: number): string => {
+    const notch = h * 0.28;
+    return `<path d='M${x},${y + notch} L${x + w * 0.68},${y + notch} L${x + w * 0.68},${y} L${x + w},${y + h / 2} L${x + w * 0.68},${y + h} L${x + w * 0.68},${y + h - notch} L${x},${y + h - notch} Z' fill='rgba(226,232,240,0.28)' stroke='rgba(226,232,240,0.58)' stroke-width='1.5'/>`;
+  };
+
+  let markup = '';
+
+  switch (geometry) {
+    case 'circles':
+      if (variant === 0) {
+        // Concentric rings at multiple focal points
+        markup = (
+          [[240, 200, [44, 96, 158, 228]], [860, 330, [58, 116, 184, 262]], [1080, 90, [36, 78, 130]],
+           [70, 610, [42, 92, 152]], [630, 660, [64, 128, 200, 280]]] as [number, number, number[]][]
+        ).flatMap(([cx, cy, radii]) =>
+          radii.map((rr, i) =>
+            `<circle cx='${cx}' cy='${cy}' r='${rr}' fill='none' stroke='rgba(226,232,240,${(0.62 - i * 0.11).toFixed(2)})' stroke-width='${Math.max(0.8, 4.2 - i * 0.8).toFixed(1)}'/>`
+          )
+        ).join('');
+      } else if (variant === 1) {
+        // Uniform dot grid (staggered rows)
+        markup = Array.from({ length: 7 }, (_, row) =>
+          Array.from({ length: 12 }, (__, col) => {
+            const stagger = row % 2 === 1 ? 55 : 0;
+            const r = row % 2 === 0 ? 18 : 28;
+            return `<circle cx='${50 + col * 110 + stagger}' cy='${55 + row * 118}' r='${r}' fill='rgba(226,232,240,${row % 2 === 0 ? 0.55 : 0.30})'/>`;
+          }).join('')
+        ).join('');
+      } else {
+        // Overlapping circle outlines of varied sizes
+        markup = (
+          [{ cx: 180, cy: 180, r: 130 }, { cx: 490, cy: 305, r: 185 }, { cx: 770, cy: 135, r: 105 },
+           { cx: 1010, cy: 385, r: 165 }, { cx: 155, cy: 585, r: 92 }, { cx: 590, cy: 655, r: 145 },
+           { cx: 960, cy: 655, r: 105 }, { cx: 345, cy: 710, r: 72 }, { cx: 1140, cy: 155, r: 84 }] as { cx: number; cy: number; r: number }[]
+        ).map(({ cx, cy, r }) =>
+          `<circle cx='${cx}' cy='${cy}' r='${r}' fill='none' stroke='rgba(226,232,240,0.50)' stroke-width='3'/><circle cx='${cx}' cy='${cy}' r='${Math.round(r * 0.52)}' fill='none' stroke='rgba(226,232,240,0.22)' stroke-width='1.5'/>`
+        ).join('');
+      }
+      break;
+
+    case 'stars':
+      if (variant === 0) {
+        // 5-pointed classic stars, filled grid
+        markup = Array.from({ length: 18 }, (_, i) => {
+          const cx = 90 + (i % 6) * 196;
+          const cy = 112 + Math.floor(i / 6) * 242;
+          return starPoly(cx, cy, 5, 46, 20, 'rgba(248,250,252,0.55)');
+        }).join('');
+      } else if (variant === 1) {
+        // 8-pointed geometric stars, outline style
+        markup = Array.from({ length: 12 }, (_, i) => {
+          const cx = 110 + (i % 4) * 286;
+          const cy = 140 + Math.floor(i / 4) * 242;
+          return [
+            starPoly(cx, cy, 8, 58, 25, 'none', 'rgba(226,232,240,0.65)', 1),
+            starPoly(cx, cy, 8, 33, 15, 'rgba(226,232,240,0.20)', undefined, 0.8),
+          ].join('');
+        }).join('');
+      } else {
+        // 4-pointed sparkle (cross) stars, varying sizes
+        markup = Array.from({ length: 20 }, (_, i) => {
+          const cx = 60 + (i % 5) * 242;
+          const cy = 88 + Math.floor(i / 5) * 172;
+          const sz = i % 3 === 0 ? 48 : i % 3 === 1 ? 34 : 24;
+          return starPoly(cx, cy, 4, sz, Math.round(sz * 0.13), 'rgba(248,250,252,0.58)');
+        }).join('');
+      }
+      break;
+
+    case 'arrows':
+      if (variant === 0) {
+        // Horizontal chevrons stacked (sport style)
+        markup = Array.from({ length: 5 }, (_, row) =>
+          Array.from({ length: 7 }, (__, col) =>
+            `<path d='M${38 + col * 182},${66 + row * 150} L${148 + col * 182},${141 + row * 150} L${38 + col * 182},${216 + row * 150}' stroke='rgba(248,250,252,0.50)' stroke-width='22' fill='none' stroke-linejoin='round' stroke-linecap='round'/>`
+          ).join('')
+        ).join('');
+      } else if (variant === 1) {
+        // Solid right-pointing arrow blocks in grid
+        markup = Array.from({ length: 4 }, (_, row) =>
+          Array.from({ length: 6 }, (__, col) =>
+            solidArrow(50 + col * 205, 75 + row * 185, 130, 108)
+          ).join('')
+        ).join('');
+      } else {
+        // Double chevron outlines
+        markup = Array.from({ length: 5 }, (_, row) =>
+          Array.from({ length: 6 }, (__, col) => {
+            const x = 55 + col * 204;
+            const y = 88 + row * 148;
+            return [
+              `<path d='M${x},${y} L${x + 72},${y + 74} L${x},${y + 148}' stroke='rgba(226,232,240,0.65)' stroke-width='18' fill='none' stroke-linejoin='round'/>`,
+              `<path d='M${x + 46},${y} L${x + 118},${y + 74} L${x + 46},${y + 148}' stroke='rgba(226,232,240,0.30)' stroke-width='12' fill='none' stroke-linejoin='round'/>`,
+            ].join('');
+          }).join('')
+        ).join('');
+      }
+      break;
+
+    case 'waves':
+      if (variant === 0) {
+        // Classic horizontal sine waves
+        markup = Array.from({ length: 7 }, (_, i) =>
+          `<path d='M-40,${120 + i * 92} C180,${80 + i * 92} 360,${170 + i * 92} 560,${132 + i * 92} C760,${95 + i * 92} 950,${186 + i * 92} 1240,${142 + i * 92}' stroke='rgba(226,232,240,0.45)' stroke-width='12' fill='none'/>`
+        ).join('');
+      } else if (variant === 1) {
+        // Concentric arch waves from bottom center
+        markup = Array.from({ length: 10 }, (_, i) => {
+          const r = 128 + i * 84;
+          return `<circle cx='600' cy='900' r='${r}' fill='none' stroke='rgba(226,232,240,${(0.56 - i * 0.044).toFixed(3)})' stroke-width='${Math.max(2, 13 - i)}'/>`;
+        }).join('');
+      } else {
+        // Diagonal wave bands (chevron fill)
+        markup = Array.from({ length: 7 }, (_, i) => {
+          const off = i * 190 - 200;
+          return `<path d='M${off},800 C${off + 300},350 ${off + 500},350 ${off + 800},0 L${off + 880},0 C${off + 580},350 ${off + 380},350 ${off + 80},800 Z' fill='rgba(226,232,240,${i % 2 === 0 ? 0.15 : 0.08})'/>`;
+        }).join('');
+      }
+      break;
+
+    case 'diamond':
+      if (variant === 0) {
+        // Classic tiled diamonds
+        markup = Array.from({ length: 6 }, (_, row) =>
+          Array.from({ length: 9 }, (__, col) =>
+            `<path d='M${65 + col * 132},${86 + row * 118} L${118 + col * 132},${142 + row * 118} L${65 + col * 132},${198 + row * 118} L${12 + col * 132},${142 + row * 118} Z' fill='rgba(226,232,240,0.24)'/>`
+          ).join('')
+        ).join('');
+      } else if (variant === 1) {
+        // Nested diamonds (outer + inner outline)
+        markup = Array.from({ length: 5 }, (_, row) =>
+          Array.from({ length: 7 }, (__, col) => {
+            const cx = 86 + col * 172;
+            const cy = 100 + row * 150;
+            return [
+              `<path d='M${cx},${cy - 58} L${cx + 54},${cy} L${cx},${cy + 58} L${cx - 54},${cy} Z' fill='rgba(226,232,240,0.18)' stroke='rgba(226,232,240,0.50)' stroke-width='2'/>`,
+              `<path d='M${cx},${cy - 30} L${cx + 28},${cy} L${cx},${cy + 30} L${cx - 28},${cy} Z' fill='none' stroke='rgba(226,232,240,0.62)' stroke-width='1.5'/>`,
+            ].join('');
+          }).join('')
+        ).join('');
+      } else {
+        // Rotated squares (45°) staggered grid
+        markup = Array.from({ length: 5 }, (_, row) =>
+          Array.from({ length: 8 }, (__, col) => {
+            const cx = 76 + col * 157 + (row % 2 === 1 ? 79 : 0);
+            const cy = 80 + row * 152;
+            return `<rect x='${cx - 46}' y='${cy - 46}' width='92' height='92' fill='rgba(226,232,240,0.16)' stroke='rgba(226,232,240,0.52)' stroke-width='2' transform='rotate(45 ${cx} ${cy})'/>`;
+          }).join('')
+        ).join('');
+      }
+      break;
+
+    case 'triangles':
+      if (variant === 0) {
+        // Upward pointing triangles grid
+        markup = Array.from({ length: 7 }, (_, row) =>
+          Array.from({ length: 10 }, (__, col) =>
+            `<path d='M${30 + col * 120},${190 + row * 90} L${90 + col * 120},${70 + row * 90} L${150 + col * 120},${190 + row * 90} Z' fill='rgba(203,213,225,0.30)'/>`
+          ).join('')
+        ).join('');
+      } else if (variant === 1) {
+        // Tessellation: alternating up/down triangles
+        markup = Array.from({ length: 7 }, (_, row) =>
+          Array.from({ length: 10 }, (__, col) => {
+            const up = (row + col) % 2 === 0;
+            const x = col * 122;
+            const y = row * 108;
+            return up
+              ? `<path d='M${x + 61},${y + 4} L${x + 122},${y + 108} L${x},${y + 108} Z' fill='rgba(203,213,225,0.32)'/>`
+              : `<path d='M${x},${y + 4} L${x + 122},${y + 4} L${x + 61},${y + 108} Z' fill='rgba(203,213,225,0.18)'/>`;
+          }).join('')
+        ).join('');
+      } else {
+        // Large editorial concentric triangles
+        markup = [
+          `<path d='M600,28 L1185,795 L15,795 Z' fill='none' stroke='rgba(226,232,240,0.38)' stroke-width='3'/>`,
+          `<path d='M600,172 L1055,752 L145,752 Z' fill='none' stroke='rgba(226,232,240,0.24)' stroke-width='2'/>`,
+          `<path d='M600,316 L925,710 L275,710 Z' fill='none' stroke='rgba(226,232,240,0.14)' stroke-width='1.5'/>`,
+          `<path d='M600,460 L795,668 L405,668 Z' fill='rgba(226,232,240,0.08)'/>`,
+          `<path d='M140,48 L380,445 L-100,445 Z' fill='rgba(226,232,240,0.10)'/>`,
+          `<path d='M1060,48 L1300,445 L820,445 Z' fill='rgba(226,232,240,0.10)'/>`,
+        ].join('');
+      }
+      break;
+
+    case 'flowers':
+      if (variant === 0) {
+        // 4-petal flowers (original)
+        markup = Array.from({ length: 12 }, (_, i) => `<g transform='translate(${80 + (i % 4) * 280} ${96 + Math.floor(i / 4) * 220})'><circle cx='50' cy='52' r='14' fill='rgba(253,230,138,0.8)'/><ellipse cx='50' cy='24' rx='14' ry='24' fill='rgba(244,114,182,0.48)'/><ellipse cx='78' cy='52' rx='14' ry='24' fill='rgba(244,114,182,0.48)' transform='rotate(90 78 52)'/><ellipse cx='50' cy='80' rx='14' ry='24' fill='rgba(244,114,182,0.48)'/><ellipse cx='22' cy='52' rx='14' ry='24' fill='rgba(244,114,182,0.48)' transform='rotate(90 22 52)'/></g>`).join('');
+      } else if (variant === 1) {
+        // 6-petal flowers
+        markup = Array.from({ length: 9 }, (_, i) => {
+          const cx = 100 + (i % 3) * 360;
+          const cy = 130 + Math.floor(i / 3) * 244;
+          const petals = Array.from({ length: 6 }, (__, p) =>
+            `<ellipse cx='${cx}' cy='${cy - 46}' rx='17' ry='40' fill='rgba(244,114,182,0.42)' transform='rotate(${p * 60} ${cx} ${cy})'/>`,
+          ).join('');
+          return `${petals}<circle cx='${cx}' cy='${cy}' r='20' fill='rgba(253,230,138,0.78)'/>`;
+        }).join('');
+      } else {
+        // Dot-petal flowers (minimalist)
+        markup = Array.from({ length: 12 }, (_, i) => {
+          const cx = 80 + (i % 4) * 286;
+          const cy = 100 + Math.floor(i / 4) * 222;
+          const dots = Array.from({ length: 8 }, (__, p) => {
+            const ang = p * 45 * (Math.PI / 180);
+            return `<circle cx='${(cx + Math.cos(ang) * 46).toFixed(1)}' cy='${(cy + Math.sin(ang) * 46).toFixed(1)}' r='13' fill='rgba(244,114,182,0.52)'/>`;
+          }).join('');
+          return `${dots}<circle cx='${cx}' cy='${cy}' r='15' fill='rgba(253,230,138,0.82)'/>`;
+        }).join('');
+      }
+      break;
+
+    case 'mesh':
+      if (variant === 0) {
+        // Diagonal line mesh (original)
+        markup = Array.from({ length: 18 }, (_, i) => `<line x1='${i * 70}' y1='0' x2='${i * 70 + 200}' y2='800' stroke='rgba(148,163,184,0.30)'/>`).join('')
+          + Array.from({ length: 10 }, (_, i) => `<line x1='0' y1='${i * 90}' x2='1200' y2='${i * 90 + 90}' stroke='rgba(226,232,240,0.24)'/>`).join('');
+      } else if (variant === 1) {
+        // Hexagonal mesh
+        markup = Array.from({ length: 5 }, (_, row) =>
+          Array.from({ length: 9 }, (__, col) => {
+            const cx = 60 + col * 162 + (row % 2 === 1 ? 81 : 0);
+            const cy = 58 + row * 142;
+            const R = 72;
+            const pts = Array.from({ length: 6 }, (___, k) => {
+              const ang = (k * 60 - 30) * (Math.PI / 180);
+              return `${(cx + R * Math.cos(ang)).toFixed(0)},${(cy + R * Math.sin(ang)).toFixed(0)}`;
+            }).join(' ');
+            return `<polygon points='${pts}' fill='none' stroke='rgba(148,163,184,0.42)' stroke-width='2'/>`;
+          }).join('')
+        ).join('');
+      } else {
+        // Square grid
+        markup = [
+          ...Array.from({ length: 19 }, (_, i) => `<line x1='${i * 65}' y1='0' x2='${i * 65}' y2='800' stroke='rgba(148,163,184,0.26)' stroke-width='1'/>`),
+          ...Array.from({ length: 13 }, (_, i) => `<line x1='0' y1='${i * 65}' x2='1200' y2='${i * 65}' stroke='rgba(148,163,184,0.26)' stroke-width='1'/>`),
+        ].join('');
+      }
+      break;
+
+    case 'beams':
+      if (variant === 0) {
+        // Diagonal beams (original)
+        markup = Array.from({ length: 12 }, (_, i) => `<rect x='${i * 110}' y='0' width='24' height='800' fill='rgba(56,189,248,0.25)' transform='rotate(11 ${i * 110} 0)'/>`).join('');
+      } else if (variant === 1) {
+        // Radial beams from center
+        markup = Array.from({ length: 16 }, (_, i) => {
+          const ang = i * 22.5 * (Math.PI / 180);
+          const x2 = (600 + Math.cos(ang) * 820).toFixed(0);
+          const y2 = (400 + Math.sin(ang) * 820).toFixed(0);
+          return `<line x1='600' y1='400' x2='${x2}' y2='${y2}' stroke='rgba(56,189,248,${i % 2 === 0 ? 0.32 : 0.18})' stroke-width='${i % 2 === 0 ? 6 : 3}'/>`;
+        }).join('') + `<circle cx='600' cy='400' r='44' fill='rgba(56,189,248,0.20)'/>`;
+      } else {
+        // Cross-hatch diagonals
+        markup = [
+          ...Array.from({ length: 14 }, (_, i) => `<line x1='${i * 100}' y1='0' x2='${i * 100 + 800}' y2='800' stroke='rgba(56,189,248,0.22)' stroke-width='4'/>`),
+          ...Array.from({ length: 14 }, (_, i) => `<line x1='${i * 100}' y1='800' x2='${i * 100 + 800}' y2='0' stroke='rgba(56,189,248,0.14)' stroke-width='2'/>`),
+        ].join('');
+      }
+      break;
+
+    case 'panels':
+      if (variant === 0) {
+        // Rectangle panels grid (original)
+        markup = Array.from({ length: 8 }, (_, i) => `<rect x='${40 + (i % 4) * 280}' y='${70 + Math.floor(i / 4) * 330}' width='240' height='300' rx='24' fill='rgba(226,232,240,0.20)' stroke='rgba(226,232,240,0.42)'/>`).join('');
+      } else if (variant === 1) {
+        // Horizontal stripe panels
+        markup = Array.from({ length: 6 }, (_, i) =>
+          `<rect x='${40 + (i % 2 === 1 ? 84 : 0)}' y='${58 + i * 122}' width='${1120 - (i % 2 === 1 ? 84 : 0)}' height='82' rx='18' fill='rgba(226,232,240,${i % 2 === 0 ? 0.18 : 0.10})' stroke='rgba(226,232,240,0.36)' stroke-width='1'/>`
+        ).join('');
+      } else {
+        // Diagonal sweep panels
+        markup = Array.from({ length: 5 }, (_, i) => {
+          const off = i * 264 - 200;
+          return `<path d='M${off},800 C${off + 300},350 ${off + 500},350 ${off + 800},0 L${off + 880},0 C${off + 580},350 ${off + 380},350 ${off + 80},800 Z' fill='rgba(226,232,240,${i % 2 === 0 ? 0.17 : 0.09})'/>`;
+        }).join('');
+      }
+      break;
+
+    case 'mixed':
+    default:
+      markup = `<g opacity='0.72'>${Array.from({ length: 8 }, (_, i) => `<line x1='${i * 150}' y1='0' x2='${i * 150 + 150}' y2='800' stroke='rgba(56,189,248,0.22)'/>`).join('')}${Array.from({ length: 8 }, (_, i) => `<circle cx='${120 + i * 130}' cy='${220 + ((i % 3) * 120)}' r='26' stroke='rgba(248,250,252,0.42)' fill='none'/>`).join('')}</g>`;
+      break;
+  }
+
+  return asDataUri(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>${base}${markup}<rect width='1200' height='800' fill='rgba(2,6,23,0.20)'/></svg>`);
+}
+
+function buildLocalGeometryVariations(geometry: GeometryFamily, heroColor: string): ArtworkVariation[] {
+  const variantLabels = ['V1', 'V2', 'V3'];
+  return ([0, 1, 2] as const).map((variant) => {
+    const svgUrl = buildGeometryVariantSvg(geometry, variant, heroColor);
+    return {
+      variation_id: `local_${geometry}_v${variant}_${Date.now() + variant}`,
+      preview_url: svgUrl,
+      output_url: svgUrl,
+      thumbnail_url: svgUrl,
+      provider: 'procedural' as const,
+      provider_job_id: null,
+      provider_model: `svg-${geometry}-${variantLabels[variant]}`,
+      metadata: { source: 'local_geometry', geometry, variant },
+    } satisfies ArtworkVariation;
+  });
 }
 
 function buildGeometryPreviewConfig(geometry: GeometryFamily, heroColor: string): OutfitBackgroundConfig {
@@ -443,7 +743,7 @@ function buildGeometryPreviewConfig(geometry: GeometryFamily, heroColor: string)
     background_mode: 'ai_artwork',
     ai_artwork: {
       prompt: `${geometry} deterministic preview`,
-      image_url: buildGeometryPreviewSvg(geometry, heroColor),
+      image_url: buildGeometryVariantSvg(geometry, 0, heroColor),
       generation_status: 'done',
     },
     gradient: {
@@ -1567,6 +1867,23 @@ export default function OutfitBackgroundStudioModal({
     }
 
     const typedGeometry = detectGeometryFromPrompt(aiPrompt);
+
+    // When the user typed a geometry keyword, generate precise local SVG variants immediately.
+    if (typedGeometry) {
+      const localVariations = buildLocalGeometryVariations(typedGeometry, presetContext.heroColor);
+      const firstSvg = localVariations[0].preview_url;
+      setAiResults(localVariations);
+      setSelectedAiResult(localVariations[0]);
+      setDraft((prev) => ({
+        ...prev,
+        background_mode: 'ai_artwork',
+        ai_artwork: { prompt: `${typedGeometry} variant 1`, image_url: firstSvg, generation_status: 'done' },
+        shape: GEOMETRY_TO_BACKGROUND_SHAPE[typedGeometry],
+      }));
+      setAiLoading(false);
+      return;
+    }
+
     const effectiveGeometry = aiGeometry;
     const geometryVariation = GEOMETRY_VARIATION_MAP[effectiveGeometry][Date.now() % GEOMETRY_VARIATION_MAP[effectiveGeometry].length];
     const geometryPrompt = GEOMETRY_PROMPT_MAP[effectiveGeometry];
@@ -1577,7 +1894,6 @@ export default function OutfitBackgroundStudioModal({
       `Preserve geometry family: ${effectiveGeometry}.`,
       `Primary geometry direction: ${geometryPrompt}.`,
       `Premium variation direction: ${geometryVariation}.`,
-      typedGeometry && typedGeometry !== effectiveGeometry ? `User text mentioned ${typedGeometry}, but keep ${effectiveGeometry} as dominant geometry.` : '',
     ].filter(Boolean).join(' ');
     const negativePrompt = `Avoid geometry drift. ${geometryNegativePrompt}.`;
 
