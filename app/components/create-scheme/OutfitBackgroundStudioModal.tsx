@@ -3046,7 +3046,9 @@ export default function OutfitBackgroundStudioModal({
                           const next = value as GeometryFamily;
                           setAiGeometry(next);
                           setDraft((prev) => {
-                            if (prev.ai_artwork?.image_url) {
+                            const artworkPrompt = prev.ai_artwork?.prompt?.toLowerCase() ?? '';
+                            const isGeometryPreviewArtwork = artworkPrompt.includes('deterministic preview');
+                            if (prev.ai_artwork?.image_url && !isGeometryPreviewArtwork) {
                               return {
                                 ...prev,
                                 shape: GEOMETRY_TO_BACKGROUND_SHAPE[next],
