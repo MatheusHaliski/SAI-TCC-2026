@@ -146,8 +146,8 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     const season = (aiSeason || '').toLowerCase().replace('all-season', '');
     const genderKey = aiGender === 'male' ? ['masc', 'male', 'men', 'homem'] : aiGender === 'female' ? ['fem', 'female', 'wom', 'mulher'] : [];
     const scored = availableMarkets.map((market) => {
-      const mSeason = market.season.toLowerCase();
-      const mGender = market.gender.toLowerCase();
+      const mSeason = (market.season || '').toLowerCase();
+      const mGender = (market.gender || '').toLowerCase();
       let score = 0;
       if (season && season !== 'unknown' && (mSeason.includes(season) || season.includes(mSeason))) score += 2;
       if (genderKey.length && genderKey.some((k) => mGender.includes(k))) score += 2;
