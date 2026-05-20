@@ -167,11 +167,11 @@ export default function FancySelect({
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
             Seleção
           </div>
-          <div className={`flex items-center gap-2 truncate text-sm font-medium ${selected ? 'text-white' : 'text-white/55'}`}>
+          <div className={`flex items-center gap-2 text-sm font-medium ${selected ? 'text-white' : 'text-white/55'}`}>
             {renderOptionIcon(selected)}
-            <span className="truncate">{selected?.label ?? placeholder}</span>
+            <span className="break-words">{selected?.label ?? placeholder}</span>
           </div>
-          <div className="truncate text-xs text-white/45">
+          <div className="line-clamp-2 text-xs text-white/45">
             {selected?.hint ?? 'Abra para escolher um item'}
           </div>
         </div>
