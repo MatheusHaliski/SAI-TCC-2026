@@ -410,14 +410,20 @@ export async function POST(req: Request) {
       });
     }
 
+    // Worker now returns immediately with status=queued (async pipeline).
+    // Always surface submitted/queued to the frontend — never wait for the GLB.
+    const submittedStatus = status === 'completed' ? 'queued' : (status || 'submitted');
+
+    logStage('submit_accepted', { provider, jobId, submittedStatus });
+
     return NextResponse.json(
       {
         ok: true,
         provider,
-        status,
+        status: submittedStatus,
         jobId,
         runpod_job_id: jobId,
-        upstream: result.parsedJson,
+        message: 'Job accepted',
       },
       { status: 200 },
     );
