@@ -95,11 +95,22 @@ export default function AuthViewClient() {
 
     useEffect(() => {
         if (typeof window === "undefined") return;
-        const savedEmail = window.localStorage.getItem(REMEMBERED_EMAIL_KEY);
+        const savedEmail = window.localStorage.getItem(REMEMBERED_EMAIL_KEY)?.trim() ?? "";
         if (!savedEmail) return;
         setEmail(savedEmail);
         setRememberMe(true);
     }, []);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (!rememberMe) {
+            window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+            return;
+        }
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!normalizedEmail) return;
+        window.localStorage.setItem(REMEMBERED_EMAIL_KEY, normalizedEmail);
+    }, [email, rememberMe]);
 
     const setFirebasePersistenceMode = async (): Promise<"LOCAL" | "SESSION"> => {
         if (!firebaseApp || !hasFirebaseConfig) {
