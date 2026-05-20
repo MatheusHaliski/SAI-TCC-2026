@@ -170,47 +170,6 @@ const GRADIENT_PRESETS: Array<{ label: string; config: OutfitBackgroundConfig }>
     },
   },
 ];
-  {
-    label: 'Sunset Editorial',
-    config: {
-      background_mode: 'gradient',
-      gradient: { type: 'linear', angle: 150, intensity: 105, stops: [{ color: '#7c2d12', position: 0 }, { color: '#f97316', position: 60 }, { color: '#fde68a', position: 100 }] },
-      shape: 'orb',
-    },
-  },
-  {
-    label: 'Luxury Warm Fade',
-    config: {
-      background_mode: 'gradient',
-      gradient: { type: 'linear', angle: 125, intensity: 85, stops: [{ color: '#d6c2a5', position: 0 }, { color: '#f7f0e4', position: 100 }] },
-      shape: 'none',
-    },
-  },
-  {
-    label: 'Blue-to-Green Premium',
-    config: {
-      background_mode: 'gradient',
-      gradient: { type: 'linear', angle: 120, intensity: 105, stops: [{ color: '#1d4ed8', position: 0 }, { color: '#059669', position: 100 }] },
-      shape: 'mesh',
-    },
-  },
-  {
-    label: 'Night Runway',
-    config: {
-      background_mode: 'gradient',
-      gradient: { type: 'conic', angle: 180, intensity: 100, stops: [{ color: '#020617', position: 0 }, { color: '#0f172a', position: 45 }, { color: '#7e22ce', position: 100 }] },
-      shape: 'diamond',
-    },
-  },
-  {
-    label: 'Graphite Pulse',
-    config: {
-      background_mode: 'gradient',
-      gradient: { type: 'linear', angle: 110, intensity: 108, stops: [{ color: '#020617', position: 0 }, { color: '#1e293b', position: 52 }, { color: '#334155', position: 100 }] },
-      shape: 'mesh',
-    },
-  },
-];
 const SEGMENTED_GRADIENT_OPTIONS = GRADIENT_PRESETS.slice(0, 8);
 const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
@@ -554,7 +513,7 @@ function detectGeometryFromPrompt(prompt: string): GeometryFamily | null {
 }
 
 function buildGeometryVariantSvg(geometry: GeometryFamily, variant: 0 | 1 | 2, baseColor: string): string {
-  const base = `<rect width='1200' height='800' fill='#0b1120'/><rect width='1200' height='800' fill='${baseColor}' opacity='0.22'/>`;
+  const base = `<rect width='1200' height='800' fill='${baseColor}' opacity='0.92'/><rect width='1200' height='800' fill='#020617' opacity='0.30'/>`;
 
   const starPoly = (cx: number, cy: number, n: number, R: number, r: number, fill: string, stroke?: string, opacity = 0.85): string => {
     const pts = Array.from({ length: n * 2 }, (_, i) => {
@@ -1454,6 +1413,7 @@ async function buildEditorialLogoAsync(
   referenceImage: string | null,
   context: PresetContext,
   currentDraft: OutfitBackgroundConfig,
+  backgroundImageUrl?: string,
 ): Promise<OutfitBackgroundConfig> {
   const CW = 1200, CH = 800;
   const canvas = createOffscreenCanvas(CW, CH);
@@ -1461,10 +1421,11 @@ async function buildEditorialLogoAsync(
   const ctx = canvas.getContext('2d');
   if (!ctx) return buildEditorialLogoComposition(referenceImage || context.brandLogoUrl || '', context);
 
-  // Step 1: fixed background — Premium Fashion Artwork (same pattern as Editorial Collage uses streetvibes)
+  // Step 1: background image — user-selected or default Premium Fashion Artwork
+  const bgSrc = backgroundImageUrl ?? '/Fart.png';
   let bgLoaded = false;
   try {
-    const bgImg = await loadImageFromSource('/Fart.png');
+    const bgImg = await loadImageFromSource(bgSrc);
     ctx.drawImage(bgImg, 0, 0, CW, CH);
     bgLoaded = true;
   } catch { /* fall through to gradient */ }
@@ -2118,6 +2079,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiReferenceImageUrl, setAiReferenceImageUrl] = useState('');
   const [aiReferenceImageDataUrl, setAiReferenceImageDataUrl] = useState('');
   const [aiReferenceFileName, setAiReferenceFileName] = useState('');
+  const [editorialLogoBgUrl, setEditorialLogoBgUrl] = useState('/Fart.png');
   const [aiGenerationMode, setAiGenerationMode] = useState<BackgroundGenerationMode>('hybrid');
   const [aiResults, setAiResults] = useState<ArtworkVariation[]>([]);
   const [savedAssets, setSavedAssets] = useState<ArtworkAsset[]>([]);
@@ -2339,7 +2301,7 @@ export default function OutfitBackgroundStudioModal({
     if (selectedRecommendedPreset === 'selection_editorial_logo') {
       let logoConfig: OutfitBackgroundConfig;
       try {
-        logoConfig = await buildEditorialLogoAsync(uploadedReferenceImage, presetContext, draft);
+        logoConfig = await buildEditorialLogoAsync(uploadedReferenceImage, presetContext, draft, editorialLogoBgUrl);
       } catch {
         setAiLoading(false);
         setAiError('Could not build editorial logo composition.');
@@ -2515,9 +2477,17 @@ export default function OutfitBackgroundStudioModal({
       setAiGradientResults(variations);
       setDraft((prev) => ({ ...prev, ...variations[0] }));
 
-      // Populate the 3 artwork slots: uploaded image first, then 2 geometry variants from prompt.
+      // Populate the 3 artwork slots: 3 different geometry families for variety.
       const detectedGeometry = detectGeometryFromPrompt(aiPrompt) ?? 'circles';
-      const geoSlots = buildLocalGeometryVariations(detectedGeometry, colorTokens.mid);
+      const GEOMETRY_FALLBACK_ORDER: GeometryFamily[] = ['circles', 'stars', 'triangles', 'arrows', 'waves', 'diamond'];
+      const primaryGeo = detectedGeometry;
+      // Pick two other distinct families
+      const otherGeos = GEOMETRY_FALLBACK_ORDER.filter((g) => g !== primaryGeo);
+      const secondGeo = otherGeos[0] ?? 'stars';
+      const thirdGeo = otherGeos[1] ?? 'triangles';
+      const slot1 = buildLocalGeometryVariations(primaryGeo, colorTokens.mid)[0];
+      const slot2 = buildLocalGeometryVariations(secondGeo, colorTokens.mid)[0];
+      const slot3 = buildLocalGeometryVariations(thirdGeo, colorTokens.mid)[0];
       const artworkSlots: ArtworkVariation[] = uploadedReferenceImage
         ? [
             {
@@ -2530,10 +2500,10 @@ export default function OutfitBackgroundStudioModal({
               provider_model: 'uploaded-reference',
               metadata: { source: 'uploaded_reference' },
             } satisfies ArtworkVariation,
-            geoSlots[0],
-            geoSlots[1],
+            slot1,
+            slot2,
           ]
-        : [geoSlots[0], geoSlots[1], geoSlots[2]];
+        : [slot1, slot2, slot3];
       setAiResults(artworkSlots);
       setSelectedAiResult(artworkSlots[0] ?? null);
       setAiLoading(false);
@@ -3269,6 +3239,20 @@ export default function OutfitBackgroundStudioModal({
                             }}
                           />
                         </label>
+                        <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                          <p className="mb-1 text-[9px] uppercase tracking-[0.10em] text-white/50">Imagem de fundo</p>
+                          <select
+                            className="w-full rounded-lg border border-white/25 bg-white/10 px-2 py-1.5 text-[10px] text-white/80 outline-none transition focus:border-fuchsia-300/60 hover:border-white/40"
+                            value={editorialLogoBgUrl}
+                            onChange={(e) => setEditorialLogoBgUrl(e.target.value)}
+                          >
+                            {CURATED_IMAGE_PICKER_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.imageUrl} className="bg-slate-900 text-white">
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                         <span
                           className="mt-2 block h-14 rounded-lg border border-white/15"
                           style={{ ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)), backgroundColor: '#0f172a' }}
