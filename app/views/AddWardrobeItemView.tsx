@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
@@ -13,6 +13,7 @@ import {
   pollBlenderWorkerJob,
   submitBlenderWorkerJob,
 } from '@/app/services/blenderWorkerClient';
+import { pushSystemInboxMessage } from '@/app/lib/systemInboxNotifications';
 
 type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type Market = { market_id: string; season: string; gender: string };
@@ -117,6 +118,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [submitProgress, setSubmitProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const pending3dPieceNameRef = useRef<string>('');
 
   const normalizeToken = (value: string) => value.trim().toLowerCase();
   const isGenericToken = (value: string) => {
@@ -349,6 +351,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       }
 
       if (createdWardrobeItemId && form.piece_type === 'upper_piece') {
+        pending3dPieceNameRef.current = form.name;
         setPendingTryOnPrewarm({
           pieceId: createdWardrobeItemId,
           garmentImageUrl: form.image_url,
@@ -468,6 +471,18 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     });
     setPendingTryOnPrewarm(null);
   }, [uvJobStatus, pendingTryOnPrewarm]);
+
+  useEffect(() => {
+    if (uvJobStatus !== 'completed') return;
+    const pieceName = pending3dPieceNameRef.current;
+    if (!pieceName) return;
+    pushSystemInboxMessage({
+      title: '3D model ready',
+      summary: `"${pieceName}" has been generated and is ready to view.`,
+      level: 'success',
+    });
+    pending3dPieceNameRef.current = '';
+  }, [uvJobStatus]);
 
   const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
