@@ -1,4 +1,4 @@
-import { getAdminFirestore } from '@/app/lib/firebaseAdmin';
+import { getAdminAuth, getAdminFirestore } from '@/app/lib/firebaseAdmin';
 import { NextRequest, NextResponse } from 'next/server';
 
 const USERS_COLLECTION = 'users';
@@ -47,7 +47,20 @@ export async function DELETE(request: NextRequest) {
     const userId = request.nextUrl.searchParams.get('userId')?.trim();
     if (!userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 });
 
+    const adminAuth = getAdminAuth();
     const db = getAdminFirestore();
+
+    // Delete Firebase Auth user first to immediately prevent re-login.
+    try {
+      await adminAuth.deleteUser(userId);
+    } catch (authErr) {
+      const code = (authErr as { code?: string }).code;
+      if (code !== 'auth/user-not-found') {
+        throw authErr;
+      }
+      // User already absent from Auth — still clean up Firestore below.
+    }
+
     await db.collection(USERS_COLLECTION).doc(userId).delete();
     return NextResponse.json({ ok: true });
   } catch {

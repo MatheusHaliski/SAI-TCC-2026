@@ -18,13 +18,6 @@ type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type Market = { market_id: string; season: string; gender: string };
 
 const DEFAULT_BRAND_ID = 'default';
-const FALLBACK_BRANDS: Brand[] = [
-  {
-    brand_id: 'lacoste',
-    name: 'Lacoste',
-    logo_url: '/lacoste.jpg',
-  },
-];
 const BRAND_LOGO_FALLBACKS: Record<string, string> = {
   adidas: '/adidas.png',
   nike: '/nike.png',
@@ -35,6 +28,15 @@ const BRAND_LOGO_FALLBACKS: Record<string, string> = {
   'c&a': '/cea.jpg',
   cea: '/cea.jpg',
 };
+const FALLBACK_BRANDS: Brand[] = [
+  { brand_id: 'adidas', name: 'Adidas', logo_url: '/adidas.png' },
+  { brand_id: 'nike', name: 'Nike', logo_url: '/nike.png' },
+  { brand_id: 'zara', name: 'Zara', logo_url: '/zara.jpg' },
+  { brand_id: 'puma', name: 'Puma', logo_url: '/puma.jpg' },
+  { brand_id: 'lacoste', name: 'Lacoste', logo_url: '/lacoste.jpg' },
+  { brand_id: 'levis', name: "Levi's", logo_url: '/levis.jpg' },
+  { brand_id: 'cea', name: 'C&A', logo_url: '/cea.jpg' },
+];
 const COLOR_OPTIONS = [
   'Black', 'White', 'Gray', 'Charcoal', 'Silver',
   'Navy', 'Blue', 'Light Blue', 'Sky Blue', 'Cobalt',

@@ -1,4 +1,5 @@
 import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 
@@ -43,6 +44,11 @@ export const adminDb = new Proxy({} as Firestore, {
         return Reflect.get(getAdminFirestore() as object, property, receiver);
     },
 });
+
+export const getAdminAuth = () => {
+    getAdminFirestore(); // ensures the Firebase app is initialized
+    return getAuth();
+};
 
 export const getAdminStorageBucket = () => {
     getAdminFirestore();
