@@ -1504,6 +1504,7 @@ async function buildEditorialLogoAsync(
 async function buildEditorialCollageAsync(
   uploadedImage: string | null,
   context: PresetContext,
+  backgroundImageUrl?: string,
 ): Promise<OutfitBackgroundConfig> {
   const CW = 1200;
   const CH = 800;
@@ -1518,9 +1519,10 @@ async function buildEditorialCollageAsync(
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(0, 0, CW, CH);
 
-  // LEFT PANEL — streetvibes.jpg
+  // LEFT PANEL — composition background image (user-selected or default Street Vibes)
+  const bgSrc = backgroundImageUrl ?? '/streetvibes.jpg';
   let streetImg: HTMLImageElement | null = null;
-  try { streetImg = await loadImageFromSource('/streetvibes.jpg'); } catch { /* no-op */ }
+  try { streetImg = await loadImageFromSource(bgSrc); } catch { /* no-op */ }
 
   if (streetImg) {
     ctx.drawImage(streetImg, 0, 0, SPLIT + 80, CH);
@@ -2080,6 +2082,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiReferenceImageDataUrl, setAiReferenceImageDataUrl] = useState('');
   const [aiReferenceFileName, setAiReferenceFileName] = useState('');
   const [editorialLogoBgUrl, setEditorialLogoBgUrl] = useState('/Fart.png');
+  const [editorialCollageBgUrl, setEditorialCollageBgUrl] = useState('/streetvibes.jpg');
   const [aiGenerationMode, setAiGenerationMode] = useState<BackgroundGenerationMode>('hybrid');
   const [aiResults, setAiResults] = useState<ArtworkVariation[]>([]);
   const [savedAssets, setSavedAssets] = useState<ArtworkAsset[]>([]);
@@ -2273,7 +2276,7 @@ export default function OutfitBackgroundStudioModal({
     if (selectedRecommendedPreset === 'selection_editorial_collage') {
       let collageConfig: OutfitBackgroundConfig;
       try {
-        collageConfig = await buildEditorialCollageAsync(uploadedReferenceImage, presetContext);
+        collageConfig = await buildEditorialCollageAsync(uploadedReferenceImage, presetContext, editorialCollageBgUrl);
       } catch {
         setAiLoading(false);
         setAiError('Could not build editorial collage.');
@@ -3308,6 +3311,28 @@ export default function OutfitBackgroundStudioModal({
               hint: 'Updates geometry in preview',
             }))}
           />
+          {selectedRecommendedPreset === 'selection_editorial_collage' && (
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] uppercase tracking-[0.10em] text-white/60">Imagem de Composição</p>
+              <select
+                className="w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-xs text-white/85 outline-none transition focus:border-fuchsia-300/60 hover:border-white/40"
+                value={editorialCollageBgUrl}
+                onChange={(e) => setEditorialCollageBgUrl(e.target.value)}
+              >
+                {uploadedReferenceImage && (
+                  <option value={uploadedReferenceImage} className="bg-slate-900 text-white">
+                    📎 Imagem carregada (upload)
+                  </option>
+                )}
+                {CURATED_IMAGE_PICKER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.imageUrl} className="bg-slate-900 text-white">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-white/45">Imagem usada no painel esquerdo da composição</p>
+            </div>
+          )}
           <FancySelect
             value={(() => {
               const gradientLabel = SEGMENTED_GRADIENT_OPTIONS.find((preset) => JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient))?.label;
