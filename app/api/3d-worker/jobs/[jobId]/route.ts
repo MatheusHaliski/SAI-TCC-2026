@@ -5,17 +5,23 @@ type WorkerConfig =
   | { type: 'meshy'; baseUrl: string; token: string };
 
 function resolveWorkerConfig(): WorkerConfig | null {
-  // Prefer Meshy when API key is present (matches submit route priority)
+  // Prefer the RunPod GPU worker: job IDs in this route are always RunPod worker IDs,
+  // never Meshy task IDs. Polling Meshy with a RunPod jobId would return 404.
+  const workerUrl = (
+    process.env.GPU_WORKER_URL ?? process.env.BLENDER_CLOUD_API_URL ?? ''
+  ).trim().replace(/\/+$/, '');
+  const token = (
+    process.env.GPU_WORKER_TOKEN ?? process.env.BLENDER_CLOUD_API_TOKEN ?? ''
+  ).trim();
+  if (workerUrl && token) {
+    return { type: 'runpod', workerUrl, token };
+  }
+
+  // Fallback to Meshy only when no RunPod worker is configured.
   const meshyApiKey = process.env.MESHY_API_KEY?.trim() ?? '';
   if (meshyApiKey) {
     const baseUrl = (process.env.MESHY_BASE_URL?.trim() || 'https://api.meshy.ai/openapi/v1').replace(/\/+$/, '');
     return { type: 'meshy', baseUrl, token: meshyApiKey };
-  }
-
-  const workerUrl = process.env.GPU_WORKER_URL?.trim() ?? '';
-  const token = process.env.GPU_WORKER_TOKEN?.trim() ?? '';
-  if (workerUrl && token) {
-    return { type: 'runpod', workerUrl: workerUrl.replace(/\/+$/, ''), token };
   }
 
   return null;

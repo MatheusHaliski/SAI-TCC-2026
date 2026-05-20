@@ -309,7 +309,14 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const result = await reconcileJob(pieceId, jobId);
+  let result: ReconcileOutcome;
+  try {
+    result = await reconcileJob(pieceId, jobId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[3d-worker/status] unexpected error in reconcileJob', { pieceId, jobId, error: message });
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
 
   if (result.status === 'error') {
     const errResult = result as { ok: false; status: 'error'; error: string };
