@@ -194,7 +194,7 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Fashion Flow': 'Fluxo Fashion',
   'Modern Fashion UI': 'UI Moda Moderna',
   'Flower': 'Flores',
-  'Applies flower motif artwork surface': 'Aplica superfície artística floral',
+  'Applies flower motif artwork surface': 'Aplica superfície artística com motivo floral',
 
   // Composition types
   'background': 'fundo',
@@ -308,7 +308,6 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Selected geometry always wins if typed prompt conflicts.': 'A geometria selecionada prevalece sobre o prompt em caso de conflito.',
   'Geometry Family': 'Família de Geometria',
   'Reference image (upload)': 'Imagem de referência (upload)',
-  'Upload reference image': 'Enviar imagem de referência',
   'Generation Mode': 'Modo de Geração',
   'Style preset:': 'Estilo predefinido:',
   'Contrast:': 'Contraste:',
@@ -373,8 +372,6 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'None (no overlay)': 'Nenhum (sem sobreposição)',
   'Updates geometry in preview': 'Atualiza a geometria no preview',
   'Gradient picker': 'Seletor de gradiente',
-  'Applies gradient + geometry recipe': 'Aplica gradiente + receita de geometria',
-  'Applies flower motif artwork surface': 'Aplica superfície artística com motivo floral',
   'Cancel / Close': 'Cancelar / Fechar',
   Reset: 'Redefinir',
   'Save Background': 'Salvar Fundo',
