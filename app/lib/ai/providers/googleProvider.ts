@@ -28,21 +28,32 @@ export class GoogleProvider implements FashionAIProvider {
     this.visionModel = process.env.GOOGLE_AI_MODEL_VISION || 'gemini-2.5-pro';
   }
 
-  private async generateJson<T>(model: string, prompt: string, imageBase64?: string, imageMimeType?: string): Promise<T> {
+  private async generateJson<T>(model: string, prompt: string, imageBase64?: string, imageMimeType?: string, imageUrl?: string): Promise<T> {
     try {
       const contents: any[] = [];
-      
-      if (imageBase64 && imageMimeType) {
-        // Remove the data:image/...;base64, prefix if present
+
+      if (imageBase64) {
         const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
         contents.push({
           inlineData: {
             data: cleanBase64,
-            mimeType: imageMimeType,
-          }
+            mimeType: imageMimeType || 'image/jpeg',
+          },
+        });
+      } else if (imageUrl) {
+        const res = await fetch(imageUrl);
+        if (!res.ok) throw new Error(`Failed to fetch image from URL: ${res.status}`);
+        const arrayBuffer = await res.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        const contentType = res.headers.get('content-type') || 'image/jpeg';
+        contents.push({
+          inlineData: {
+            data: base64,
+            mimeType: contentType.split(';')[0].trim(),
+          },
         });
       }
-      
+
       contents.push(prompt);
 
       const response = await this.ai.models.generateContent({
@@ -68,7 +79,16 @@ export class GoogleProvider implements FashionAIProvider {
   }
 
   async analyzeImage(input: AnalyzeImageInput): Promise<AnalyzeImageOutput> {
-    const prompt = `You are a high-end fashion AI expert. Analyze the provided clothing image.
+    const prompt = `You are a high-end fashion AI expert and brand identification specialist. Analyze the provided clothing image with extreme attention to detail.
+
+IMPORTANT — Brand Detection: Carefully scan every part of the image for brand identifiers:
+- Logos (embroidered, printed, or embossed)
+- Text on labels, tags, or patches
+- Distinctive emblems, symbols, or wordmarks
+- Collar/hem labels, hang tags, or care labels
+- Any text or marking that could indicate a manufacturer
+Return the exact brand name as it appears. Only return "Unknown" if absolutely no brand indicator is visible.
+
 Return a strictly formatted JSON object with the following fields:
 - pieceName: A premium, short name for the item.
 - category: The exact type of item (e.g. "Blazer", "T-Shirt", "Sneakers").
@@ -79,8 +99,8 @@ Return a strictly formatted JSON object with the following fields:
 - styles: Array of styles (e.g. ["casual", "streetwear", "formal", "luxury"]).
 - season: Must be exactly one of: "summer", "winter", "spring", "autumn", "all-season", "unknown".
 - gender: Must be exactly one of: "male", "female", "unisex", "unknown".
-- brand: Likely brand if recognizable, or "Unknown".
-- brandConfidence: "High", "Medium", or "Low".
+- brand: Brand name found by scanning logos, text, and labels in the image. Return "Unknown" only if no brand indicator is visible.
+- brandConfidence: "High" if logo/name is clearly readable, "Medium" if partially visible or inferred from design language, "Low" if speculative.
 - semanticTags: Array of 5-8 descriptive tags useful for search.
 - shortDescription: A 1-2 sentence premium description.
 - outfitSuggestions: Array of 2-3 items that would pair well.
@@ -91,7 +111,8 @@ Only return the JSON.`;
       this.visionModel,
       prompt,
       input.base64Image,
-      input.mimeType || 'image/jpeg'
+      input.mimeType || 'image/jpeg',
+      input.imageUrl,
     );
   }
 

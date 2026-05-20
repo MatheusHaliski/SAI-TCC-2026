@@ -15,6 +15,7 @@ import {
   savePageBackgroundConfig,
 } from '@/app/lib/pageBackground';
 import { clearAuthSessionProfile, clearAuthSessionToken, getAuthSessionProfile } from '@/app/lib/authSession';
+import { getSystemInboxMessages, clearSystemInboxMessages, type SystemInboxMessage } from '@/app/lib/systemInboxNotifications';
 import { clearSharedAccessToken } from '@/app/lib/accessTokenShare';
 import { applyTheme, readSavedTheme } from '@/app/lib/theme';
 import { useEffect } from 'react';
@@ -130,7 +131,7 @@ function PageBackgroundStudio({
 export function NotificationsPanel({ onClose }: { onClose: () => void }) {
   const notifications = [
     'Outfit liked by @alicefits',
-    'AI generation completed for “Urban Layers”',
+    'AI generation completed for "Urban Layers"',
     'Wardrobe item processed successfully',
   ];
 
@@ -144,22 +145,42 @@ export function NotificationsPanel({ onClose }: { onClose: () => void }) {
 }
 
 export function SystemInboxPanel({ onClose }: { onClose: () => void }) {
-  const updates = [
-    { title: 'AI-generated outfit ready', summary: 'Your “Night Neon” render is now available.', level: 'info' },
-    { title: 'Asset validation complete', summary: '2D mannequin asset passed quality validation.', level: 'success' },
-  ];
+  const [messages, setMessages] = useState<SystemInboxMessage[]>([]);
+
+  useEffect(() => {
+    setMessages(getSystemInboxMessages());
+  }, []);
+
+  const handleClearAll = () => {
+    clearSystemInboxMessages();
+    setMessages([]);
+  };
 
   return (
     <RightDrawer title="System Inbox" onClose={onClose}>
-      {updates.map((item) => (
-        <article key={item.title} className="sa-liquid-glass-token rounded-xl border border-white/15 bg-white/10 p-3">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold">{item.title}</p>
-            <span className="rounded-full border border-white/25 px-2 py-0.5 text-[10px] uppercase">{item.level}</span>
-          </div>
-          <p className="text-xs text-white/70">{item.summary}</p>
-        </article>
-      ))}
+      {messages.length === 0 ? (
+        <p className="py-4 text-center text-xs text-white/50">No messages yet.</p>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className="w-full rounded-lg border border-white/20 bg-white/8 px-3 py-1.5 text-xs text-white/60 hover:bg-white/15"
+          >
+            Clear all
+          </button>
+          {messages.map((item) => (
+            <article key={item.id} className="sa-liquid-glass-token rounded-xl border border-white/15 bg-white/10 p-3">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold">{item.title}</p>
+                <span className="rounded-full border border-white/25 px-2 py-0.5 text-[10px] uppercase">{item.level}</span>
+              </div>
+              <p className="text-xs text-white/70">{item.summary}</p>
+              <p className="mt-1 text-[10px] text-white/40">{new Date(item.timestamp).toLocaleString()}</p>
+            </article>
+          ))}
+        </>
+      )}
     </RightDrawer>
   );
 }

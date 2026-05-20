@@ -13,11 +13,12 @@ import threading
 import time
 import traceback
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -47,6 +48,9 @@ app = FastAPI(title="StylistAI Blender GPU Worker", version="3.0.0")
 class JobRequest(BaseModel):
     jobId: str | None = None
     pieceId: str | None = None
+    jobType: str | None = None
+    pieceName: str | None = None
+    prompt: str | None = None
     imageUrl: str | None = None
     modelUrl: str | None = None          # pre-built GLB URL (skip Meshy step)
     meshyGlbUrl: str | None = None       # direct Meshy GLB download URL
@@ -331,6 +335,7 @@ def health() -> dict[str, Any]:
 @app.post("/jobs")
 def create_job(
     payload: JobRequest,
+    background_tasks: BackgroundTasks,
     authorization: str | None = Header(default=None),
 ) -> JSONResponse:
     """Accept a job and return immediately. Pipeline runs in background."""
@@ -340,18 +345,18 @@ def create_job(
     job_dir = OUTPUT_ROOT / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
 
-    now = time.time()
+    created_at = datetime.now(timezone.utc).isoformat()
     initial_state: dict[str, Any] = {
+        "ok": True,
         "jobId": job_id,
         "pieceId": payload.pieceId,
         "status": "queued",
         "stage": "queued",
         "progress": 0,
-        "ok": True,
         "error": None,
         "artifacts": {},
-        "createdAt": now,
-        "updatedAt": now,
+        "createdAt": created_at,
+        "updatedAt": created_at,
     }
 
     with _jobs_lock:
@@ -360,16 +365,19 @@ def create_job(
 
     print(f"[3d-worker] submit accepted jobId={job_id} pieceId={payload.pieceId}")
 
-    # Launch heavy pipeline in a daemon background thread
-    t = threading.Thread(target=_run_pipeline, args=(job_id, payload), daemon=True)
-    t.start()
+    # Launch heavy pipeline after response is sent (BackgroundTasks) or in a daemon thread.
+    # BackgroundTasks is preferred for FastAPI; daemon thread is kept as fallback via the
+    # function itself so the process survives long-running Blender/Meshy calls.
+    background_tasks.add_task(_run_pipeline, job_id, payload)
 
     return JSONResponse(
         status_code=200,
         content={
             "ok": True,
             "status": "queued",
+            "stage": "queued",
             "jobId": job_id,
+            "pieceId": payload.pieceId,
             "message": "Job accepted",
         },
     )
@@ -395,6 +403,7 @@ def get_job(
         content={
             "ok": job_data.get("ok", True),
             "jobId": job_id,
+            "pieceId": job_data.get("pieceId"),
             "status": job_data.get("status", "unknown"),
             "progress": job_data.get("progress", 0),
             "stage": job_data.get("stage", ""),
