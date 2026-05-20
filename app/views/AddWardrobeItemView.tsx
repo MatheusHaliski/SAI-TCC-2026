@@ -38,31 +38,37 @@ const FALLBACK_BRANDS: Brand[] = [
   { brand_id: 'cea', name: 'C&A', logo_url: '/cea.jpg' },
 ];
 const COLOR_OPTIONS = [
-  'Blue',
-  'Red',
-  'Green',
-  'Yellow',
-  'Black',
-  'White',
-  'Gray',
-  'Brown',
-  'Beige',
-  'Purple',
+  'Black', 'White', 'Gray', 'Charcoal', 'Silver',
+  'Navy', 'Blue', 'Light Blue', 'Sky Blue', 'Cobalt',
+  'Red', 'Burgundy', 'Crimson', 'Maroon',
+  'Pink', 'Rose', 'Coral',
+  'Green', 'Olive', 'Forest Green', 'Mint', 'Teal', 'Sage',
+  'Yellow', 'Gold', 'Mustard', 'Amber',
+  'Orange', 'Rust', 'Terracotta',
+  'Brown', 'Camel', 'Tan', 'Beige', 'Cream', 'Ivory',
+  'Purple', 'Lavender', 'Violet', 'Lilac', 'Plum',
+  'Multicolor',
 ];
 
 const MATERIAL_OPTIONS = [
-  'Leather',
-  'Cotton',
-  'Denim',
-  'Wool',
-  'Linen',
-  'Polyester',
-  'Silk',
-  'Nylon',
+  'Cotton', 'Polyester', 'Wool', 'Linen',
+  'Denim', 'Leather', 'Suede', 'Velvet',
+  'Silk', 'Satin', 'Nylon', 'Spandex',
+  'Fleece', 'Knit', 'Jersey', 'Canvas',
+  'Cashmere', 'Modal', 'Rayon', 'Tweed',
 ];
 
-const STYLE_TAG_OPTIONS = ['Urban', 'day', 'night', 'outdoors'];
-const OCCASION_TAG_OPTIONS = ['Party', 'Formal', 'Casual', 'Work'];
+const STYLE_TAG_OPTIONS = [
+  'Casual', 'Formal', 'Business', 'Smart Casual',
+  'Urban', 'Streetwear', 'Sport', 'Athletic',
+  'Luxury', 'Classic', 'Vintage', 'Minimal',
+  'Bohemian', 'Preppy', 'Evening', 'Beach',
+];
+const OCCASION_TAG_OPTIONS = [
+  'Casual', 'Formal', 'Work', 'Party',
+  'Sport', 'Beach', 'Night Out', 'Date',
+  'Business', 'Everyday', 'Travel', 'Wedding', 'Outdoors',
+];
 const GENDER_OPTIONS = [
   { value: 'masculino', label: 'Masculino' },
   { value: 'feminino', label: 'Feminino' },
@@ -115,7 +121,11 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const normalizeToken = (value: string) => value.trim().toLowerCase();
   const isGenericToken = (value: string) => {
     const token = normalizeToken(value);
-    return ['', 'selection', 'color', 'style', 'style tag', 'occasion', 'occasion tag', 'material', 'brand', 'unknown', 'undefined'].includes(token);
+    return [
+      '', 'selection', 'color', 'style', 'style tag', 'occasion', 'occasion tag',
+      'material', 'brand', 'unknown', 'undefined', 'unknown piece', 'unnamed piece',
+      'n/a', 'none', 'not applicable',
+    ].includes(token);
   };
   const resolveOptionValue = (rawValue: string | undefined, options: string[]): string => {
     if (!rawValue || isGenericToken(rawValue)) return '';
@@ -123,7 +133,26 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     const exact = options.find((option) => normalizeToken(option) === token);
     if (exact) return exact;
     const partial = options.find((option) => token.includes(normalizeToken(option)) || normalizeToken(option).includes(token));
-    return partial || rawValue.trim();
+    return partial || '';
+  };
+  const resolveMarketIdFromAI = (
+    aiSeason: string | undefined,
+    aiGender: string | undefined,
+    availableMarkets: Market[],
+  ): string => {
+    if (!availableMarkets.length) return '';
+    const season = (aiSeason || '').toLowerCase().replace('all-season', '');
+    const genderKey = aiGender === 'male' ? ['masc', 'male', 'men', 'homem'] : aiGender === 'female' ? ['fem', 'female', 'wom', 'mulher'] : [];
+    const scored = availableMarkets.map((market) => {
+      const mSeason = market.season.toLowerCase();
+      const mGender = market.gender.toLowerCase();
+      let score = 0;
+      if (season && season !== 'unknown' && (mSeason.includes(season) || season.includes(mSeason))) score += 2;
+      if (genderKey.length && genderKey.some((k) => mGender.includes(k))) score += 2;
+      return { market, score };
+    });
+    const best = scored.sort((a, b) => b.score - a.score)[0];
+    return best && best.score > 0 ? best.market.market_id : '';
   };
   const resolveBrandIdFromAI = (
     rawBrand: string | undefined,
@@ -543,54 +572,94 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
       const data = payload.data;
 
-      let mappedPieceType = form.piece_type;
-      if (form.piece_type === 'upper_piece') {
-        if (data.bodyRegion === 'lower') mappedPieceType = 'lower_piece';
-        else if (data.bodyRegion === 'shoes') mappedPieceType = 'shoes_piece';
-        else if (data.bodyRegion === 'accessory') mappedPieceType = 'accessory_piece';
-      }
+      // piece_type: always derive from AI bodyRegion, fall back to current only if unknown
+      const bodyRegionMap: Record<string, string> = {
+        upper: 'upper_piece',
+        lower: 'lower_piece',
+        shoes: 'shoes_piece',
+        accessory: 'accessory_piece',
+      };
+      const mappedPieceType = bodyRegionMap[data.bodyRegion] ?? form.piece_type;
 
-      const aiOccasionCandidate = [
-        ...(Array.isArray(data.occasions) ? data.occasions : []),
-        ...(Array.isArray(data.semanticTags) ? data.semanticTags : []),
-        data.shortDescription || '',
-      ]
-        .map((value) => String(value || '').trim())
-        .find((value) => value.length > 0);
+      // gender
+      const mappedGender =
+        data.gender === 'male' ? 'masculino' :
+        data.gender === 'female' ? 'feminino' :
+        form.gender;
 
-      let currentBrands = brands;
-      let resolvedBrandId = resolveBrandIdFromAI(data.brand, currentBrands, [
+      // color: try each primaryColor word against expanded options
+      const resolvedColor = (() => {
+        const primary = data.primaryColor || '';
+        if (!primary || isGenericToken(primary)) return '';
+        const direct = resolveOptionValue(primary, COLOR_OPTIONS);
+        if (direct) return direct;
+        // Try each word in the color name (e.g. "Dark Navy Blue" → ["dark", "navy", "blue"])
+        for (const word of primary.split(/[\s-]+/).reverse()) {
+          const wordMatch = resolveOptionValue(word, COLOR_OPTIONS);
+          if (wordMatch) return wordMatch;
+        }
+        return '';
+      })();
+
+      // material: try first few materials
+      const resolvedMaterial = (() => {
+        const candidates: string[] = Array.isArray(data.materials) ? data.materials : [];
+        for (const mat of candidates) {
+          const match = resolveOptionValue(mat, MATERIAL_OPTIONS);
+          if (match) return match;
+        }
+        return '';
+      })();
+
+      // style_tags: try all returned styles against expanded options
+      const resolvedStyleTag = (() => {
+        const candidates: string[] = Array.isArray(data.styles) ? data.styles : [];
+        for (const style of candidates) {
+          const match = resolveOptionValue(style, STYLE_TAG_OPTIONS);
+          if (match) return match;
+        }
+        return '';
+      })();
+
+      // occasion_tags: derive from styles + semanticTags (data.occasions does not exist in the type)
+      const resolvedOccasion = (() => {
+        const candidates: string[] = [
+          ...(Array.isArray(data.styles) ? data.styles : []),
+          ...(Array.isArray(data.semanticTags) ? data.semanticTags : []),
+        ];
+        for (const candidate of candidates) {
+          const match = resolveOptionValue(candidate, OCCASION_TAG_OPTIONS);
+          if (match) return match;
+        }
+        return '';
+      })();
+
+      // brand
+      const resolvedBrandId = resolveBrandIdFromAI(data.brand, brands, [
         data.pieceName || '',
         data.shortDescription || '',
         ...(Array.isArray(data.semanticTags) ? data.semanticTags : []),
       ]);
 
-      if (
-        resolvedBrandId === DEFAULT_BRAND_ID &&
-        data.brand &&
-        !isGenericToken(data.brand) &&
-        data.brand.toLowerCase() !== 'unknown' &&
-        (data.brandConfidence === 'High' || data.brandConfidence === 'Medium')
-      ) {
-        const newBrandId = data.brand.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const newBrand: Brand = { brand_id: newBrandId, name: data.brand };
-        currentBrands = [...currentBrands, newBrand];
-        setBrands(currentBrands);
-        resolvedBrandId = newBrandId;
-      }
+      // market: match from AI season + gender
+      const resolvedMarketId = resolveMarketIdFromAI(data.season, data.gender, markets);
+
+      // name: reject generic AI fallback names
+      const resolvedName = !isGenericToken(data.pieceName) ? data.pieceName : '';
 
       setForm((prev) => ({
         ...prev,
-        name: data.pieceName || prev.name || '',
-        color: resolveOptionValue(data.primaryColor, COLOR_OPTIONS) || prev.color || '',
-        material: resolveOptionValue(data.materials?.[0], MATERIAL_OPTIONS) || prev.material || '',
-        style_tags: resolveOptionValue(data.styles?.[0], STYLE_TAG_OPTIONS) || prev.style_tags || '',
-        occasion_tags: resolveOptionValue(aiOccasionCandidate, OCCASION_TAG_OPTIONS) || prev.occasion_tags || '',
-        gender: (data.gender === 'male' ? 'masculino' : data.gender === 'female' ? 'feminino' : '') || prev.gender,
+        name: resolvedName || prev.name || '',
+        color: resolvedColor || prev.color || '',
+        material: resolvedMaterial || prev.material || '',
+        style_tags: resolvedStyleTag || prev.style_tags || '',
+        occasion_tags: resolvedOccasion || prev.occasion_tags || '',
+        gender: mappedGender,
         piece_type: mappedPieceType,
         brand_id: resolvedBrandId !== DEFAULT_BRAND_ID ? resolvedBrandId : prev.brand_id,
+        market_id: resolvedMarketId || prev.market_id,
       }));
-      setAlertMessage('AI Analysis complete! Suggestions applied to all available fields.');
+      setAlertMessage('Análise concluída! Campos preenchidos automaticamente.');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error during AI analysis.';
       setAlertMessage(message);

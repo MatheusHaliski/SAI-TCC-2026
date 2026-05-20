@@ -262,6 +262,38 @@ const AI_GENERATION_MODE_DESCRIPTIONS: Record<BackgroundGenerationMode, string> 
   hybrid: 'Combines preset structure with prompt-driven composition',
   text_prompt_pure: 'Uses the written prompt as the main creative driver',
 };
+const COLOR_INTENT_TO_GRADIENT: Record<ArtworkColorIntent, NonNullable<OutfitBackgroundConfig['gradient']>> = {
+  prompt_driven: { type: 'linear', angle: 135, intensity: 100, stops: [{ color: '#0f172a', position: 0 }, { color: '#4c1d95', position: 100 }] },
+  cool_blue: { type: 'linear', angle: 130, intensity: 105, stops: [{ color: '#0c1a2e', position: 0 }, { color: '#1d4ed8', position: 55 }, { color: '#0ea5e9', position: 100 }] },
+  emerald_luxury: { type: 'radial', angle: 0, intensity: 110, stops: [{ color: '#022c22', position: 0 }, { color: '#065f46', position: 55 }, { color: '#10b981', position: 100 }] },
+  sunset_warm: { type: 'linear', angle: 150, intensity: 105, stops: [{ color: '#7c2d12', position: 0 }, { color: '#f97316', position: 60 }, { color: '#fde68a', position: 100 }] },
+  mono_chrome: { type: 'linear', angle: 110, intensity: 108, stops: [{ color: '#020617', position: 0 }, { color: '#1e293b', position: 52 }, { color: '#334155', position: 100 }] },
+  neon_pop: { type: 'linear', angle: 125, intensity: 110, stops: [{ color: '#1e1b4b', position: 0 }, { color: '#7c3aed', position: 50 }, { color: '#ec4899', position: 100 }] },
+};
+
+const PALETTE_MODE_TO_GRADIENT: Record<ArtworkPaletteMode, NonNullable<OutfitBackgroundConfig['gradient']>> = {
+  monochrome: { type: 'linear', angle: 110, intensity: 108, stops: [{ color: '#020617', position: 0 }, { color: '#1e293b', position: 52 }, { color: '#334155', position: 100 }] },
+  cool_luxury: { type: 'linear', angle: 135, intensity: 100, stops: [{ color: '#0f172a', position: 0 }, { color: '#1e3a8a', position: 55 }, { color: '#0c4a6e', position: 100 }] },
+  warm_neutral: { type: 'linear', angle: 125, intensity: 85, stops: [{ color: '#1c1008', position: 0 }, { color: '#8a5c2e', position: 50 }, { color: '#d6c2a5', position: 100 }] },
+  custom: { type: 'linear', angle: 135, intensity: 100, stops: [{ color: '#0f172a', position: 0 }, { color: '#4c1d95', position: 100 }] },
+};
+
+const COMPOSITION_TYPE_DESCRIPTIONS: Record<NonNullable<ArtworkStudioInput['compositionType']>, string> = {
+  background: 'Full canvas surface — fills the entire card background',
+  shape_pack: 'Geometry shapes only — transparent SVG pack, no background fill',
+  overlay: 'Semi-transparent layer placed over the current background',
+  frame: 'Editorial border/frame element around the card edges',
+};
+
+const COLOR_INTENT_SWATCHES: Record<ArtworkColorIntent, string> = {
+  prompt_driven: 'linear-gradient(135deg, #0f172a, #4c1d95)',
+  cool_blue: 'linear-gradient(130deg, #0c1a2e, #1d4ed8, #0ea5e9)',
+  emerald_luxury: 'radial-gradient(circle, #022c22, #065f46, #10b981)',
+  sunset_warm: 'linear-gradient(150deg, #7c2d12, #f97316, #fde68a)',
+  mono_chrome: 'linear-gradient(110deg, #020617, #1e293b, #334155)',
+  neon_pop: 'linear-gradient(125deg, #1e1b4b, #7c3aed, #ec4899)',
+};
+
 const GEOMETRY_DESCRIPTION_MAP: Record<GeometryFamily, string> = {
   arrows: 'Directional motifs and chevrons with motion guidance',
   waves: 'Flowing curved bands with elegant rhythm',
@@ -424,39 +456,12 @@ function buildGeometryPreviewConfig(geometry: GeometryFamily, heroColor: string)
   };
 }
 
-type RepeatedImagePatternOptions = {
-  motifWidth: number;
-  motifHeight: number;
-  spacingX: number;
-  spacingY: number;
-  columns: number;
-  rows: number;
-  canvasWidth: number;
-  canvasHeight: number;
-  repeatMode: 'grid' | 'staggered' | 'diagonal' | 'scattered-balanced';
-  minScale: number;
-  maxScale: number;
-  minOpacity: number;
-  maxOpacity: number;
-  maxRotationDeg: number;
-  safeArea: { x: number; y: number; width: number; height: number };
-  offsetX?: number;
-  offsetY?: number;
-};
-
+// MotifSeed is kept as-is — still used by extractMotifSeed and compositeMotifSurface.
 type MotifSeed = {
   source: string;
   aspectRatio: number;
   dominantColor: string;
   brandName: string;
-};
-
-type CanvasTiledMotifOptions = {
-  canvasWidth: number;
-  canvasHeight: number;
-  gridColumns: number;
-  gridRows: number;
-  tileOpacity: number;
 };
 
 function createOffscreenCanvas(width: number, height: number) {
@@ -479,49 +484,43 @@ async function loadImageFromSource(source: string): Promise<HTMLImageElement> {
   });
 }
 
-function createReferenceTile(image: HTMLImageElement, tileSize: number, tilePadding: number): HTMLCanvasElement {
-  const tileCanvas = createOffscreenCanvas(tileSize, tileSize);
+function createLogoTile(image: HTMLImageElement, tileW: number, tileH: number): HTMLCanvasElement {
+  const tileCanvas = createOffscreenCanvas(tileW, tileH);
   if (!tileCanvas) throw new Error('canvas_unavailable');
   const tileCtx = tileCanvas.getContext('2d');
   if (!tileCtx) throw new Error('canvas_context_unavailable');
-  const contentSize = Math.max(4, tileSize - tilePadding * 2);
-  const scale = Math.min(contentSize / image.naturalWidth, contentSize / image.naturalHeight);
-  const drawWidth = image.naturalWidth * scale;
-  const drawHeight = image.naturalHeight * scale;
-  const offsetX = (tileSize - drawWidth) / 2;
-  const offsetY = (tileSize - drawHeight) / 2;
-  tileCtx.clearRect(0, 0, tileSize, tileSize);
-  tileCtx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+  const scale = Math.min(tileW / image.naturalWidth, tileH / image.naturalHeight);
+  const drawW = image.naturalWidth * scale;
+  const drawH = image.naturalHeight * scale;
+  tileCtx.clearRect(0, 0, tileW, tileH);
+  tileCtx.drawImage(image, (tileW - drawW) / 2, (tileH - drawH) / 2, drawW, drawH);
   return tileCanvas;
 }
 
-function renderRepeatedTileGrid(
+function renderPreciseMotifGrid(
   ctx: CanvasRenderingContext2D,
   tileCanvas: HTMLCanvasElement,
-  options: CanvasTiledMotifOptions,
+  logoW: number,
+  logoH: number,
+  canvasW: number,
+  canvasH: number,
+  mode: 'grid' | 'staggered',
 ) {
-  const stepX = options.canvasWidth / options.gridColumns;
-  const stepY = options.canvasHeight / options.gridRows;
-  const baseDrawSize = Math.min(stepX, stepY) * 0.88;
-  for (let row = 0; row < options.gridRows; row += 1) {
-    for (let col = 0; col < options.gridColumns; col += 1) {
-      const seed = row * 157 + col * 89 + 17;
-      const scale = 0.94 + seededRandom(seed) * 0.13;
-      const localOpacity = options.tileOpacity + seededRandom(seed + 3) * 0.14;
-      const offsetX = (seededRandom(seed + 5) - 0.5) * stepX * 0.18;
-      const offsetY = (seededRandom(seed + 7) - 0.5) * stepY * 0.18;
-      const rotation = (seededRandom(seed + 11) - 0.5) * 0.18;
-      const drawSize = baseDrawSize * scale;
-      const centerX = stepX * (col + 0.5) + offsetX + (row % 2 ? stepX * 0.08 : 0);
-      const centerY = stepY * (row + 0.5) + offsetY;
-      ctx.save();
-      ctx.globalAlpha = Math.min(0.85, Math.max(0.2, localOpacity));
-      ctx.translate(centerX, centerY);
-      ctx.rotate(rotation);
-      ctx.drawImage(tileCanvas, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
-      ctx.restore();
+  const cols = Math.ceil(canvasW / logoW) + (mode === 'staggered' ? 1 : 0);
+  const rows = Math.ceil(canvasH / logoH) + 1;
+  const safeX2 = 680;
+  const safeY2 = 460;
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const stagger = mode === 'staggered' && row % 2 === 1 ? -Math.round(logoW * 0.5) : 0;
+      const x = col * logoW + stagger;
+      const y = row * logoH;
+      const inSafe = x + logoW / 2 <= safeX2 && y + logoH / 2 <= safeY2;
+      ctx.globalAlpha = inSafe ? 0.18 : 0.58;
+      ctx.drawImage(tileCanvas, x, y, logoW, logoH);
     }
   }
+  ctx.globalAlpha = 1;
 }
 
 async function buildTiledMotifFromReferenceImage(
@@ -530,48 +529,45 @@ async function buildTiledMotifFromReferenceImage(
   baseGradient?: OutfitBackgroundConfig['gradient'],
 ): Promise<OutfitBackgroundConfig> {
   const image = await loadImageFromSource(referenceImage);
-  const canvasWidth = 1200;
-  const canvasHeight = 800;
+  const CW = 1200;
+  const CH = 800;
   const ratio = image.naturalWidth / Math.max(1, image.naturalHeight);
-  const gridColumns = ratio > 1.4 ? 6 : ratio < 0.8 ? 5 : 4;
-  const gridRows = ratio > 1.4 ? 4 : 5;
-  const tileSize = Math.max(120, Math.round(Math.min(canvasWidth / gridColumns, canvasHeight / gridRows) * 0.9));
-  const canvas = createOffscreenCanvas(canvasWidth, canvasHeight);
+  const targetCols = ratio > 2 ? 6 : ratio < 0.5 ? 10 : 8;
+  const logoW = Math.round(CW / targetCols);
+  const logoH = Math.max(24, Math.round(logoW / Math.max(0.25, ratio)));
+  const canvas = createOffscreenCanvas(CW, CH);
   if (!canvas) throw new Error('canvas_unavailable');
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('canvas_context_unavailable');
-  const gradient = ctx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
+  const bgGradient = ctx.createLinearGradient(0, 0, CW, CH);
   const gradientStops = baseGradient?.stops?.length
     ? baseGradient.stops
-    : [
-        { color: '#020617', position: 0 },
-        { color: '#0f172a', position: 50 },
-        { color: context.heroColor, position: 100 },
-      ];
-  gradientStops.forEach((stop) => gradient.addColorStop(Math.min(1, Math.max(0, stop.position / 100)), stop.color));
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-  const tileCanvas = createReferenceTile(image, tileSize, Math.round(tileSize * 0.14));
-  renderRepeatedTileGrid(ctx, tileCanvas, {
-    canvasWidth,
-    canvasHeight,
-    gridColumns,
-    gridRows,
-    tileOpacity: 0.34,
-  });
-  ctx.fillStyle = 'rgba(2,6,23,0.14)';
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    : [{ color: '#020617', position: 0 }, { color: '#0f172a', position: 50 }, { color: context.heroColor, position: 100 }];
+  gradientStops.forEach((s) => bgGradient.addColorStop(Math.min(1, Math.max(0, s.position / 100)), s.color));
+  ctx.fillStyle = bgGradient;
+  ctx.fillRect(0, 0, CW, CH);
+  const tileCanvas = createLogoTile(image, logoW, logoH);
+  renderPreciseMotifGrid(ctx, tileCanvas, logoW, logoH, CW, CH, 'staggered');
+  // Safe area vignette
+  const vigGrad = ctx.createRadialGradient(0, 0, 10, 300, 220, 600);
+  vigGrad.addColorStop(0, 'rgba(2,6,23,0.72)');
+  vigGrad.addColorStop(0.6, 'rgba(2,6,23,0.24)');
+  vigGrad.addColorStop(1, 'rgba(2,6,23,0)');
+  ctx.fillStyle = vigGrad;
+  ctx.fillRect(0, 0, 680, 460);
+  ctx.fillStyle = 'rgba(2,6,23,0.08)';
+  ctx.fillRect(0, 0, CW, CH);
   const outputUrl = canvas.toDataURL('image/png');
   return {
     background_mode: 'ai_artwork',
     ai_artwork: {
-      prompt: `${context.brandName} repeated motif surface from uploaded logo via canvas tiled composition`,
+      prompt: `${context.brandName} precise staggered motif grid — canvas render`,
       image_url: outputUrl,
       generation_status: 'done',
     },
     shape: 'none',
     texture_overlay: false,
-    gradient: {
+    gradient: baseGradient || {
       type: 'linear',
       angle: 132,
       intensity: 104,
@@ -585,45 +581,6 @@ function seededRandom(seed: number) {
   return value - Math.floor(value);
 }
 
-function createRepeatedImagePattern(referenceImage: string, options: RepeatedImagePatternOptions) {
-  const stepX = options.motifWidth + options.spacingX;
-  const stepY = options.motifHeight + options.spacingY;
-  const startX = options.offsetX ?? 24;
-  const startY = options.offsetY ?? 24;
-  const diagonalShift = Math.round(stepX * 0.32);
-  const safeX2 = options.safeArea.x + options.safeArea.width;
-  const safeY2 = options.safeArea.y + options.safeArea.height;
-
-  return Array.from({ length: options.rows }).map((_, row) =>
-    Array.from({ length: options.columns }).map((__, col) => {
-      let x = startX + col * stepX;
-      let y = startY + row * stepY;
-      if (options.repeatMode === 'staggered' && row % 2 !== 0) x += Math.round(stepX * 0.48);
-      if (options.repeatMode === 'diagonal') x += row * diagonalShift;
-      if (options.repeatMode === 'scattered-balanced') {
-        x += Math.round((seededRandom((row + 2) * 17 + (col + 5) * 29) - 0.5) * (options.spacingX * 0.65));
-        y += Math.round((seededRandom((row + 11) * 31 + (col + 7) * 13) - 0.5) * (options.spacingY * 0.65));
-      }
-
-      const variationSeed = row * 97 + col * 53 + options.columns * 11;
-      const scale = options.minScale + seededRandom(variationSeed + 1) * (options.maxScale - options.minScale);
-      const opacity = options.minOpacity + seededRandom(variationSeed + 2) * (options.maxOpacity - options.minOpacity);
-      const rotation = (seededRandom(variationSeed + 3) * 2 - 1) * options.maxRotationDeg;
-      const motifW = Math.round(options.motifWidth * scale);
-      const motifH = Math.round(options.motifHeight * scale);
-      const motifX = Math.round(x - (motifW - options.motifWidth) / 2);
-      const motifY = Math.round(y - (motifH - options.motifHeight) / 2);
-      const centerX = motifX + motifW / 2;
-      const centerY = motifY + motifH / 2;
-      const inSafeArea = centerX >= options.safeArea.x && centerX <= safeX2 && centerY >= options.safeArea.y && centerY <= safeY2;
-      const safeAreaOpacity = inSafeArea ? 0.35 : 1;
-
-      return `<g transform='translate(${centerX} ${centerY}) rotate(${rotation.toFixed(2)}) translate(${-centerX} ${-centerY})' opacity='${(opacity * safeAreaOpacity).toFixed(3)}'>
-        <image href='${referenceImage}' x='${motifX}' y='${motifY}' width='${motifW}' height='${motifH}' preserveAspectRatio='xMidYMid meet'/>
-      </g>`;
-    }).join('')
-  ).join('');
-}
 
 function extractMotifSeed(referenceImage: string, context: PresetContext, imageAspectRatio = 1): MotifSeed {
   return {
@@ -634,80 +591,57 @@ function extractMotifSeed(referenceImage: string, context: PresetContext, imageA
   };
 }
 
-function generateRepeatedPattern(motifSeed: MotifSeed, repeatMode: RepeatedImagePatternOptions['repeatMode']) {
-  const safeAspectRatio = motifSeed.aspectRatio;
-  const motifScale: 'tiny' | 'small' | 'medium' = safeAspectRatio > 1.8 ? 'tiny' : safeAspectRatio < 0.7 ? 'medium' : 'small';
-  const density: 'low' | 'medium' | 'high' = 'high';
-  const motifHeightByScale = { tiny: 54, small: 68, medium: 84 } as const;
-  const densityRows = { low: 6, medium: 7, high: 9 } as const;
-  const densityCols = { low: 10, medium: 12, high: 15 } as const;
-  const motifHeight = motifHeightByScale[motifScale];
-  const motifWidth = Math.round(Math.min(138, Math.max(40, motifHeight * safeAspectRatio)));
-  return createRepeatedImagePattern(motifSeed.source, {
-    motifWidth,
-    motifHeight,
-    spacingX: 16,
-    spacingY: 18,
-    columns: densityCols[density],
-    rows: densityRows[density],
-    canvasWidth: 1200,
-    canvasHeight: 800,
-    repeatMode,
-    minScale: 0.92,
-    maxScale: 1.08,
-    minOpacity: 0.26,
-    maxOpacity: 0.52,
-    maxRotationDeg: 7,
-    safeArea: { x: 110, y: 90, width: 550, height: 360 },
-    offsetX: 16,
-    offsetY: 20,
-  });
-}
-
 function compositeMotifSurface(
   motifSeed: MotifSeed,
-  repeatedPattern: string,
-  repeatMode: RepeatedImagePatternOptions['repeatMode'],
+  mode: 'grid' | 'staggered' | 'diagonal',
   baseGradient?: OutfitBackgroundConfig['gradient'],
-) {
+): string {
+  const CW = 1200;
+  const CH = 800;
+  const ar = Math.max(0.25, Math.min(4, motifSeed.aspectRatio));
+  // Choose columns so each logo is ~100-160px wide
+  const targetCols = ar > 2 ? 6 : ar < 0.5 ? 10 : 8;
+  const logoW = Math.round(CW / targetCols);
+  const logoH = Math.max(24, Math.round(logoW / ar));
+  const baseCols = targetCols + (mode === 'staggered' ? 1 : mode === 'diagonal' ? 3 : 0);
+  const baseRows = Math.ceil(CH / logoH) + (mode === 'staggered' ? 1 : 1);
+  const safeX2 = 680;
+  const safeY2 = 460;
+  const tiles: string[] = [];
+  for (let row = 0; row < baseRows; row++) {
+    for (let col = 0; col < baseCols; col++) {
+      let x = col * logoW;
+      const y = row * logoH;
+      if (mode === 'staggered' && row % 2 === 1) x -= Math.round(logoW * 0.5);
+      if (mode === 'diagonal') x -= row * Math.round(logoW * 0.22);
+      const cx = x + logoW / 2;
+      const cy = y + logoH / 2;
+      const inSafe = cx >= 0 && cx <= safeX2 && cy >= 0 && cy <= safeY2;
+      const opacity = inSafe ? 0.14 : 0.52;
+      tiles.push(
+        `<image href='${motifSeed.source}' x='${Math.round(x)}' y='${Math.round(y)}' width='${logoW}' height='${logoH}' preserveAspectRatio='xMidYMid meet' opacity='${opacity}'/>`,
+      );
+    }
+  }
   const gradientStops = baseGradient?.stops?.length
     ? baseGradient.stops
-    : [
-        { color: '#020617', position: 0 },
-        { color: '#0f172a', position: 50 },
-        { color: motifSeed.dominantColor, position: 100 },
-      ];
-  const stopMarkup = gradientStops.map((stop) => (
-    `<stop offset='${Math.min(100, Math.max(0, stop.position))}%' stop-color='${stop.color}'/>`
-  )).join('');
+    : [{ color: '#020617', position: 0 }, { color: '#0f172a', position: 50 }, { color: motifSeed.dominantColor, position: 100 }];
+  const stopMarkup = gradientStops.map((s) => `<stop offset='${Math.min(100, Math.max(0, s.position))}%' stop-color='${s.color}'/>`).join('');
   return asDataUri(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${CW}' height='${CH}'>
       <defs>
-        <linearGradient id='surface' x1='0%' y1='0%' x2='100%' y2='100%'>
-          ${stopMarkup}
-        </linearGradient>
-        <radialGradient id='safeAreaMask' cx='30%' cy='28%' r='42%'>
-          <stop offset='0%' stop-color='rgba(15,23,42,0.70)'/>
-          <stop offset='75%' stop-color='rgba(15,23,42,0.22)'/>
-          <stop offset='100%' stop-color='rgba(15,23,42,0)'/>
+        <linearGradient id='surface' x1='0%' y1='0%' x2='100%' y2='100%'>${stopMarkup}</linearGradient>
+        <radialGradient id='safeVignette' cx='28%' cy='26%' r='46%'>
+          <stop offset='0%' stop-color='rgba(2,6,23,0.75)'/>
+          <stop offset='65%' stop-color='rgba(2,6,23,0.28)'/>
+          <stop offset='100%' stop-color='rgba(2,6,23,0)'/>
         </radialGradient>
-        <pattern id='microGrid' width='20' height='20' patternUnits='userSpaceOnUse'>
-          <path d='M20 0H0V20' fill='none' stroke='rgba(148,163,184,0.08)' stroke-width='1'/>
-        </pattern>
-        <filter id='softShadow' x='-12%' y='-12%' width='124%' height='124%'>
-          <feGaussianBlur stdDeviation='2.8'/>
-        </filter>
       </defs>
-      <rect width='1200' height='800' fill='url(#surface)'/>
-      <rect width='1200' height='800' fill='url(#microGrid)'/>
-      <rect width='1200' height='800' fill='rgba(248,250,252,0.03)'/>
-      <g filter='url(#softShadow)' opacity='0.28'>
-        ${repeatedPattern}
-      </g>
-      ${repeatedPattern}
-      <rect x='60' y='60' width='610' height='390' rx='44' fill='url(#safeAreaMask)'/>
-      <rect width='1200' height='800' fill='rgba(2,6,23,0.12)'/>
-      <text x='66' y='760' font-size='22' font-family='Inter, Arial, sans-serif' fill='rgba(148,163,184,0.55)' letter-spacing='3'>${escapeSvgAttribute(motifSeed.brandName.toUpperCase())} MOTIF SURFACE · ${repeatMode.toUpperCase()}</text>
+      <rect width='${CW}' height='${CH}' fill='url(#surface)'/>
+      ${tiles.join('')}
+      <rect width='${safeX2}' height='${safeY2}' fill='url(#safeVignette)'/>
+      <rect width='${CW}' height='${CH}' fill='rgba(2,6,23,0.08)'/>
+      <text x='68' y='764' font-size='18' font-family='Inter,Arial,sans-serif' fill='rgba(148,163,184,0.50)' letter-spacing='3'>${escapeSvgAttribute(motifSeed.brandName.toUpperCase())}</text>
     </svg>`,
   );
 }
@@ -719,20 +653,19 @@ function buildTiledMotifFromReference(
   baseGradient?: OutfitBackgroundConfig['gradient'],
 ): OutfitBackgroundConfig {
   const motifSeed = extractMotifSeed(referenceImage, context, imageAspectRatio);
-  const repeatModes: RepeatedImagePatternOptions['repeatMode'][] = ['grid', 'staggered', 'diagonal', 'scattered-balanced'];
-  const repeatMode = repeatModes[Math.abs(context.brandName.length) % repeatModes.length];
-  const repeatedPattern = generateRepeatedPattern(motifSeed, repeatMode);
-  const tiledBrandSurface = compositeMotifSurface(motifSeed, repeatedPattern, repeatMode, baseGradient);
+  const modes: Array<'grid' | 'staggered' | 'diagonal'> = ['grid', 'staggered', 'diagonal'];
+  const mode = modes[Math.abs(context.brandName.length) % modes.length];
+  const tiledBrandSurface = compositeMotifSurface(motifSeed, mode, baseGradient);
   return {
     background_mode: 'ai_artwork',
     ai_artwork: {
-      prompt: `${context.brandName} repeated motif surface from uploaded logo, ${repeatMode} layout, premium editorial texture`,
+      prompt: `${context.brandName} precise ${mode} motif grid — ${motifSeed.aspectRatio.toFixed(2)} aspect ratio`,
       image_url: tiledBrandSurface,
       generation_status: 'done',
     },
     shape: 'none',
     texture_overlay: false,
-    gradient: {
+    gradient: baseGradient || {
       type: 'linear',
       angle: 132,
       intensity: 104,
@@ -1782,6 +1715,37 @@ export default function OutfitBackgroundStudioModal({
     });
   }, [aiResults, selectedAiResult]);
 
+  // Live preview: when color intent changes, immediately apply matching gradient
+  useEffect(() => {
+    if (activeTab !== 'ai_artwork') return;
+    setDraft((prev) => ({
+      ...prev,
+      gradient: COLOR_INTENT_TO_GRADIENT[aiColorIntent],
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiColorIntent, activeTab]);
+
+  // Live preview: when palette mode changes (and color intent is prompt_driven), apply palette gradient
+  useEffect(() => {
+    if (activeTab !== 'ai_artwork' || aiColorIntent !== 'prompt_driven') return;
+    setDraft((prev) => ({
+      ...prev,
+      gradient: PALETTE_MODE_TO_GRADIENT[aiPaletteMode],
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiPaletteMode, activeTab, aiColorIntent]);
+
+  // Generation mode switch: update preview approach
+  useEffect(() => {
+    if (activeTab !== 'ai_artwork') return;
+    if (aiGenerationMode === 'text_prompt_pure') {
+      // For pure text mode, keep current state but clear results to signal fresh start
+      setAiResults([]);
+      setSelectedAiResult(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiGenerationMode]);
+
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
@@ -2001,12 +1965,13 @@ export default function OutfitBackgroundStudioModal({
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Prompt</p>
                       <p className="mb-1 text-[10px] text-white/60">Use brand and mood details. Geometry control below has priority for structure.</p>
                       <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder="Premium editorial fashion background with geometric layers and elegant negative space." className="min-h-20 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm" />
-                      <button type="button" onClick={generateWithGoogleAI} disabled={aiLoading || !aiPrompt.trim()} className="mt-2 w-full rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-2 text-xs font-bold text-white shadow-lg transition hover:scale-[1.02] disabled:opacity-50">✨ Google AI: Smart Generate</button>
+                      <button type="button" onClick={generateWithGoogleAI} disabled={aiLoading || !aiPrompt.trim()} className="mt-2 w-full rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-2 text-xs font-bold text-white shadow-lg transition hover:scale-[1.02] disabled:opacity-50">✨ Generate Palette from Prompt</button>
+                      <p className="mt-1 text-[9px] text-white/50">Generates a color palette and gradient from your text prompt.</p>
                     </div>
                     <div>
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Composition Type</p>
                       <p className="mb-1 text-[10px] text-white/60">Changes whether AI prioritizes full background, frame, overlay, or shape-pack output.</p>
-                      <FancySelect value={aiCompositionType} onChange={(value) => setAiCompositionType(value as ArtworkStudioInput['compositionType'])} placeholder="Composition type" options={COMPOSITION_TYPES.map((option) => ({ value: option, label: option.replaceAll('_', ' '), hint: 'Changes generation layout strategy' }))} />
+                      <FancySelect value={aiCompositionType} onChange={(value) => setAiCompositionType(value as ArtworkStudioInput['compositionType'])} placeholder="Composition type" options={COMPOSITION_TYPES.map((option) => ({ value: option, label: option.replaceAll('_', ' '), hint: COMPOSITION_TYPE_DESCRIPTIONS[option] }))} />
                     </div>
                     <div>
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Style Preset</p>
@@ -2016,7 +1981,11 @@ export default function OutfitBackgroundStudioModal({
                     <div>
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Palette Mode</p>
                       <p className="mb-1 text-[10px] text-white/60">Controls the dominant color family in generated artwork.</p>
-                      <FancySelect value={aiPaletteMode} onChange={(value) => setAiPaletteMode(value as ArtworkPaletteMode)} placeholder="Palette mode" options={PALETTE_MODES.map((option) => ({ value: option, label: option.replaceAll('_', ' '), hint: 'Controls palette family used during generation' }))} />
+                      <FancySelect value={aiPaletteMode} onChange={(value) => setAiPaletteMode(value as ArtworkPaletteMode)} placeholder="Palette mode" options={PALETTE_MODES.map((option) => ({
+                        value: option,
+                        label: option.replaceAll('_', ' '),
+                        hint: `Applies ${option.replaceAll('_', ' ')} palette — updates preview instantly`,
+                      }))} />
                     </div>
                   </div>
                 </div>
@@ -2032,8 +2001,23 @@ export default function OutfitBackgroundStudioModal({
                     </div>
                     <div>
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Color Intent</p>
-                      <p className="mb-1 text-[10px] text-white/60">Applies color direction to the prompt and generation model.</p>
-                      <FancySelect value={aiColorIntent} onChange={(value) => setAiColorIntent(value as ArtworkColorIntent)} placeholder="Color intent" options={COLOR_INTENTS.map((option) => ({ value: option.value, label: option.label, hint: 'Applies this color direction to generation input' }))} />
+                      <p className="mb-1 text-[10px] text-white/60">Instantly applies the color palette to the preview.</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {COLOR_INTENTS.map((intent) => (
+                          <button
+                            key={intent.value}
+                            type="button"
+                            onClick={() => setAiColorIntent(intent.value as ArtworkColorIntent)}
+                            className={`rounded-xl border px-2 py-2 text-left text-[10px] transition ${aiColorIntent === intent.value ? 'border-violet-300 bg-violet-500/30' : 'border-white/20 bg-white/8 hover:bg-white/15'}`}
+                          >
+                            <span
+                              className="mb-1 block h-4 w-full rounded"
+                              style={{ background: COLOR_INTENT_SWATCHES[intent.value as ArtworkColorIntent] }}
+                            />
+                            <span className="block truncate font-semibold text-white/90">{intent.label}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2117,8 +2101,7 @@ export default function OutfitBackgroundStudioModal({
                   Safe area mode for text and subject
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  <button disabled={aiLoading} type="button" className="rounded-lg border border-violet-300/60 bg-violet-500/40 px-3 py-2 text-xs font-semibold disabled:opacity-60" onClick={() => void generateAiBackground()}>{aiLoading ? 'Generating...' : 'Generate Artwork'}</button>
-                  <button disabled={aiLoading} type="button" className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs disabled:opacity-60" onClick={() => void generateAiBackground()}>Retry</button>
+                  <button disabled={aiLoading} type="button" className="rounded-lg border border-violet-300/60 bg-violet-500/40 px-3 py-2 text-xs font-semibold disabled:opacity-60" onClick={() => void generateAiBackground()}>{aiLoading ? 'Generating...' : 'Generate AI Background'}</button>
                   <button
                     type="button"
                     className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs"
