@@ -11,7 +11,7 @@ import {
   resolveBrandLogoUrlByName,
   resolveOutfitBackgroundForRender,
 } from '@/app/lib/outfit-card';
-import { BackgroundGenerationMode } from '@/app/lib/background-ai';
+import { BackgroundGenerationMode, buildBackgroundGenerationPlan, generateBackgroundVariations } from '@/app/lib/background-ai';
 import type {
   ArtworkAsset,
   ArtworkColorIntent,
@@ -386,6 +386,38 @@ const DEFAULT_BACKGROUND: OutfitBackgroundConfig = {
   },
   shape: 'orb',
 };
+
+function normalizeSvgDataUrl(source: string): string {
+  if (!source.startsWith('data:image/svg+xml;utf8,')) return source;
+  const encoded = source.split(',', 2)[1] ?? '';
+  const svg = decodeURIComponent(encoded);
+  const bytes = new TextEncoder().encode(svg);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
+  return `data:image/svg+xml;base64,${btoa(binary)}`;
+}
+
+function buildDefaultVariations(count: number): ArtworkVariation[] {
+  const plan = buildBackgroundGenerationPlan({
+    prompt: 'premium fashion editorial background',
+    style: 'editorial',
+    mood: 'elegant',
+    palette: 'cool luxury',
+  });
+  return generateBackgroundVariations(plan, 'default_init', count).map((item, index) => {
+    const safeUrl = normalizeSvgDataUrl(item.image);
+    return {
+      variation_id: `default_${index + 1}`,
+      preview_url: safeUrl,
+      output_url: safeUrl,
+      thumbnail_url: safeUrl,
+      provider: 'procedural' as const,
+      provider_job_id: null,
+      provider_model: 'procedural-svg',
+      metadata: { seed: item.seed, fallback: true },
+    } satisfies ArtworkVariation;
+  });
+}
 
 function getRelativeLuminance(hexColor: string) {
   const safeColor = /^#([0-9A-F]{6})$/i.test(hexColor) ? hexColor : '#111827';
@@ -1639,43 +1671,44 @@ export default function OutfitBackgroundStudioModal({
       const response = await fetch('/api/ai/fashion/background-studio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userPrompt: aiPrompt })
+        body: JSON.stringify({ userPrompt: aiPrompt }),
       });
       const payload = await response.json();
       if (!response.ok || !payload.ok) {
-        setAiError(payload.message || 'Google AI generation failed');
-        setAiLoading(false);
+        setAiError(payload.message || 'Google AI palette generation failed');
         return;
       }
-      
+
       const data = payload.data;
-      
-      const paletteColors: string[] = Array.isArray(data.palette) ? data.palette : [];
-      const stops = data.cssSuggestion?.stops || paletteColors.slice(0, 3).map((color: string, i: number) => ({
-        color,
-        position: i === 0 ? 0 : i === paletteColors.length - 1 ? 100 : 50,
-      }));
+      const rawColors: unknown[] = Array.isArray(data.palette) ? data.palette : [];
+      const paletteColors = rawColors.filter((c): c is string => typeof c === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c));
 
-      const gradient = {
-        type: (data.cssSuggestion?.type as 'linear' | 'radial' | 'conic') || 'linear',
-        angle: data.cssSuggestion?.angle || 135,
-        intensity: 100,
-        stops: stops.length ? stops : [{ color: '#0f172a', position: 0 }, { color: '#4c1d95', position: 100 }],
-      };
+      if (!paletteColors.length) {
+        setAiError('AI returned no valid palette colors. Try a more descriptive prompt.');
+        return;
+      }
 
-      setDraft(prev => ({
-        ...prev,
-        background_mode: 'gradient',
-        gradient,
-        shape: 'none',
-      }));
-      
-      void Swal.fire({
-        toast: true, position: 'top-end', icon: 'success', title: 'Google AI Background Applied!', timer: 3000, showConfirmButton: false
-      });
-      
-    } catch(e) {
-      setAiError('Error running Google AI Background Studio');
+      const c0 = paletteColors[0]!;
+      const c1 = paletteColors[1] ?? c0;
+      const c2 = paletteColors[2] ?? c1;
+      const cLast = paletteColors[paletteColors.length - 1]!;
+
+      // Extract angle from CSS suggestion string (e.g. "linear-gradient(135deg, ...)")
+      const cssAngleMatch = typeof data.cssSuggestion === 'string' ? /(\d+)deg/.exec(data.cssSuggestion) : null;
+      const suggestedAngle = cssAngleMatch ? Number(cssAngleMatch[1]) : 135;
+
+      const paletteOptions: OutfitBackgroundConfig[] = [
+        { background_mode: 'gradient', gradient: { type: 'linear', angle: suggestedAngle, intensity: 100, stops: [{ color: c0, position: 0 }, { color: cLast, position: 100 }] }, shape: 'none' },
+        { background_mode: 'gradient', gradient: { type: 'linear', angle: (suggestedAngle + 45) % 360, intensity: 100, stops: [{ color: c0, position: 0 }, { color: c1, position: 50 }, { color: cLast, position: 100 }] }, shape: 'none' },
+        { background_mode: 'gradient', gradient: { type: 'radial', angle: 0, intensity: 100, stops: [{ color: c1, position: 0 }, { color: c0, position: 100 }] }, shape: 'none' },
+        { background_mode: 'gradient', gradient: { type: 'linear', angle: (suggestedAngle + 90) % 360, intensity: 100, stops: [{ color: c2, position: 0 }, { color: c1, position: 50 }, { color: c0, position: 100 }] }, shape: 'none' },
+        { background_mode: 'gradient', gradient: { type: 'linear', angle: (suggestedAngle + 180) % 360, intensity: 100, stops: [{ color: c0, position: 0 }, { color: c2, position: 60 }, { color: cLast, position: 100 }] }, shape: 'none' },
+      ];
+
+      setAiGradientResults(paletteOptions);
+      setDraft(prev => ({ ...prev, ...resolveOutfitBackgroundForRender(paletteOptions[0]) }));
+    } catch {
+      setAiError('Error running Google AI palette generation');
     } finally {
       setAiLoading(false);
     }
@@ -1745,6 +1778,13 @@ export default function OutfitBackgroundStudioModal({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiGenerationMode]);
+
+  // Always keep 5 slots populated — generate procedural defaults when slots are empty
+  useEffect(() => {
+    if (activeTab !== 'ai_artwork' || aiResults.length > 0 || aiLoading) return;
+    setAiResults(buildDefaultVariations(5));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, aiResults.length, aiLoading]);
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>

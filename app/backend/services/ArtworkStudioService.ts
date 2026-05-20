@@ -145,7 +145,7 @@ export function buildArtworkPrompt(input: ArtworkStudioInput): ArtworkPromptBuil
 
 class ProceduralArtworkProvider implements ArtworkGenerationProvider {
   async generate(input: ArtworkStudioInput, prompt: ArtworkPromptBuildResult): Promise<ArtworkGenerationResponse> {
-    const variationCount = Math.min(4, Math.max(3, Number(input.variationCount ?? 4)));
+    const variationCount = Math.min(5, Math.max(5, Number(input.variationCount ?? 5)));
     return {
       provider: 'procedural',
       providerModel: 'procedural-svg',
