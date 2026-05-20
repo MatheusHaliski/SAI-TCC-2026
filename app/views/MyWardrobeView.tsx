@@ -18,7 +18,7 @@ import {
   submitBlenderWorkerJob,
 } from '@/app/services/blenderWorkerClient';
 import type { SearchIntentOutput } from '@/app/lib/ai/providers/types';
-import { incrementSystemInboxUnreadCount } from '@/app/lib/systemInboxNotifications';
+import { pushSystemInboxMessage } from '@/app/lib/systemInboxNotifications';
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -257,7 +257,11 @@ export default function MyWardrobeView() {
     const notifyKey = `${progressItem.wardrobe_item_id}:${assetJob.jobId ?? 'no-job'}`;
     if (completionNotifiedRef.current === notifyKey) return;
 
-    incrementSystemInboxUnreadCount(1);
+    pushSystemInboxMessage({
+      title: '3D model ready',
+      summary: `"${progressItem.name}" has been generated and is ready to view.`,
+      level: 'success',
+    });
     completionNotifiedRef.current = notifyKey;
   }, [assetJob.jobId, assetJob.status, progressItem]);
 
