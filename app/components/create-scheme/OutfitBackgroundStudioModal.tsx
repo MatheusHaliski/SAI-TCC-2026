@@ -170,47 +170,6 @@ const GRADIENT_PRESETS: Array<{ label: string; config: OutfitBackgroundConfig }>
     },
   },
 ];
-  {
-    label: 'Sunset Editorial',
-    config: {
-      background_mode: 'gradient',
-      gradient: { type: 'linear', angle: 150, intensity: 105, stops: [{ color: '#7c2d12', position: 0 }, { color: '#f97316', position: 60 }, { color: '#fde68a', position: 100 }] },
-      shape: 'orb',
-    },
-  },
-  {
-    label: 'Luxury Warm Fade',
-    config: {
-      background_mode: 'gradient',
-      gradient: { type: 'linear', angle: 125, intensity: 85, stops: [{ color: '#d6c2a5', position: 0 }, { color: '#f7f0e4', position: 100 }] },
-      shape: 'none',
-    },
-  },
-  {
-    label: 'Blue-to-Green Premium',
-    config: {
-      background_mode: 'gradient',
-      gradient: { type: 'linear', angle: 120, intensity: 105, stops: [{ color: '#1d4ed8', position: 0 }, { color: '#059669', position: 100 }] },
-      shape: 'mesh',
-    },
-  },
-  {
-    label: 'Night Runway',
-    config: {
-      background_mode: 'gradient',
-      gradient: { type: 'conic', angle: 180, intensity: 100, stops: [{ color: '#020617', position: 0 }, { color: '#0f172a', position: 45 }, { color: '#7e22ce', position: 100 }] },
-      shape: 'diamond',
-    },
-  },
-  {
-    label: 'Graphite Pulse',
-    config: {
-      background_mode: 'gradient',
-      gradient: { type: 'linear', angle: 110, intensity: 108, stops: [{ color: '#020617', position: 0 }, { color: '#1e293b', position: 52 }, { color: '#334155', position: 100 }] },
-      shape: 'mesh',
-    },
-  },
-];
 const SEGMENTED_GRADIENT_OPTIONS = GRADIENT_PRESETS.slice(0, 8);
 const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
