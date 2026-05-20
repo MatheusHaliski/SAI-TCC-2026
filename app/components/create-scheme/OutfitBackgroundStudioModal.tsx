@@ -2218,6 +2218,28 @@ export default function OutfitBackgroundStudioModal({
       const variations = buildColorGradientVariations(colorTokens);
       setAiGradientResults(variations);
       setDraft((prev) => ({ ...prev, ...variations[0] }));
+
+      // Populate the 3 artwork slots: uploaded image first, then 2 geometry variants from prompt.
+      const detectedGeometry = detectGeometryFromPrompt(aiPrompt) ?? 'circles';
+      const geoSlots = buildLocalGeometryVariations(detectedGeometry, colorTokens.mid);
+      const artworkSlots: ArtworkVariation[] = uploadedReferenceImage
+        ? [
+            {
+              variation_id: `uploaded_${Date.now()}`,
+              preview_url: uploadedReferenceImage,
+              output_url: uploadedReferenceImage,
+              thumbnail_url: uploadedReferenceImage,
+              provider: 'procedural' as const,
+              provider_job_id: null,
+              provider_model: 'uploaded-reference',
+              metadata: { source: 'uploaded_reference' },
+            } satisfies ArtworkVariation,
+            geoSlots[0],
+            geoSlots[1],
+          ]
+        : [geoSlots[0], geoSlots[1], geoSlots[2]];
+      setAiResults(artworkSlots);
+      setSelectedAiResult(artworkSlots[0] ?? null);
       setAiLoading(false);
       return;
     }
