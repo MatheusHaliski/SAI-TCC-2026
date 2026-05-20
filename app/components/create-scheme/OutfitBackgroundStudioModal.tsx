@@ -513,7 +513,7 @@ function detectGeometryFromPrompt(prompt: string): GeometryFamily | null {
 }
 
 function buildGeometryVariantSvg(geometry: GeometryFamily, variant: 0 | 1 | 2, baseColor: string): string {
-  const base = `<rect width='1200' height='800' fill='#0b1120'/><rect width='1200' height='800' fill='${baseColor}' opacity='0.22'/>`;
+  const base = `<rect width='1200' height='800' fill='${baseColor}' opacity='0.92'/><rect width='1200' height='800' fill='#020617' opacity='0.30'/>`;
 
   const starPoly = (cx: number, cy: number, n: number, R: number, r: number, fill: string, stroke?: string, opacity = 0.85): string => {
     const pts = Array.from({ length: n * 2 }, (_, i) => {
@@ -1413,6 +1413,7 @@ async function buildEditorialLogoAsync(
   referenceImage: string | null,
   context: PresetContext,
   currentDraft: OutfitBackgroundConfig,
+  backgroundImageUrl?: string,
 ): Promise<OutfitBackgroundConfig> {
   const CW = 1200, CH = 800;
   const canvas = createOffscreenCanvas(CW, CH);
@@ -1420,10 +1421,11 @@ async function buildEditorialLogoAsync(
   const ctx = canvas.getContext('2d');
   if (!ctx) return buildEditorialLogoComposition(referenceImage || context.brandLogoUrl || '', context);
 
-  // Step 1: fixed background — Premium Fashion Artwork (same pattern as Editorial Collage uses streetvibes)
+  // Step 1: background image — user-selected or default Premium Fashion Artwork
+  const bgSrc = backgroundImageUrl ?? '/Fart.png';
   let bgLoaded = false;
   try {
-    const bgImg = await loadImageFromSource('/Fart.png');
+    const bgImg = await loadImageFromSource(bgSrc);
     ctx.drawImage(bgImg, 0, 0, CW, CH);
     bgLoaded = true;
   } catch { /* fall through to gradient */ }
@@ -1502,6 +1504,7 @@ async function buildEditorialLogoAsync(
 async function buildEditorialCollageAsync(
   uploadedImage: string | null,
   context: PresetContext,
+  backgroundImageUrl?: string,
 ): Promise<OutfitBackgroundConfig> {
   const CW = 1200;
   const CH = 800;
@@ -1516,9 +1519,10 @@ async function buildEditorialCollageAsync(
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(0, 0, CW, CH);
 
-  // LEFT PANEL — streetvibes.jpg
+  // LEFT PANEL — composition background image (user-selected or default Street Vibes)
+  const bgSrc = backgroundImageUrl ?? '/streetvibes.jpg';
   let streetImg: HTMLImageElement | null = null;
-  try { streetImg = await loadImageFromSource('/streetvibes.jpg'); } catch { /* no-op */ }
+  try { streetImg = await loadImageFromSource(bgSrc); } catch { /* no-op */ }
 
   if (streetImg) {
     ctx.drawImage(streetImg, 0, 0, SPLIT + 80, CH);
@@ -1627,6 +1631,104 @@ async function buildEditorialCollageAsync(
 
 function buildTonalGeometryPreset(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
   return buildTonalGeometryConfig(context, referenceImage);
+}
+
+async function buildLuxuryFabricMonogramAsync(
+  referenceImage: string | null,
+  context: PresetContext,
+  currentDraft: OutfitBackgroundConfig,
+): Promise<OutfitBackgroundConfig> {
+  const CW = 1200, CH = 800;
+  const canvas = createOffscreenCanvas(CW, CH);
+  if (!canvas) return buildLuxuryFabricMonogramPreset(context, referenceImage);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return buildLuxuryFabricMonogramPreset(context, referenceImage);
+
+  // Background: image selected in gradient picker, or gradient fallback
+  const bgImageUrl = currentDraft.ai_artwork?.image_url;
+  let bgLoaded = false;
+  if (bgImageUrl && !bgImageUrl.startsWith('data:image/svg+xml')) {
+    try {
+      const bgImg = await loadImageFromSource(bgImageUrl);
+      ctx.drawImage(bgImg, 0, 0, CW, CH);
+      bgLoaded = true;
+    } catch { /* fall through */ }
+  }
+  if (!bgLoaded) {
+    drawGradientOnCanvas(ctx, CW, CH, currentDraft.gradient ?? {
+      type: 'linear', angle: 132, intensity: 104,
+      stops: [{ color: '#0f172a', position: 0 }, { color: '#1e3a8a', position: 56 }, { color: '#0c4a6e', position: 100 }],
+    });
+  }
+
+  // Darken to give contrast to the monogram
+  ctx.fillStyle = 'rgba(2,6,23,0.38)';
+  ctx.fillRect(0, 0, CW, CH);
+
+  // Monogram grid — repeating brand initials
+  const monogramRaw = context.brandName
+    .split(/\s+/).filter(Boolean).slice(0, 2)
+    .map((token) => token[0] || '').join('').toUpperCase() || 'SL';
+  const CELL_W = 220, CELL_H = 180;
+  ctx.font = '82px "Times New Roman", Georgia, serif';
+  for (let row = -1; row * CELL_H < CH + CELL_H; row++) {
+    // Thin horizontal rule per row
+    ctx.strokeStyle = 'rgba(186,230,253,0.18)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(0, row * CELL_H + 28); ctx.lineTo(CW, row * CELL_H + 28);
+    ctx.stroke();
+    for (let col = -1; col * CELL_W < CW + CELL_W; col++) {
+      const stagger = row % 2 === 0 ? 0 : CELL_W / 2;
+      const tx = col * CELL_W + stagger + 26;
+      const ty = row * CELL_H + 122;
+      // Shadow
+      ctx.fillStyle = 'rgba(2,6,23,0.24)';
+      ctx.fillText(monogramRaw, tx + 2, ty + 2);
+      // Glyph
+      ctx.fillStyle = 'rgba(191,219,254,0.24)';
+      ctx.fillText(monogramRaw, tx, ty);
+    }
+  }
+
+  // Reference image in card frame (right panel)
+  if (referenceImage) {
+    try {
+      const logoImg = await loadImageFromSource(referenceImage);
+      const FX = 780, FY = 148, FW = 292, FH = 404, FR = 18;
+      ctx.fillStyle = 'rgba(2,6,23,0.30)';
+      ctx.beginPath(); ctx.roundRect(FX + 8, FY + 8, FW, FH, FR); ctx.fill();
+      ctx.strokeStyle = 'rgba(191,219,254,0.50)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.roundRect(FX, FY, FW, FH, FR); ctx.stroke();
+      ctx.save();
+      ctx.beginPath(); ctx.roundRect(FX, FY, FW, FH, FR); ctx.clip();
+      ctx.drawImage(logoImg, FX, FY, FW, FH);
+      ctx.restore();
+    } catch { /* no image */ }
+  }
+
+  // Brand name footer
+  ctx.font = 'bold 48px "Arial Black", Arial, sans-serif';
+  ctx.fillStyle = 'rgba(219,234,254,0.82)';
+  ctx.fillText(`${context.brandName} MONOGRAM`, 80, 718);
+
+  const imageUrl = canvas.toDataURL('image/png');
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: { prompt: `${context.brandName} luxury monogram grid — canvas render`, image_url: imageUrl, generation_status: 'done' },
+    gradient: currentDraft.gradient,
+    shape: 'none',
+    studioStyleConfig: {
+      presetId: 'selection_luxury_fabric_monogram',
+      family: 'pattern_surface',
+      styleMode: 'luxury_fabric_monogram',
+      material: 'premium_fabric',
+      paletteMode: 'cool_luxury',
+      referenceImageUrl: referenceImage,
+      metadata: { monogram: monogramRaw },
+    },
+  };
 }
 
 function buildLuxuryFabricMonogramPreset(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
@@ -2077,6 +2179,8 @@ export default function OutfitBackgroundStudioModal({
   const [aiReferenceImageUrl, setAiReferenceImageUrl] = useState('');
   const [aiReferenceImageDataUrl, setAiReferenceImageDataUrl] = useState('');
   const [aiReferenceFileName, setAiReferenceFileName] = useState('');
+  const [editorialLogoBgUrl, setEditorialLogoBgUrl] = useState('/Fart.png');
+  const [editorialCollageBgUrl, setEditorialCollageBgUrl] = useState('/streetvibes.jpg');
   const [aiGenerationMode, setAiGenerationMode] = useState<BackgroundGenerationMode>('hybrid');
   const [aiResults, setAiResults] = useState<ArtworkVariation[]>([]);
   const [savedAssets, setSavedAssets] = useState<ArtworkAsset[]>([]);
@@ -2270,7 +2374,7 @@ export default function OutfitBackgroundStudioModal({
     if (selectedRecommendedPreset === 'selection_editorial_collage') {
       let collageConfig: OutfitBackgroundConfig;
       try {
-        collageConfig = await buildEditorialCollageAsync(uploadedReferenceImage, presetContext);
+        collageConfig = await buildEditorialCollageAsync(uploadedReferenceImage, presetContext, editorialCollageBgUrl);
       } catch {
         setAiLoading(false);
         setAiError('Could not build editorial collage.');
@@ -2298,7 +2402,7 @@ export default function OutfitBackgroundStudioModal({
     if (selectedRecommendedPreset === 'selection_editorial_logo') {
       let logoConfig: OutfitBackgroundConfig;
       try {
-        logoConfig = await buildEditorialLogoAsync(uploadedReferenceImage, presetContext, draft);
+        logoConfig = await buildEditorialLogoAsync(uploadedReferenceImage, presetContext, draft, editorialLogoBgUrl);
       } catch {
         setAiLoading(false);
         setAiError('Could not build editorial logo composition.');
@@ -2339,6 +2443,30 @@ export default function OutfitBackgroundStudioModal({
       setDraft((prev) => ({ ...prev, ...amberConfig }));
       setAiResults([amberVariation]);
       setSelectedAiResult(amberVariation);
+      setAiGradientResults([]);
+      return;
+    }
+
+    if (selectedRecommendedPreset === 'selection_luxury_fabric_monogram') {
+      let monogramConfig: OutfitBackgroundConfig;
+      try {
+        monogramConfig = await buildLuxuryFabricMonogramAsync(uploadedReferenceImage, presetContext, draft);
+      } catch {
+        setAiLoading(false);
+        setAiError('Could not build luxury fabric monogram composition.');
+        return;
+      }
+      const monogramUrl = monogramConfig.ai_artwork?.image_url || '';
+      const monogramVariation: ArtworkVariation = {
+        variation_id: `luxury_monogram_${Date.now()}`,
+        preview_url: monogramUrl, output_url: monogramUrl, thumbnail_url: monogramUrl,
+        provider: 'procedural', provider_job_id: null, provider_model: 'luxury-monogram-canvas',
+        metadata: { source: 'selection_luxury_fabric_monogram' },
+      };
+      setAiLoading(false);
+      setDraft((prev) => ({ ...prev, ...monogramConfig }));
+      setAiResults([monogramVariation]);
+      setSelectedAiResult(monogramVariation);
       setAiGradientResults([]);
       return;
     }
@@ -2474,9 +2602,17 @@ export default function OutfitBackgroundStudioModal({
       setAiGradientResults(variations);
       setDraft((prev) => ({ ...prev, ...variations[0] }));
 
-      // Populate the 3 artwork slots: uploaded image first, then 2 geometry variants from prompt.
+      // Populate the 3 artwork slots: 3 different geometry families for variety.
       const detectedGeometry = detectGeometryFromPrompt(aiPrompt) ?? 'circles';
-      const geoSlots = buildLocalGeometryVariations(detectedGeometry, colorTokens.mid);
+      const GEOMETRY_FALLBACK_ORDER: GeometryFamily[] = ['circles', 'stars', 'triangles', 'arrows', 'waves', 'diamond'];
+      const primaryGeo = detectedGeometry;
+      // Pick two other distinct families
+      const otherGeos = GEOMETRY_FALLBACK_ORDER.filter((g) => g !== primaryGeo);
+      const secondGeo = otherGeos[0] ?? 'stars';
+      const thirdGeo = otherGeos[1] ?? 'triangles';
+      const slot1 = buildLocalGeometryVariations(primaryGeo, colorTokens.mid)[0];
+      const slot2 = buildLocalGeometryVariations(secondGeo, colorTokens.mid)[0];
+      const slot3 = buildLocalGeometryVariations(thirdGeo, colorTokens.mid)[0];
       const artworkSlots: ArtworkVariation[] = uploadedReferenceImage
         ? [
             {
@@ -2489,10 +2625,10 @@ export default function OutfitBackgroundStudioModal({
               provider_model: 'uploaded-reference',
               metadata: { source: 'uploaded_reference' },
             } satisfies ArtworkVariation,
-            geoSlots[0],
-            geoSlots[1],
+            slot1,
+            slot2,
           ]
-        : [geoSlots[0], geoSlots[1], geoSlots[2]];
+        : [slot1, slot2, slot3];
       setAiResults(artworkSlots);
       setSelectedAiResult(artworkSlots[0] ?? null);
       setAiLoading(false);
@@ -3228,6 +3364,20 @@ export default function OutfitBackgroundStudioModal({
                             }}
                           />
                         </label>
+                        <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                          <p className="mb-1 text-[9px] uppercase tracking-[0.10em] text-white/50">Imagem de fundo</p>
+                          <select
+                            className="w-full rounded-lg border border-white/25 bg-white/10 px-2 py-1.5 text-[10px] text-white/80 outline-none transition focus:border-fuchsia-300/60 hover:border-white/40"
+                            value={editorialLogoBgUrl}
+                            onChange={(e) => setEditorialLogoBgUrl(e.target.value)}
+                          >
+                            {CURATED_IMAGE_PICKER_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.imageUrl} className="bg-slate-900 text-white">
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                         <span
                           className="mt-2 block h-14 rounded-lg border border-white/15"
                           style={{ ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)), backgroundColor: '#0f172a' }}
@@ -3283,6 +3433,28 @@ export default function OutfitBackgroundStudioModal({
               hint: 'Updates geometry in preview',
             }))}
           />
+          {selectedRecommendedPreset === 'selection_editorial_collage' && (
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] uppercase tracking-[0.10em] text-white/60">Imagem de Composição</p>
+              <select
+                className="w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-xs text-white/85 outline-none transition focus:border-fuchsia-300/60 hover:border-white/40"
+                value={editorialCollageBgUrl}
+                onChange={(e) => setEditorialCollageBgUrl(e.target.value)}
+              >
+                {uploadedReferenceImage && (
+                  <option value={uploadedReferenceImage} className="bg-slate-900 text-white">
+                    📎 Imagem carregada (upload)
+                  </option>
+                )}
+                {CURATED_IMAGE_PICKER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.imageUrl} className="bg-slate-900 text-white">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-white/45">Imagem usada no painel esquerdo da composição</p>
+            </div>
+          )}
           <FancySelect
             value={(() => {
               const gradientLabel = SEGMENTED_GRADIENT_OPTIONS.find((preset) => JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient))?.label;
