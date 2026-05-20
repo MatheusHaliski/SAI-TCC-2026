@@ -163,6 +163,118 @@ const PT_TRANSLATIONS: Record<string, string> = {
   Disponíveis: 'Disponíveis',
   Indisponíveis: 'Indisponíveis',
   Favoritos: 'Favoritos',
+
+  // ── Background Studio modal ───────────────────────────────────────────────
+  'Customize the visual surface of your outfit card': 'Personalize a superfície visual do seu card de look',
+  'Close ✕': 'Fechar ✕',
+
+  // Tabs
+  Color: 'Cor',
+  Gradient: 'Gradiente',
+  'AI Artwork': 'Arte com IA',
+
+  // Color tab
+  'Solid Color': 'Cor Sólida',
+  'Recent colors': 'Cores recentes',
+  'Subtle texture overlay': 'Textura sutil sobreposta',
+
+  // Gradient tab
+  Reverse: 'Inverter',
+  Randomize: 'Aleatorizar',
+  Stop: 'Parada',
+  'Angle (': 'Ângulo (',
+  'Intensity (': 'Intensidade (',
+
+  // AI Artwork tab — section headers
+  'Visual Direction': 'Direção Visual',
+  'Define composition and style behavior before generating.': 'Defina a composição e o estilo antes de gerar.',
+  'Use brand and mood details. Geometry control below has priority for structure.': 'Use detalhes de marca e mood. A geometria abaixo tem prioridade na estrutura.',
+  '✨ Generate Palette from Prompt': '✨ Gerar Paleta do Prompt',
+  'Generates a color palette and gradient from your text prompt.': 'Gera uma paleta de cores e gradiente a partir do seu prompt.',
+  'Composition Type': 'Tipo de Composição',
+  'Changes whether AI prioritizes full background, frame, overlay, or shape-pack output.': 'Define se a IA prioriza fundo completo, moldura, sobreposição ou conjunto de formas.',
+  'Style Preset': 'Estilo Predefinido',
+  'Controls campaign direction and visual tone.': 'Controla a direção da campanha e o tom visual.',
+  'Palette Mode': 'Modo de Paleta',
+  'Controls the dominant color family in generated artwork.': 'Controla a família de cores dominante na arte gerada.',
+  'Color & Contrast': 'Cor e Contraste',
+  'All controls below are wired to the generation payload.': 'Todos os controles estão conectados ao payload de geração.',
+  Contrast: 'Contraste',
+  'Color Intent': 'Intenção de Cor',
+  'Instantly applies the color palette to the preview.': 'Aplica instantaneamente a paleta de cores ao preview.',
+  Geometry: 'Geometria',
+  'Selected geometry always wins if typed prompt conflicts.': 'A geometria selecionada prevalece sobre o prompt em caso de conflito.',
+  'Geometry Family': 'Família de Geometria',
+  'Reference image (upload)': 'Imagem de referência (upload)',
+  'Generation Mode': 'Modo de Geração',
+  'Style preset:': 'Estilo predefinido:',
+  'Contrast:': 'Contraste:',
+  'Geometry:': 'Geometria:',
+  'Safe area mode for text and subject': 'Modo de área segura para texto e assunto',
+  'Generating...': 'Gerando...',
+  'Generate AI Background': 'Gerar Fundo com IA',
+  'Apply to outfit card': 'Aplicar ao card de look',
+  'AI Gradient Options': 'Opções de Gradiente IA',
+  'Generating…': 'Gerando…',
+  'Save asset': 'Salvar ativo',
+  'Saved assets in this session:': 'Ativos salvos nesta sessão:',
+  'Apply to Card ·': 'Aplicar ao Card ·',
+
+  // Material Layer section
+  'Material Layer (Premium)': 'Camada de Material (Premium)',
+  'Separate layer for textile rendering on top of color/gradient and below decorative overlays.':
+    'Camada separada para renderização têxtil acima da cor/gradiente e abaixo das sobreposições.',
+  'Material Type': 'Tipo de Material',
+  'Apply Scope': 'Escopo de Aplicação',
+  'Whole Card': 'Card Inteiro',
+  'Applies material to complete card surface': 'Aplica o material em toda a superfície do card',
+  'Hero Block': 'Bloco Principal',
+  'Applies material only on hero section': 'Aplica o material apenas na seção principal',
+  'Content Block': 'Bloco de Conteúdo',
+  'Applies material on lower content area': 'Aplica o material na área de conteúdo inferior',
+  'Fabric Density:': 'Densidade do Tecido:',
+  'Thread Thickness:': 'Espessura do Fio:',
+  'Thread Direction': 'Direção do Fio',
+  'Cross Weave': 'Trama Cruzada',
+  'Diagonal + counter weave for textile look': 'Trama diagonal + contratrama para visual têxtil',
+  'Diagonal Weave': 'Trama Diagonal',
+  'Fashion-forward diagonal thread field': 'Campo de fios diagonal para moda',
+  'Horizontal Weave': 'Trama Horizontal',
+  'Horizontal stitching emphasis': 'Ênfase em costura horizontal',
+  'Vertical Weave': 'Trama Vertical',
+  'Vertical stitching emphasis': 'Ênfase em costura vertical',
+  'Matte / Satin Finish': 'Acabamento Matte / Cetim',
+  Matte: 'Fosco',
+  'Soft low-sheen textile': 'Têxtil suave de baixo brilho',
+  Satin: 'Cetim',
+  'Subtle highlights and richer sheen': 'Realces sutis e brilho mais rico',
+  'Emboss Intensity:': 'Intensidade de Relevo:',
+  'Surface Contrast:': 'Contraste de Superfície:',
+  'Stitch Border On/Off': 'Borda de Costura',
+  'Stitch Color': 'Cor do Ponto',
+
+  // Preset recommendation section
+  'Recommended presets based on current outfit': 'Predefinições recomendadas para o look atual',
+  '🔵 AI enhanced': '🔵 Aprimorado com IA',
+  '🟢 Ready': '🟢 Pronto',
+
+  // Live preview panel
+  'Live Preview': 'Pré-visualização ao Vivo',
+  'Contrast recommendation:': 'Recomendação de contraste:',
+  'text/icons': 'texto/ícones',
+  'Warning: high-luminance solid background may reduce metadata readability.':
+    'Aviso: fundo sólido de alta luminância pode reduzir a legibilidade dos metadados.',
+
+  // Bottom bar
+  'Selected shape': 'Forma selecionada',
+  'None (no overlay)': 'Nenhum (sem sobreposição)',
+  'Updates geometry in preview': 'Atualiza a geometria no preview',
+  'Gradient picker': 'Seletor de gradiente',
+  'Applies gradient + geometry recipe': 'Aplica gradiente + receita de geometria',
+  'Applies flower motif artwork surface': 'Aplica superfície artística com motivo floral',
+  'Cancel / Close': 'Cancelar / Fechar',
+  Reset: 'Redefinir',
+  'Save Background': 'Salvar Fundo',
 };
 
 const reverseTranslations = Object.entries(PT_TRANSLATIONS).reduce<Record<string, string>>((acc, [en, pt]) => {
