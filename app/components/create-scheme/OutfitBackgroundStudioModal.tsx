@@ -3012,7 +3012,7 @@ export default function OutfitBackgroundStudioModal({
                 <div className="grid grid-cols-3 gap-2">
                   {aiResults.map((result, index) => {
                     const previewSource = result.thumbnail_url || result.preview_url || result.output_url || '';
-                    const fallbackPreviewStyle = `linear-gradient(145deg, rgba(30,41,59,0.95), rgba(15,23,42,0.88)), repeating-linear-gradient(125deg, rgba(148,163,184,0.22) 0 6px, transparent 6px 16px)`;
+                    const fallbackPreviewStyle = `linear-gradient(145deg, #4c1d95, #1e40af, #0e7490)`;
                     const isSelected = selectedAiResult?.variation_id === result.variation_id;
                     return (
                     <button
@@ -3172,22 +3172,6 @@ export default function OutfitBackgroundStudioModal({
                     Surface Contrast: {materialConfig.surfaceContrast}
                     <input type="range" min={0} max={100} value={materialConfig.surfaceContrast} className="mt-1 w-full" onChange={(event) => {
                       const next = { ...materialConfig, surfaceContrast: Number(event.target.value) };
-                      setMaterialConfig(next);
-                      applyMaterialToDraft(next);
-                    }} />
-                  </label>
-                  <label className="col-span-full flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs">
-                    <span>Stitch Border On/Off</span>
-                    <input type="checkbox" checked={materialConfig.stitchBorder} onChange={(event) => {
-                      const next = { ...materialConfig, stitchBorder: event.target.checked };
-                      setMaterialConfig(next);
-                      applyMaterialToDraft(next);
-                    }} />
-                  </label>
-                  <label className="col-span-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs">
-                    Stitch Color
-                    <input type="color" value={materialConfig.stitchColor} className="mt-1 h-9 w-full cursor-pointer rounded border border-white/20 bg-transparent" onChange={(event) => {
-                      const next = { ...materialConfig, stitchColor: event.target.value };
                       setMaterialConfig(next);
                       applyMaterialToDraft(next);
                     }} />
