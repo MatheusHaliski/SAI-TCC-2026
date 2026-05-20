@@ -169,7 +169,8 @@ export async function submitBlenderWorkerJob(payload: BlenderWorkerJobPayload): 
       : typeof body?.error === 'string'
         ? body.error
         : `Worker submit failed with status ${response.status}.`;
-    throw new Error(message);
+    const hint = typeof body?.hint === 'string' ? body.hint : null;
+    throw new Error(hint && !message.includes(hint) ? `${message} ${hint}` : message);
   }
 
   return body ?? {};

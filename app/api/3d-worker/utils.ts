@@ -83,8 +83,10 @@ export async function safeFetchJson(
   try {
     response = await fetch(url, options);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     const isTimeout = error instanceof Error && error.name === 'AbortError';
+    const message = isTimeout
+      ? 'Worker request timed out. The GPU worker may be cold-starting — please retry in a moment.'
+      : error instanceof Error ? error.message : String(error);
     const cause = error instanceof Error ? (error as Error & { cause?: unknown }).cause : undefined;
     const causeCode = cause instanceof Error ? (cause as Error & { code?: string }).code : undefined;
     const causeMessage = cause instanceof Error ? cause.message : undefined;
