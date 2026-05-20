@@ -189,7 +189,7 @@ export default function ExploreSchemeView() {
   };
 
   const filteredSchemes = useMemo(() => {
-    const ownSchemes = authUserId ? schemes.filter((s) => s.user_id === authUserId) : schemes;
+    const ownSchemes = authUserId ? schemes.filter((s) => s.user_id === authUserId) : []; // Never fall back to public schemes when session profile is unavailable
     switch (activeFilter) {
       case 'favorites':
         return ownSchemes.filter((s) => favorites[s.scheme_id]);

@@ -145,7 +145,7 @@ export default function SearchItemsView() {
       return blob.includes(queryNorm);
     });
 
-    const publicFromOthers = authUserId ? schemes.filter((scheme) => scheme.user_id !== authUserId) : schemes;
+    const publicFromOthers = authUserId ? schemes.filter((scheme) => scheme.user_id !== authUserId) : []; // Require resolved profile to enforce "others only" invariant
     const textFiltered = publicFromOthers.filter((scheme) => {
       if (!queryNorm) return true;
       const card = outfitsById[scheme.scheme_id];
