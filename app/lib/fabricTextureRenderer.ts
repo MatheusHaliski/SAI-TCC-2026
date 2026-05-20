@@ -46,10 +46,11 @@ function drawThreadField(
   angle: number,
 ) {
   const density = clamp(material.density, 10, 140);
-  const spacing = Math.max(4, Math.round(26 - density * 0.2));
-  const threadLength = Math.max(6, Math.round(spacing * 1.5));
+  const spacing = Math.max(3, Math.round(34 - density * 0.22));
+  const threadLength = Math.max(6, Math.round(spacing * 1.6));
   const thickness = clamp(material.threadThickness, 0.4, 5);
   const emboss = clamp(material.embossIntensity, 0, 100) / 100;
+  const contrastScale = 1 + clamp(material.surfaceContrast, 0, 100) / 55;
 
   ctx.lineCap = 'round';
   for (let y = -height; y < height * 2; y += spacing) {
@@ -60,14 +61,14 @@ function drawThreadField(
       const dx = Math.cos(angle) * threadLength * 0.5;
       const dy = Math.sin(angle) * threadLength * 0.5;
 
-      ctx.strokeStyle = tint(color, 42, 0.16 + emboss * 0.1);
+      ctx.strokeStyle = tint(color, Math.round(42 * contrastScale), 0.30 + emboss * 0.32);
       ctx.lineWidth = thickness + 0.45;
       ctx.beginPath();
       ctx.moveTo(cx - dx + 0.8, cy - dy + 0.8);
       ctx.lineTo(cx + dx + 0.8, cy + dy + 0.8);
       ctx.stroke();
 
-      ctx.strokeStyle = tint(color, -36, 0.22 + emboss * 0.12);
+      ctx.strokeStyle = tint(color, Math.round(-36 * contrastScale), 0.44 + emboss * 0.28);
       ctx.lineWidth = thickness;
       ctx.beginPath();
       ctx.moveTo(cx - dx, cy - dy);
@@ -96,18 +97,18 @@ function drawLegoField(
       const by = y + jitter * 0.2;
       const radius = Math.max(4, Math.round(blockSize * 0.15));
 
-      ctx.fillStyle = tint(color, 4 + jitter, 0.92);
+      ctx.fillStyle = tint(color, 4 + jitter, 1.0);
       ctx.beginPath();
       ctx.roundRect(bx, by, blockSize, blockSize, radius);
       ctx.fill();
 
-      ctx.strokeStyle = tint(color, -30, 0.32);
+      ctx.strokeStyle = tint(color, -30, 0.60);
       ctx.lineWidth = 1.3;
       ctx.beginPath();
       ctx.roundRect(bx + 0.8, by + 0.8, blockSize - 1.6, blockSize - 1.6, radius - 1);
       ctx.stroke();
 
-      ctx.fillStyle = tint(color, 22, 0.34 + emboss * 0.2);
+      ctx.fillStyle = tint(color, 22, 0.55 + emboss * 0.35);
       ctx.fillRect(bx + 2, by + 2, blockSize - 6, Math.max(2, Math.round(blockSize * 0.18)));
 
       const studRadius = Math.max(3, Math.round(blockSize * 0.14));
@@ -120,15 +121,15 @@ function drawLegoField(
       ];
       studCenters.forEach(([cx, cy]) => {
         const gradient = ctx.createRadialGradient(cx - studRadius * 0.35, cy - studRadius * 0.35, 1, cx, cy, studRadius + 1.5);
-        gradient.addColorStop(0, tint(color, 38, 0.86));
-        gradient.addColorStop(0.55, tint(color, 10, 0.9));
-        gradient.addColorStop(1, tint(color, -28, 0.78));
+        gradient.addColorStop(0, tint(color, 38, 0.95));
+        gradient.addColorStop(0.55, tint(color, 10, 0.98));
+        gradient.addColorStop(1, tint(color, -28, 0.88));
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.arc(cx, cy, studRadius, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = tint(color, -45, 0.42);
+        ctx.strokeStyle = tint(color, -45, 0.65);
         ctx.lineWidth = 0.8;
         ctx.beginPath();
         ctx.arc(cx, cy, studRadius, 0, Math.PI * 2);
@@ -152,8 +153,8 @@ function drawWaterField(
   for (let y = -20; y < height + 20; y += rippleGap) {
     const amplitude = 6 + emboss * 9 + (y % 13) * 0.1;
     const wave = 60 - density * 0.18;
-    ctx.strokeStyle = tint(color, 26, 0.22 + emboss * 0.14);
-    ctx.lineWidth = 1.8 + emboss * 1.2;
+    ctx.strokeStyle = tint(color, 26, 0.42 + emboss * 0.30);
+    ctx.lineWidth = 2.2 + emboss * 2.0;
     ctx.beginPath();
     for (let x = -20; x <= width + 20; x += 10) {
       const py = y + Math.sin((x + y * 0.6) / wave) * amplitude;
@@ -162,7 +163,7 @@ function drawWaterField(
     }
     ctx.stroke();
 
-    ctx.strokeStyle = tint(color, -20, 0.16 + emboss * 0.1);
+    ctx.strokeStyle = tint(color, -20, 0.32 + emboss * 0.20);
     ctx.lineWidth = 1.1;
     ctx.beginPath();
     for (let x = -20; x <= width + 20; x += 10) {
@@ -179,7 +180,7 @@ function drawWaterField(
     const cy = (i * 97) % height;
     const rx = 18 + (i % 6) * 6;
     const ry = 6 + (i % 4) * 3;
-    ctx.strokeStyle = tint(color, 40, 0.12);
+    ctx.strokeStyle = tint(color, 40, 0.28);
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, (i % 8) * 0.35, 0, Math.PI * 2);
@@ -208,21 +209,21 @@ function drawGlassField(
       const radius = Math.max(4, Math.round(cellSize * 0.14));
 
       const paneGradient = ctx.createLinearGradient(paneX, paneY, paneX + paneW, paneY + paneH);
-      paneGradient.addColorStop(0, tint(color, 26, 0.18 + emboss * 0.12));
-      paneGradient.addColorStop(0.5, 'rgba(255,255,255,0.02)');
-      paneGradient.addColorStop(1, tint(color, -12, 0.16));
+      paneGradient.addColorStop(0, tint(color, 26, 0.35 + emboss * 0.28));
+      paneGradient.addColorStop(0.5, 'rgba(255,255,255,0.04)');
+      paneGradient.addColorStop(1, tint(color, -12, 0.30));
       ctx.fillStyle = paneGradient;
       ctx.beginPath();
       ctx.roundRect(paneX, paneY, paneW, paneH, radius);
       ctx.fill();
 
-      ctx.strokeStyle = tint(color, 34, 0.22);
+      ctx.strokeStyle = tint(color, 34, 0.48);
       ctx.lineWidth = 1.4;
       ctx.beginPath();
       ctx.roundRect(paneX + 0.6, paneY + 0.6, paneW - 1.2, paneH - 1.2, radius - 1);
       ctx.stroke();
 
-      ctx.strokeStyle = tint(color, -26, 0.18);
+      ctx.strokeStyle = tint(color, -26, 0.38);
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(paneX + paneW * 0.18, paneY + paneH * 0.2);
@@ -251,7 +252,7 @@ export function renderFabricTextureToCanvas(input: FabricTextureRenderInput): Fa
   textureCtx.fillStyle = tint(input.color, -6, 0.95);
   textureCtx.fillRect(0, 0, width, height);
 
-  const noiseAlpha = 0.035 + clamp(material.surfaceContrast, 0, 100) / 2200;
+  const noiseAlpha = 0.08 + clamp(material.surfaceContrast, 0, 100) / 650;
   for (let y = 0; y < height; y += 2) {
     for (let x = 0; x < width; x += 2) {
       const grain = ((x * 37 + y * 19) % 100) / 100;
@@ -276,12 +277,12 @@ export function renderFabricTextureToCanvas(input: FabricTextureRenderInput): Fa
 
   const finishGradient = textureCtx.createLinearGradient(0, 0, width, height);
   if (material.finish === 'satin') {
-    finishGradient.addColorStop(0, tint(input.color, 26, 0.18));
-    finishGradient.addColorStop(0.4, 'rgba(255,255,255,0.02)');
-    finishGradient.addColorStop(1, tint(input.color, -28, 0.28));
+    finishGradient.addColorStop(0, tint(input.color, 26, 0.32));
+    finishGradient.addColorStop(0.4, 'rgba(255,255,255,0.04)');
+    finishGradient.addColorStop(1, tint(input.color, -28, 0.48));
   } else {
-    finishGradient.addColorStop(0, tint(input.color, 14, 0.08));
-    finishGradient.addColorStop(1, tint(input.color, -18, 0.14));
+    finishGradient.addColorStop(0, tint(input.color, 14, 0.18));
+    finishGradient.addColorStop(1, tint(input.color, -18, 0.28));
   }
   textureCtx.fillStyle = finishGradient;
   textureCtx.fillRect(0, 0, width, height);

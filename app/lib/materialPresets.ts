@@ -38,13 +38,13 @@ export function buildFabricPresetConfig(baseColor: string, overrides: Partial<Fa
   const type = overrides.type ?? 'embroidered_fabric';
   return {
     type,
-    density: resolveNumeric(overrides.density, 72, 10, 140),
+    density: resolveNumeric(overrides.density, 55, 10, 140),
     threadDirection: overrides.threadDirection ?? 'cross',
-    threadThickness: resolveNumeric(overrides.threadThickness, 1.8, 0.4, 5),
-    embossIntensity: resolveNumeric(overrides.embossIntensity, 42, 0, 100),
-    stitchBorder: overrides.stitchBorder ?? true,
+    threadThickness: resolveNumeric(overrides.threadThickness, 2.6, 0.4, 5),
+    embossIntensity: resolveNumeric(overrides.embossIntensity, 60, 0, 100),
+    stitchBorder: false,
     stitchColor: /^#[0-9A-F]{6}$/i.test(stitched) ? stitched : '#1e3a8a',
-    surfaceContrast: resolveNumeric(overrides.surfaceContrast, 48, 0, 100),
+    surfaceContrast: resolveNumeric(overrides.surfaceContrast, 65, 0, 100),
     finish: overrides.finish ?? 'matte',
     scope: overrides.scope ?? 'card',
     premium: overrides.premium ?? type !== 'none',
