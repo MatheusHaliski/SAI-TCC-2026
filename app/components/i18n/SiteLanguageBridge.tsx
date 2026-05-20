@@ -206,6 +206,7 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Selected geometry always wins if typed prompt conflicts.': 'A geometria selecionada prevalece sobre o prompt em caso de conflito.',
   'Geometry Family': 'Família de Geometria',
   'Reference image (upload)': 'Imagem de referência (upload)',
+  'Upload reference image': 'Enviar imagem de referência',
   'Generation Mode': 'Modo de Geração',
   'Style preset:': 'Estilo predefinido:',
   'Contrast:': 'Contraste:',

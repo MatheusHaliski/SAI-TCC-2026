@@ -3194,6 +3194,52 @@ export default function OutfitBackgroundStudioModal({
                     : ['selection_tech_amber_energy', 'selection_neon_motion_grid', 'selection_metallic_sport_identity'].includes(preset.id)
                       ? '🔵 AI enhanced'
                       : '🟢 Ready';
+
+                  // Editorial logo card: div wrapper so file input can live inside
+                  if (preset.id === 'selection_editorial_logo') {
+                    return (
+                      <div key={preset.id} className={`rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition ${isAvailable ? 'hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)]' : 'cursor-not-allowed opacity-40'}`}>
+                        <button
+                          type="button"
+                          disabled={!isAvailable}
+                          className="w-full text-left"
+                          onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
+                        >
+                          <p className="text-[10px] uppercase tracking-[0.12em] text-white/60">{preset.category.replaceAll('_', ' / ')}</p>
+                          <p className="text-xs font-semibold">{preset.label}</p>
+                          <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
+                          <p className={`mt-1 text-[10px] ${isAvailable ? 'text-emerald-200' : 'text-amber-200'}`}>{badgeLabel}</p>
+                        </button>
+                        <label
+                          className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-white/30 bg-white/8 px-2 py-1.5 text-[10px] text-white/70 transition hover:border-fuchsia-300/60 hover:text-white/90"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span>📎</span>
+                          <span className="truncate">{aiReferenceFileName || 'Upload reference image'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="sr-only"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) return;
+                              const previewUrl = URL.createObjectURL(file);
+                              if (aiReferenceImageUrl.startsWith('blob:')) URL.revokeObjectURL(aiReferenceImageUrl);
+                              setAiReferenceImageUrl(previewUrl);
+                              setAiReferenceImageDataUrl('');
+                              setAiReferenceFileName(file.name);
+                              setBackendWarning(null);
+                            }}
+                          />
+                        </label>
+                        <span
+                          className="mt-2 block h-14 rounded-lg border border-white/15"
+                          style={{ ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)), backgroundColor: '#0f172a' }}
+                        />
+                      </div>
+                    );
+                  }
+
                   return (
                     <button
                       key={preset.id}
