@@ -534,7 +534,7 @@ function buildGeometryVariantSvg(geometry: GeometryFamily, variant: 0 | 1 | 2, b
   switch (geometry) {
     case 'circles':
       if (variant === 0) {
-        // Concentric rings at multiple focal points
+        // Orbital premium rings + cores
         markup = (
           [[240, 200, [44, 96, 158, 228]], [860, 330, [58, 116, 184, 262]], [1080, 90, [36, 78, 130]],
            [70, 610, [42, 92, 152]], [630, 660, [64, 128, 200, 280]]] as [number, number, number[]][]
@@ -542,7 +542,7 @@ function buildGeometryVariantSvg(geometry: GeometryFamily, variant: 0 | 1 | 2, b
           radii.map((rr, i) =>
             `<circle cx='${cx}' cy='${cy}' r='${rr}' fill='none' stroke='rgba(226,232,240,${(0.62 - i * 0.11).toFixed(2)})' stroke-width='${Math.max(0.8, 4.2 - i * 0.8).toFixed(1)}'/>`
           )
-        ).join('');
+        ).join('') + [[240,200],[860,330],[630,660]].map(([cx,cy]) => `<circle cx='${cx}' cy='${cy}' r='14' fill='rgba(248,250,252,0.66)'/><circle cx='${cx}' cy='${cy}' r='7' fill='rgba(148,163,184,0.75)'/>`).join('');
       } else if (variant === 1) {
         // Uniform dot grid (staggered rows)
         markup = Array.from({ length: 7 }, (_, row) =>
@@ -757,10 +757,11 @@ function buildGeometryVariantSvg(geometry: GeometryFamily, variant: 0 | 1 | 2, b
           }).join('')
         ).join('');
       } else {
-        // Square grid
+        // Premium woven square grid with junction nodes
         markup = [
           ...Array.from({ length: 19 }, (_, i) => `<line x1='${i * 65}' y1='0' x2='${i * 65}' y2='800' stroke='rgba(148,163,184,0.26)' stroke-width='1'/>`),
           ...Array.from({ length: 13 }, (_, i) => `<line x1='0' y1='${i * 65}' x2='1200' y2='${i * 65}' stroke='rgba(148,163,184,0.26)' stroke-width='1'/>`),
+          ...Array.from({ length: 10 }, (_, row) => Array.from({ length: 14 }, (__, col) => `<circle cx='${col * 85 + 20}' cy='${row * 78 + 25}' r='2.8' fill='rgba(226,232,240,0.48)'/>`).join('')),
         ].join('');
       }
       break;
@@ -778,10 +779,11 @@ function buildGeometryVariantSvg(geometry: GeometryFamily, variant: 0 | 1 | 2, b
           return `<line x1='600' y1='400' x2='${x2}' y2='${y2}' stroke='rgba(56,189,248,${i % 2 === 0 ? 0.32 : 0.18})' stroke-width='${i % 2 === 0 ? 6 : 3}'/>`;
         }).join('') + `<circle cx='600' cy='400' r='44' fill='rgba(56,189,248,0.20)'/>`;
       } else {
-        // Cross-hatch diagonals
+        // Layered angular streaks
         markup = [
           ...Array.from({ length: 14 }, (_, i) => `<line x1='${i * 100}' y1='0' x2='${i * 100 + 800}' y2='800' stroke='rgba(56,189,248,0.22)' stroke-width='4'/>`),
           ...Array.from({ length: 14 }, (_, i) => `<line x1='${i * 100}' y1='800' x2='${i * 100 + 800}' y2='0' stroke='rgba(56,189,248,0.14)' stroke-width='2'/>`),
+          ...Array.from({ length: 8 }, (_, i) => `<rect x='${i * 170 - 90}' y='120' width='40' height='580' fill='rgba(125,211,252,0.12)' transform='rotate(16 ${i * 170 - 90} 120)'/>`),
         ].join('');
       }
       break;
@@ -796,17 +798,18 @@ function buildGeometryVariantSvg(geometry: GeometryFamily, variant: 0 | 1 | 2, b
           `<rect x='${40 + (i % 2 === 1 ? 84 : 0)}' y='${58 + i * 122}' width='${1120 - (i % 2 === 1 ? 84 : 0)}' height='82' rx='18' fill='rgba(226,232,240,${i % 2 === 0 ? 0.18 : 0.10})' stroke='rgba(226,232,240,0.36)' stroke-width='1'/>`
         ).join('');
       } else {
-        // Diagonal sweep panels
+        // Editorial segmented slabs
         markup = Array.from({ length: 5 }, (_, i) => {
           const off = i * 264 - 200;
-          return `<path d='M${off},800 C${off + 300},350 ${off + 500},350 ${off + 800},0 L${off + 880},0 C${off + 580},350 ${off + 380},350 ${off + 80},800 Z' fill='rgba(226,232,240,${i % 2 === 0 ? 0.17 : 0.09})'/>`;
+          return `<path d='M${off},800 C${off + 300},350 ${off + 500},350 ${off + 800},0 L${off + 880},0 C${off + 580},350 ${off + 380},350 ${off + 80},800 Z' fill='rgba(226,232,240,${i % 2 === 0 ? 0.17 : 0.09})'/>` +
+            `<path d='M${off + 120},760 L${off + 680},80' stroke='rgba(248,250,252,0.18)' stroke-width='2'/>`;
         }).join('');
       }
       break;
 
     case 'mixed':
     default:
-      markup = `<g opacity='0.72'>${Array.from({ length: 8 }, (_, i) => `<line x1='${i * 150}' y1='0' x2='${i * 150 + 150}' y2='800' stroke='rgba(56,189,248,0.22)'/>`).join('')}${Array.from({ length: 8 }, (_, i) => `<circle cx='${120 + i * 130}' cy='${220 + ((i % 3) * 120)}' r='26' stroke='rgba(248,250,252,0.42)' fill='none'/>`).join('')}</g>`;
+      markup = `<g opacity='0.76'>${Array.from({ length: 7 }, (_, i) => `<path d='M${i * 170 - 120},790 L${i * 170 + 40},540 L${i * 170 + 200},790 Z' fill='rgba(226,232,240,0.14)'/>`).join('')}${Array.from({ length: 7 }, (_, i) => `<line x1='${i * 170}' y1='0' x2='${i * 170 + 140}' y2='800' stroke='rgba(56,189,248,0.20)' stroke-width='3'/>`).join('')}${Array.from({ length: 8 }, (_, i) => `<circle cx='${120 + i * 130}' cy='${220 + ((i % 3) * 120)}' r='26' stroke='rgba(248,250,252,0.42)' fill='none'/>`).join('')}</g>`;
       break;
   }
 
@@ -3042,18 +3045,27 @@ export default function OutfitBackgroundStudioModal({
                         onChange={(value) => {
                           const next = value as GeometryFamily;
                           setAiGeometry(next);
-                          setDraft((prev) => ({ ...prev, ...buildGeometryPreviewConfig(next, presetContext.heroColor) }));
+                          setDraft((prev) => {
+                            if (prev.ai_artwork?.image_url) {
+                              return {
+                                ...prev,
+                                shape: GEOMETRY_TO_BACKGROUND_SHAPE[next],
+                              };
+                            }
+                            return { ...prev, ...buildGeometryPreviewConfig(next, presetContext.heroColor) };
+                          });
                         }}
                         placeholder="Geometry"
                         options={(Object.keys(GEOMETRY_DESCRIPTION_MAP) as GeometryFamily[]).map((option) => ({ value: option, label: option, hint: GEOMETRY_DESCRIPTION_MAP[option] }))}
                       />
                     </div>
-                    <label className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-[11px] text-white/80">
-                    <span className="block pb-1 text-[10px] uppercase tracking-[0.08em] text-white/60">Reference image (upload)</span>
+                    <label className="group rounded-2xl border border-white/20 bg-gradient-to-br from-white/14 via-white/8 to-transparent px-3 py-3 text-[11px] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:border-fuchsia-300/55 hover:shadow-[0_10px_30px_rgba(99,102,241,0.22)]">
+                    <span className="block pb-1 text-[10px] uppercase tracking-[0.08em] text-white/65">Reference image (upload)</span>
+                    <span className="mb-2 block text-[10px] text-white/55">Use a logo or texture to guide generation while keeping premium composition.</span>
                     <input
                       type="file"
                       accept="image/*"
-                      className="w-full text-[11px]"
+                      className="w-full cursor-pointer rounded-xl border border-dashed border-white/35 bg-white/8 px-2 py-2 text-[11px] file:mr-2 file:rounded-lg file:border-0 file:bg-white/90 file:px-2 file:py-1 file:text-[10px] file:font-semibold file:text-slate-900 hover:border-fuchsia-300/60"
                       onChange={(event) => {
                         const file = event.target.files?.[0];
                         if (!file) {
@@ -3089,7 +3101,7 @@ export default function OutfitBackgroundStudioModal({
                         reader.readAsDataURL(file);
                       }}
                     />
-                    {aiReferenceFileName ? <span className="mt-1 block truncate text-[10px] text-cyan-100">{aiReferenceFileName}</span> : null}
+                    {aiReferenceFileName ? <span className="mt-2 block truncate rounded-lg border border-cyan-200/35 bg-cyan-400/10 px-2 py-1 text-[10px] text-cyan-100">{aiReferenceFileName}</span> : null}
                     </label>
                   </div>
                 </div>
@@ -3365,18 +3377,16 @@ export default function OutfitBackgroundStudioModal({
                           />
                         </label>
                         <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
-                          <p className="mb-1 text-[9px] uppercase tracking-[0.10em] text-white/50">Imagem de fundo</p>
-                          <select
-                            className="w-full rounded-lg border border-white/25 bg-white/10 px-2 py-1.5 text-[10px] text-white/80 outline-none transition focus:border-fuchsia-300/60 hover:border-white/40"
+                          <FancySelect
                             value={editorialLogoBgUrl}
-                            onChange={(e) => setEditorialLogoBgUrl(e.target.value)}
-                          >
-                            {CURATED_IMAGE_PICKER_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.imageUrl} className="bg-slate-900 text-white">
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
+                            label="Imagem de fundo"
+                            onChange={(value) => setEditorialLogoBgUrl(value)}
+                            options={CURATED_IMAGE_PICKER_OPTIONS.map((opt) => ({
+                              value: opt.imageUrl,
+                              label: opt.label,
+                              hint: 'Usar como base para composição',
+                            }))}
+                          />
                         </div>
                         <span
                           className="mt-2 block h-14 rounded-lg border border-white/15"
@@ -3435,23 +3445,15 @@ export default function OutfitBackgroundStudioModal({
           />
           {selectedRecommendedPreset === 'selection_editorial_collage' && (
             <div className="flex flex-col gap-1">
-              <p className="text-[10px] uppercase tracking-[0.10em] text-white/60">Imagem de Composição</p>
-              <select
-                className="w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-xs text-white/85 outline-none transition focus:border-fuchsia-300/60 hover:border-white/40"
+              <FancySelect
                 value={editorialCollageBgUrl}
-                onChange={(e) => setEditorialCollageBgUrl(e.target.value)}
-              >
-                {uploadedReferenceImage && (
-                  <option value={uploadedReferenceImage} className="bg-slate-900 text-white">
-                    📎 Imagem carregada (upload)
-                  </option>
-                )}
-                {CURATED_IMAGE_PICKER_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.imageUrl} className="bg-slate-900 text-white">
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                label="Imagem de Composição"
+                onChange={(value) => setEditorialCollageBgUrl(value)}
+                options={[
+                  ...(uploadedReferenceImage ? [{ value: uploadedReferenceImage, label: '📎 Imagem carregada (upload)', hint: 'Usa a imagem enviada como painel esquerdo' }] : []),
+                  ...CURATED_IMAGE_PICKER_OPTIONS.map((opt) => ({ value: opt.imageUrl, label: opt.label, hint: 'Usar no painel esquerdo da composição' })),
+                ]}
+              />
               <p className="text-[10px] text-white/45">Imagem usada no painel esquerdo da composição</p>
             </div>
           )}
