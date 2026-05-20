@@ -193,21 +193,21 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const NEON_MOTION_GRID_IMAGE = '/neongrid.png';
 const CURATED_IMAGE_PICKER_OPTIONS = [
-  { fileName: 'Sem título (32).png' },
-  { fileName: 'Sem título (33).png' },
-  { fileName: 'Sem título (34).png' },
-  { fileName: 'Sem título (37).png' },
-  { fileName: 'Sem título (36).png' },
-  { fileName: 'Sem título (35).png' },
+  { fileName: 'Sem título (32).png', label: 'Urban Texture Grid' },
+  { fileName: 'Sem título (33).png', label: 'Neon Pattern Overlay' },
+  { fileName: 'Sem título (34).png', label: 'Editorial Surface III' },
+  { fileName: 'Sem título (37).png', label: 'Dark Weave Pattern' },
+  { fileName: 'Sem título (36).png', label: 'Premium Tonal Pattern' },
+  { fileName: 'Sem título (35).png', label: 'Minimal Canvas Layer' },
   { fileName: 'Fart.png', label: 'Premium Fashion Artwork' },
-  { fileName: 'Sem título (25).png' },
+  { fileName: 'Sem título (25).png', label: 'Abstract Surface' },
   { fileName: '208445B9-82BD-4AC7-863A-B177A4D187B0_4_5005_c.jpeg', label: 'LEGO Mini Logo' },
-  { fileName: '642F71E8-FE96-4345-BB4B-0C4203032B5A.png' },
-  { fileName: '6385F3BD-29DE-4841-A3E7-64079EB53F09.png' },
-  { fileName: 'newbirds.jpg' },
-  { fileName: 'streetvibes.jpg' },
-  { fileName: 'flw.jpg' },
-  { fileName: 'mfui.jpg' },
+  { fileName: '642F71E8-FE96-4345-BB4B-0C4203032B5A.png', label: 'Brand Symbol Alpha' },
+  { fileName: '6385F3BD-29DE-4841-A3E7-64079EB53F09.png', label: 'Geometric Artwork' },
+  { fileName: 'newbirds.jpg', label: 'New Birds' },
+  { fileName: 'streetvibes.jpg', label: 'Street Vibes' },
+  { fileName: 'flw.jpg', label: 'Fashion Flow' },
+  { fileName: 'mfui.jpg', label: 'Modern Fashion UI' },
 ].map(({ fileName, label }) => ({
   value: `image:${fileName}`,
   label: label || fileName,
@@ -398,23 +398,27 @@ function normalizeSvgDataUrl(source: string): string {
 }
 
 function buildDefaultVariations(count: number): ArtworkVariation[] {
-  const plan = buildBackgroundGenerationPlan({
-    prompt: 'premium fashion editorial background',
-    style: 'editorial',
-    mood: 'elegant',
-    palette: 'cool luxury',
-  });
-  return generateBackgroundVariations(plan, 'default_init', count).map((item, index) => {
-    const safeUrl = normalizeSvgDataUrl(item.image);
+  const configs: Array<{ geometry: GeometryFamily; color: string; variant: 0 | 1 | 2 }> = [
+    { geometry: 'circles',   color: '#6d28d9', variant: 0 },
+    { geometry: 'stars',     color: '#1d4ed8', variant: 1 },
+    { geometry: 'waves',     color: '#0891b2', variant: 0 },
+    { geometry: 'arrows',    color: '#d97706', variant: 2 },
+    { geometry: 'diamond',   color: '#059669', variant: 1 },
+    { geometry: 'triangles', color: '#b91c1c', variant: 0 },
+    { geometry: 'mesh',      color: '#475569', variant: 2 },
+  ];
+  return Array.from({ length: count }, (_, i) => {
+    const { geometry, color, variant } = configs[i % configs.length];
+    const svgUrl = buildGeometryVariantSvg(geometry, variant, color);
     return {
-      variation_id: `default_${index + 1}`,
-      preview_url: safeUrl,
-      output_url: safeUrl,
-      thumbnail_url: safeUrl,
+      variation_id: `default_${i + 1}_${geometry}`,
+      preview_url: svgUrl,
+      output_url: svgUrl,
+      thumbnail_url: svgUrl,
       provider: 'procedural' as const,
       provider_job_id: null,
-      provider_model: 'procedural-svg',
-      metadata: { seed: item.seed, fallback: true },
+      provider_model: `svg-${geometry}-v${variant}`,
+      metadata: { seed: i, fallback: true, geometry },
     } satisfies ArtworkVariation;
   });
 }
@@ -1292,6 +1296,212 @@ function buildTechAmberEnergyConfig(context: PresetContext, referenceImage?: str
   };
 }
 
+function drawGradientOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  CW: number,
+  CH: number,
+  gradient: OutfitBackgroundConfig['gradient'] | null | undefined,
+) {
+  if (!gradient?.stops?.length) {
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, CW, CH);
+    return;
+  }
+  const angle = ((gradient.angle ?? 135) * Math.PI) / 180;
+  const cx = CW / 2, cy = CH / 2;
+  const halfDiag = Math.sqrt(CW * CW + CH * CH) / 2;
+  const x1 = cx - Math.cos(angle) * halfDiag;
+  const y1 = cy - Math.sin(angle) * halfDiag;
+  const x2 = cx + Math.cos(angle) * halfDiag;
+  const y2 = cy + Math.sin(angle) * halfDiag;
+  const grd = gradient.type === 'radial'
+    ? ctx.createRadialGradient(cx, cy, 0, cx, cy, halfDiag)
+    : ctx.createLinearGradient(x1, y1, x2, y2);
+  gradient.stops.forEach((stop) => grd.addColorStop(stop.position / 100, stop.color));
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, CW, CH);
+}
+
+async function buildTechAmberEnergyAsync(
+  uploadedImage: string | null,
+  context: PresetContext,
+): Promise<OutfitBackgroundConfig> {
+  const CW = 1200, CH = 800;
+  const canvas = createOffscreenCanvas(CW, CH);
+  if (!canvas) return buildTechAmberEnergyConfig(context, uploadedImage);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return buildTechAmberEnergyConfig(context, uploadedImage);
+
+  // Amber gradient base
+  drawGradientOnCanvas(ctx, CW, CH, TECH_AMBER_GRADIENT);
+
+  // Dark overlay for depth
+  ctx.fillStyle = 'rgba(15,10,2,0.28)';
+  ctx.fillRect(0, 0, CW, CH);
+
+  // Diagonal beam lines
+  for (let i = 0; i < 5; i++) {
+    ctx.strokeStyle = 'rgba(253,186,116,0.28)';
+    ctx.lineWidth = Math.max(0.8, 3 - i * 0.4);
+    ctx.beginPath();
+    ctx.moveTo(-80 + i * 290, 0);
+    ctx.lineTo(i * 290 + 80, CH);
+    ctx.stroke();
+  }
+
+  // Left diagonal overlay planes
+  ctx.fillStyle = 'rgba(124,45,18,0.40)';
+  ctx.beginPath();
+  ctx.moveTo(0, 0); ctx.lineTo(580, 0); ctx.lineTo(440, CH); ctx.lineTo(0, CH);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(234,88,12,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(0, 0); ctx.lineTo(560, 0); ctx.lineTo(420, CH); ctx.lineTo(0, CH);
+  ctx.closePath(); ctx.fill();
+
+  // Radial glow
+  const glowGrd = ctx.createRadialGradient(260, 300, 0, 260, 300, 220);
+  glowGrd.addColorStop(0, 'rgba(251,191,36,0.42)');
+  glowGrd.addColorStop(0.6, 'rgba(251,191,36,0.12)');
+  glowGrd.addColorStop(1, 'rgba(251,191,36,0)');
+  ctx.fillStyle = glowGrd;
+  ctx.beginPath();
+  ctx.arc(260, 300, 220, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Uploaded image panel — right side
+  if (uploadedImage) {
+    try {
+      const img = await loadImageFromSource(uploadedImage);
+      const PX = 694, PY = 88, PW = 448, PH = 612;
+      // Amber tint behind image
+      ctx.fillStyle = 'rgba(124,45,18,0.55)';
+      ctx.fillRect(PX, PY, PW, PH);
+      // Draw image
+      ctx.drawImage(img, PX, PY, PW, PH);
+      // Amber overlay on image
+      ctx.fillStyle = 'rgba(120,45,18,0.30)';
+      ctx.fillRect(PX, PY, PW, PH);
+      // Frame border
+      ctx.strokeStyle = 'rgba(254,243,199,0.75)';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(PX, PY, PW, PH);
+      // Top/bottom accent lines
+      ctx.strokeStyle = 'rgba(251,191,36,0.60)';
+      ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(PX, PY + 3); ctx.lineTo(PX + PW, PY + 3); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(PX, PY + PH - 3); ctx.lineTo(PX + PW, PY + PH - 3); ctx.stroke();
+    } catch { /* no image loaded */ }
+  }
+
+  // Bottom vignette
+  ctx.fillStyle = 'rgba(124,45,18,0.50)';
+  ctx.beginPath();
+  ctx.moveTo(0, 520); ctx.lineTo(560, 440); ctx.lineTo(440, CH); ctx.lineTo(0, CH);
+  ctx.closePath(); ctx.fill();
+
+  const imageUrl = canvas.toDataURL('image/png');
+  return {
+    background_mode: 'ai_artwork',
+    ai_artwork: { prompt: 'tech amber energy canvas — amber gradient + uploaded image', image_url: imageUrl, generation_status: 'done' },
+    gradient: TECH_AMBER_GRADIENT,
+    shape: 'none',
+  };
+}
+
+async function buildEditorialLogoAsync(
+  referenceImage: string | null,
+  context: PresetContext,
+  currentDraft: OutfitBackgroundConfig,
+): Promise<OutfitBackgroundConfig> {
+  const CW = 1200, CH = 800;
+  const canvas = createOffscreenCanvas(CW, CH);
+  if (!canvas) return buildEditorialLogoComposition(referenceImage || context.brandLogoUrl || '', context);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return buildEditorialLogoComposition(referenceImage || context.brandLogoUrl || '', context);
+
+  // Step 1: background — curated image from gradient picker or gradient
+  const pickerImgUrl = currentDraft.ai_artwork?.image_url;
+  const isServerImage = pickerImgUrl && !pickerImgUrl.startsWith('data:') && !pickerImgUrl.startsWith('blob:');
+  let bgLoaded = false;
+  if (isServerImage) {
+    try {
+      const bgImg = await loadImageFromSource(pickerImgUrl as string);
+      ctx.drawImage(bgImg, 0, 0, CW, CH);
+      bgLoaded = true;
+    } catch { /* fall through */ }
+  }
+  if (!bgLoaded) {
+    // Draw from gradient
+    drawGradientOnCanvas(ctx, CW, CH, currentDraft.gradient ?? { type: 'linear', angle: 135, intensity: 100, stops: [{ color: '#f8fafc', position: 0 }, { color: '#e2e8f0', position: 100 }] });
+  }
+
+  // Editorial white overlay for brightness
+  ctx.fillStyle = 'rgba(255,255,255,0.58)';
+  ctx.fillRect(0, 0, CW, CH);
+
+  // Subtle editorial grid
+  ctx.strokeStyle = 'rgba(148,163,184,0.22)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < CW; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke(); }
+  for (let y = 0; y < CH; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke(); }
+
+  // Flowing editorial curves
+  ctx.strokeStyle = 'rgba(148,163,184,0.28)';
+  ctx.lineWidth = 90;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-60, 370);
+  ctx.bezierCurveTo(220, 290, 500, 430, 820, 350);
+  ctx.bezierCurveTo(980, 308, 1100, 238, 1260, 168);
+  ctx.stroke();
+
+  // Extra white layer for editorial cleanliness
+  ctx.fillStyle = 'rgba(255,255,255,0.38)';
+  ctx.fillRect(0, 0, CW, CH);
+
+  // Reference image in card frame
+  if (referenceImage) {
+    try {
+      const logoImg = await loadImageFromSource(referenceImage);
+      const CX = 726, CY = 140, CW2 = 332, CH2 = 486, RADIUS = 32;
+      // Drop shadow
+      ctx.fillStyle = 'rgba(15,23,42,0.18)';
+      ctx.beginPath();
+      ctx.roundRect(CX + 8, CY + 8, CW2, CH2, RADIUS);
+      ctx.fill();
+      // Card background
+      ctx.fillStyle = 'rgba(255,255,255,0.94)';
+      ctx.beginPath();
+      ctx.roundRect(CX, CY, CW2, CH2, RADIUS);
+      ctx.fill();
+      // Clipped image
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(CX + 32, CY + 34, 268, 392, 16);
+      ctx.clip();
+      ctx.drawImage(logoImg, CX + 32, CY + 34, 268, 392);
+      ctx.restore();
+      // Label bar below image
+      ctx.fillStyle = 'rgba(15,23,42,0.18)';
+      ctx.beginPath();
+      ctx.roundRect(CX + 72, CY + 442, 188, 18, 9);
+      ctx.fill();
+    } catch { /* no image */ }
+  }
+
+  // Brand name
+  ctx.font = 'bold 52px "Arial Black", Arial, sans-serif';
+  ctx.fillStyle = 'rgba(15,23,42,0.30)';
+  ctx.fillText(context.brandName || '', 88, 120);
+
+  const imageUrl = canvas.toDataURL('image/png');
+  const bg = bgLoaded
+    ? { ...currentDraft, background_mode: 'ai_artwork' as const, ai_artwork: { prompt: 'editorial logo canvas composition', image_url: imageUrl, generation_status: 'done' as const }, shape: 'none' as const }
+    : { background_mode: 'ai_artwork' as const, ai_artwork: { prompt: 'editorial logo canvas composition', image_url: imageUrl, generation_status: 'done' as const }, gradient: currentDraft.gradient, shape: 'none' as const };
+  return bg;
+}
+
 async function buildEditorialCollageAsync(
   uploadedImage: string | null,
   context: PresetContext,
@@ -2084,6 +2294,54 @@ export default function OutfitBackgroundStudioModal({
       setDraft((prev) => ({ ...prev, ...collageConfig }));
       setAiResults([collageVariation]);
       setSelectedAiResult(collageVariation);
+      setAiGradientResults([]);
+      return;
+    }
+
+    if (selectedRecommendedPreset === 'selection_editorial_logo') {
+      let logoConfig: OutfitBackgroundConfig;
+      try {
+        logoConfig = await buildEditorialLogoAsync(uploadedReferenceImage, presetContext, draft);
+      } catch {
+        setAiLoading(false);
+        setAiError('Could not build editorial logo composition.');
+        return;
+      }
+      const logoUrl = logoConfig.ai_artwork?.image_url || '';
+      const logoVariation: ArtworkVariation = {
+        variation_id: `editorial_logo_${Date.now()}`,
+        preview_url: logoUrl, output_url: logoUrl, thumbnail_url: logoUrl,
+        provider: 'procedural', provider_job_id: null, provider_model: 'editorial-logo-canvas',
+        metadata: { source: 'editorial_logo' },
+      };
+      setAiLoading(false);
+      setDraft((prev) => ({ ...prev, ...logoConfig }));
+      setAiResults([logoVariation]);
+      setSelectedAiResult(logoVariation);
+      setAiGradientResults([]);
+      return;
+    }
+
+    if (selectedRecommendedPreset === 'selection_tech_amber_energy') {
+      let amberConfig: OutfitBackgroundConfig;
+      try {
+        amberConfig = await buildTechAmberEnergyAsync(uploadedReferenceImage, presetContext);
+      } catch {
+        setAiLoading(false);
+        setAiError('Could not build Tech Amber Energy composition.');
+        return;
+      }
+      const amberUrl = amberConfig.ai_artwork?.image_url || '';
+      const amberVariation: ArtworkVariation = {
+        variation_id: `tech_amber_${Date.now()}`,
+        preview_url: amberUrl, output_url: amberUrl, thumbnail_url: amberUrl,
+        provider: 'procedural', provider_job_id: null, provider_model: 'tech-amber-canvas',
+        metadata: { source: 'tech_amber_energy' },
+      };
+      setAiLoading(false);
+      setDraft((prev) => ({ ...prev, ...amberConfig }));
+      setAiResults([amberVariation]);
+      setSelectedAiResult(amberVariation);
       setAiGradientResults([]);
       return;
     }
