@@ -104,6 +104,7 @@ export type OutfitCardData = {
   pieces: OutfitPiece[];
   schemeId?: string;
   creatorId?: string;
+  creatorName?: string;
   titleFontFamily?: string;
 };
 
@@ -302,6 +303,7 @@ type DescriptionGeneratorInput = {
   pieces: OutfitPiece[];
   schemeId?: string;
   creatorId?: string;
+  creatorName?: string;
   titleFontFamily?: string;
 };
 

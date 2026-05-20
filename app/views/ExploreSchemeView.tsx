@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import OutfitCard from '@/app/components/outfit-card/OutfitCard';
+import CollapsibleOutfitCard from '@/app/components/outfit-card/CollapsibleOutfitCard';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import { OutfitCardData, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
+import { getAuthSessionProfile } from '@/app/lib/authSession';
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
+type PublicUser = { user_id: string; username?: string; name?: string };
+
 type Scheme = {
   scheme_id: string;
   title: string;
@@ -76,6 +79,8 @@ export default function ExploreSchemeView() {
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [itemsBySchemeId, setItemsBySchemeId] = useState<Record<string, SchemeDetailItem[]>>({});
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [users, setUsers] = useState<PublicUser[]>([]);
+  const authUserId = useMemo(() => getAuthSessionProfile().user_id?.trim() || '', []);
 
   useEffect(() => {
     const loadSchemesWithItems = async () => {
@@ -83,6 +88,11 @@ export default function ExploreSchemeView() {
       const data = await response.json();
       const safeSchemes = Array.isArray(data) ? (data as Scheme[]) : [];
       setSchemes(safeSchemes);
+
+      fetch('/api/users/public')
+        .then((res) => res.json())
+        .then((payload) => setUsers(Array.isArray(payload?.users) ? payload.users : []))
+        .catch(() => setUsers([]));
 
       const detailResponses = await Promise.all(
         safeSchemes.map((scheme) =>
@@ -108,6 +118,8 @@ export default function ExploreSchemeView() {
       setItemsBySchemeId({});
     });
   }, []);
+
+  const usersById = useMemo(() => Object.fromEntries(users.map((u) => [u.user_id, u])), [users]);
 
   const buildOutfitPreviewData = (scheme: Scheme): OutfitCardData => {
     const styleLine = `${scheme.style || 'Streetwear'} • ${scheme.occasion || 'General'}`;
@@ -170,23 +182,25 @@ export default function ExploreSchemeView() {
         outfitName: scheme.title || 'Untitled Outfit',
       }),
       heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
+      creatorName: usersById[scheme.user_id]?.username || usersById[scheme.user_id]?.name || 'usuario',
       outfitBackground: parsedBackground,
       pieces: normalizedPieces,
     };
   };
 
   const filteredSchemes = useMemo(() => {
+    const ownSchemes = authUserId ? schemes.filter((s) => s.user_id === authUserId) : schemes;
     switch (activeFilter) {
       case 'favorites':
-        return schemes.filter((s) => favorites[s.scheme_id]);
+        return ownSchemes.filter((s) => favorites[s.scheme_id]);
       case 'available':
-        return schemes.filter((s) => (availability[s.scheme_id] ?? 'available') === 'available');
+        return ownSchemes.filter((s) => (availability[s.scheme_id] ?? 'available') === 'available');
       case 'unavailable':
-        return schemes.filter((s) => availability[s.scheme_id] === 'unavailable');
+        return ownSchemes.filter((s) => availability[s.scheme_id] === 'unavailable');
       default:
-        return schemes;
+        return ownSchemes;
     }
-  }, [activeFilter, favorites, availability, schemes]);
+  }, [activeFilter, favorites, availability, schemes, authUserId]);
 
   const grouped = useMemo(() => {
     const byOccasion = new Map<string, Scheme[]>();
@@ -231,10 +245,10 @@ export default function ExploreSchemeView() {
       ) : (
         grouped.map(([occasion, occasionSchemes]) => (
           <SectionBlock key={occasion} title={`Ocasião: ${occasion}`} subtitle="Looks agrupados por ocasião.">
-            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {occasionSchemes.map((scheme) => (
-                <article key={scheme.scheme_id} className="space-y-3 rounded-2xl border border-white/25 p-3">
-                  <OutfitCard data={buildOutfitPreviewData(scheme)} />
+                <article key={scheme.scheme_id} className="space-y-2 rounded-xl border border-white/20 p-2">
+                  <CollapsibleOutfitCard card={buildOutfitPreviewData(scheme)} defaultExpanded={false} showActions={false} />
                   <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/80">
                     <p>Status: {availability[scheme.scheme_id] === 'unavailable' ? 'indisponível' : 'disponível'}</p>
                     <p>Favorito: {favorites[scheme.scheme_id] ? 'sim' : 'não'}</p>

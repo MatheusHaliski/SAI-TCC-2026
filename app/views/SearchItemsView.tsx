@@ -9,6 +9,7 @@ import SearchOutfitCard from '@/app/components/search/SearchOutfitCard';
 import SearchUserCard from '@/app/components/search/SearchUserCard';
 import { useDiscoverySearch } from '@/app/components/shell/DiscoverySearchContext';
 import { OutfitCardData, buildOutfitDescriptionFallback, buildOutfitDescriptionRich } from '@/app/lib/outfit-card';
+import { getAuthSessionProfile } from '@/app/lib/authSession';
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
 type PublicScheme = {
@@ -65,6 +66,7 @@ export default function SearchItemsView() {
   const [outfitFilter, setOutfitFilter] = useState<OutfitFilter>('all');
   const [outfitFavorites, setOutfitFavorites] = useState<Record<string, boolean>>({});
   const [outfitAvailability, setOutfitAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
+  const authUserId = useMemo(() => getAuthSessionProfile().user_id?.trim() || '', []);
 
   useEffect(() => {
     fetch('/api/schemes/public')
@@ -83,6 +85,7 @@ export default function SearchItemsView() {
   const outfitsById = useMemo(() => {
     const map: Record<string, OutfitCardData> = {};
 
+    const usersById = Object.fromEntries(users.map((u) => [u.user_id, u]));
     schemes.forEach((scheme) => {
       const pieces = (scheme.pieces ?? []).map((piece) => ({
         id: piece.id,
@@ -111,6 +114,7 @@ export default function SearchItemsView() {
               outfitName: scheme.title || 'Untitled Outfit',
             }),
         heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
+        creatorName: usersById[scheme.user_id]?.username || usersById[scheme.user_id]?.name || 'usuario',
         outfitBackground: (() => {
           try {
             const parsed = JSON.parse(scheme.description || '{}') as { outfitBackground?: OutfitCardData['outfitBackground'] };
@@ -132,7 +136,7 @@ export default function SearchItemsView() {
     });
 
     return map;
-  }, [schemes]);
+  }, [schemes, users]);
 
   const groupedSearch = useMemo(() => {
     const filteredUsers = users.filter((user) => {
@@ -141,7 +145,8 @@ export default function SearchItemsView() {
       return blob.includes(queryNorm);
     });
 
-    const textFiltered = schemes.filter((scheme) => {
+    const publicFromOthers = authUserId ? schemes.filter((scheme) => scheme.user_id !== authUserId) : schemes;
+    const textFiltered = publicFromOthers.filter((scheme) => {
       if (!queryNorm) return true;
       const card = outfitsById[scheme.scheme_id];
       const brands = card?.brands?.join(' ') ?? '';
@@ -159,7 +164,7 @@ export default function SearchItemsView() {
     });
 
     return { users: filteredUsers, outfits, brands: [], wardrobeItems: [], styles: [] };
-  }, [outfitsById, queryNorm, schemes, users, outfitFilter, outfitFavorites, outfitAvailability]);
+  }, [outfitsById, queryNorm, schemes, users, outfitFilter, outfitFavorites, outfitAvailability, authUserId]);
 
   return (
     <div className="space-y-6">
