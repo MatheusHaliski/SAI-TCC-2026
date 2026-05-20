@@ -1965,7 +1965,8 @@ export default function OutfitBackgroundStudioModal({
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Prompt</p>
                       <p className="mb-1 text-[10px] text-white/60">Use brand and mood details. Geometry control below has priority for structure.</p>
                       <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder="Premium editorial fashion background with geometric layers and elegant negative space." className="min-h-20 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm" />
-                      <button type="button" onClick={generateWithGoogleAI} disabled={aiLoading || !aiPrompt.trim()} className="mt-2 w-full rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-2 text-xs font-bold text-white shadow-lg transition hover:scale-[1.02] disabled:opacity-50">✨ Google AI: Smart Generate</button>
+                      <button type="button" onClick={generateWithGoogleAI} disabled={aiLoading || !aiPrompt.trim()} className="mt-2 w-full rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-2 text-xs font-bold text-white shadow-lg transition hover:scale-[1.02] disabled:opacity-50">✨ Generate Palette from Prompt</button>
+                      <p className="mt-1 text-[9px] text-white/50">Generates a color palette and gradient from your text prompt.</p>
                     </div>
                     <div>
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Composition Type</p>
@@ -1980,7 +1981,11 @@ export default function OutfitBackgroundStudioModal({
                     <div>
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Palette Mode</p>
                       <p className="mb-1 text-[10px] text-white/60">Controls the dominant color family in generated artwork.</p>
-                      <FancySelect value={aiPaletteMode} onChange={(value) => setAiPaletteMode(value as ArtworkPaletteMode)} placeholder="Palette mode" options={PALETTE_MODES.map((option) => ({ value: option, label: option.replaceAll('_', ' '), hint: 'Controls palette family used during generation' }))} />
+                      <FancySelect value={aiPaletteMode} onChange={(value) => setAiPaletteMode(value as ArtworkPaletteMode)} placeholder="Palette mode" options={PALETTE_MODES.map((option) => ({
+                        value: option,
+                        label: option.replaceAll('_', ' '),
+                        hint: `Applies ${option.replaceAll('_', ' ')} palette — updates preview instantly`,
+                      }))} />
                     </div>
                   </div>
                 </div>
@@ -1996,8 +2001,23 @@ export default function OutfitBackgroundStudioModal({
                     </div>
                     <div>
                       <p className="mb-1 text-[11px] font-semibold text-white/85">Color Intent</p>
-                      <p className="mb-1 text-[10px] text-white/60">Applies color direction to the prompt and generation model.</p>
-                      <FancySelect value={aiColorIntent} onChange={(value) => setAiColorIntent(value as ArtworkColorIntent)} placeholder="Color intent" options={COLOR_INTENTS.map((option) => ({ value: option.value, label: option.label, hint: 'Applies this color direction to generation input' }))} />
+                      <p className="mb-1 text-[10px] text-white/60">Instantly applies the color palette to the preview.</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {COLOR_INTENTS.map((intent) => (
+                          <button
+                            key={intent.value}
+                            type="button"
+                            onClick={() => setAiColorIntent(intent.value as ArtworkColorIntent)}
+                            className={`rounded-xl border px-2 py-2 text-left text-[10px] transition ${aiColorIntent === intent.value ? 'border-violet-300 bg-violet-500/30' : 'border-white/20 bg-white/8 hover:bg-white/15'}`}
+                          >
+                            <span
+                              className="mb-1 block h-4 w-full rounded"
+                              style={{ background: COLOR_INTENT_SWATCHES[intent.value as ArtworkColorIntent] }}
+                            />
+                            <span className="block truncate font-semibold text-white/90">{intent.label}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2081,8 +2101,7 @@ export default function OutfitBackgroundStudioModal({
                   Safe area mode for text and subject
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  <button disabled={aiLoading} type="button" className="rounded-lg border border-violet-300/60 bg-violet-500/40 px-3 py-2 text-xs font-semibold disabled:opacity-60" onClick={() => void generateAiBackground()}>{aiLoading ? 'Generating...' : 'Generate Artwork'}</button>
-                  <button disabled={aiLoading} type="button" className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs disabled:opacity-60" onClick={() => void generateAiBackground()}>Retry</button>
+                  <button disabled={aiLoading} type="button" className="rounded-lg border border-violet-300/60 bg-violet-500/40 px-3 py-2 text-xs font-semibold disabled:opacity-60" onClick={() => void generateAiBackground()}>{aiLoading ? 'Generating...' : 'Generate AI Background'}</button>
                   <button
                     type="button"
                     className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs"
