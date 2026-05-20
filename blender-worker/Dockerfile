@@ -38,6 +38,7 @@ RUN pip install --upgrade pip && pip install -r /tmp/requirements.txt
 COPY blender-worker/handler.py /app/handler.py
 COPY blender-worker/controller.py /app/controller.py
 COPY blender-worker/meshy_pipeline.py /app/meshy_pipeline.py
+COPY blender-worker/pipeline.py /app/pipeline.py
 COPY blender-worker/blender_pipeline.py /app/blender_pipeline.py
 COPY blender-worker/blender-scripts /app/blender-scripts
 
