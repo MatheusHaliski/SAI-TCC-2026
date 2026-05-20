@@ -401,16 +401,17 @@ export async function POST(req: Request) {
       normalizedStatus: status,
     });
 
-    // Persist cloud_job_id / runpod_job_id immediately so that if the user
-    // navigates away and returns, the reconcile route uses the correct ID.
+    // Persist cloud_job_id so reconcile/polling can find the job after navigation.
+    // Must be awaited: Vercel terminates the lambda once the route handler returns,
+    // so fire-and-forget writes may never complete.
     if (jobId && pieceId) {
       const repo = new WardrobeItemsRepository();
-      repo.updateProcessingState(pieceId, jobId).catch((err) => {
-        console.error('[3d-worker/submit] failed to persist runpod_job_id', { pieceId, jobId, error: err });
+      await repo.updateProcessingState(pieceId, jobId).catch((err) => {
+        console.error('[3d-worker/submit] failed to persist cloud_job_id', { pieceId, jobId, error: err });
       });
     }
 
-    // Worker now returns immediately with status=queued (async pipeline).
+    // Worker returns immediately with status=queued (async pipeline).
     // Always surface submitted/queued to the frontend — never wait for the GLB.
     const submittedStatus = status === 'completed' ? 'queued' : (status || 'submitted');
 
