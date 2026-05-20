@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
 import { getAdminStorageBucket } from '@/app/lib/firebaseAdmin';
 
-const RUNNING_STATUSES = new Set(['queued', 'submitted', 'in_progress', 'processing', 'started', 'accepted', 'pending', 'waiting']);
+const RUNNING_STATUSES = new Set(['queued', 'submitted', 'in_progress', 'processing', 'started', 'accepted', 'pending', 'waiting', 'running', 'meshy_generate', 'download_glb', 'blender_process']);
 const FAILED_STATUSES = new Set(['failed', 'error', 'errored', 'cancelled', 'canceled', 'timed_out', 'timeout']);
 
 export function resolveWorkerConfig(): { workerUrl: string; token: string } | null {
