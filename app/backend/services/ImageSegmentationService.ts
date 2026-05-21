@@ -3,6 +3,9 @@ import { ServiceError } from './errors';
 export interface SegmentationRequest {
   imageUrl: string;
   pieceType: string;
+  /** When true, the provider is instructed to detect and remove the human body,
+   *  returning only the garment pixels with original colors preserved. */
+  removeBody?: boolean;
 }
 
 export interface SegmentationResult {
@@ -49,6 +52,8 @@ export class ImageSegmentationService {
           image: input.imageUrl,
           garment_type: input.pieceType,
           return_mask: true,
+          // Signal provider to perform body-aware segmentation when a human is present.
+          remove_person: input.removeBody ?? false,
         },
       }),
     });
@@ -107,7 +112,12 @@ export class ImageSegmentationService {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image_url: input.imageUrl, piece_type: input.pieceType, provider }),
+      body: JSON.stringify({
+        image_url: input.imageUrl,
+        piece_type: input.pieceType,
+        provider,
+        remove_person: input.removeBody ?? false,
+      }),
     });
 
     if (!response.ok) throw new ServiceError('Custom segmentation service failed.', 502);

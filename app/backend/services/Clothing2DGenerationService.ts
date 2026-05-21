@@ -24,9 +24,13 @@ export class Clothing2DGenerationService {
     }
 
     const analysis = await this.analysisService.analyze(input.raw_upload_image_url);
+
+    // When a human body is detected, request body-aware segmentation so the
+    // provider removes the person and returns only the garment pixels.
     const segmentation = await this.segmentationService.segment({
       imageUrl: input.raw_upload_image_url,
       pieceType: input.piece_type,
+      removeBody: analysis.contains_human,
     });
 
     const normalized = await this.normalizationService.normalize({
