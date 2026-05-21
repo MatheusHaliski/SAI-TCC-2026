@@ -200,7 +200,11 @@ class MeshyPipeline:
 
         self._validate_image_url_public(effective_image_url)
 
-        payload = {"image_url": effective_image_url}
+        payload = {
+            "image_url": effective_image_url,
+            "should_texture": True,
+            "remove_lighting": True,
+        }
         self._validate_create_payload_schema(payload)
         headers = self._headers()
         logger.info("[meshy] create request headers=%s body=%s", json.dumps(self._safe_log_headers(), sort_keys=True), json.dumps(payload, sort_keys=True))
