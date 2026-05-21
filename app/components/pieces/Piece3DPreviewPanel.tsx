@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Script from 'next/script';
 import Image from 'next/image';
 import type { DiscoverablePiece } from './PieceDiscoveryCard';
+import { toProxiedModelUrl } from '@/app/lib/wardrobeModelUrl';
 
 interface Piece3DPreviewPanelProps {
   piece: DiscoverablePiece;
@@ -18,7 +19,7 @@ export default function Piece3DPreviewPanel({ piece }: Piece3DPreviewPanelProps)
   const candidates = useMemo(() => {
     return [piece.model_3d_url, piece.model_branded_3d_url, piece.model_base_3d_url]
       .filter((url): url is string => Boolean(url?.trim()))
-      .map((url) => (url.startsWith('http://') ? url.replace('http://', 'https://') : url));
+      .map((url) => toProxiedModelUrl(url));
   }, [piece]);
 
   const src = candidates[modelIndex] ?? null;

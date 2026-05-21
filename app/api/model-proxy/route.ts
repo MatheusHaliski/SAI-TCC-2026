@@ -6,6 +6,14 @@ function isAllowedMeshyAsset(url: URL) {
   return url.protocol === 'https:' && (url.hostname === 'assets.meshy.ai' || url.hostname.endsWith('.meshy.ai'));
 }
 
+function isAllowedFirebaseStorageAsset(url: URL) {
+  return (
+    url.protocol === 'https:' &&
+    (url.hostname === 'firebasestorage.googleapis.com' ||
+      url.hostname.endsWith('.firebasestorage.app'))
+  );
+}
+
 // Extract Meshy task ID from CDN URL path:
 // https://assets.meshy.ai/<userId>/tasks/<taskId>/output/model.glb
 function extractMeshyTaskId(url: URL): string | null {
@@ -57,15 +65,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Invalid asset URL.' }, { status: 400 });
   }
 
-  if (!isAllowedMeshyAsset(parsedAssetUrl)) {
-    return NextResponse.json({ error: 'Only Meshy asset URLs are allowed.' }, { status: 403 });
+  const isMeshy = isAllowedMeshyAsset(parsedAssetUrl);
+  const isFirebase = isAllowedFirebaseStorageAsset(parsedAssetUrl);
+
+  if (!isMeshy && !isFirebase) {
+    return NextResponse.json({ error: 'Only Meshy and Firebase Storage asset URLs are allowed.' }, { status: 403 });
   }
 
   let assetUrl = parsedAssetUrl.toString();
   let response = await fetch(assetUrl, { method: 'GET', cache: 'no-store' });
 
   // Signed CDN URLs expire — refresh via Meshy API on 403.
-  if (response.status === 403) {
+  if (response.status === 403 && isMeshy) {
     const taskId = extractMeshyTaskId(parsedAssetUrl);
     if (taskId) {
       const freshUrl = await fetchFreshMeshyUrl(taskId, parsedAssetUrl);
