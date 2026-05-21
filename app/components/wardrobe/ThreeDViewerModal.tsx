@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Script from 'next/script';
+import { toProxiedModelUrl } from '@/app/lib/wardrobeModelUrl';
 
 interface Props {
   open: boolean;
@@ -17,13 +18,8 @@ export default function ThreeDViewerModal({ open, title, modelUrl, posterUrl, on
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const safeUrl = useMemo(() => modelUrl.startsWith('http://') ? modelUrl.replace('http://', 'https://') : modelUrl, [modelUrl]);
-  const proxiedModelUrl = useMemo(() => safeUrl.includes('assets.meshy.ai') ? `/api/model-proxy?url=${encodeURIComponent(safeUrl)}` : safeUrl, [safeUrl]);
-  const proxiedPoster = useMemo(() => {
-    if (!posterUrl) return undefined;
-    const safePoster = posterUrl.startsWith('http://') ? posterUrl.replace('http://', 'https://') : posterUrl;
-    return safePoster.includes('assets.meshy.ai') ? `/api/model-proxy?url=${encodeURIComponent(safePoster)}` : safePoster;
-  }, [posterUrl]);
+  const proxiedModelUrl = useMemo(() => toProxiedModelUrl(modelUrl), [modelUrl]);
+  const proxiedPoster = useMemo(() => posterUrl ? toProxiedModelUrl(posterUrl) : undefined, [posterUrl]);
 
   useEffect(() => {
     if (!open || !modelViewerRef.current) return;

@@ -1,3 +1,26 @@
+const PROXY_HOSTNAMES = new Set([
+  'assets.meshy.ai',
+  'firebasestorage.googleapis.com',
+]);
+
+function needsProxy(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      PROXY_HOSTNAMES.has(parsed.hostname) ||
+      parsed.hostname.endsWith('.meshy.ai') ||
+      parsed.hostname.endsWith('.firebasestorage.app')
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function toProxiedModelUrl(url: string): string {
+  const safe = url.startsWith('http://') ? url.replace('http://', 'https://') : url;
+  return needsProxy(safe) ? `/api/model-proxy?url=${encodeURIComponent(safe)}` : safe;
+}
+
 export interface WardrobeModelUrlFields {
   model_3d_url?: string | null;
   model_branded_3d_url?: string | null;
