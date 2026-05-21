@@ -1,7 +1,14 @@
+export interface BrandLogoReference {
+  name: string;
+  data: string;
+  mimeType: string;
+}
+
 export interface AnalyzeImageInput {
   imageUrl?: string;
   base64Image?: string;
   mimeType?: string;
+  brandLogos?: BrandLogoReference[];
 }
 
 export interface AnalyzeImageOutput {

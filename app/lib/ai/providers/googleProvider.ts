@@ -11,6 +11,7 @@ import {
   BackgroundPromptOutput,
   SearchIntentInput,
   SearchIntentOutput,
+  BrandLogoReference,
 } from './types';
 
 export class GoogleProvider implements FashionAIProvider {
@@ -78,16 +79,80 @@ export class GoogleProvider implements FashionAIProvider {
     }
   }
 
+  private async generateJsonWithContents<T>(model: string, contents: any[]): Promise<T> {
+    try {
+      const response = await this.ai.models.generateContent({
+        model,
+        contents,
+        config: { responseMimeType: 'application/json' },
+      });
+
+      const text = response.text || '';
+      let cleanText = text.trim();
+      if (cleanText.startsWith('```json')) {
+        cleanText = cleanText.replace(/^```json\n/, '').replace(/\n```$/, '');
+      } else if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '');
+      }
+      return JSON.parse(cleanText) as T;
+    } catch (error) {
+      console.error('[GoogleProvider] Error generating JSON with contents:', error);
+      throw error;
+    }
+  }
+
   async analyzeImage(input: AnalyzeImageInput): Promise<AnalyzeImageOutput> {
+    const contents: any[] = [];
+
+    // First image: the clothing item
+    if (input.base64Image) {
+      const cleanBase64 = input.base64Image.replace(/^data:image\/[a-z]+;base64,/, '');
+      contents.push({
+        inlineData: {
+          data: cleanBase64,
+          mimeType: input.mimeType || 'image/jpeg',
+        },
+      });
+    } else if (input.imageUrl) {
+      const res = await fetch(input.imageUrl);
+      if (!res.ok) throw new Error(`Failed to fetch image from URL: ${res.status}`);
+      const arrayBuffer = await res.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const contentType = res.headers.get('content-type') || 'image/jpeg';
+      contents.push({
+        inlineData: {
+          data: base64,
+          mimeType: contentType.split(';')[0].trim(),
+        },
+      });
+    }
+
+    // Reference brand logo images (if provided) — used for visual logo comparison
+    const brandLogos: BrandLogoReference[] = input.brandLogos ?? [];
+    for (const logo of brandLogos) {
+      contents.push({
+        inlineData: {
+          data: logo.data,
+          mimeType: logo.mimeType,
+        },
+      });
+    }
+
+    const brandLogoSection = brandLogos.length > 0
+      ? `BRAND LOGO COMPARISON:
+Image 1 is the clothing item to analyze.
+Images 2 to ${brandLogos.length + 1} are reference brand logos in this order: ${brandLogos.map((l, i) => `Image ${i + 2} = ${l.name}`).join(', ')}.
+Carefully examine any logo, emblem, symbol, or text visible in Image 1 and visually compare it against the provided reference logos.
+- If the clothing logo clearly matches one of the reference logos, return that brand name with "High" confidence.
+- If it partially matches or is inferred from design language (e.g. crocodile emblem → Lacoste), return it with "Medium" confidence.
+- If no brand indicator is visible, return "Unknown".`
+      : `BRAND DETECTION:
+Carefully scan every part of the clothing image for brand identifiers: logos (embroidered, printed, or embossed), text on labels or patches, distinctive emblems or symbols.
+Return the exact brand name. Return "Unknown" only if absolutely no brand indicator is visible.`;
+
     const prompt = `You are a high-end fashion AI expert and brand identification specialist. Analyze the provided clothing image with extreme attention to detail.
 
-IMPORTANT — Brand Detection: Carefully scan every part of the image for brand identifiers:
-- Logos (embroidered, printed, or embossed)
-- Text on labels, tags, or patches
-- Distinctive emblems, symbols, or wordmarks
-- Collar/hem labels, hang tags, or care labels
-- Any text or marking that could indicate a manufacturer
-Return the exact brand name as it appears. Only return "Unknown" if absolutely no brand indicator is visible.
+${brandLogoSection}
 
 Return a strictly formatted JSON object with the following fields:
 - pieceName: A premium, short name for the item.
@@ -99,21 +164,17 @@ Return a strictly formatted JSON object with the following fields:
 - styles: Array of styles (e.g. ["casual", "streetwear", "formal", "luxury"]).
 - season: Must be exactly one of: "summer", "winter", "spring", "autumn", "all-season", "unknown".
 - gender: Must be exactly one of: "male", "female", "unisex", "unknown".
-- brand: Brand name found by scanning logos, text, and labels in the image. Return "Unknown" only if no brand indicator is visible.
-- brandConfidence: "High" if logo/name is clearly readable, "Medium" if partially visible or inferred from design language, "Low" if speculative.
+- brand: Brand name matched from logo comparison or text detection. Return "Unknown" only if no brand indicator is visible.
+- brandConfidence: "High" if logo/name is clearly matched, "Medium" if partially matched or inferred, "Low" if speculative.
 - semanticTags: Array of 5-8 descriptive tags useful for search.
 - shortDescription: A 1-2 sentence premium description.
 - outfitSuggestions: Array of 2-3 items that would pair well.
 
 Only return the JSON.`;
 
-    return this.generateJson<AnalyzeImageOutput>(
-      this.visionModel,
-      prompt,
-      input.base64Image,
-      input.mimeType || 'image/jpeg',
-      input.imageUrl,
-    );
+    contents.push(prompt);
+
+    return this.generateJsonWithContents<AnalyzeImageOutput>(this.visionModel, contents);
   }
 
   async generateCardDescription(input: CardDescriptionInput): Promise<CardDescriptionOutput> {
