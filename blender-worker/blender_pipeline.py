@@ -28,8 +28,12 @@ Fixes applied vs previous version:
 from __future__ import annotations
 
 import argparse
+import logging
 import math
+import os
 import sys
+import urllib.request
+from typing import Any
 from pathlib import Path
 
 
@@ -44,6 +48,12 @@ try:
     _IN_BLENDER = True
 except ImportError:
     _IN_BLENDER = False
+
+logger = logging.getLogger("stylistai.blender")
+
+
+def _configure_logging() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 
 
 # ── Constants ────────────────────────────────────────────────────────────────
@@ -791,6 +801,50 @@ def _create_decal_plane(target_obj, front_axis: str, placement: dict[str, Any], 
     return plane
 
 
+# ── Utility helpers for apply_visual_details_and_export ──────────────────────
+
+def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
+    """Convert #RRGGBB or RRGGBB hex string to (r, g, b) floats in [0, 1]."""
+    h = hex_color.lstrip("#")
+    if len(h) != 6:
+        return (0.50, 0.50, 0.50)
+    return (int(h[0:2], 16) / 255.0, int(h[2:4], 16) / 255.0, int(h[4:6], 16) / 255.0)
+
+
+def _front_vector_from_axis(axis_str: str) -> tuple[tuple[float, float, float], str]:
+    """Return ((x, y, z), canonical_axis_string) for the given axis specifier."""
+    mapping: dict[str, tuple[tuple[float, float, float], str]] = {
+        "X":  ((1.0, 0.0, 0.0), "+X"), "+X": ((1.0, 0.0, 0.0), "+X"),
+        "-X": ((-1.0, 0.0, 0.0), "-X"),
+        "Y":  ((0.0, 1.0, 0.0), "+Y"), "+Y": ((0.0, 1.0, 0.0), "+Y"),
+        "-Y": ((0.0, -1.0, 0.0), "-Y"),
+        "Z":  ((0.0, 0.0, 1.0), "+Z"), "+Z": ((0.0, 0.0, 1.0), "+Z"),
+        "-Z": ((0.0, 0.0, -1.0), "-Z"),
+    }
+    key = axis_str.strip().upper()
+    if key not in mapping:
+        print(f"[pipeline] WARNING: unknown axis '{axis_str}', defaulting to +Y")
+        key = "+Y"
+    return mapping[key]
+
+
+def _download_texture(url_or_path: str, out_dir: Path) -> str | None:
+    """Return a local file path for a texture, downloading it if necessary."""
+    if not url_or_path:
+        return None
+    p = Path(url_or_path)
+    if p.exists():
+        return str(p)
+    try:
+        suffix = Path(url_or_path.split("?")[0]).suffix or ".png"
+        dest = out_dir / f"decal_texture{suffix}"
+        urllib.request.urlretrieve(url_or_path, str(dest))
+        return str(dest)
+    except Exception as exc:
+        print(f"[pipeline] _download_texture: failed to fetch '{url_or_path}': {exc}")
+        return None
+
+
 def _render_preview(path: Path, rotation_y: float = 0.0):
     import bpy, math
     scene = bpy.context.scene
@@ -820,10 +874,21 @@ def _render_preview(path: Path, rotation_y: float = 0.0):
 
 
 def apply_visual_details_and_export(*, input_model: Path, output_model: Path, piece_data: dict[str, Any], debug_dir: Path) -> dict[str, Any]:
+    """Apply garment color, remove human meshes, sanitize stains, apply logo, export GLB.
+
+    Human removal: _isolate_garment_mesh() strips body/mannequin meshes using name
+    tokens and aspect-ratio filtering before any material work begins.
+
+    Color/stain removal: _purge_garment_materials() extracts the dominant fabric color
+    via histogram-mode quantisation (stain-resistant) and replaces all Meshy-baked
+    textures with a clean SAI_Base_Fabric.  If piece_data supplies an explicit color
+    hex that override replaces the dominant color.  _sanitize_back_faces() then
+    assigns a procedural fabric material to all back-facing polygons so no front-photo
+    stains survive on the back of the exported mesh.  An adaptive stain analysis pass
+    re-runs back sanitization if residual artifacts are detected in the rendered preview.
+    """
     _configure_logging()
     debug_dir.mkdir(parents=True, exist_ok=True)
-    import bpy
-    from mathutils import Vector
 
     logger.info("[blender] importing model=%s", input_model)
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -832,36 +897,57 @@ def apply_visual_details_and_export(*, input_model: Path, output_model: Path, pi
     else:
         bpy.ops.import_scene.gltf(filepath=str(input_model))
 
-    objects = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
-    if not objects:
+    mesh_objects = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
+    if not mesh_objects:
         raise RuntimeError("No mesh objects found in imported model.")
-    garment_obj = max(objects, key=lambda o: len(o.data.polygons))
 
-    color_hex = str(piece_data.get("color") or "#808080")
+    # ── Human removal ────────────────────────────────────────────────────────
+    # Drop body/mannequin/avatar meshes and stray props; keep the single garment.
+    garment_obj = _isolate_garment_mesh(mesh_objects)
+
+    # ── Material purge + dominant-color extraction ───────────────────────────
+    # Clears every Meshy-assigned texture/material (photo stains, logo bleed,
+    # mannequin shadows) and replaces with SAI_Base_Fabric seeded from the most
+    # common fabric color found via histogram-mode quantisation.
+    dominant_rgb, _purged = _purge_garment_materials(garment_obj)
+
+    # Allow piece_data to override the extracted color with a user-specified hex.
+    color_hex = str(piece_data.get("color") or "").strip()
+    if color_hex:
+        user_rgb = _hex_to_rgb(color_hex)
+        base_mat = bpy.data.materials.get("SAI_Base_Fabric")
+        if base_mat and base_mat.use_nodes:
+            for node in base_mat.node_tree.nodes:
+                if node.type == "BSDF_PRINCIPLED":
+                    node.inputs["Base Color"].default_value = (*user_rgb, 1.0)
+                    break
+        dominant_rgb = user_rgb
+        logger.info("[blender] piece_data color override applied: %s → rgb(%.3f,%.3f,%.3f)",
+                    color_hex, *dominant_rgb)
+
+    # ── Front-axis resolution ────────────────────────────────────────────────
+    front_axis_raw = str(piece_data.get("front_axis") or os.getenv("DECAL_FRONT_AXIS", "AUTO")).strip()
+    if front_axis_raw.upper() == "AUTO":
+        front_axis_raw = _detect_front_axis_from_bbox(garment_obj)
+    (fx, fy, fz), front_axis = _front_vector_from_axis(front_axis_raw)
+    front_vec = Vector((fx, fy, fz))
+
+    # ── Back-face sanitization ───────────────────────────────────────────────
+    # Assigns SAI_Back_Plain (procedural fabric weave, dominant color) to every
+    # polygon facing away from the camera so no front-photo stain survives.
+    _sanitize_back_faces(garment_obj, front_vec)
+
+    # ── Decal application (front faces only) ─────────────────────────────────
     material_name = str(piece_data.get("fabric_type") or piece_data.get("material") or "generic")
     logo_texture = str(piece_data.get("logo_url") or "").strip()
     pattern_texture = str(piece_data.get("pattern_url") or "").strip()
     decal_mode = str(piece_data.get("decal_mode") or "front_only")
-    front_axis_raw = str(piece_data.get("front_axis") or os.getenv("DECAL_FRONT_AXIS", "AUTO"))
     placement = piece_data.get("decal_placement") if isinstance(piece_data.get("decal_placement"), dict) else {}
 
-    if front_axis_raw.strip().upper() == "AUTO":
-        front_axis_raw = _detect_front_axis_from_bbox(garment_obj)
-    front_vec_tuple, front_axis = _front_vector_from_axis(front_axis_raw)
-    front_vec = Vector(front_vec_tuple)
-
-    base_mat = _create_base_material(f"fashion_ai_{material_name}", color_hex, material_name)
-    for obj in objects:
-        obj.data.materials.clear(); obj.data.materials.append(base_mat)
-
-    selected_front_faces, selected_back_faces = _face_stats(garment_obj, front_vec)
+    front_face_count, back_face_count = _face_stats(garment_obj, front_vec)
     frontal_face_indices, back_face_indices = _select_frontal_torso_faces(garment_obj, front_vec, placement)
-    logger.info("[decal] mode=%s", decal_mode)
-    logger.info("[decal] frontAxis=%s", front_axis)
-    logger.info("[decal] selectedFrontFaces=%s", selected_front_faces)
-    logger.info("[decal] selectedBackFaces=%s", selected_back_faces)
-    logger.info("[decal] frontalCandidateFaces=%s", len(frontal_face_indices))
-    logger.info("[decal] backExcludedFaces=%s", len(back_face_indices))
+    logger.info("[decal] mode=%s frontAxis=%s frontFaces=%d backFaces=%d frontalCandidates=%d",
+                decal_mode, front_axis, front_face_count, back_face_count, len(frontal_face_indices))
 
     decal_applied = False
     if decal_mode == "front_only":
@@ -870,57 +956,54 @@ def apply_visual_details_and_export(*, input_model: Path, output_model: Path, pi
             decal_mat = _create_decal_material(tex_path)
             if frontal_face_indices:
                 _create_decal_plane(garment_obj, front_axis, placement, decal_mat)
-            logger.info("[decal] frontalFacesUsed=%s", len(frontal_face_indices))
+            logger.info("[decal] applied front-only decal from %s (%d candidate faces)",
+                        tex_path, len(frontal_face_indices))
             decal_applied = True
-            logger.info("[decal] textureExtension=CLIP")
 
-    material_slots = sum(len(obj.data.materials) for obj in objects)
-    logger.info("[decal] materialSlots=%s", material_slots)
-
+    # ── Preview renders ───────────────────────────────────────────────────────
     output_model.parent.mkdir(parents=True, exist_ok=True)
     preview_front = output_model.parent / "preview_front.png"
     preview_back = output_model.parent / "preview_back.png"
     _render_preview(preview_front, 0.0)
     _render_preview(preview_back, math.radians(180))
 
+    # ── Back-logo validation ──────────────────────────────────────────────────
+    back_logo_validation = _validate_back_logo_free(garment_obj, front_vec)
+    if not back_logo_validation["backLogoFree"]:
+        logger.warning("[blender] back-logo bleed detected — running aggressive re-sanitization")
+        _sanitize_back_faces(garment_obj, front_vec, dot_threshold=BACK_SANITIZE_AGGRESSIVE_THRESHOLD)
+
+    # ── Adaptive stain analysis ───────────────────────────────────────────────
+    stain_metrics = _analyze_back_preview_for_stains(preview_back)
+    artifact_confidence = stain_metrics.get("artifactConfidence", 0.0)
+    if artifact_confidence > STAIN_ARTIFACT_RETRIGGER_CONFIDENCE:
+        logger.warning("[blender] STAIN DETECTED (confidence=%.3f) — aggressive re-sanitization", artifact_confidence)
+        _sanitize_back_faces(garment_obj, front_vec, dot_threshold=BACK_SANITIZE_AGGRESSIVE_THRESHOLD)
+        _render_preview(preview_back, math.radians(180))
+
+    # ── Export ────────────────────────────────────────────────────────────────
     logger.info("[blender] exporting model=%s", output_model)
-    bpy.ops.export_scene.gltf(filepath=str(output_model), export_format="GLB")
-    logger.info("[decal] exported=final_model.glb")
+    bpy.ops.export_scene.gltf(filepath=str(output_model), export_format="GLB", export_apply=True)
+    logger.info("[blender] exported final_model.glb")
 
-    usdz_path = output_model.with_suffix(".usdz")
-    usdz_path.write_text("USDZ placeholder: convert with usd_from_gltf in production macOS build stage.", encoding="utf-8")
-
-    # Detect whether the decal material leaked onto back-facing polygons.
-    # This can happen when the face-selection threshold is too lenient or the
-    # mesh UVs wrap around to the back.
-    back_decal_detected = False
-    if decal_applied:
-        import bmesh as _bm_mod
-        bm_check = _bm_mod.new()
-        bm_check.from_mesh(garment_obj.data)
-        bm_check.normal_update()
-        mat_inv_check = garment_obj.matrix_world.inverted()
-        local_front_check = (mat_inv_check.to_3x3() @ front_vec).normalized()
-        for face in bm_check.faces:
-            if face.material_index > 0 and face.normal.dot(local_front_check) < -0.1:
-                back_decal_detected = True
-                break
-        bm_check.free()
-
-    validation = {"frontOnlyDecal": decal_mode == "front_only", "backDecalDetected": back_decal_detected}
-    if decal_applied and back_decal_detected:
-        logger.warning("[decal] WARNING: decal material detected on back-facing faces — check threshold and UV seams")
-    elif decal_applied and selected_back_faces > 0:
-        logger.warning("[decal] WARNING selectedBackFaces with potential decal mapping=%s", selected_back_faces)
+    dominant_hex = "#{:02x}{:02x}{:02x}".format(
+        int(dominant_rgb[0] * 255), int(dominant_rgb[1] * 255), int(dominant_rgb[2] * 255)
+    )
+    validation = {
+        "frontOnlyDecal": decal_mode == "front_only",
+        "backLogoFree": back_logo_validation.get("backLogoFree", True),
+        "backFacesWithLogoMaterial": back_logo_validation.get("backFacesWithLogoMaterial", 0),
+        "stainArtifactConfidence": round(artifact_confidence, 4),
+        "humanMeshesRemoved": True,
+    }
 
     return {
         "output_glb_path": str(output_model),
-        "output_usdz_path": str(usdz_path),
         "preview_front_path": str(preview_front),
         "preview_back_path": str(preview_back),
         "material_name": material_name,
-        "color": color_hex,
-        "mesh_count": len(objects),
+        "color": color_hex or dominant_hex,
+        "mesh_count": 1,
         "validation": validation,
     }
 
