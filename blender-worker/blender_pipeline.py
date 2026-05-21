@@ -103,6 +103,17 @@ _HUMAN_NAME_TOKENS: frozenset[str] = frozenset({
 # A typical shirt bounding box has ratio 1.0–1.8; a standing person ≈ 4–6.
 _HUMAN_ASPECT_RATIO = 3.5
 
+# Lower aspect threshold used when the mesh ALSO has a skin-tone dominant colour.
+# Catches seated mannequins / half-body displays that don't reach the 3.5 cutoff.
+_HUMAN_ASPECT_SKIN_COMBO = 2.0
+
+# HSV range that spans all human skin tones (very light through dark brown).
+# Hue  ~3.6°–28.8° in [0,1] covers pinkish-peach to warm brown.
+# Saturation and value floors prevent misclassifying desaturated beige/tan fabric.
+_SKIN_HUE = (0.010, 0.080)
+_SKIN_SAT = (0.20, 0.78)
+_SKIN_VAL = (0.25, 0.97)
+
 # Meshes with fewer than this fraction of the largest mesh's polygon count are
 # considered insignificant objects (buttons, tags, props) and are removed.
 _MIN_POLY_FRACTION = 0.05
@@ -149,11 +160,13 @@ def _parse_args() -> argparse.Namespace:
 def _is_human_like(obj: "bpy.types.Object") -> bool:
     """Return True if the mesh looks like a human body rather than a garment.
 
-    Two independent signals are checked:
-    1. The object/mesh name contains a known body-part or body-type keyword.
-    2. The bounding-box height-to-width ratio exceeds the threshold for a
-       standing person (garments are roughly square; upright humans are tall
-       and narrow).
+    Three independent signals are checked:
+    1. Object/mesh name contains a known body-part or display-prop keyword.
+    2. Bounding-box height-to-width ratio ≥ 3.5 (standing person is tall and
+       narrow; garments are roughly square).
+    3. Combined signal: aspect ≥ 2.0 AND dominant material colour is in the
+       human skin-tone HSV range.  This catches seated/half-body mannequins
+       and figures that don't reach the stricter 3.5 threshold alone.
     """
     name_lower = (obj.name + " " + obj.data.name).lower()
     for token in _HUMAN_NAME_TOKENS:
@@ -170,6 +183,10 @@ def _is_human_like(obj: "bpy.types.Object") -> bool:
     aspect = height_z / width_xy
     if aspect >= _HUMAN_ASPECT_RATIO:
         print(f"[pipeline] human_aspect_match: '{obj.name}' aspect={aspect:.2f} >= {_HUMAN_ASPECT_RATIO}")
+        return True
+
+    if aspect >= _HUMAN_ASPECT_SKIN_COMBO and _dominant_color_is_skin_tone(obj):
+        print(f"[pipeline] human_skin+aspect_match: '{obj.name}' aspect={aspect:.2f} skin_tone=True")
         return True
 
     return False
@@ -207,7 +224,23 @@ def _isolate_garment_mesh(mesh_objects: "list[bpy.types.Object]") -> "bpy.types.
     # Stage 3 — pick the largest surviving mesh
     garment = max(significant, key=lambda o: len(o.data.polygons))
 
-    # Stage 4 — delete everything else
+    # Stage 4 — skin-tone sanity reselect.
+    # If the top candidate still has a skin-tone dominant colour AND there are
+    # non-skin-tone alternatives among the significant candidates, prefer the
+    # largest non-skin alternative.  This is a last-resort safety net for human
+    # meshes that survived Stages 1–3 because their name was generic and their
+    # aspect ratio didn't reach either threshold.
+    if len(significant) > 1 and _dominant_color_is_skin_tone(garment):
+        non_skin = [o for o in significant if not _dominant_color_is_skin_tone(o)]
+        if non_skin:
+            replacement = max(non_skin, key=lambda o: len(o.data.polygons))
+            print(
+                f"[pipeline] skin_reselect: '{garment.name}' has skin-tone material — "
+                f"switching to '{replacement.name}'"
+            )
+            garment = replacement
+
+    # Stage 5 — delete everything else
     to_delete = [o for o in mesh_objects if o is not garment]
     if to_delete:
         bpy.ops.object.select_all(action="DESELECT")
@@ -577,6 +610,33 @@ def _extract_dominant_color(mat: "bpy.types.Material") -> tuple[float, float, fl
             )
             return dominant
     return fallback
+
+
+def _dominant_color_is_skin_tone(obj: "bpy.types.Object") -> bool:
+    """Return True if the mesh's dominant material colour falls in the skin-tone HSV range.
+
+    Uses _extract_dominant_color to read the actual texture (chromatic-aware),
+    then checks if the resulting hue/saturation/value match typical human skin.
+    Conservative thresholds minimise false positives for tan or orange garments.
+    """
+    if not obj.data.materials:
+        return False
+    mat = obj.data.materials[0]
+    if mat is None:
+        return False
+    r, g, b = _extract_dominant_color(mat)
+    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+    result = (
+        _SKIN_HUE[0] <= h <= _SKIN_HUE[1]
+        and _SKIN_SAT[0] <= s <= _SKIN_SAT[1]
+        and _SKIN_VAL[0] <= v <= _SKIN_VAL[1]
+    )
+    if result:
+        print(
+            f"[pipeline] skin_tone_detected: '{obj.name}' "
+            f"hsv=({h:.3f},{s:.3f},{v:.3f}) rgb=({r:.3f},{g:.3f},{b:.3f})"
+        )
+    return result
 
 
 def _sanitize_back_faces(
