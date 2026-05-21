@@ -144,7 +144,14 @@ export class ClothingAnalysisService {
       front_view_score: front,
       background_clean_score: clean,
       catalog_readiness_score: score,
-      recommended_action: payload.recommended_action ?? defaultAction,
+      // When a human is present the model-supplied action is overridden: the image
+      // requires body removal before it can be approved or normalised, so the only
+      // valid outcomes are refine_with_diffusion (body removal + cleanup) or
+      // request_reupload (image too poor to salvage). approve_catalog_2d and
+      // normalize_only are never safe for person images.
+      recommended_action: containsHuman
+        ? (payload.recommended_action === 'request_reupload' ? 'request_reupload' : 'refine_with_diffusion')
+        : (payload.recommended_action ?? defaultAction),
     };
   }
 }

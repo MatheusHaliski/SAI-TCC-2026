@@ -748,7 +748,12 @@ def score_cleaned_image(cleaned_path: Path) -> dict[str, Any]:
         sk1 = ((hsv_garment[:, 0] <= 25) & (hsv_garment[:, 1] >= 30) & (hsv_garment[:, 2] >= 40))
         sk2 = ((hsv_garment[:, 0] >= 170) & (hsv_garment[:, 1] >= 30) & (hsv_garment[:, 2] >= 40))
         skin_ratio_garment = float(np.mean(sk1 | sk2))
-        face_conf_garment = _face_confidence(gray)
+        # Run face detection only on foreground pixels — non-garment pixels keep
+        # their original RGB (alpha=0 regions), so filling them with a neutral gray
+        # prevents transparent face areas from being detected as real contamination.
+        neutral_fill = np.uint8(np.mean(gray[garment]))
+        gray_fg_only = np.where(garment, gray, neutral_fill)
+        face_conf_garment = _face_confidence(gray_fg_only)
 
     # Composite person contamination: skin > 15 % or face detected → high confidence
     person_contamination = min(1.0, max(
