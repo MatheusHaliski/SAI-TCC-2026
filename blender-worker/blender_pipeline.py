@@ -28,6 +28,7 @@ Fixes applied vs previous version:
 from __future__ import annotations
 
 import argparse
+import colorsys
 import math
 import sys
 from pathlib import Path
@@ -470,18 +471,19 @@ def _select_front_faces(
 def _extract_dominant_color(mat: "bpy.types.Material") -> tuple[float, float, float]:
     """Extract the dominant fabric color from a material's base texture.
 
-    Uses histogram-mode quantisation instead of a simple mean so that small but
-    vivid regions — logos, stains, printed text — do not shift the result away
-    from the garment's actual fabric color.  The algorithm:
+    Two-phase chromaticity-aware histogram:
 
-    1. Samples a uniform grid from the central 60 % of the image (avoids edge
-       artifacts and seam stitching).
-    2. Quantises each pixel into a (_COLOR_HIST_BUCKETS)³ color-bin grid.
-    3. Returns the weighted centroid of the *most-populated* bin.
+    Phase 1 — chromatic pixels (HSV saturation > 0.08): covers colored fabrics
+    (blue, red, green, navy, etc.) and pastel tones.  Near-black shadows and
+    near-white background bleed are excluded.
 
-    The most-populated bin reliably corresponds to the background fabric shade
-    because fabric covers the majority of the garment surface whereas logos and
-    stains are confined to a much smaller area.
+    Phase 2 — achromatic pixels (saturation ≤ 0.08): used only when chromatic
+    pixels represent less than 15 % of the sample (white, off-white, gray or
+    black garments).
+
+    This prevents the white-background bleed from Meshy's cylindrical UV wrap
+    from dominating the histogram for colored garments, while still correctly
+    returning white/gray for genuinely monochrome pieces.
     """
     fallback = (0.70, 0.70, 0.70)
     if mat is None or not mat.use_nodes:
@@ -492,60 +494,88 @@ def _extract_dominant_color(mat: "bpy.types.Material") -> tuple[float, float, fl
         color_input = node.inputs.get("Base Color")
         if color_input is None:
             continue
-        if color_input.is_linked:
-            for link in color_input.links:
-                src = link.from_node
-                if src.type == "TEX_IMAGE" and src.image:
-                    img = src.image
-                    w, h = img.size
-                    if w < 1 or h < 1:
-                        break
-                    pixels = img.pixels[:]
-                    # Sample at most ~2 K pixels from the central 60 % crop.
-                    y0, y1 = int(h * 0.20), int(h * 0.80)
-                    x0, x1 = int(w * 0.20), int(w * 0.80)
-                    crop_pixels = (y1 - y0) * (x1 - x0)
-                    stride = max(1, crop_pixels // 2048)
-
-                    buckets: dict[tuple[int, int, int], list] = {}
-                    step = max(1, stride)
-                    for row in range(y0, y1, step):
-                        for col in range(x0, x1, step):
-                            base = (row * w + col) * 4
-                            if base + 3 >= len(pixels):
-                                continue
-                            a = pixels[base + 3]
-                            if a < 0.5:
-                                continue
-                            r = pixels[base]
-                            g = pixels[base + 1]
-                            b = pixels[base + 2]
-                            # Quantise to _COLOR_HIST_BUCKETS bins per channel.
-                            key = (
-                                min(_COLOR_HIST_BUCKETS - 1, int(r * _COLOR_HIST_BUCKETS)),
-                                min(_COLOR_HIST_BUCKETS - 1, int(g * _COLOR_HIST_BUCKETS)),
-                                min(_COLOR_HIST_BUCKETS - 1, int(b * _COLOR_HIST_BUCKETS)),
-                            )
-                            if key not in buckets:
-                                buckets[key] = [0, 0.0, 0.0, 0.0]
-                            buckets[key][0] += 1
-                            buckets[key][1] += r
-                            buckets[key][2] += g
-                            buckets[key][3] += b
-
-                    if not buckets:
-                        break
-                    best = max(buckets.values(), key=lambda v: v[0])
-                    n = best[0]
-                    dominant = (best[1] / n, best[2] / n, best[3] / n)
-                    print(
-                        f"[pipeline] dominant_color_histogram: bins={len(buckets)} "
-                        f"best_bin_count={n} rgb=({dominant[0]:.3f},{dominant[1]:.3f},{dominant[2]:.3f})"
-                    )
-                    return dominant
-        else:
+        if not color_input.is_linked:
             col = color_input.default_value
             return (float(col[0]), float(col[1]), float(col[2]))
+        for link in color_input.links:
+            src = link.from_node
+            if src.type != "TEX_IMAGE" or not src.image:
+                continue
+            img = src.image
+            w, h = img.size
+            if w < 1 or h < 1:
+                break
+            pixels = img.pixels[:]
+            if len(pixels) < 4:
+                break
+
+            # Sample at most ~2 K pixels from the central 60 % crop.
+            y0, y1 = int(h * 0.20), int(h * 0.80)
+            x0, x1 = int(w * 0.20), int(w * 0.80)
+            crop_pixels = (y1 - y0) * (x1 - x0)
+            stride = max(1, crop_pixels // 2048)
+
+            # Separate chromatic and achromatic pixels into independent histograms.
+            chromatic_buckets: dict[tuple[int, int, int], list] = {}
+            achromatic_buckets: dict[tuple[int, int, int], list] = {}
+
+            for row in range(y0, y1, stride):
+                for col in range(x0, x1, stride):
+                    base = (row * w + col) * 4
+                    if base + 3 >= len(pixels):
+                        continue
+                    a = pixels[base + 3]
+                    if a < 0.5:
+                        continue
+                    r = pixels[base]
+                    g = pixels[base + 1]
+                    b = pixels[base + 2]
+
+                    # Discard near-black shadows (not fabric color)
+                    if r * 0.299 + g * 0.587 + b * 0.114 < 0.03:
+                        continue
+
+                    _h, s, _v = colorsys.rgb_to_hsv(r, g, b)
+                    key = (
+                        min(_COLOR_HIST_BUCKETS - 1, int(r * _COLOR_HIST_BUCKETS)),
+                        min(_COLOR_HIST_BUCKETS - 1, int(g * _COLOR_HIST_BUCKETS)),
+                        min(_COLOR_HIST_BUCKETS - 1, int(b * _COLOR_HIST_BUCKETS)),
+                    )
+                    target = chromatic_buckets if s > 0.08 else achromatic_buckets
+                    if key not in target:
+                        target[key] = [0, 0.0, 0.0, 0.0]
+                    target[key][0] += 1
+                    target[key][1] += r
+                    target[key][2] += g
+                    target[key][3] += b
+
+            chromatic_total = sum(v[0] for v in chromatic_buckets.values()) if chromatic_buckets else 0
+            achromatic_total = sum(v[0] for v in achromatic_buckets.values()) if achromatic_buckets else 0
+            total = chromatic_total + achromatic_total
+            if total == 0:
+                break
+
+            # Use chromatic histogram if colored pixels make up >= 15 % of the
+            # sample; otherwise the garment is white/gray so use achromatic.
+            if chromatic_total >= total * 0.15:
+                use_buckets = chromatic_buckets
+                phase = "chromatic"
+            elif achromatic_buckets:
+                use_buckets = achromatic_buckets
+                phase = "achromatic"
+            else:
+                use_buckets = chromatic_buckets
+                phase = "chromatic_fallback"
+
+            best = max(use_buckets.values(), key=lambda v: v[0])
+            n = best[0]
+            dominant = (best[1] / n, best[2] / n, best[3] / n)
+            print(
+                f"[pipeline] dominant_color_histogram: phase={phase} bins={len(use_buckets)} "
+                f"chromatic={chromatic_total} achromatic={achromatic_total} "
+                f"best_bin={n} rgb=({dominant[0]:.3f},{dominant[1]:.3f},{dominant[2]:.3f})"
+            )
+            return dominant
     return fallback
 
 
