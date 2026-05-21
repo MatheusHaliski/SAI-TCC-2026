@@ -1,5 +1,30 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 import { googleFashionAI } from '@/app/lib/ai/googleFashionAI';
+import { BrandLogoReference } from '@/app/lib/ai/providers/types';
+
+const BRAND_LOGO_FILES: Array<{ name: string; file: string; mimeType: string }> = [
+  { name: 'Adidas', file: 'adidas.png', mimeType: 'image/png' },
+  { name: 'Nike', file: 'nike.png', mimeType: 'image/png' },
+  { name: 'Zara', file: 'zara.jpg', mimeType: 'image/jpeg' },
+  { name: 'Puma', file: 'puma.jpg', mimeType: 'image/jpeg' },
+  { name: 'Lacoste', file: 'lacoste.jpg', mimeType: 'image/jpeg' },
+  { name: "Levi's", file: 'levis.jpg', mimeType: 'image/jpeg' },
+  { name: 'C&A', file: 'cea.jpg', mimeType: 'image/jpeg' },
+];
+
+function loadBrandLogos(): BrandLogoReference[] {
+  return BRAND_LOGO_FILES.flatMap(({ name, file, mimeType }) => {
+    try {
+      const filePath = join(process.cwd(), 'public', file);
+      const data = readFileSync(filePath).toString('base64');
+      return [{ name, data, mimeType }];
+    } catch {
+      return [];
+    }
+  });
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,10 +37,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const brandLogos = loadBrandLogos();
+
     const result = await googleFashionAI.analyzeFashionImage({
       base64Image: body.base64Image,
       imageUrl: body.imageUrl,
       mimeType: body.mimeType,
+      brandLogos,
     });
 
     return NextResponse.json({ ok: true, data: result });
