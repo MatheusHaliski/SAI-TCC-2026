@@ -2760,7 +2760,7 @@ export default function OutfitBackgroundStudioModal({
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="flex max-h-[88vh] w-full max-w-7xl flex-col overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]"
+        className="flex max-h-[92vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]"
         style={{ backgroundColor: 'var(--user-surface-solid)' }}
         onClick={(event) => event.stopPropagation()}
       >
@@ -3325,7 +3325,7 @@ export default function OutfitBackgroundStudioModal({
 
             <section className="rounded-xl border border-white/20 bg-white/10 p-3">
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Recommended presets based on current outfit</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {recommendedPresets.map((preset) => {
                   const isAvailable = isPresetAvailable(preset.id, presetContext, uploadedReferenceImage);
                   const availabilityReason = getPresetAvailabilityReason(preset.id, presetContext, uploadedReferenceImage);
@@ -3382,11 +3382,15 @@ export default function OutfitBackgroundStudioModal({
                           <FancySelect
                             value={editorialLogoBgUrl}
                             label="Imagem de fundo"
-                            onChange={(value) => setEditorialLogoBgUrl(value)}
+                            onChange={(value) => {
+                              setEditorialLogoBgUrl(value);
+                              void buildEditorialLogoAsync(uploadedReferenceImage, presetContext, draft, value)
+                                .then((config) => setDraft((prev) => ({ ...prev, ...config })));
+                            }}
                             options={CURATED_IMAGE_PICKER_OPTIONS.map((opt) => ({
                               value: opt.imageUrl,
                               label: opt.label,
-                              hint: 'Usar como base para composição',
+                              hint: 'Aplicar sobreposição sobre esta imagem',
                             }))}
                           />
                         </div>
