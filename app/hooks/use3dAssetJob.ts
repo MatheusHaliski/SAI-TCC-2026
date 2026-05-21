@@ -49,11 +49,22 @@ function extractArtifactUrl(payload: unknown): string | null {
   return url.length > 0 ? url : null;
 }
 
+function isDnsErrorMessage(msg: string): boolean {
+  const lower = msg.toLowerCase();
+  return lower.includes('dns resolution failed') || lower.includes('cannot resolve external hostname');
+}
+
 function extractErrorMessage(payload: unknown): string | null {
   if (!payload || typeof payload !== 'object') return null;
   const source = payload as Record<string, unknown>;
   const error = source.error;
-  if (typeof error === 'string' && error.trim()) return error.trim();
+  if (typeof error === 'string' && error.trim()) {
+    const errTrim = error.trim();
+    if (isDnsErrorMessage(errTrim)) {
+      return '3D generation failed due to a temporary network issue. Please retry in a moment.';
+    }
+    return errTrim;
+  }
 
   if (error && typeof error === 'object') {
     const structured = error as Record<string, unknown>;
@@ -61,6 +72,9 @@ function extractErrorMessage(payload: unknown): string | null {
     const message = typeof structured.message === 'string' ? structured.message.trim() : '';
     if (code === 'invalid_input_low_quality') {
       return '3D generation failed: cleaned garment too dark/low contrast. Ready for 2D try-on.';
+    }
+    if (code === 'dns_resolution_failure' || isDnsErrorMessage(message)) {
+      return '3D generation failed due to a temporary network issue. Please retry in a moment.';
     }
     if (message) return message;
   }
