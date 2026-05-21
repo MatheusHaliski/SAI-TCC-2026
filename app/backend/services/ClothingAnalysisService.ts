@@ -48,7 +48,18 @@ export class ClothingAnalysisService {
             content: [
               {
                 type: 'input_text',
-                text: 'Classify clothing image quality and return JSON fields: contains_human,bounding_box,rotation_z_degrees,fully_visible,centered_score,front_view_score,background_clean_score,recommended_action.',
+                text: [
+                  'Analyze this clothing product image and return the JSON fields below.',
+                  '',
+                  'contains_human: true if ANY part of a human body (skin, hands, face, legs, hair, neck) is visible in the image — even partially. false only when the garment is shown on a hanger, flat lay, ghost mannequin, or fully transparent background with no human parts.',
+                  'bounding_box: normalized (0–1) x,y,width,height of the garment region.',
+                  'rotation_z_degrees: estimated tilt angle of the garment centerline from vertical (-180 to 180).',
+                  'fully_visible: true if the entire garment is visible with no cropping.',
+                  'centered_score: 0–1 how centered the garment is horizontally.',
+                  'front_view_score: 0–1 confidence this is a front-facing view.',
+                  'background_clean_score: 0–1 cleanliness of background (1 = solid white/transparent).',
+                  'recommended_action: approve_catalog_2d | refine_with_diffusion | normalize_only | request_reupload.',
+                ].join('\n'),
               },
               { type: 'input_image', image_url: imageUrl },
             ],
@@ -106,11 +117,26 @@ export class ClothingAnalysisService {
     const clean = Number(payload.background_clean_score ?? 0.5);
     const visibility = payload.fully_visible ? 1 : 0.35;
     const rotationPenalty = Math.max(0, Math.abs(Number(payload.rotation_z_degrees ?? 0)) / 45);
+    const containsHuman = Boolean(payload.contains_human);
 
-    const score = Math.max(0, Math.min(100, Math.round(((centered * 0.25 + front * 0.25 + clean * 0.25 + visibility * 0.25) - rotationPenalty * 0.2) * 100)));
+    // Human presence forces the body-removal pipeline before the image can be
+    // used as a clean catalog asset, so cap the raw score to reflect that the
+    // image needs additional processing regardless of other quality signals.
+    const rawScore = (centered * 0.25 + front * 0.25 + clean * 0.25 + visibility * 0.25) - rotationPenalty * 0.2;
+    const cappedScore = containsHuman ? Math.min(rawScore, 0.60) : rawScore;
+    const score = Math.max(0, Math.min(100, Math.round(cappedScore * 100)));
+
+    // When human is detected, body-removal pipeline is required before approval.
+    const defaultAction = containsHuman
+      ? 'refine_with_diffusion'
+      : score >= 78
+        ? 'approve_catalog_2d'
+        : score >= 55
+          ? 'normalize_only'
+          : 'request_reupload';
 
     return {
-      contains_human: Boolean(payload.contains_human),
+      contains_human: containsHuman,
       bounding_box: payload.bounding_box ?? { x: 0.1, y: 0.1, width: 0.8, height: 0.8 },
       rotation_z_degrees: Number(payload.rotation_z_degrees ?? 0),
       fully_visible: Boolean(payload.fully_visible),
@@ -118,7 +144,7 @@ export class ClothingAnalysisService {
       front_view_score: front,
       background_clean_score: clean,
       catalog_readiness_score: score,
-      recommended_action: payload.recommended_action ?? (score >= 78 ? 'approve_catalog_2d' : score >= 55 ? 'normalize_only' : 'request_reupload'),
+      recommended_action: payload.recommended_action ?? defaultAction,
     };
   }
 }

@@ -82,6 +82,80 @@ def _skin_ratio(rgb: np.ndarray) -> float:
     return float(np.count_nonzero(mask) / mask.size)
 
 
+def _compute_extended_skin_mask(rgb: np.ndarray) -> np.ndarray:
+    """Binary mask of skin-colored pixels across diverse skin tones."""
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    # Light/medium skin
+    mask1 = cv2.inRange(hsv, np.array([0, 30, 50], dtype=np.uint8), np.array([20, 200, 255], dtype=np.uint8))
+    # Wrap-around hue (pink/ruddy)
+    mask2 = cv2.inRange(hsv, np.array([170, 30, 50], dtype=np.uint8), np.array([180, 200, 255], dtype=np.uint8))
+    # Darker skin tones
+    mask3 = cv2.inRange(hsv, np.array([0, 20, 30], dtype=np.uint8), np.array([30, 180, 210], dtype=np.uint8))
+    combined = cv2.bitwise_or(mask1, cv2.bitwise_or(mask2, mask3))
+    kernel = np.ones((7, 7), np.uint8)
+    combined = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel)
+    combined = cv2.dilate(combined, kernel, iterations=2)
+    return combined
+
+
+def _compute_face_head_mask(gray: np.ndarray, shape: tuple) -> np.ndarray:
+    """Binary mask covering detected face+head with generous expansion for hair and neck."""
+    cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(24, 24))
+    mask = np.zeros(shape[:2], dtype=np.uint8)
+    for (fx, fy, fw, fh) in faces:
+        x1 = max(0, fx - int(fw * 0.55))
+        y1 = max(0, fy - int(fh * 0.95))  # expand up for hair
+        x2 = min(shape[1], fx + fw + int(fw * 0.55))
+        y2 = min(shape[0], fy + fh + int(fh * 0.45))  # expand down for chin/neck
+        mask[y1:y2, x1:x2] = 255
+    return mask
+
+
+def _remove_body_keep_clothing(src_np: np.ndarray, human_mask: np.ndarray) -> np.ndarray:
+    """Extract clothing pixels from a person image, preserving original RGB colors.
+
+    human_mask is a binary uint8 mask (255 = person, 0 = background).
+    Returns RGBA where RGB comes directly from src_np (no alpha blending) and
+    alpha is a binary clothing mask (human area minus skin and head regions).
+    """
+    rgb = src_np[:, :, :3]
+    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+
+    skin_mask = _compute_extended_skin_mask(rgb)
+    face_mask = _compute_face_head_mask(gray, rgb.shape)
+
+    clothing_mask = human_mask.copy()
+
+    # Remove skin with extra dilation to eliminate clothing-skin boundary artifacts
+    skin_dilated = cv2.dilate(skin_mask, np.ones((11, 11), np.uint8), iterations=2)
+    clothing_mask[skin_dilated > 0] = 0
+
+    # Remove entire head/hair/neck region
+    face_dilated = cv2.dilate(face_mask, np.ones((15, 15), np.uint8), iterations=3)
+    clothing_mask[face_dilated > 0] = 0
+
+    # Remove legs: if significant skin detected below mid-frame, erase that band too
+    h = rgb.shape[0]
+    lower_skin = skin_mask[h // 2:]
+    if np.count_nonzero(lower_skin) > lower_skin.size * 0.05:
+        lower_skin_dilated = skin_dilated[h // 2:]
+        clothing_mask[h // 2:][lower_skin_dilated > 0] = 0
+
+    # Morphological cleanup: fill holes inside garment, remove stray noise
+    kernel_close = np.ones((13, 13), np.uint8)
+    clothing_mask = cv2.morphologyEx(clothing_mask, cv2.MORPH_CLOSE, kernel_close)
+    kernel_open = np.ones((5, 5), np.uint8)
+    clothing_mask = cv2.morphologyEx(clothing_mask, cv2.MORPH_OPEN, kernel_open)
+
+    # Build RGBA using ORIGINAL pixel colors — never blend with white
+    result = np.zeros((src_np.shape[0], src_np.shape[1], 4), dtype=np.uint8)
+    result[:, :, :3] = rgb
+    result[:, :, 3] = clothing_mask
+    return result
+
+
 def _face_confidence(gray: np.ndarray) -> float:
     cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
     faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(24, 24))
@@ -503,10 +577,61 @@ def validate_input_image(image_path: Path) -> ImageValidationResult:
 
 def preprocess_garment(image_path: Path, cleaned_path: Path) -> dict[str, Any]:
     src = Image.open(image_path).convert("RGBA")
-    removed = remove(src)
-    rgba = np.array(removed)
-    alpha = rgba[:, :, 3]
+    src_np = np.array(src)
 
+    # Detect person presence early to choose the right segmentation strategy.
+    rgb = src_np[:, :, :3]
+    bgr_check = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    gray_check = cv2.cvtColor(bgr_check, cv2.COLOR_BGR2GRAY)
+    skin_ratio_val = _skin_ratio(rgb)
+    face_conf_val = _face_confidence(gray_check)
+    has_person = skin_ratio_val > 0.10 or face_conf_val > 0.25
+
+    logger.info(
+        "preprocess_garment: skin_ratio=%.3f face_conf=%.3f has_person=%s",
+        skin_ratio_val,
+        face_conf_val,
+        has_person,
+    )
+
+    rgba: np.ndarray
+    if has_person:
+        # Use human-specific segmentation to get the person silhouette, then
+        # subtract body parts (skin, face/head) so only the garment remains.
+        # RGB values are copied from the original image to preserve garment color.
+        try:
+            from rembg import new_session as _rembg_new_session
+            human_session = _rembg_new_session("u2net_human_seg")
+            human_removed = remove(src, session=human_session)
+        except Exception as exc:
+            logger.warning("preprocess_garment: u2net_human_seg unavailable (%s); using u2net", exc)
+            human_removed = remove(src)
+
+        human_alpha = np.array(human_removed)[:, :, 3]
+        human_mask = np.where(human_alpha > 30, np.uint8(255), np.uint8(0))
+
+        if np.count_nonzero(human_mask) >= human_mask.size * 0.05:
+            rgba = _remove_body_keep_clothing(src_np, human_mask)
+        else:
+            # Human mask too sparse — fall back to generic background removal.
+            logger.warning("preprocess_garment: human mask too sparse; falling back to generic rembg")
+            rgba = np.array(remove(src))
+
+        # Safety: if body removal left almost nothing, retry with generic rembg.
+        if np.count_nonzero(rgba[:, :, 3] > 30) < rgba.shape[0] * rgba.shape[1] * 0.05:
+            logger.warning("preprocess_garment: body removal left too little; retrying with generic rembg")
+            rgba = np.array(remove(src))
+    else:
+        # No person detected — standard background removal preserving original colors.
+        generic_removed = np.array(remove(src))
+        generic_alpha = generic_removed[:, :, 3]
+        generic_mask = np.where(generic_alpha > 30, np.uint8(255), np.uint8(0))
+        # Use original RGB to prevent rembg alpha-compositing from whitening the garment.
+        rgba = np.zeros_like(src_np)
+        rgba[:, :, :3] = src_np[:, :, :3]
+        rgba[:, :, 3] = generic_mask
+
+    alpha = rgba[:, :, 3]
     mask = (alpha > 30).astype(np.uint8)
     component_count, labels, stats = _connected_components(mask)
     if component_count == 0:
@@ -560,6 +685,7 @@ def preprocess_garment(image_path: Path, cleaned_path: Path) -> dict[str, Any]:
         "backgroundContamination": round(float(cont_ratio), 4),
         "cleanWidth": int(side),
         "cleanHeight": int(side),
+        "personDetected": bool(has_person),
     }
 
 
@@ -611,6 +737,25 @@ def score_cleaned_image(cleaned_path: Path) -> dict[str, Any]:
     ])
     edge_completeness = 0.0 if touching_edge else 1.0
 
+    # Estimate residual person/body contamination using skin-pixel ratio restricted
+    # to the garment foreground area. A fully cleaned garment should have near-zero
+    # skin pixels; a result that still contains hand or neck exposure will score high.
+    garment_rgb = rgb[garment]
+    skin_ratio_garment = 0.0
+    face_conf_garment = 0.0
+    if garment_rgb.size > 0:
+        hsv_garment = cv2.cvtColor(garment_rgb.reshape(-1, 1, 3), cv2.COLOR_RGB2HSV).reshape(-1, 3)
+        sk1 = ((hsv_garment[:, 0] <= 25) & (hsv_garment[:, 1] >= 30) & (hsv_garment[:, 2] >= 40))
+        sk2 = ((hsv_garment[:, 0] >= 170) & (hsv_garment[:, 1] >= 30) & (hsv_garment[:, 2] >= 40))
+        skin_ratio_garment = float(np.mean(sk1 | sk2))
+        face_conf_garment = _face_confidence(gray)
+
+    # Composite person contamination: skin > 15 % or face detected → high confidence
+    person_contamination = min(1.0, max(
+        0.0,
+        skin_ratio_garment * 4.0 + face_conf_garment * 0.5,
+    ))
+
     report = {
         "blur": round(float(blur), 4),
         "brightness": round(float(brightness), 4),
@@ -620,7 +765,8 @@ def score_cleaned_image(cleaned_path: Path) -> dict[str, Any]:
         "symmetry": round(float(symmetry), 4),
         "edgeCompleteness": round(float(edge_completeness), 4),
         "backgroundContamination": round(float(1.0 - occ), 4),
-        "personContaminationConfidence": 0.0,
+        "personContaminationConfidence": round(float(person_contamination), 4),
+        "skinRatioGarment": round(float(skin_ratio_garment), 4),
     }
 
     weighted = (
