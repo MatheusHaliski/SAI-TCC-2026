@@ -148,15 +148,22 @@ export async function reconcileJob(pieceId: string, jobId: string): Promise<Reco
       ? ((nestedError.details as Record<string, unknown> | undefined) ?? {})
       : ((jobData.details as Record<string, unknown> | undefined) ?? {});
 
-    const isDnsFailure = workerCode === 'dns_resolution_failure';
-    const isMeshyFailure = !isDnsFailure && workerCode.startsWith('meshy_');
+    // The Python worker stores the error code in details.code (not at top-level jobData.code)
+    // when the error field is a plain string. Fall back to that field before checking the message.
+    const detailsCode = errorDetails.code ? String(errorDetails.code) : '';
+    const resolvedCode = workerCode || detailsCode;
+
+    const isDnsFailure =
+      resolvedCode === 'dns_resolution_failure' ||
+      errorMsg.toLowerCase().includes('dns resolution failed');
+    const isMeshyFailure = !isDnsFailure && resolvedCode.startsWith('meshy_');
     const failedStage = errorStage || (isDnsFailure ? 'network_dns' : isMeshyFailure ? 'meshy_generate' : 'runpod_worker_failure');
 
     await repo.updatePipelineStatus(pieceId, 'failed', errorMsg, {
       stage: 'failed',
       failedStage,
       provider: 'runpod',
-      errorCode: isDnsFailure ? 'DNS_RESOLUTION_FAILED' : workerCode.toUpperCase() || 'WORKER_FAILED',
+      errorCode: isDnsFailure ? 'DNS_RESOLUTION_FAILED' : resolvedCode.toUpperCase() || 'WORKER_FAILED',
       ...(isDnsFailure ? { kind: 'dns_resolution_failure' } : {}),
       retryable: true,
       diagnostics: { ...errorDetails, workerStage: errorStage || undefined },

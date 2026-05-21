@@ -315,9 +315,9 @@ class MeshyPipeline:
                 # the task submission.
                 raise MeshyPipelineError(
                     "dns_resolution_failure",
-                    f"DNS resolution failed while probing input image URL. "
+                    "DNS resolution failed while probing input image URL. "
                     "The container cannot resolve external hostnames. "
-                    "Restart the container to trigger DNS self-healing.",
+                    "This is a transient infrastructure issue — the job will be retried automatically.",
                     {
                         "imageUrl": _redact_url_token(image_url),
                         "kind": "dns_resolution_failure",
