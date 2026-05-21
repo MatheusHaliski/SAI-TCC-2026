@@ -94,6 +94,8 @@ _HUMAN_NAME_TOKENS: frozenset[str] = frozenset({
     "body", "human", "person", "mannequin", "avatar", "figure",
     "skin", "flesh", "character", "armature", "skeleton", "torso_body",
     "head", "hand", "foot", "leg", "arm",
+    # clothes-display props — remove hangers, hooks, and display stands
+    "hanger", "hook", "rack", "clip", "peg", "stand", "pole",
 })
 
 # Height-to-width aspect ratio above which a mesh is considered human-shaped.
