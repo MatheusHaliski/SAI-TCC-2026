@@ -8,7 +8,6 @@ import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
-import DescriptionModeSelector from '@/app/components/create-scheme/DescriptionModeSelector';
 import GenerationModePanel from '@/app/components/create-scheme/GenerationModePanel';
 import SaveSummaryPanel from '@/app/components/create-scheme/SaveSummaryPanel';
 import SchemeStepCard from '@/app/components/create-scheme/SchemeStepCard';
@@ -42,7 +41,6 @@ type SchemePieceSnapshot = {
 };
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
-type DescriptionMode = 'ai' | 'manual' | 'none';
 type GenerationMode = 'manual' | 'ai';
 
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
@@ -138,8 +136,6 @@ export default function CreateMySchemeView() {
   const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [outfitBackgroundConfig, setOutfitBackgroundConfig] = useState<OutfitBackgroundConfig>(DEFAULT_BACKGROUND_CONFIG);
   const [backgroundStudioOpen, setBackgroundStudioOpen] = useState(false);
-  const [descriptionMode, setDescriptionMode] = useState<DescriptionMode>('ai');
-  const [manualDescription, setManualDescription] = useState('');
   const [descriptionOverride, setDescriptionOverride] = useState('');
   const [titleFontFamily, setTitleFontFamily] = useState('Inter, Segoe UI, sans-serif');
   const [palette, setPalette] = useState('Neutral');
@@ -165,7 +161,6 @@ export default function CreateMySchemeView() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState('');
   const [generatedCardData, setGeneratedCardData] = useState<OutfitCardData | null>(null);
-  const [isGeneratingPremiumDesc, setIsGeneratingPremiumDesc] = useState(false);
 
   const inputClassName =
     'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
@@ -325,21 +320,17 @@ export default function CreateMySchemeView() {
     const description =
       descriptionOverride.trim()
         ? descriptionOverride.trim()
-        : descriptionMode === 'manual'
-          ? manualDescription.trim() || undefined
-          : descriptionMode === 'none'
-            ? ''
-            : buildOutfitDescriptionRich({
-                outfitName: title.trim() || 'My New Scheme',
-                style,
-                occasion,
-                visibility,
-                brand: selectedBrand?.name || 'Selection',
-                palette,
-                mood,
-                pieces,
-      titleFontFamily,
-              });
+        : buildOutfitDescriptionRich({
+            outfitName: title.trim() || 'My New Scheme',
+            style,
+            occasion,
+            visibility,
+            brand: selectedBrand?.name || 'Selection',
+            palette,
+            mood,
+            pieces,
+            titleFontFamily,
+          });
 
     return {
       outfitName: title.trim() || 'My New Scheme',
@@ -417,8 +408,6 @@ export default function CreateMySchemeView() {
           title: title.trim() || 'My New Scheme',
           description: JSON.stringify({
             outfitBackground: selectedBackground,
-            descriptionMode,
-            descriptionText: descriptionMode === 'manual' ? manualDescription.trim() : null,
             mood,
             palette,
             titleFontFamily,
@@ -546,59 +535,6 @@ export default function CreateMySchemeView() {
       return false;
     } finally {
       setAiInterpreting(false);
-    }
-  };
-
-  const generatePremiumDescription = async () => {
-    setIsGeneratingPremiumDesc(true);
-    try {
-      const piecesData = (Object.keys(slots) as SlotKey[]).map((slot) => {
-        const selectedValue = slots[slot];
-        if (!selectedValue) return null;
-        const item = items.find((i) => i.wardrobe_item_id === selectedValue);
-        const suggested = DEFAULT_SLOT_SUGGESTIONS[slot].find((s) => s.value === selectedValue);
-        return {
-          name: item?.name || suggested?.label || `${slot} piece`,
-          brand: resolveBrandForSlot(slot)?.name || 'Unknown',
-        };
-      }).filter(Boolean);
-
-      if (piecesData.length === 0) {
-        setAlertMessage('Please select at least one piece to generate a description.');
-        return;
-      }
-
-      const response = await fetch('/api/ai/fashion/generate-card-description', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pieces: piecesData,
-          overallColors: [palette].filter(Boolean),
-          dominantStyle: style,
-          season: 'all-season',
-          userIntent: aiPrompt,
-          occasion: occasion,
-        }),
-      });
-
-      const payload = await response.json();
-      if (!response.ok || !payload.ok) {
-        setAlertMessage(payload.message || 'Error generating description');
-        return;
-      }
-
-      const data = payload.data;
-      if (data.editorialTitle) setTitle(data.editorialTitle);
-      if (data.dominantStyle) setStyle(data.dominantStyle);
-      if (data.longDescription) {
-        setManualDescription(data.longDescription);
-        setDescriptionMode('manual');
-      }
-      setAlertMessage('Premium editorial description generated successfully!');
-    } catch (error: any) {
-      setAlertMessage(error.message || 'Error generating description');
-    } finally {
-      setIsGeneratingPremiumDesc(false);
     }
   };
 
@@ -756,26 +692,6 @@ export default function CreateMySchemeView() {
                 : 'Upload a photo of the person wearing the outfit.'}
           </span>
         </label>
-
-        <DescriptionModeSelector value={descriptionMode} onChange={setDescriptionMode} />
-
-        <button
-          type="button"
-          onClick={generatePremiumDescription}
-          disabled={isGeneratingPremiumDesc || filledSlotsCount === 0}
-          className={`${primaryButtonClassName} md:col-span-2 flex justify-center items-center gap-2`}
-        >
-          <span>✨</span> {isGeneratingPremiumDesc ? 'Generating Premium Editorial Copy...' : 'Generate Premium Editorial Copy with Google AI'}
-        </button>
-
-        {descriptionMode === 'manual' ? (
-          <textarea
-            value={manualDescription}
-            onChange={(e) => setManualDescription(e.target.value)}
-            placeholder="Write the description for this outfit card..."
-            className={`${inputClassName} min-h-24 md:col-span-2`}
-          />
-        ) : null}
 
         {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
           <div key={slot} className={`${slotCardClassName} relative overflow-visible`}>
@@ -969,7 +885,6 @@ export default function CreateMySchemeView() {
       <div className="mt-4 space-y-4">
         <SaveSummaryPanel
           mode={generationMode}
-          descriptionMode={descriptionMode}
           filledSlots={filledSlotsCount}
           totalSlots={4}
         />
