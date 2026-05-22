@@ -119,6 +119,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const pending3dPieceNameRef = useRef<string>('');
+  const brandsRef = useRef<Brand[]>([]);
 
   const normalizeToken = (value: string) => value.trim().toLowerCase();
   const isGenericToken = (value: string) => {
@@ -236,6 +237,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       ];
 
       setBrands(mergedBrands);
+      brandsRef.current = mergedBrands;
       setMarkets(Array.isArray(marketsData) ? marketsData : []);
       setForm((prev) => ({
         ...prev,
@@ -649,8 +651,8 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         return '';
       })();
 
-      // brand
-      const resolvedBrandId = resolveBrandIdFromAI(data.brand, brands, [
+      // brand — use ref to guarantee latest brands list regardless of render timing
+      const resolvedBrandId = resolveBrandIdFromAI(data.brand, brandsRef.current, [
         data.pieceName || '',
         data.shortDescription || '',
         ...(Array.isArray(data.semanticTags) ? data.semanticTags : []),
@@ -662,6 +664,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       // name: reject generic AI fallback names
       const resolvedName = !isGenericToken(data.pieceName) ? data.pieceName : '';
 
+      const brandWasDetected = resolvedBrandId !== DEFAULT_BRAND_ID;
       setForm((prev) => ({
         ...prev,
         name: resolvedName || prev.name || '',
@@ -671,10 +674,15 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         occasion_tags: resolvedOccasion || prev.occasion_tags || '',
         gender: mappedGender,
         piece_type: mappedPieceType,
-        brand_id: resolvedBrandId !== DEFAULT_BRAND_ID ? resolvedBrandId : prev.brand_id,
+        brand_id: brandWasDetected ? resolvedBrandId : prev.brand_id,
         market_id: resolvedMarketId || prev.market_id,
       }));
-      setAlertMessage('Análise concluída! Campos preenchidos automaticamente.');
+
+      const detectedBrandLabel = brandWasDetected
+        ? (brandsRef.current.find((b) => b.brand_id === resolvedBrandId)?.name ?? resolvedBrandId)
+        : (data.brand && !isGenericToken(data.brand) ? `"${data.brand}" (não cadastrada)` : null);
+      const brandNote = detectedBrandLabel ? ` Marca: ${detectedBrandLabel}.` : ' Marca não identificada.';
+      setAlertMessage(`Análise concluída! Campos preenchidos automaticamente.${brandNote}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error during AI analysis.';
       setAlertMessage(message);

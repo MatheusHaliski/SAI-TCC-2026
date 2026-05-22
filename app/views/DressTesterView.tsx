@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import Tester2DMannequinSelector from '@/app/components/tester2d/Tester2DMannequinSelector';
@@ -41,6 +42,8 @@ export default function DressTesterView() {
   const [stageError, setStageError] = useState<string | null>(null);
   const [outfitCache, setOutfitCache] = useState<Record<string, string>>({});
 
+  const searchParams = useSearchParams();
+
   const mannequin = useMemo(() => mannequins.find((m) => m.id === selectedMannequin) ?? mannequins[0], [mannequins, selectedMannequin]);
 
   const mannequinImageAbsoluteUrl = useMemo(() => {
@@ -68,6 +71,15 @@ export default function DressTesterView() {
   }, []);
 
   useEffect(() => { void refreshData(); }, [refreshData]);
+
+  useEffect(() => {
+    const pieceId = searchParams.get('pieceId');
+    if (!pieceId || !pieces.length) return;
+    const piece = pieces.find((p) => p.pieceId === pieceId);
+    if (!piece) return;
+    setOutfit((prev) => ({ ...prev, [piece.slotType]: piece }));
+    setActiveSlot(piece.slotType as OutfitSlot);
+  }, [pieces, searchParams]);
 
   useEffect(() => {
     setStageError(null);

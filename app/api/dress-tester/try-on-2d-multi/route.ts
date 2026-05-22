@@ -42,6 +42,9 @@ async function removeBgAndUpload(
     body: removeBgForm,
   });
   if (!removeBgRes.ok) {
+    if (removeBgRes.status === 401) {
+      throw new Error('Chave de API remove.bg inválida ou ausente (REMOVE_BG_API_KEY). Verifique as variáveis de ambiente.');
+    }
     const errText = await removeBgRes.text().catch(() => '');
     throw new Error(`Background removal failed for ${item.garmentId} (${removeBgRes.status}): ${errText}`);
   }
@@ -70,6 +73,9 @@ async function runFashnTryOn(modelImageUrl: string, garmentImageUrl: string, cat
   const fashnRunPayload = JSON.parse(fashnRunRaw) as { id?: string; predictionId?: string; error?: string; message?: string };
   const predictionId = fashnRunPayload.predictionId ?? fashnRunPayload.id;
   if (!fashnRunRes.ok || !predictionId) {
+    if (fashnRunRes.status === 401) {
+      throw new Error('Chave de API Fashn.ai inválida ou ausente (FASHN_API_KEY). Verifique as variáveis de ambiente.');
+    }
     const detail = fashnRunPayload.error ?? fashnRunPayload.message ?? fashnRunRaw;
     throw new Error(`Fashn.ai request failed (${fashnRunRes.status}): ${detail}`);
   }

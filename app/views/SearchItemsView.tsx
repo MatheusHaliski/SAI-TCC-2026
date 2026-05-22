@@ -68,6 +68,10 @@ export default function SearchItemsView() {
   const [outfitAvailability, setOutfitAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const authUserId = useMemo(() => getAuthSessionProfile().user_id?.trim() || '', []);
 
+  const handleOpenPieceInDressTester = (wardrobeItemId: string) => {
+    router.push(`/dress-tester?pieceId=${wardrobeItemId}`);
+  };
+
   useEffect(() => {
     fetch('/api/schemes/public')
       .then((res) => res.json())
@@ -89,6 +93,7 @@ export default function SearchItemsView() {
     schemes.forEach((scheme) => {
       const pieces = (scheme.pieces ?? []).map((piece) => ({
         id: piece.id,
+        wardrobeItemId: piece.sourceType === 'wardrobe' ? piece.sourceId : undefined,
         name: piece.name || 'Selected piece',
         brand: piece.brand || 'Selection Brand',
         pieceType: piece.pieceType || SLOT_PREVIEW_DEFAULTS[piece.slot].pieceType,
@@ -228,7 +233,7 @@ export default function SearchItemsView() {
 
             return (
               <div key={scheme.scheme_id} className="space-y-2">
-                <SearchOutfitCard data={cardData} onOpenDetail={() => setSelectedOutfit(cardData)} />
+                <SearchOutfitCard data={cardData} onOpenDetail={() => setSelectedOutfit(cardData)} onOpenPieceInDressTester={handleOpenPieceInDressTester} />
                 <div className="flex flex-wrap gap-1.5 px-1">
                   <button
                     type="button"

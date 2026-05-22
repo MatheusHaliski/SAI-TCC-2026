@@ -7,9 +7,10 @@ import { FILTER_GLOW_LINE, GLOW_LINE, TEXT_GLOW } from '@/app/lib/uiToken';
 interface OutfitPieceCardProps {
   piece: OutfitPiece;
   compact?: boolean;
+  onOpenInDressTester?: () => void;
 }
 
-export default function OutfitPieceCard({ piece, compact = false }: OutfitPieceCardProps) {
+export default function OutfitPieceCard({ piece, compact = false, onOpenInDressTester }: OutfitPieceCardProps) {
   const pieceName = piece.name?.trim() || 'Unnamed Piece';
   const brandName = piece.brand?.trim() || 'Brand not specified';
   const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
@@ -39,6 +40,16 @@ export default function OutfitPieceCard({ piece, compact = false }: OutfitPieceC
         </div>
 
         {!compact ? <WearstyleChips wearstyles={piece.wearstyles} pieceType={piece.pieceType} /> : null}
+
+        {onOpenInDressTester ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onOpenInDressTester(); }}
+            className="mt-2 w-full rounded-lg border border-cyan-300/50 bg-cyan-500/15 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/30 hover:border-cyan-200/70"
+          >
+            Abrir no Provador
+          </button>
+        ) : null}
       </div>
     </article>
   );
