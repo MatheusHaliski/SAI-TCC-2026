@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { AppRoute } from '@/app/lib/stylist-shell';
 import ProfileView from '@/app/views/ProfileView';
 import CreateMySchemeView from '@/app/views/CreateMySchemeView';
@@ -17,6 +18,6 @@ export default function ContentRouter({ route }: ContentRouterProps) {
   if (route === 'explore-scheme') return <ExploreSchemeView />;
   if (route === 'profile' || route === 'profile-settings') return <ProfileView />;
   if (route === 'search-pieces') return <SearchPiecesView />;
-  if (route === 'dress-tester') return <DressTesterView />;
+  if (route === 'dress-tester') return <Suspense><DressTesterView /></Suspense>;
   return <MyWardrobeView />;
 }

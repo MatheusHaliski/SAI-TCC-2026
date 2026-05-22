@@ -2,6 +2,7 @@ export type PieceCategory = 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
 
 export type OutfitPiece = {
   id: string;
+  wardrobeItemId?: string;
   name: string;
   brand: string;
   brandLogoUrl?: string;

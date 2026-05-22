@@ -23,9 +23,10 @@ interface GeneratedOutfitCardProps {
     onClick?: () => void;
     tone?: 'default' | 'danger' | 'accent';
   }>;
+  onOpenInDressTester?: (wardrobeItemId: string) => void;
 }
 
-export default function OutfitCard({ data, variant = 'default', actions = [] }: GeneratedOutfitCardProps) {
+export default function OutfitCard({ data, variant = 'default', actions = [], onOpenInDressTester }: GeneratedOutfitCardProps) {
   const description =
     data.outfitDescription === undefined
       ? buildOutfitDescriptionFallback({
@@ -174,7 +175,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [] }: 
           titleFontFamily={data.titleFontFamily}
           creatorName={data.creatorName}
         />
-        <OutfitPieceList pieces={data.pieces} compact={variant === 'compact'} />
+        <OutfitPieceList pieces={data.pieces} compact={variant === 'compact'} onOpenInDressTester={onOpenInDressTester} />
         {actions.length ? <CompactCardActionBar actions={actions} /> : null}
       </div>
     </section>
