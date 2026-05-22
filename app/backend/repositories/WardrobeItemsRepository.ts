@@ -454,6 +454,36 @@ export class WardrobeItemsRepository extends BaseRepository {
       },
     };
   }
+  async findRichForAutopilot(userId: string): Promise<import('@/app/backend/types/entities').AutopilotWardrobeItem[]> {
+    const snapshot = await this.db
+      .collection(WARDROBE_ITEMS_COLLECTION)
+      .where('userId', '==', userId)
+      .where('status', '==', 'active')
+      .get();
+
+    const legacySnapshot = await this.db
+      .collection(WARDROBE_ITEMS_COLLECTION)
+      .where('user_id', '==', userId)
+      .get();
+
+    const merged = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+    for (const doc of snapshot.docs) merged.set(doc.id, doc);
+    for (const doc of legacySnapshot.docs) merged.set(doc.id, doc);
+
+    return Array.from(merged.values()).map((doc) => {
+      const item = doc.data() as Record<string, unknown>;
+      return {
+        wardrobe_item_id: doc.id,
+        piece_type: String(item.piece_type ?? ''),
+        occasion_tags: Array.isArray(item.occasion_tags) ? item.occasion_tags.map(String) : [],
+        style_tags: Array.isArray(item.style_tags) ? item.style_tags.map(String) : [],
+        image_url: String(item.image_url ?? ''),
+        name: String(item.name ?? ''),
+        color: String(item.color ?? ''),
+      };
+    });
+  }
+
   async existsById(wardrobeItemId: string): Promise<boolean> {
     const snap = await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).get();
     return snap.exists;
