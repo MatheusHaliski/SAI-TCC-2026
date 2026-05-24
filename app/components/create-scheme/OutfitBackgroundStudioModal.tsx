@@ -3463,6 +3463,7 @@ export default function OutfitBackgroundStudioModal({
               <p className="text-[10px] text-white/45">Imagem usada no painel esquerdo da composição</p>
             </div>
           )}
+          {selectedRecommendedPreset !== 'selection_editorial_collage' && (
           <FancySelect
             value={(() => {
               const gradientLabel = SEGMENTED_GRADIENT_OPTIONS.find((preset) => JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient))?.label;
@@ -3519,6 +3520,7 @@ export default function OutfitBackgroundStudioModal({
               ...CURATED_IMAGE_PICKER_OPTIONS,
             ]}
           />
+          )}
         </div>
 
         <footer className="mt-2 flex flex-wrap justify-end gap-2 border-t border-white/15 pt-4">
