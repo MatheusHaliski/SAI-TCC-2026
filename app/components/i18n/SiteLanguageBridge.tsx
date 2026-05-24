@@ -159,6 +159,19 @@ const PT_TRANSLATIONS: Record<string, string> = {
   Style: 'Estilo',
   pieces: 'peças',
 
+  // Create Outfit Card page
+  'Create my Outfit Card': 'Criar meu Card de Look',
+  'Premium manual and AI generation paths for outfit cards.': 'Caminhos premium de geração manual e por IA para cards de look.',
+  Progress: 'Progresso',
+  'Scheme Basics': 'Básicos do Esquema',
+  'Build Outfit': 'Montar Look',
+  'AI Assist': 'Assistente IA',
+  'Slots Review': 'Revisão de Slots',
+  'Card Background': 'Fundo do Card',
+  'Save & Generate': 'Salvar e Gerar',
+  'Manual Builder': 'Construtor Manual',
+  'AI Builder': 'Construtor IA',
+
   // Filter pills (new)
   Disponíveis: 'Disponíveis',
   Indisponíveis: 'Indisponíveis',
@@ -445,11 +458,14 @@ export default function SiteLanguageBridge() {
     const onStorage = (event: StorageEvent) => {
       if (event.key === SITE_LANGUAGE_STORAGE_KEY) applyLanguage();
     };
+    const onLanguageChange = () => applyLanguage();
 
     window.addEventListener('storage', onStorage);
+    window.addEventListener('sai-language-change', onLanguageChange);
     return () => {
       observer.disconnect();
       window.removeEventListener('storage', onStorage);
+      window.removeEventListener('sai-language-change', onLanguageChange);
     };
   }, []);
 
