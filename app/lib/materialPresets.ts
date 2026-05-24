@@ -24,6 +24,7 @@ export type MaterialPresetDefinition = {
   label: string;
   tier: 'standard' | 'premium';
   description: string;
+  previewImage?: string;
   buildConfig: (baseColor: string) => FabricMaterialConfig;
 };
 
@@ -76,6 +77,7 @@ export const MATERIAL_PRESETS: MaterialPresetDefinition[] = [
     label: 'Embroidered Fabric / Textile Material',
     tier: 'premium',
     description: 'Premium woven textile with stitched details and soft embossed depth.',
+    previewImage: '/embroidered_fabric.png',
     buildConfig: (baseColor) => buildFabricPresetConfig(baseColor, { type: 'embroidered_fabric', finish: 'matte' }),
   },
   {
@@ -97,6 +99,7 @@ export const MATERIAL_PRESETS: MaterialPresetDefinition[] = [
     label: 'Glass Material',
     tier: 'premium',
     description: 'Translucent textile sheen with satin-like highlights.',
+    previewImage: '/glass_mosaic.png',
     buildConfig: (baseColor) => buildFabricPresetConfig(baseColor, {
       type: 'glass_material',
       density: 86,

@@ -3243,6 +3243,7 @@ export default function OutfitBackgroundStudioModal({
                     value: preset.id,
                     label: preset.tier === 'premium' ? `${preset.label} · Premium` : preset.label,
                     hint: preset.description,
+                    ...(preset.previewImage ? { icon: { type: 'image' as const, value: preset.previewImage, alt: preset.label } } : {}),
                   }))}
                 />
                 <FancySelect
