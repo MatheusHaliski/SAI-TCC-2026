@@ -75,6 +75,21 @@ const GENDER_OPTIONS = [
   { value: 'feminino', label: 'Feminino' },
 ];
 
+const SEASON_LABEL_PT: Record<string, string> = {
+  summer: 'Verão',
+  winter: 'Inverno',
+  spring: 'Primavera',
+  autumn: 'Outono',
+  'all-season': 'Todas as Estações',
+};
+const GENDER_LABEL_PT: Record<string, string> = {
+  male: 'Masculino',
+  female: 'Feminino',
+  unisex: 'Unissex',
+  masculino: 'Masculino',
+  feminino: 'Feminino',
+};
+
 interface TryOnPrewarmContext {
   pieceId: string;
   garmentImageUrl: string;
@@ -285,10 +300,11 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const marketLabel = useMemo(
     () =>
       new Map(
-        markets.map((market) => [
-          market.market_id,
-          `${market.season} • ${market.gender}`,
-        ]),
+        markets.map((market) => {
+          const season = SEASON_LABEL_PT[market.season?.toLowerCase()] ?? market.season;
+          const gender = GENDER_LABEL_PT[market.gender?.toLowerCase()] ?? market.gender;
+          return [market.market_id, `${season} • ${gender}`];
+        }),
       ),
     [markets],
   );
