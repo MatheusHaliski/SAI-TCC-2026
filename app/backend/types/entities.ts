@@ -346,6 +346,93 @@ export interface OutfitSelection2D {
   updatedAt: string;
 }
 
+// ─── Autopilot types ──────────────────────────────────────────────────────────
+
+export type Occasion = 'trabalho' | 'casual' | 'balada' | 'academia' | 'evento';
+export type Mood = 'disposto' | 'cansado' | 'confiante' | 'criativo';
+export type DailyLookFeedback = 'loved' | 'used' | 'skipped';
+
+export interface DailyLook {
+  daily_look_id: EntityId;
+  user_id: string;
+  date: string;
+  scheme_id: string;
+  occasion: Occasion;
+  mood: Mood;
+  weather_c: number;
+  city: string;
+  feedback: DailyLookFeedback | null;
+  feedback_at: string | null;
+  created_at: string;
+}
+
+export interface OutfitPreferences {
+  user_id: string;
+  style_scores: Record<string, number>;
+  occasion_scores: Record<string, number>;
+  piece_weights: Record<string, number>;
+  color_affinities: string[];
+  updated_at: string;
+}
+
+export interface WeekPlanDay {
+  date: string;
+  occasion: Occasion;
+  scheme_id: string | null;
+  gap_hints: string[];
+}
+
+export interface WeekPlan {
+  week_plan_id: EntityId;
+  user_id: string;
+  week_start: string;
+  days: WeekPlanDay[];
+  created_at: string;
+}
+
+export interface WeatherInfo {
+  temp_c: number;
+  condition: string;
+  city: string;
+}
+
+export interface AutopilotWardrobeItem {
+  wardrobe_item_id: string;
+  piece_type: string;
+  occasion_tags: string[];
+  style_tags: string[];
+  image_url: string;
+  name: string;
+  color: string;
+}
+
+export interface SchemeSuggestion {
+  scheme_id: string;
+  title: string;
+  items: AutopilotWardrobeItem[];
+  weather_fit_note: string;
+  score: number;
+}
+
+export interface GenerateDailyRequest {
+  occasion: Occasion;
+  mood: Mood;
+  city: string;
+  exclude_scheme_ids?: string[];
+}
+
+export interface GenerateDailyResponse {
+  suggestions: SchemeSuggestion[];
+  weather: WeatherInfo;
+}
+
+export interface GenerateWeekRequest {
+  week_start: string;
+  days: Array<{ date: string; occasion: Occasion }>;
+}
+
+// ─── End Autopilot types ──────────────────────────────────────────────────────
+
 export type UserPostStatus = 'draft' | 'ready' | 'exported' | 'published' | 'failed';
 export type OutfitExportStatus = 'queued' | 'ready' | 'downloaded' | 'published' | 'failed';
 export type SocialPlatform = 'instagram' | 'facebook' | 'x' | 'internal';

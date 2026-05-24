@@ -9,6 +9,9 @@ export const COLLECTIONS = {
   USER_SAVED_SCHEMES: 'saiUserSavedSchemes',
   WARDROBE_ITEMS: 'saiWardrobeItems',
   OUTFIT_SELECTIONS: 'outfitSelections',
+  DAILY_LOOKS: 'saiDailyLooks',
+  OUTFIT_PREFERENCES: 'saiOutfitPreferences',
+  WEEK_PLANS: 'saiWeekPlans',
 } as const;
 
 export const LEGACY_COLLECTIONS = [
