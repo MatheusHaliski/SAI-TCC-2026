@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StylistAI — Outfit Background Studio Internals</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      padding: 28px 20px;
+      min-width: 1200px;
+    }
+    h1 { text-align:center; font-size:1.45rem; font-weight:700; color:#f8fafc; margin-bottom:4px; }
+    .subtitle { text-align:center; font-size:0.8rem; color:#94a3b8; margin-bottom:30px; }
+
+    /* ── Phase header ── */
+    .ph {
+      text-align:center; font-size:0.66rem; font-weight:700;
+      letter-spacing:.12em; text-transform:uppercase;
+      padding:5px 12px; border-radius:4px; margin-bottom:12px;
+    }
+    .ph-entry  { background:#1c1c2e; color:#a5b4fc; }
+    .ph-solid  { background:#1e2a1e; color:#86efac; }
+    .ph-grad   { background:#1e2d3a; color:#7dd3fc; }
+    .ph-ai     { background:#2a1e2a; color:#d8b4fe; }
+    .ph-plan   { background:#2d1e1e; color:#fca5a5; }
+    .ph-mat    { background:#1e2a1e; color:#6ee7b7; }
+    .ph-shape  { background:#2a2a1e; color:#fcd34d; }
+    .ph-out    { background:#1e293b; color:#93c5fd; }
+
+    /* ── Block ── */
+    .block {
+      border-radius:8px; border:1px solid transparent;
+      padding:11px 13px; margin-bottom:6px; width:100%;
+    }
+    .bt { font-size:.77rem; font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .tag { font-size:.57rem; font-weight:600; padding:1px 5px; border-radius:3px; }
+    .bf { font-size:.57rem; font-family:monospace; opacity:.48; margin-bottom:5px; }
+    pre {
+      font-family:'Fira Code','Cascadia Code',Consolas,monospace;
+      font-size:.60rem; line-height:1.55; overflow-x:auto;
+      padding:7px 9px; border-radius:5px; white-space:pre; tab-size:2;
+    }
+
+    /* Colour themes */
+    .t-io   { background:#1c1c2e; border-color:#6366f1; text-align:center; }
+    .t-io .bt { justify-content:center; font-size:.88rem; }
+
+    .t-solid   { background:#1a2d1a; border-color:#22c55e; }
+    .t-solid pre { background:#111827; color:#86efac; }
+    .t-solid .tag { background:#15803d; color:#bbf7d0; }
+
+    .t-grad    { background:#1e2d3a; border-color:#38bdf8; }
+    .t-grad pre  { background:#111827; color:#7dd3fc; }
+    .t-grad .tag { background:#075985; color:#bae6fd; }
+
+    .t-ai      { background:#2a1e3a; border-color:#c084fc; }
+    .t-ai pre  { background:#111827; color:#e9d5ff; }
+    .t-ai .tag { background:#6b21a8; color:#f3e8ff; }
+
+    .t-plan    { background:#2d1e1e; border-color:#f87171; }
+    .t-plan pre { background:#111827; color:#fca5a5; }
+    .t-plan .tag { background:#991b1b; color:#fee2e2; }
+
+    .t-proc    { background:#1e2a2a; border-color:#2dd4bf; }
+    .t-proc pre { background:#111827; color:#99f6e4; }
+    .t-proc .tag { background:#134e4a; color:#ccfbf1; }
+
+    .t-preset  { background:#2a2010; border-color:#fb923c; }
+    .t-preset pre { background:#111827; color:#fed7aa; }
+    .t-preset .tag { background:#9a3412; color:#ffedd5; }
+
+    .t-canvas  { background:#10201e; border-color:#10b981; }
+    .t-canvas pre { background:#111827; color:#6ee7b7; }
+    .t-canvas .tag { background:#065f46; color:#a7f3d0; }
+
+    .t-mat     { background:#1a2d1a; border-color:#4ade80; }
+    .t-mat pre { background:#111827; color:#bbf7d0; }
+    .t-mat .tag { background:#166534; color:#dcfce7; }
+
+    .t-shape   { background:#2d2a10; border-color:#facc15; }
+    .t-shape pre { background:#111827; color:#fef08a; }
+    .t-shape .tag { background:#713f12; color:#fef9c3; }
+
+    .t-css     { background:#1e2845; border-color:#60a5fa; }
+    .t-css pre { background:#111827; color:#93c5fd; }
+    .t-css .tag { background:#1e40af; color:#bfdbfe; }
+
+    /* ── Arrow ── */
+    .arr { width:2px; background:#334155; margin:0 auto 5px; min-height:12px; position:relative; }
+    .arr::after {
+      content:''; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%);
+      border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid #334155;
+    }
+
+    /* ── Decision ── */
+    .dec {
+      width:100%; background:#1c1c2e; border:1.5px dashed #6366f1;
+      border-radius:8px; padding:9px 12px; margin-bottom:6px; text-align:center;
+    }
+    .dec .dt { font-size:.7rem; font-weight:700; color:#a5b4fc; margin-bottom:3px; }
+    .dec .dc { font-family:monospace; font-size:.6rem; color:#c7d2fe; background:#111827; padding:3px 7px; border-radius:4px; display:inline-block; }
+
+    /* ── 3-col grid ── */
+    .three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; align-items:start; }
+    .two-col   { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start; }
+    .four-col  { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; align-items:start; }
+
+    .lane { display:flex; flex-direction:column; align-items:center; }
+
+    /* ── Merge ── */
+    .merge {
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      margin:8px 0 6px;
+    }
+    .merge-label { font-size:.6rem; color:#6366f1; font-family:monospace;
+      background:#1c1c2e; padding:3px 10px; border:1px solid #4338ca; border-radius:4px; }
+
+    /* ── Section divider ── */
+    .sec {
+      text-align:center; font-size:.61rem; font-weight:700; letter-spacing:.1em;
+      text-transform:uppercase; color:#475569; margin:12px 0 8px;
+      display:flex; align-items:center; gap:10px;
+    }
+    .sec::before,.sec::after { content:''; flex:1; height:1px; background:#1e293b; }
+
+    /* ── Legend ── */
+    .legend { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:24px; padding-top:16px; border-top:1px solid #1e293b; }
+    .li { display:flex; align-items:center; gap:6px; font-size:.66rem; color:#94a3b8; }
+    .ld { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+  </style>
+</head>
+<body>
+
+<h1>StylistAI — Background Studio: Mecanismo Interno</h1>
+<p class="subtitle">Diagrama de processos: Seleção de Modo · Geração de Plano AI · Backgrounds Procedurais · Pré-sets Curados · Material Canvas · Shape SVG · Composição CSS</p>
+
+<!-- INPUT -->
+<div style="display:flex;justify-content:center;margin-bottom:5px;">
+  <div class="block t-io" style="max-width:400px;">
+    <div class="bt">🎨 ENTRADA: Background Studio aberto</div>
+    <div class="bf">app/components/create-scheme/OutfitBackgroundStudioModal.tsx</div>
+    <pre>// Modal recebe estado atual + metadados do outfit
+interface OutfitBackgroundStudioModalProps {
+  value: OutfitBackgroundConfig,
+  previewCardData: OutfitCardData,
+  outfitMetadata: {
+    style, occasion, title, brandIdentity,
+    palette, mood, wearstyles, brands
+  },
+  onApply: (value: OutfitBackgroundConfig) => void
+}</pre>
+  </div>
+</div>
+<div style="display:flex;justify-content:center;"><div class="arr" style="height:14px;"></div></div>
+
+<!-- DECISION: modo -->
+<div style="display:flex;justify-content:center;margin-bottom:6px;">
+  <div class="dec" style="max-width:440px;">
+    <div class="dt">⬦ Decisão: qual aba do Background Studio?</div>
+    <div class="dc">type StudioTab = 'color' | 'gradient' | 'ai_artwork'</div>
+  </div>
+</div>
+<div style="display:flex;justify-content:center;"><div class="arr" style="height:10px;"></div></div>
+
+<!-- ════════════════════════════════════════════════════════
+     3 COLUNAS: COR | GRADIENTE | AI ARTWORK
+     ════════════════════════════════════════════════════════ -->
+<div class="three-col">
+
+  <!-- ── COLUNA 1: COR SÓLIDA ── -->
+  <div class="lane">
+    <div class="ph ph-solid">Aba 1 — Cor Sólida</div>
+
+    <div class="block t-solid">
+      <div class="bt">1 · Seleção de Cor + Shape Overlay
+        <span class="tag t-solid">solid</span>
+      </div>
+      <div class="bf">OutfitBackgroundStudioModal.tsx — COLOR_SWATCHES + SHAPE_SEGMENT_OPTIONS</div>
+      <pre>// 8 cores curadas pré-definidas
+const COLOR_SWATCHES = [
+  '#0a0a0a', '#ffffff', '#c0c0c0',
+  '#2e1065', '#047857', '#ddc7a1',
+  '#1d4ed8', '#fff8dc'
+]
+
+// Ou: color picker livre (hex)
+// + luminância para contraste de texto
+function getRelativeLuminance(hexColor) {
+  const rgb = [r, g, b].map(ch => {
+    const v = ch / 255
+    return v <= 0.03928
+      ? v / 12.92
+      : ((v + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126*rgb[0]
+       + 0.7152*rgb[1]
+       + 0.0722*rgb[2]
+}
+
+// Configuração resultante
+config = {
+  background_mode: 'solid',
+  solid_color: '#2e1065',
+  shape: 'orb'  // overlay SVG opcional
+}</pre>
+    </div>
+  </div>
+
+  <!-- ── COLUNA 2: GRADIENTE ── -->
+  <div class="lane">
+    <div class="ph ph-grad">Aba 2 — Gradiente</div>
+
+    <div class="block t-grad">
+      <div class="bt">2 · Pré-sets de Gradiente + Configuração Manual
+        <span class="tag t-grad">gradient</span>
+      </div>
+      <div class="bf">OutfitBackgroundStudioModal.tsx — GRADIENT_PRESETS (8 presets)</div>
+      <pre>// 8 presets curatorados
+const GRADIENT_PRESETS = [
+  { label: 'Deep Violet Gradient',
+    config: { background_mode: 'gradient',
+      gradient: { type:'linear', angle:135,
+        intensity:110, stops:[
+          {color:'#2e1065', position:0},
+          {color:'#7c3aed', position:55},
+          {color:'#a78bfa', position:100}]},
+      shape: 'orb' }},
+  { label: 'Night Runway',
+    config: { gradient: { type:'conic',
+      angle:180, stops:[...] }, shape:'diamond'}},
+  // + Emerald Glow, Silver Mist,
+  //   Sunset Editorial, etc.
+]
+
+// Config manual: tipo + ângulo + intensidade
+// + até 3 color stops (posição %)
+gradient: {
+  type: 'linear' | 'radial' | 'conic',
+  angle: 0–360,
+  intensity: 20–120,  // saturação em %
+  stops: [
+    { color: '#hex', position: 0..100 },
+    ...  // máx. 3 stops
+  ]
+}
+
+// Resultado CSS — buildBackgroundCssStyle()
+backgroundImage = `linear-gradient(
+  ${angle}deg, ${stops})`
+filter = `saturate(${intensity / 100})`</pre>
+    </div>
+
+    <div class="block t-grad" style="border-color:#1d4ed8;">
+      <div class="bt" style="font-size:.7rem;">2b · Detecção de Cor do Prompt → Gradientes
+        <span class="tag t-grad">color-detect</span>
+      </div>
+      <div class="bf">OutfitBackgroundStudioModal.tsx — detectColorFromPrompt() + buildColorGradientVariations()</div>
+      <pre>// Mapa: keyword → {light, mid, dark}
+COLOR_KEYWORD_MAP = {
+  azul:    {light:'#dbeafe',
+             mid:'#3b82f6', dark:'#1e3a5f'},
+  roxo:    {light:'#f3e8ff',
+             mid:'#a855f7', dark:'#3b0764'},
+  verde:   {light:'#dcfce7',
+             mid:'#22c55e', dark:'#14532d'},
+  // + 30 cores (pt + en)
+}
+
+// Detecta cor no texto e gera 6 variações
+function buildColorGradientVariations(tokens) {
+  return [
+    linear(135°, light→mid),       // claro→médio
+    linear(145°, dark→mid),        // escuro→médio
+    radial(0°,   mid→dark),        // radial profundo
+    linear(60°,  light→mid→dark),  // 3 stops
+    linear(180°, #020617→dark→mid),// fundo escuro
+    linear(120°, light→#0f172a),   // funde no dark
+  ]
+}</pre>
+    </div>
+  </div>
+
+  <!-- ── COLUNA 3: AI ARTWORK ── -->
+  <div class="lane">
+    <div class="ph ph-ai">Aba 3 — AI Artwork</div>
+
+    <div class="block t-ai">
+      <div class="bt">3 · Seleção de Modo de Geração AI
+        <span class="tag t-ai">mode</span>
+      </div>
+      <div class="bf">OutfitBackgroundStudioModal.tsx — AI_GENERATION_MODES</div>
+      <pre>type BackgroundGenerationMode =
+  | 'preset_assisted'   // preset + refinamento AI
+  | 'hybrid'            // preset + prompt combinados
+  | 'text_prompt_pure'  // prompt como driver principal
+
+// Cada modo altera o peso dos keywords
+// no buildBackgroundGenerationPlan():
+if (mode === 'text_prompt_pure')
+  // prompt keywords vêm primeiro
+  combined = [...prompt, ...style,
+               ...mood, ...metadata]
+else
+  // metadados do outfit vêm primeiro
+  combined = [...prompt, ...metadata,
+               ...style, ...mood]</pre>
+    </div>
+  </div>
+
+</div><!-- /three-col -->
+
+<!-- ════ FASE AI ARTWORK — DETALHE ════ -->
+<div style="display:flex;justify-content:center;margin:8px 0 6px;">
+  <div class="arr" style="height:12px;"></div>
+</div>
+<div class="sec">Fase AI Artwork — 2 Caminhos: Pré-sets Curados  OU  Geração Procedural</div>
+
+<div class="two-col" style="align-items:start;">
+
+  <!-- CAMINHO A: buildBackgroundGenerationPlan → procedural -->
+  <div class="lane">
+    <div class="ph ph-plan">Caminho A — Geração Procedural por Prompt</div>
+
+    <div class="block t-plan">
+      <div class="bt">4a · Análise do Prompt → BackgroundGenerationPlan
+        <span class="tag t-plan">plan</span>
+      </div>
+      <div class="bf">app/lib/background-ai.ts → buildBackgroundGenerationPlan()</div>
+      <pre>function buildBackgroundGenerationPlan(input) {
+  const words = tokenize(input.prompt)
+
+  // Detecção de forma geométrica
+  inferShapeFromPrompt(words)
+  // "wave" → waves | "diamond" → diamonds
+  // "flower"/"floral" → organic_floral
+
+  // Detecção de tipo de composição
+  inferCompositionFromPrompt(words, shape)
+  // "flower" → radial_floral_cluster
+  // "wave"   → wave_motion
+  // "beam"   → beam_directional
+  // "dense"  → structured_grid
+
+  // Inferência de densidade
+  inferDensityFromPrompt(words)
+  // "minimal"/"clean" → minimal
+  // "dense"/"rich"    → rich  (layering_depth=9)
+
+  // Paleta a partir de cor detectada
+  inferPaletteFromPrompt(words, palette)
+  // "azul" → ['#1e3a8a','#3b82f6','#bfdbfe']
+  // "roxo" → ['#3b0764','#9333ea','#e9d5ff']
+
+  // Aplicação de hints de estilo/mood
+  STYLE_HINTS = {
+    editorial: { texture_mode: 'editorial_soft' },
+    minimal:   { density: 'minimal', blur: 0.35 },
+    geometric: { composition: 'structured_grid' },
+    runway:    { composition: 'beam_directional' },
+  }
+  MOOD_HINTS = {
+    dreamy:    { blur_strength: 0.85, glow: 0.76 },
+    energetic: { density:'rich', glow: 0.92 },
+    bold:      { contrast:'high', glow: 0.80 },
+  }
+
+  return {
+    shape_language, composition_type,
+    palette: [dark, mid, light],  // 3 cores
+    density, layering_depth,      // 4–12 camadas
+    glow_intensity, blur_strength,
+    motion_direction, texture_mode,
+  }
+}</pre>
+    </div>
+    <div class="arr" style="height:12px;"></div>
+
+    <div class="block t-proc">
+      <div class="bt">4b · Geração SVG Procedural em Camadas
+        <span class="tag t-proc">svg-gen</span>
+      </div>
+      <div class="bf">app/lib/background-ai.ts → generateProceduralBackground() + buildShapeLayer()</div>
+      <pre>function generateProceduralBackground(plan, seed, prompt) {
+  const random = createSeededRng(seed)  // determinístico
+  const layerCount = clamp(plan.layering_depth, 3, 12)
+
+  // Tight patterns: grid denso pré-definido
+  detectTightPattern(plan)
+  // arrows/waves/flowers/stars/circles
+  // → buildTightPatternLayer() em vez de scatter
+
+  // Para cada camada:
+  for (let i = 0; i < layerCount; i++) {
+    const shapes = buildShapeLayer(plan, random, i, layerCount)
+    // shapes: circles, triangles, stars,
+    //         diamonds, waves, beams...
+    // posição: clusters + drift + motion alinhado
+    //   orbital_field → orbital rings
+    //   beam_directional → streaks verticais
+    //   structured_grid → snap ao grid
+  }
+
+  // Composição SVG em camadas:
+  // 1. linearGradient base (palette[0–2])
+  // 2. N layers de shapes com blur (feGaussianBlur)
+  // 3. Grain texture (noise pattern)
+  // 4. Vinheta lateral esquerda
+  // 5. Texto do prompt (opacidade 0.35)
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
+
+// 4 variações por seed diferente
+generateBackgroundVariations(plan, prompt, count=4)
+// seeds: baseSeed + idx * 7919 (número primo)</pre>
+    </div>
+  </div>
+
+  <!-- CAMINHO B: pré-sets curados -->
+  <div class="lane">
+    <div class="ph ph-ai">Caminho B — Pré-sets Curados (10 templates)</div>
+
+    <div class="block t-preset">
+      <div class="bt">4c · CompositionRecipe + Preset Renderer
+        <span class="tag t-preset">preset</span>
+      </div>
+      <div class="bf">OutfitBackgroundStudioModal.tsx → buildCompositionRecipe() + rendereres</div>
+      <pre>// 10 pré-sets com receitas de composição
+buildCompositionRecipe({ presetId, referenceIntent })
+// referenceIntent: logo_pure | fabric_pattern
+//   | editorial_image | product_photo
+
+const PRESET_RECIPES = {
+  selection_tiled_motif: {
+    compositionMode: 'pattern',
+    motifDensity: 'high',
+    repeatMode: 'staggered',   // grid|staggered|diagonal
+    logoWeight: 0.9,
+  },
+  selection_editorial_logo: {
+    compositionMode: 'hero',
+    motifDensity: 'low',
+    logoWeight: 0.98,
+  },
+  selection_tonal_geometry: {
+    compositionMode: 'editorial',
+    geometryWeight: 0.8,
+  },
+  selection_tech_amber_energy: {
+    compositionMode: 'tech',
+    motifDensity: 'high',
+    geometryWeight: 0.86,
+    glowWeight: 0.82,
+  },
+  // + 6 outros: fusion, sport, neon, luxury,
+  //             collage, soft-minimal
+}
+
+// Análise de intenção da imagem de referência
+analyzeReferenceIntent(referenceImage)
+// "logo"    → logo_pure
+// "pattern" → fabric_pattern
+// "product" → product_photo
+
+// Detecção de geometria para AI prompt
+detectGeometryFromPrompt(prompt)
+// "onda","wave" → waves
+// "diamante"    → diamond
+// "malha","mesh"→ mesh</pre>
+    </div>
+    <div class="arr" style="height:8px;"></div>
+
+    <div class="two-col" style="gap:8px;">
+      <div class="block t-canvas" style="margin-bottom:0;">
+        <div class="bt" style="font-size:.7rem;">Renderer A<br/>Canvas API — Motif Tiled
+          <span class="tag t-canvas">canvas</span>
+        </div>
+        <div class="bf">buildTiledMotifFromReferenceImage()</div>
+        <pre>// Canvas 1200×800
+const canvas = document
+  .createElement('canvas')
+const ctx = canvas.getContext('2d')
+
+// 1. Preenche gradiente de fundo
+const bgGradient =
+  ctx.createLinearGradient(0,0,CW,CH)
+gradientStops.forEach(s =>
+  bgGradient.addColorStop(s.pos, s.color))
+ctx.fillStyle = bgGradient
+ctx.fillRect(0, 0, CW, CH)
+
+// 2. Cria tile do logo
+const tileCanvas = createLogoTile(image)
+// escala para caber no tile (aspect-ratio)
+
+// 3. Repete logo em grid escalonado
+renderPreciseMotifGrid(ctx, tileCanvas,
+  logoW, logoH, CW, CH, 'staggered')
+// opacidade 0.18 na safe area
+// opacidade 0.58 fora da safe area
+
+// 4. Vinheta de safe area (top-left)
+const vigGrad = ctx.createRadialGradient(
+  0,0,10, 300,220,600)
+vigGrad.addColorStop(0,'rgba(2,6,23,0.72)')
+vigGrad.addColorStop(1,'rgba(2,6,23,0)')
+
+return canvas.toDataURL('image/png')</pre>
+      </div>
+
+      <div class="block t-preset" style="margin-bottom:0;">
+        <div class="bt" style="font-size:.7rem;">Renderer B<br/>SVG Inline — Editorial/Tonal
+          <span class="tag t-preset">svg</span>
+        </div>
+        <div class="bf">buildEditorialLogoComposition() + buildTonalGeometryConfig()</div>
+        <pre>// Editorial: fundo branco + logo hero
+buildEditorialLogoComposition(ref, ctx) →
+  SVG com:
+  · linearGradient branco/cinza
+  · grid de linhas subtis
+  · curvas editoriais (stroke largo)
+  · rect com logo em destaque (468×332)
+  · texto da marca (opacity 0.30)
+
+// Tonal Geometry: dark + painéis
+buildTonalGeometryConfig(ctx, ref) →
+  SVG com:
+  · linearGradient slate escuro
+  · pattern de mesh diagonal
+  · 4 faixas inclinadas (opacity 0.06-0.10)
+  · image de referência em card (368×508)
+  · onda inferior (clip footer)
+
+// compositeMotifSurface() — SVG puro
+// suporta: grid | staggered | diagonal
+// usa &lt;image href='...'&gt; por tile
+// safe area vinheta radial no SVG
+// marca d'água do brand em rodapé</pre>
+      </div>
+    </div>
+
+    <div class="arr" style="height:8px;"></div>
+
+    <div class="block t-ai">
+      <div class="bt" style="font-size:.7rem;">4d · Geometry Variants SVG (11 shapes × 3 variantes)
+        <span class="tag t-ai">geometry-svg</span>
+      </div>
+      <div class="bf">OutfitBackgroundStudioModal.tsx → buildGeometryVariantSvg(geometry, variant, baseColor)</div>
+      <pre>// Cada geometry tem 3 variantes (0, 1, 2)
+buildGeometryVariantSvg(geometry, variant, color)
+
+// circles v0: anéis concêntricos orbitais
+// circles v1: grid de pontos escalonado
+// circles v2: outlines sobrepostos
+
+// arrows  v0: chevrons esporte horizontais
+// arrows  v1: blocos-seta sólidos em grid
+// arrows  v2: double-chevron outline
+
+// waves   v0: seno horizontal clássico
+// waves   v1: arcos concêntricos do rodapé
+// waves   v2: bandas diagonais (fill)
+
+// stars   v0: 5-pontas, grid filled
+// stars   v1: 8-pontas, outline premium
+// stars   v2: 4-pontas sparkle, tamanhos variados
+
+// diamonds: tiles | nested outline | rotated
+// mesh:     diagonal | hex | woven+nodes
+// beams:    diagonal | radial | X-cruzados
+// triangles,flowers,panels: 3 variantes cada
+
+// Base: rect(color, opacity:0.92) +
+//       rect(#020617, opacity:0.30) +
+//       markup da geometria +
+//       rect rgba(2,6,23,0.20) final
+return asDataUri(`&lt;svg ...&gt;${base}${markup}&lt;/svg&gt;`)</pre>
+    </div>
+  </div>
+
+</div><!-- /two-col AI -->
+
+<!-- MERGE -->
+<div class="merge" style="margin-top:8px;">
+  <div style="height:1px;flex:1;max-width:180px;background:#334155;"></div>
+  <div class="merge-label">↓ Configuração OutfitBackgroundConfig definida ↓</div>
+  <div style="height:1px;flex:1;max-width:180px;background:#334155;"></div>
+</div>
+<div style="display:flex;justify-content:center;"><div class="arr" style="height:10px;"></div></div>
+
+<!-- ════════════════════════════════════════════════════════
+     FASE B: MATERIAL LAYER
+     ════════════════════════════════════════════════════════ -->
+<div class="sec">Fase B — Camada de Material (Canvas 2D API)</div>
+
+<div style="max-width:1120px;margin:0 auto;">
+  <div class="block t-mat">
+    <div class="bt">5 · Renderização da Textura de Material no Canvas
+      <span class="tag t-mat">fabric-canvas</span>
+    </div>
+    <div class="bf">app/lib/fabricTextureRenderer.ts → renderFabricTextureToCanvas()</div>
+    <pre>function renderFabricTextureToCanvas({ width, height, color, material }) {
+  // 1. Preenche base com noise grain (varredura 2×2px)
+  for (let y=0; y&lt;height; y+=2)
+    for (let x=0; x&lt;width; x+=2)
+      grain &gt; 0.5 ? tint(color, +18, noise) : tint(color, -14, noise)
+
+  // 2. Dispatch pelo tipo de material
+  switch (material.type) {
+    case 'embroidered_fabric': drawThreadField(ctx, ...)
+    // threads em ângulo (0°, 90°, 45°, cross)
+    // spacing = 34 - density*0.22   (3–31px)
+    // jitter pseudoaleatório (x*13+y*7)%9
+    // highlight: tint(+42 * contrastScale, alpha=0.30+emboss*0.32)
+    // shadow:    tint(-36 * contrastScale, alpha=0.44+emboss*0.28)
+    // cross: 2 passagens em ângulo + ângulo+π/2.5
+
+    case 'lego_material': drawLegoField(ctx, ...)
+    // blockSize = 56 - density*0.22  (22–54px)
+    // arredondado (roundRect, radius=blockSize*0.15)
+    // highlight superior, borda escura
+    // 4 studs por bloco: radial gradient (#lighter→#darker)
+
+    case 'water_material': drawWaterField(ctx, ...)
+    // rippleGap = 36 - density*0.16  (10–34px)
+    // onda seno: sin((x+y*0.6)/wave) * amplitude
+    // segunda onda (offset 35%) + caustics elípticos
+
+    case 'glass_material': drawGlassField(ctx, ...)
+    // cellSize = 68 - density*0.22  (22–72px)
+    // paneGradient linear (tint+26 → white → tint-12)
+    // borda clara + linha diagonal de reflexo
+  }
+
+  // 3. Finish pass sobre o canvas completo
+  if (material.finish === 'satin')
+    // highlight diagonal: tint(+26, opacity 0.32) → white 0.04 → tint(-28, 0.48)
+  else  // matte
+    // gradiente suave: tint(+14, 0.18) → tint(-18, 0.28)
+
+  // 4. Canvas decorativo: stitch border (opcional)
+  if (material.stitchBorder)
+    // setLineDash([9,7]) → roundRect com padding 5%
+    // linha interna pontilhada [2,12]
+
+  return { textureDataUrl, decorativeDataUrl }  // PNG data:URLs
+}</pre>
+  </div>
+
+  <div style="display:flex;justify-content:center;"><div class="arr" style="height:10px;"></div></div>
+
+  <!-- scope -->
+  <div class="block t-mat" style="border-color:#22c55e;">
+    <div class="bt" style="font-size:.72rem;">5b · Escopo de Aplicação da Textura
+      <span class="tag t-mat">scope</span>
+    </div>
+    <div class="bf">app/lib/fabricTextureRenderer.ts → buildFabricScopeStyle()</div>
+    <pre>// Determina qual área do card recebe a textura
+function buildFabricScopeStyle(scope) {
+  if (scope === 'hero_block')    return { inset: '8% 6% 45% 6%' }   // bloco superior
+  if (scope === 'content_block') return { inset: '50% 6% 8% 6%' }   // bloco inferior
+  return { inset: '0' }  // 'card' → todo o card (padrão)
+}
+// materialLayer.scope: 'card' | 'hero_block' | 'content_block'</pre>
+  </div>
+</div>
+
+<div style="display:flex;justify-content:center;margin-top:4px;"><div class="arr" style="height:10px;"></div></div>
+
+<!-- ════════════════════════════════════════════════════════
+     FASE C: SHAPE SVG OVERLAY
+     ════════════════════════════════════════════════════════ -->
+<div class="sec">Fase C — Shape SVG Overlay (Sobre o Fundo)</div>
+
+<div style="max-width:1120px;margin:0 auto;">
+  <div class="block t-shape">
+    <div class="bt">6 · Overlay Geométrico SVG (11 shapes)
+      <span class="tag t-shape">shape-overlay</span>
+    </div>
+    <div class="bf">OutfitBackgroundStudioModal.tsx — SHAPE_SEGMENT_OPTIONS + buildGeometryVariantSvg()</div>
+    <pre>// 11 opções de shape overlay
+const SHAPE_SEGMENT_OPTIONS = [
+  'none', 'orb', 'diamond', 'mesh', 'stars',
+  'circles', 'triangles', 'waves',
+  'beams', 'flowers', 'arrows'
+]
+
+// Cada shape mapeia para uma GeometryFamily
+// que por sua vez mapeia para BackgroundShape
+GEOMETRY_TO_BACKGROUND_SHAPE = {
+  arrows: 'arrows', waves: 'waves',
+  diamond: 'diamond', mesh: 'mesh',
+  circles: 'circles', triangles: 'triangles',
+  stars: 'stars', flowers: 'flowers',
+  beams: 'beams',
+}
+
+// Descrição e prompt por geometria
+GEOMETRY_DESCRIPTION_MAP = {
+  mesh:    'Tech lattice or woven net-like geometry',
+  waves:   'Flowing curved bands with elegant rhythm',
+  diamond: 'Rhombus-based premium angular patterning',
+  arrows:  'Directional motifs with motion guidance',
+  flowers: 'Decorative floral and petal-based patterning',
+}
+
+// Gerado como data:image/svg+xml inline
+// Renderizado como &lt;img&gt; overlay com blend-mode
+// Via buildGeometryVariantSvg(geometry, 0|1|2, heroColor)
+// 3 variações disponíveis por geometria</pre>
+  </div>
+</div>
+
+<div style="display:flex;justify-content:center;margin-top:4px;"><div class="arr" style="height:10px;"></div></div>
+
+<!-- ════════════════════════════════════════════════════════
+     FASE D: COMPOSIÇÃO FINAL CSS
+     ════════════════════════════════════════════════════════ -->
+<div class="sec">Fase D — Composição Final &amp; Saída CSS</div>
+
+<div style="max-width:1120px;margin:0 auto;">
+  <div class="block t-css">
+    <div class="bt">7 · Resolução e Composição CSS Final
+      <span class="tag t-css">css</span>
+    </div>
+    <div class="bf">app/lib/outfit-card.ts → resolveOutfitBackgroundForRender() + buildBackgroundCssStyle()</div>
+    <pre>// Normaliza formato legado para OutfitBackgroundConfig
+resolveOutfitBackgroundForRender(input)
+// { type:'solid', value:'#hex' }
+//   → { background_mode:'solid', solid_color:'#hex' }
+// { type:'gradient', value:... }
+//   → { background_mode:'gradient', gradient:{...} }
+// { type:'image', value:'url' }
+//   → { background_mode:'ai_artwork',
+//        ai_artwork:{image_url:url, status:'done'} }
+
+// Converte OutfitBackgroundConfig → CSS inline
+buildBackgroundCssStyle(background)
+
+// SOLID:
+// { background: '#2e1065' }
+
+// GRADIENT:
+const stops = gradient.stops
+  .map(s => `${s.color} ${s.position}%`)
+  .join(', ')
+const intensity = clamp(gradient.intensity, 20,120) / 100
+// linear:  { backgroundImage: `linear-gradient(${angle}deg, ${stops})` }
+// radial:  { backgroundImage: `radial-gradient(circle at center, ...)` }
+// conic:   { backgroundImage: `conic-gradient(from ${angle}deg ...)` }
+// + { filter: `saturate(${intensity})` }
+
+// AI ARTWORK:
+// Se há gradiente: overlay semitransparente sobre a imagem
+const gradientOverlay = `linear-gradient(${angle}deg,
+  ${stops_com_alpha_0.34})`
+// { backgroundImage: `${gradientOverlay}, url(${image_url})`,
+//   backgroundSize: 'cover', backgroundPosition: 'center' }
+
+// Camadas finais aplicadas no OutfitCard.tsx:
+// 1. buildBackgroundCssStyle()     → div base
+// 2. textureDataUrl (Canvas PNG)   → &lt;img&gt; absoluteInset scope
+// 3. decorativeDataUrl (stitch)    → &lt;img&gt; absoluteInset
+// 4. shape SVG (buildGeometryVariantSvg) → &lt;img&gt; overlay</pre>
+  </div>
+</div>
+
+<div style="display:flex;justify-content:center;margin-top:4px;"><div class="arr" style="height:14px;"></div></div>
+
+<!-- OUTPUT -->
+<div style="display:flex;justify-content:center;margin-bottom:28px;">
+  <div class="block t-io" style="max-width:460px;">
+    <div class="bt">📦 SAÍDA: OutfitBackgroundConfig aplicado ao Card</div>
+    <div class="bf">onApply(config) → OutfitCard renderiza com as 4 camadas compostas</div>
+    <pre>// Objeto final salvo no Firestore (saiSchemes.background)
+const config: OutfitBackgroundConfig = {
+  background_mode: 'ai_artwork',
+  ai_artwork: {
+    prompt: 'deep violet neon premium',
+    image_url: 'data:image/svg+xml;base64,...',
+    generation_status: 'done'
+  },
+  gradient: { type:'linear', angle:135,
+    intensity:110, stops:[...] },
+  materialLayer: {
+    type: 'embroidered_fabric',
+    density: 55, threadDirection: 'cross',
+    embossIntensity: 60, finish: 'matte',
+    scope: 'card'
+  },
+  shape: 'mesh',                   // overlay SVG
+  decorativeOverlayLayer: {
+    stitchBorder: true,
+    stitchColor: '#1e3a8a'
+  }
+}</pre>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="li"><div class="ld" style="background:#22c55e;"></div> Cor sólida + swatches</div>
+  <div class="li"><div class="ld" style="background:#38bdf8;"></div> Gradiente (preset/manual)</div>
+  <div class="li"><div class="ld" style="background:#c084fc;"></div> Modo AI Artwork</div>
+  <div class="li"><div class="ld" style="background:#f87171;"></div> Análise do prompt (plano de geração)</div>
+  <div class="li"><div class="ld" style="background:#2dd4bf;"></div> SVG procedural em camadas</div>
+  <div class="li"><div class="ld" style="background:#fb923c;"></div> Pré-sets curados (10 templates)</div>
+  <div class="li"><div class="ld" style="background:#10b981;"></div> Canvas API (tiled motif)</div>
+  <div class="li"><div class="ld" style="background:#4ade80;"></div> Textura de material (Canvas 2D)</div>
+  <div class="li"><div class="ld" style="background:#facc15;"></div> Shape SVG overlay (11 geometrias × 3 variantes)</div>
+  <div class="li"><div class="ld" style="background:#60a5fa;"></div> Resolução CSS final (buildBackgroundCssStyle)</div>
+</div>
+
+<p style="text-align:center;font-size:.6rem;color:#334155;margin-top:18px;">
+  StylistAI · TCC 2026 · Fontes: OutfitBackgroundStudioModal.tsx · app/lib/background-ai.ts · app/lib/fabricTextureRenderer.ts · app/lib/outfit-card.ts · app/lib/materialPresets.ts
+</p>
+</body>
+</html>
