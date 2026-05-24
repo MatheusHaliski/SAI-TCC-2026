@@ -114,7 +114,13 @@ export class WardrobeItemsRepository extends BaseRepository {
       docs = Array.from(mergedById.values())
         .filter((doc) => {
           const item = doc.data() as Record<string, unknown>;
-          const matchesStatus = options?.status ? String(item.status ?? 'active') === options.status : true;
+          // Bug fix: when no status filter is requested we still default to 'active'
+          // so that legacy documents with archived/inactive status are not reintroduced
+          // into autopilot generation and feedback learning. This mirrors what the
+          // primary Firestore query intends (its `status` local variable also defaults
+          // to 'active'), and prevents preference corruption from unavailable pieces.
+          const effectiveStatus = options?.status ?? 'active';
+          const matchesStatus = String(item.status ?? 'active') === effectiveStatus;
           const matchesPieceType = options?.piece_type ? String(item.piece_type ?? '') === options.piece_type : true;
           return matchesStatus && matchesPieceType;
         })
