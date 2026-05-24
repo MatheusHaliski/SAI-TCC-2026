@@ -86,9 +86,9 @@ function resolveBrandLogoUrl(brand: Brand): string | null {
     return brand.logo_url;
   }
 
-  const normalizedName = brand.name.trim().toLowerCase();
+  const normalizedName = (brand.name ?? '').trim().toLowerCase();
   const compactName = normalizedName.replace(/[^a-z0-9&]/g, '');
-  const normalizedId = brand.brand_id.trim().toLowerCase().replace(/^brand_/, '');
+  const normalizedId = (brand.brand_id ?? '').trim().toLowerCase().replace(/^brand_/, '');
 
   return (
     BRAND_LOGO_FALLBACKS[normalizedName] ??
@@ -169,8 +169,8 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     for (const candidate of candidates) {
       const token = normalizeToken(candidate);
       const matched = availableBrands.find((brand) => {
-        const name = normalizeToken(brand.name);
-        const id = normalizeToken(brand.brand_id).replace(/^brand_/, '');
+        const name = normalizeToken(brand.name ?? '');
+        const id = normalizeToken(brand.brand_id ?? '').replace(/^brand_/, '');
         return token === name || token === id || token.includes(name) || name.includes(token);
       });
       if (matched?.brand_id) return matched.brand_id;
@@ -674,14 +674,14 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         occasion_tags: resolvedOccasion || prev.occasion_tags || '',
         gender: mappedGender,
         piece_type: mappedPieceType,
-        brand_id: brandWasDetected ? resolvedBrandId : prev.brand_id,
+        brand_id: resolvedBrandId,
         market_id: resolvedMarketId || prev.market_id,
       }));
 
       const detectedBrandLabel = brandWasDetected
         ? (brandsRef.current.find((b) => b.brand_id === resolvedBrandId)?.name ?? resolvedBrandId)
         : (data.brand && !isGenericToken(data.brand) ? `"${data.brand}" (não cadastrada)` : null);
-      const brandNote = detectedBrandLabel ? ` Marca: ${detectedBrandLabel}.` : ' Marca não identificada.';
+      const brandNote = detectedBrandLabel ? ` Marca: ${detectedBrandLabel}.` : ' Marca definida como padrão.';
       setAlertMessage(`Análise concluída! Campos preenchidos automaticamente.${brandNote}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error during AI analysis.';
