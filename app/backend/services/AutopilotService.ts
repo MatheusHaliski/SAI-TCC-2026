@@ -33,7 +33,7 @@ export class AutopilotService {
       );
     }
 
-    const prefs = await this.prefsRepo.findOrCreate(userId);
+    const prefs = await this.prefsRepo.findByUser(userId);
 
     let weather: WeatherInfo;
     try {
