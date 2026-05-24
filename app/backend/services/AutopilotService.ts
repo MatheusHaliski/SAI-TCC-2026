@@ -33,7 +33,7 @@ export class AutopilotService {
       );
     }
 
-    const prefs = await this.prefsRepo.findOrCreate(userId);
+    const prefs = await this.prefsRepo.findByUser(userId);
 
     let weather: WeatherInfo;
     try {
@@ -70,32 +70,12 @@ export class AutopilotService {
       mood: input.mood,
       weather_c: input.weather.temp_c,
       city: input.weather.city,
-      feedback: null,
-      feedback_at: null,
-      created_at: new Date().toISOString(),
     });
     return dailyLook;
   }
 
   async applyFeedback(userId: string, dailyLookId: string, feedback: DailyLookFeedback) {
-    const dailyLook = await this.dailyLooksRepo.findById(dailyLookId);
-    if (!dailyLook) throw new ServiceError('Daily look not found.', 404);
-    if (dailyLook.user_id !== userId) throw new ServiceError('Forbidden.', 403);
-
-    await this.dailyLooksRepo.updateFeedback(dailyLookId, feedback);
-
-    const wardrobe = await this.wardrobeRepo.findRichForAutopilot(userId);
-    const lookItems = wardrobe.filter((item) =>
-      item.wardrobe_item_id.length > 0,
-    );
-
-    await this.preferenceLearningService.applyFeedback(
-      userId,
-      { ...dailyLook, feedback },
-      feedback,
-      lookItems,
-    );
-
+    await this.preferenceLearningService.applyFeedback(userId, dailyLookId, feedback);
     return { ok: true };
   }
 

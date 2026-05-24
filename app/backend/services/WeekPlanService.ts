@@ -19,7 +19,7 @@ export class WeekPlanService {
 
   async generateWeekPlan(userId: string, request: GenerateWeekRequest, city: string): Promise<WeekPlan> {
     const wardrobe = await this.wardrobeRepo.findRichForAutopilot(userId);
-    const prefs = await this.prefsRepo.findOrCreate(userId);
+    const prefs = await this.prefsRepo.findByUser(userId);
 
     let weather: WeatherInfo;
     try {
