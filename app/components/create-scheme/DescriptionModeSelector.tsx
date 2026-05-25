@@ -14,7 +14,7 @@ const MODES: Array<{ value: DescriptionMode; label: string; icon: string; helper
 export default function DescriptionModeSelector({ value, onChange }: DescriptionModeSelectorProps) {
   return (
     <div className="space-y-2 md:col-span-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">Description mode</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Description mode</p>
       <div className="grid gap-2 sm:grid-cols-3">
         {MODES.map((mode) => (
           <button
@@ -24,10 +24,10 @@ export default function DescriptionModeSelector({ value, onChange }: Description
             className={`rounded-xl border px-3 py-2 text-left transition ${
               value === mode.value
                 ? 'border-violet-300/80 bg-violet-500/25 shadow-[0_0_24px_rgba(139,92,246,0.25)]'
-                : 'border-white/20 bg-white/10 hover:bg-white/15'
+                : 'border-border bg-accent hover:bg-accent'
             }`}
           >
-            <p className="text-sm font-semibold text-white">
+            <p className="text-sm font-semibold text-foreground">
               <span className="mr-1.5">{mode.icon}</span>
               {mode.label}
             </p>
