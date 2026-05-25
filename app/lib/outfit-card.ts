@@ -194,24 +194,8 @@ export function buildBackgroundCssStyle(background: OutfitBackgroundConfig) {
   }
 
   if (background.background_mode === 'ai_artwork' && background.ai_artwork?.image_url) {
-    const gradient = background.gradient?.stops?.length
-      ? background.gradient.stops
-          .slice(0, 3)
-          .map((stop) => `${hexToRgba(stop.color, 0.34)} ${clamp(stop.position, 0, 100)}%`)
-          .join(', ')
-      : null;
-    const gradientType = background.gradient?.type || 'linear';
-    const gradientOverlay = gradient
-      ? gradientType === 'radial'
-        ? `radial-gradient(circle at center, ${gradient})`
-        : gradientType === 'conic'
-          ? `conic-gradient(from ${background.gradient?.angle ?? 180}deg at 50% 50%, ${gradient})`
-          : `linear-gradient(${background.gradient?.angle ?? 135}deg, ${gradient})`
-      : null;
     return {
-      backgroundImage: gradientOverlay
-        ? `${gradientOverlay}, url(${background.ai_artwork.image_url})`
-        : `url(${background.ai_artwork.image_url})`,
+      backgroundImage: `url(${background.ai_artwork.image_url})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
     };
