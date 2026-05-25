@@ -143,8 +143,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
             ...buildFabricScopeStyle(materialLayer?.scope || 'card'),
             backgroundImage: `url(${materialRender.textureDataUrl})`,
             backgroundSize: 'cover',
-            backgroundBlendMode: 'multiply',
-            opacity: 0.84,
+            opacity: 0.38,
           }}
         />
       ) : null}

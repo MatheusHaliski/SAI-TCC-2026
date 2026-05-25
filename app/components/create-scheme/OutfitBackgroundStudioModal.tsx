@@ -204,6 +204,14 @@ const CURATED_IMAGE_PICKER_OPTIONS = [
   { fileName: 'a9.png', label: 'Urban Chaos' },
   { fileName: 'a10.png', label: 'Blueprint Mosaic' },
   { fileName: 'a11.png', label: 'Midnight Surrealism' },
+  { fileName: 'a12.png', label: "Lion's Gate" },
+  { fileName: 'a13.png', label: 'Temple of Doves' },
+  { fileName: 'a14.png', label: 'Eye of the Storm' },
+  { fileName: 'a15.png', label: 'Tropical Sun Shrine' },
+  { fileName: 'a16.png', label: 'Jungle Totem' },
+  { fileName: 'a17.png', label: 'Cosmic Bestiary' },
+  { fileName: 'a18.png', label: 'Neon Labyrinth' },
+  { fileName: 'a19.png', label: 'Sacred Ibis' },
   { fileName: 'a20.png', label: 'Whimsical Garden' },
   { fileName: 'a21.png', label: 'Pastel Dream Temple' },
   { fileName: 'a22.png', label: 'Fantasy Cityscape' },
@@ -2777,7 +2785,7 @@ export default function OutfitBackgroundStudioModal({
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="flex max-h-[92vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]"
+        className="flex h-[98vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]"
         style={{ backgroundColor: 'var(--user-surface-solid)' }}
         onClick={(event) => event.stopPropagation()}
       >

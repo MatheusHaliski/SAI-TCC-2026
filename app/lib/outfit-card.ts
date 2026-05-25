@@ -113,11 +113,11 @@ const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {
   background_mode: 'gradient',
   gradient: {
     type: 'linear',
-    angle: 180,
-    intensity: 100,
+    angle: 145,
+    intensity: 110,
     stops: [
-      { color: '#f8fafc', position: 0 },
-      { color: '#ffffff', position: 100 },
+      { color: '#0f172a', position: 0 },
+      { color: '#312e81', position: 100 },
     ],
   },
   shape: 'none',
