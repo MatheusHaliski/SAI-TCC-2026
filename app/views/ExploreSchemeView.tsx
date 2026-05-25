@@ -1,15 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import CollapsibleOutfitCard from '@/app/components/outfit-card/CollapsibleOutfitCard';
+import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import { OutfitCardData, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
-import { getAuthSessionProfile } from '@/app/lib/authSession';
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
-type PublicUser = { user_id: string; username?: string; name?: string };
-
 type Scheme = {
   scheme_id: string;
   title: string;
@@ -79,8 +76,6 @@ export default function ExploreSchemeView() {
   const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
   const [itemsBySchemeId, setItemsBySchemeId] = useState<Record<string, SchemeDetailItem[]>>({});
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-  const [users, setUsers] = useState<PublicUser[]>([]);
-  const authUserId = useMemo(() => getAuthSessionProfile().user_id?.trim() || '', []);
 
   useEffect(() => {
     const loadSchemesWithItems = async () => {
@@ -88,11 +83,6 @@ export default function ExploreSchemeView() {
       const data = await response.json();
       const safeSchemes = Array.isArray(data) ? (data as Scheme[]) : [];
       setSchemes(safeSchemes);
-
-      fetch('/api/users/public')
-        .then((res) => res.json())
-        .then((payload) => setUsers(Array.isArray(payload?.users) ? payload.users : []))
-        .catch(() => setUsers([]));
 
       const detailResponses = await Promise.all(
         safeSchemes.map((scheme) =>
@@ -118,8 +108,6 @@ export default function ExploreSchemeView() {
       setItemsBySchemeId({});
     });
   }, []);
-
-  const usersById = useMemo(() => Object.fromEntries(users.map((u) => [u.user_id, u])), [users]);
 
   const buildOutfitPreviewData = (scheme: Scheme): OutfitCardData => {
     const styleLine = `${scheme.style || 'Streetwear'} • ${scheme.occasion || 'General'}`;
@@ -182,25 +170,23 @@ export default function ExploreSchemeView() {
         outfitName: scheme.title || 'Untitled Outfit',
       }),
       heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
-      creatorName: usersById[scheme.user_id]?.username || usersById[scheme.user_id]?.name || 'usuario',
       outfitBackground: parsedBackground,
       pieces: normalizedPieces,
     };
   };
 
   const filteredSchemes = useMemo(() => {
-    const ownSchemes = authUserId ? schemes.filter((s) => s.user_id === authUserId) : []; // Never fall back to public schemes when session profile is unavailable
     switch (activeFilter) {
       case 'favorites':
-        return ownSchemes.filter((s) => favorites[s.scheme_id]);
+        return schemes.filter((s) => favorites[s.scheme_id]);
       case 'available':
-        return ownSchemes.filter((s) => (availability[s.scheme_id] ?? 'available') === 'available');
+        return schemes.filter((s) => (availability[s.scheme_id] ?? 'available') === 'available');
       case 'unavailable':
-        return ownSchemes.filter((s) => availability[s.scheme_id] === 'unavailable');
+        return schemes.filter((s) => availability[s.scheme_id] === 'unavailable');
       default:
-        return ownSchemes;
+        return schemes;
     }
-  }, [activeFilter, favorites, availability, schemes, authUserId]);
+  }, [activeFilter, favorites, availability, schemes]);
 
   const grouped = useMemo(() => {
     const byOccasion = new Map<string, Scheme[]>();
@@ -219,11 +205,11 @@ export default function ExploreSchemeView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ display:"flex", flexDirection:"column", gap:"1.5rem" }}>
       <PageHeader title="Cards de Look Salvos" subtitle="Gerencie looks por ocasião, preferência, favoritos e disponibilidade." />
 
       {/* Filter pills */}
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-white/15 bg-white/5 p-3">
+      <div style={{ display:"flex", flexWrap:"wrap", gap:"0.5rem", borderRadius:"1rem", border:"1px solid var(--border)", background:"var(--accent)", padding:"0.75rem" }}>
         {FILTER_TABS.map((tab) => (
           <button
             key={tab.key}
@@ -232,7 +218,7 @@ export default function ExploreSchemeView() {
             className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
               activeFilter === tab.key
                 ? 'border-cyan-400/70 bg-cyan-500/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
-                : 'border-white/20 bg-white/5 text-white/70 hover:border-white/35 hover:bg-white/10 hover:text-white'
+                : 'border-border bg-accent text-muted-foreground hover:border-white/35 hover:bg-accent hover:text-white'
             }`}
           >
             {tab.label}
@@ -241,36 +227,36 @@ export default function ExploreSchemeView() {
       </div>
 
       {grouped.length === 0 ? (
-        <p className="text-sm text-white/70">{emptyMessage[activeFilter]}</p>
+        <p style={{ fontSize:"0.875rem", color:"var(--muted-foreground)", padding:"2rem", textAlign:"center" }}>{emptyMessage[activeFilter]}</p>
       ) : (
         grouped.map(([occasion, occasionSchemes]) => (
           <SectionBlock key={occasion} title={`Ocasião: ${occasion}`} subtitle="Looks agrupados por ocasião.">
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div style={{ marginTop:"1rem", display:"grid", gap:"1rem", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))" }}>
               {occasionSchemes.map((scheme) => (
-                <article key={scheme.scheme_id} className="space-y-2 rounded-xl border border-white/20 p-2">
-                  <CollapsibleOutfitCard card={buildOutfitPreviewData(scheme)} defaultExpanded={false} showActions={false} />
-                  <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/80">
+                <article key={scheme.scheme_id} style={{ display:"flex", flexDirection:"column", gap:"0.75rem", borderRadius:"1rem", border:"1px solid var(--border)", background:"var(--card)", padding:"0.75rem", boxShadow:"var(--shadow-sm)" }}>
+                  <OutfitCard data={buildOutfitPreviewData(scheme)} />
+                  <div style={{ borderRadius:"0.75rem", border:"1px solid var(--border)", background:"var(--accent)", padding:"0.75rem", fontSize:"0.75rem", color:"var(--foreground)" }}>
                     <p>Status: {availability[scheme.scheme_id] === 'unavailable' ? 'indisponível' : 'disponível'}</p>
                     <p>Favorito: {favorites[scheme.scheme_id] ? 'sim' : 'não'}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div style={{ marginTop:"0.5rem", display:"flex", flexWrap:"wrap", gap:"0.5rem" }}>
                       <button
                         type="button"
                         onClick={() => setFavorites((prev) => ({ ...prev, [scheme.scheme_id]: !prev[scheme.scheme_id] }))}
-                        className={`rounded-lg border px-2 py-1 text-xs transition ${favorites[scheme.scheme_id] ? 'border-amber-300/50 bg-amber-500/20 text-amber-100' : 'border-white/30 text-white hover:bg-white/10'}`}
+                        style={{ borderRadius:"0.5rem", border: favorites[scheme.scheme_id] ? "1px solid rgba(245,158,11,0.5)" : "1px solid var(--border)", padding:"0.25rem 0.5rem", fontSize:"0.75rem", fontWeight:600, cursor:"pointer", background: favorites[scheme.scheme_id] ? "rgba(245,158,11,0.15)" : "var(--accent)", color: favorites[scheme.scheme_id] ? "#fcd34d" : "var(--foreground)", fontFamily:"inherit" }}
                       >
                         ★ Favorito
                       </button>
                       <button
                         type="button"
                         onClick={() => setAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'available' }))}
-                        className={`rounded-lg border px-2 py-1 text-xs transition ${(availability[scheme.scheme_id] ?? 'available') === 'available' ? 'border-emerald-300/50 bg-emerald-500/20 text-emerald-100' : 'border-white/30 text-white hover:bg-white/10'}`}
+                        style={{ borderRadius:"0.5rem", border: (availability[scheme.scheme_id] ?? 'available') === 'available' ? "1px solid rgba(16,185,129,0.5)" : "1px solid var(--border)", padding:"0.25rem 0.5rem", fontSize:"0.75rem", fontWeight:600, cursor:"pointer", background: (availability[scheme.scheme_id] ?? 'available') === 'available' ? "rgba(16,185,129,0.15)" : "var(--accent)", color: (availability[scheme.scheme_id] ?? 'available') === 'available' ? "#6ee7b7" : "var(--foreground)", fontFamily:"inherit" }}
                       >
                         Disponível
                       </button>
                       <button
                         type="button"
                         onClick={() => setAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'unavailable' }))}
-                        className={`rounded-lg border px-2 py-1 text-xs transition ${availability[scheme.scheme_id] === 'unavailable' ? 'border-rose-300/50 bg-rose-500/20 text-rose-100' : 'border-white/30 text-white hover:bg-white/10'}`}
+                        style={{ borderRadius:"0.5rem", border: availability[scheme.scheme_id] === 'unavailable' ? "1px solid rgba(239,68,68,0.5)" : "1px solid var(--border)", padding:"0.25rem 0.5rem", fontSize:"0.75rem", fontWeight:600, cursor:"pointer", background: availability[scheme.scheme_id] === 'unavailable' ? "rgba(239,68,68,0.15)" : "var(--accent)", color: availability[scheme.scheme_id] === 'unavailable' ? "#fca5a5" : "var(--foreground)", fontFamily:"inherit" }}
                       >
                         Indisponível
                       </button>
