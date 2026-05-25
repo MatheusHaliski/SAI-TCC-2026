@@ -1106,30 +1106,26 @@ function buildEditorialLogoComposition(referenceImage: string, context: PresetCo
     `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
       <defs>
         <filter id='softShadow' x='-18%' y='-18%' width='136%' height='136%'>
-          <feGaussianBlur stdDeviation='10'/>
+          <feGaussianBlur stdDeviation='12'/>
         </filter>
         <linearGradient id='editorialBg' x1='0%' y1='0%' x2='100%' y2='100%'>
-          <stop offset='0%' stop-color='#f8fafc'/>
-          <stop offset='55%' stop-color='#f1f5f9'/>
-          <stop offset='100%' stop-color='#e2e8f0'/>
+          <stop offset='0%' stop-color='#0f172a'/>
+          <stop offset='55%' stop-color='#1e1b4b'/>
+          <stop offset='100%' stop-color='#312e81'/>
         </linearGradient>
         <pattern id='editorialGrid' width='80' height='80' patternUnits='userSpaceOnUse'>
-          <line x1='80' y1='0' x2='0' y2='0' stroke='rgba(148,163,184,0.18)' stroke-width='1'/>
-          <line x1='0' y1='0' x2='0' y2='80' stroke='rgba(148,163,184,0.18)' stroke-width='1'/>
+          <line x1='80' y1='0' x2='0' y2='0' stroke='rgba(255,255,255,0.06)' stroke-width='1'/>
+          <line x1='0' y1='0' x2='0' y2='80' stroke='rgba(255,255,255,0.06)' stroke-width='1'/>
         </pattern>
       </defs>
       <rect width='1200' height='800' fill='url(#editorialBg)'/>
       <rect width='1200' height='800' fill='url(#editorialGrid)'/>
-      <path d='M-60,370 C220,290 500,430 820,350 C980,308 1100,238 1260,168' stroke='rgba(148,163,184,0.28)' stroke-width='90' fill='none'/>
-      <path d='M-60,520 C220,440 480,580 800,498' stroke='rgba(148,163,184,0.18)' stroke-width='60' fill='none'/>
-      <rect width='1200' height='800' fill='rgba(255,255,255,0.54)'/>
-      <g transform='translate(726 140)' filter='url(#softShadow)'>
-        <rect x='0' y='0' width='332' height='486' rx='32' fill='rgba(255,255,255,0.90)'/>
-        <rect x='18' y='18' width='296' height='450' rx='24' fill='rgba(148,163,184,0.10)'/>
-        <image href='${referenceImage}' x='32' y='34' width='268' height='392' preserveAspectRatio='xMidYMid meet' opacity='0.94'/>
-        <rect x='72' y='442' width='188' height='18' rx='9' fill='rgba(15,23,42,0.20)'/>
+      <path d='M-60,370 C220,290 500,430 820,350 C980,308 1100,238 1260,168' stroke='rgba(255,255,255,0.06)' stroke-width='90' fill='none'/>
+      <g transform='translate(600 80)' filter='url(#softShadow)'>
+        <rect x='0' y='0' width='540' height='620' rx='28' fill='rgba(15,23,42,0.50)'/>
+        <image href='${referenceImage}' x='16' y='16' width='508' height='588' preserveAspectRatio='xMidYMid meet'/>
       </g>
-      <text x='88' y='120' font-size='54' font-family='Arial Black, Arial, sans-serif' fill='rgba(15,23,42,0.30)'>${safeBrand}</text>
+      <text x='60' y='110' font-size='52' font-family='Arial Black, Arial, sans-serif' fill='rgba(255,255,255,0.55)'>${safeBrand}</text>
     </svg>`,
   );
   return {
@@ -1463,57 +1459,29 @@ async function buildEditorialLogoAsync(
     drawGradientOnCanvas(ctx, CW, CH, currentDraft.gradient ?? { type: 'linear', angle: 135, intensity: 100, stops: [{ color: '#f8fafc', position: 0 }, { color: '#e2e8f0', position: 100 }] });
   }
 
-  // Editorial white overlay for brightness
-  ctx.fillStyle = 'rgba(255,255,255,0.58)';
-  ctx.fillRect(0, 0, CW, CH);
-
-  // Subtle editorial grid
-  ctx.strokeStyle = 'rgba(148,163,184,0.22)';
+  // Subtle editorial grid — no white overlay, keep background clean
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
   ctx.lineWidth = 1;
   for (let x = 0; x < CW; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke(); }
   for (let y = 0; y < CH; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke(); }
 
-  // Flowing editorial curves
-  ctx.strokeStyle = 'rgba(148,163,184,0.28)';
-  ctx.lineWidth = 90;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(-60, 370);
-  ctx.bezierCurveTo(220, 290, 500, 430, 820, 350);
-  ctx.bezierCurveTo(980, 308, 1100, 238, 1260, 168);
-  ctx.stroke();
-
-  // Extra white layer for editorial cleanliness
-  ctx.fillStyle = 'rgba(255,255,255,0.38)';
-  ctx.fillRect(0, 0, CW, CH);
-
-  // Reference image in card frame
+  // Reference image in card frame — larger, more centered
   if (referenceImage) {
     try {
       const logoImg = await loadImageFromSource(referenceImage);
-      const CX = 726, CY = 140, CW2 = 332, CH2 = 486, RADIUS = 32;
+      const CX = 600, CY = 80, CW2 = 560, CH2 = 640, RADIUS = 24;
       // Drop shadow
-      ctx.fillStyle = 'rgba(15,23,42,0.18)';
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.beginPath();
-      ctx.roundRect(CX + 8, CY + 8, CW2, CH2, RADIUS);
+      ctx.roundRect(CX + 10, CY + 10, CW2, CH2, RADIUS);
       ctx.fill();
-      // Card background
-      ctx.fillStyle = 'rgba(255,255,255,0.94)';
-      ctx.beginPath();
-      ctx.roundRect(CX, CY, CW2, CH2, RADIUS);
-      ctx.fill();
-      // Clipped image
+      // Clipped image — fills the frame directly, no white card
       ctx.save();
       ctx.beginPath();
-      ctx.roundRect(CX + 32, CY + 34, 268, 392, 16);
+      ctx.roundRect(CX, CY, CW2, CH2, RADIUS);
       ctx.clip();
-      ctx.drawImage(logoImg, CX + 32, CY + 34, 268, 392);
+      ctx.drawImage(logoImg, CX, CY, CW2, CH2);
       ctx.restore();
-      // Label bar below image
-      ctx.fillStyle = 'rgba(15,23,42,0.18)';
-      ctx.beginPath();
-      ctx.roundRect(CX + 72, CY + 442, 188, 18, 9);
-      ctx.fill();
     } catch { /* no image */ }
   }
 
