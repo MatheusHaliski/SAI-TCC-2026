@@ -385,11 +385,11 @@ export default function MyWardrobeView() {
         <div className="space-y-6">
           <PageHeader title="Virtual Wardrobe" subtitle="Classify pieces as available, unavailable, and favorites." />
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="sa-surface-header overflow-visible rounded-3xl border-8 border-white p-5 shadow-lg backdrop-blur-sm">
             <form onSubmit={handleSearch} className="flex flex-col gap-2 md:flex-row">
               <input
                 type="text"
-                placeholder="✨ Semantic search (e.g. roupas de inverno pretas)"
+                placeholder="✨ Busca semântica (ex: roupas de inverno pretas)"
                 className="flex-1 rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white placeholder-white/50"
                 value={searchQuery}
                 onChange={(e) => {
@@ -400,7 +400,7 @@ export default function MyWardrobeView() {
               <button
                 type="submit"
                 disabled={isSearching}
-                className="rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-2 font-semibold text-white shadow-lg transition hover:scale-[1.02] disabled:opacity-50"
+                className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-2 font-semibold text-white shadow-lg transition hover:scale-[1.02] disabled:opacity-50"
               >
                 {isSearching ? 'Searching...' : 'AI Search'}
               </button>

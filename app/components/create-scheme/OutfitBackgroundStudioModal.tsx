@@ -230,6 +230,7 @@ const CURATED_IMAGE_PICKER_OPTIONS = [
   hint: `Applies ${label || fileName} as artwork surface`,
   imageUrl: `/${encodeURIComponent(fileName)}`,
 }));
+const BACKGROUND_IMAGE_OPTIONS = CURATED_IMAGE_PICKER_OPTIONS.filter((opt) => /^image:a\d+\.png$/.test(opt.value));
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
   'none',
   'orb',
@@ -3459,82 +3460,30 @@ export default function OutfitBackgroundStudioModal({
           <FancySelect
             value={draft.shape ?? 'none'}
             onChange={(value) => setDraft((prev) => ({ ...prev, shape: value as NonNullable<OutfitBackgroundConfig['shape']> }))}
-            label="Selected shape"
+            label="Forma geométrica"
             options={SHAPE_SEGMENT_OPTIONS.map((shape) => ({
               value: shape,
-              label: shape === 'none' ? 'None (no overlay)' : shape[0].toUpperCase() + shape.slice(1),
-              hint: 'Updates geometry in preview',
+              label: shape === 'none' ? 'Nenhuma' : shape[0].toUpperCase() + shape.slice(1),
+              hint: 'Atualiza geometria na visualização',
             }))}
           />
-          {selectedRecommendedPreset === 'selection_editorial_collage' && (
-            <div className="flex flex-col gap-1">
-              <FancySelect
-                value={editorialCollageBgUrl}
-                label="Imagem de Composição"
-                onChange={(value) => setEditorialCollageBgUrl(value)}
-                options={[
-                  ...(uploadedReferenceImage ? [{ value: uploadedReferenceImage, label: '📎 Imagem carregada (upload)', hint: 'Usa a imagem enviada como painel esquerdo' }] : []),
-                  ...CURATED_IMAGE_PICKER_OPTIONS.map((opt) => ({ value: opt.imageUrl, label: opt.label, hint: 'Usar no painel esquerdo da composição' })),
-                ]}
-              />
-              <p className="text-[10px] text-white/45">Imagem usada no painel esquerdo da composição</p>
-            </div>
-          )}
           <FancySelect
-            value={(() => {
-              const gradientLabel = SEGMENTED_GRADIENT_OPTIONS.find((preset) => JSON.stringify(draft.gradient) === JSON.stringify(preset.config.gradient))?.label;
-              if (gradientLabel) return gradientLabel;
-              if (draft.ai_artwork?.image_url === FLOWER_PICKER_IMAGE) return 'Flower';
-              return CURATED_IMAGE_PICKER_OPTIONS.find((option) => option.imageUrl === draft.ai_artwork?.image_url)?.value ?? '';
-            })()}
+            value={BACKGROUND_IMAGE_OPTIONS.find((opt) => opt.imageUrl === draft.ai_artwork?.image_url)?.value ?? ''}
             onChange={(value) => {
-              if (value === 'Flower') {
-                setDraft((prev) => ({
-                  ...prev,
-                  background_mode: 'ai_artwork',
-                  ai_artwork: {
-                    prompt: 'flower grid pattern',
-                    image_url: FLOWER_PICKER_IMAGE,
-                    generation_status: 'done',
-                  },
-                  shape: 'flowers',
-                }));
-                return;
-              }
-              if (value.startsWith('image:')) {
-                const selectedImage = CURATED_IMAGE_PICKER_OPTIONS.find((option) => option.value === value);
-                if (!selectedImage) return;
-                setDraft((prev) => ({
-                  ...prev,
-                  background_mode: 'ai_artwork',
-                  ai_artwork: {
-                    prompt: `${selectedImage.label} curated artwork background`,
-                    image_url: selectedImage.imageUrl,
-                    generation_status: 'done',
-                  },
-                }));
-                return;
-              }
-              const selectedPreset = SEGMENTED_GRADIENT_OPTIONS.find((preset) => preset.label === value);
-              if (!selectedPreset) return;
-              setDraft((prev) => {
-                if (prev.background_mode === 'ai_artwork' && prev.ai_artwork?.image_url) {
-                  return {
-                    ...prev,
-                    gradient: selectedPreset.config.gradient,
-                    shape: prev.shape || selectedPreset.config.shape,
-                    background_mode: 'ai_artwork',
-                  };
-                }
-                return { ...prev, ...selectedPreset.config, background_mode: 'gradient' };
-              });
+              const selectedImage = BACKGROUND_IMAGE_OPTIONS.find((opt) => opt.value === value);
+              if (!selectedImage) return;
+              setDraft((prev) => ({
+                ...prev,
+                background_mode: 'ai_artwork',
+                ai_artwork: {
+                  prompt: `${selectedImage.label} curated artwork background`,
+                  image_url: selectedImage.imageUrl,
+                  generation_status: 'done',
+                },
+              }));
             }}
-            label="Gradient picker"
-            options={[
-              ...SEGMENTED_GRADIENT_OPTIONS.map((preset) => ({ value: preset.label, label: preset.label, hint: 'Applies gradient + geometry recipe' })),
-              { value: 'Flower', label: 'Flower', hint: 'Applies flower motif artwork surface' },
-              ...CURATED_IMAGE_PICKER_OPTIONS,
-            ]}
+            label="Imagem de fundo"
+            options={BACKGROUND_IMAGE_OPTIONS}
           />
         </div>
 

@@ -75,6 +75,21 @@ const GENDER_OPTIONS = [
   { value: 'feminino', label: 'Feminino' },
 ];
 
+const SEASON_LABEL_PT: Record<string, string> = {
+  summer: 'Verão',
+  winter: 'Inverno',
+  spring: 'Primavera',
+  autumn: 'Outono',
+  'all-season': 'Todas as Estações',
+};
+const GENDER_LABEL_PT: Record<string, string> = {
+  male: 'Masculino',
+  female: 'Feminino',
+  unisex: 'Unissex',
+  masculino: 'Masculino',
+  feminino: 'Feminino',
+};
+
 interface TryOnPrewarmContext {
   pieceId: string;
   garmentImageUrl: string;
@@ -120,6 +135,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const pending3dPieceNameRef = useRef<string>('');
   const brandsRef = useRef<Brand[]>([]);
+  const lastAutoDetectedBrandRef = useRef<string>(DEFAULT_BRAND_ID);
 
   const normalizeToken = (value: string) => value.trim().toLowerCase();
   const isGenericToken = (value: string) => {
@@ -261,13 +277,34 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     };
   }, [imagePreview]);
 
+  useEffect(() => {
+    const available = brandsRef.current;
+    if (!available.length) return;
+    const token = (form.name ?? '').trim().toLowerCase();
+    const detected = available.find((brand) => {
+      const name = (brand.name ?? '').trim().toLowerCase();
+      return name.length >= 3 && token.includes(name);
+    });
+    const detectedId = detected?.brand_id ?? DEFAULT_BRAND_ID;
+    setForm((prev) => {
+      const canOverride =
+        prev.brand_id === DEFAULT_BRAND_ID ||
+        prev.brand_id === lastAutoDetectedBrandRef.current;
+      if (!canOverride) return prev;
+      lastAutoDetectedBrandRef.current = detectedId;
+      if (prev.brand_id === detectedId) return prev;
+      return { ...prev, brand_id: detectedId };
+    });
+  }, [form.name]);
+
   const marketLabel = useMemo(
     () =>
       new Map(
-        markets.map((market) => [
-          market.market_id,
-          `${market.season} • ${market.gender}`,
-        ]),
+        markets.map((market) => {
+          const season = SEASON_LABEL_PT[market.season?.toLowerCase()] ?? market.season;
+          const gender = GENDER_LABEL_PT[market.gender?.toLowerCase()] ?? market.gender;
+          return [market.market_id, `${season} • ${gender}`];
+        }),
       ),
     [markets],
   );
