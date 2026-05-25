@@ -1487,8 +1487,8 @@ async function buildEditorialLogoAsync(
 
   // Brand name
   ctx.font = 'bold 52px "Arial Black", Arial, sans-serif';
-  ctx.fillStyle = 'rgba(15,23,42,0.30)';
-  ctx.fillText(context.brandName || '', 88, 120);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText(context.brandName || '', 60, 110);
 
   const imageUrl = canvas.toDataURL('image/png');
   return {
