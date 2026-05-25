@@ -9,7 +9,6 @@ import SearchOutfitCard from '@/app/components/search/SearchOutfitCard';
 import SearchUserCard from '@/app/components/search/SearchUserCard';
 import { useDiscoverySearch } from '@/app/components/shell/DiscoverySearchContext';
 import { OutfitCardData, buildOutfitDescriptionFallback, buildOutfitDescriptionRich } from '@/app/lib/outfit-card';
-import { getAuthSessionProfile } from '@/app/lib/authSession';
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
 type PublicScheme = {
@@ -66,11 +65,6 @@ export default function SearchItemsView() {
   const [outfitFilter, setOutfitFilter] = useState<OutfitFilter>('all');
   const [outfitFavorites, setOutfitFavorites] = useState<Record<string, boolean>>({});
   const [outfitAvailability, setOutfitAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
-  const authUserId = useMemo(() => getAuthSessionProfile().user_id?.trim() || '', []);
-
-  const handleOpenPieceInDressTester = (wardrobeItemId: string) => {
-    router.push(`/dress-tester?pieceId=${wardrobeItemId}`);
-  };
 
   useEffect(() => {
     fetch('/api/schemes/public')
@@ -89,11 +83,9 @@ export default function SearchItemsView() {
   const outfitsById = useMemo(() => {
     const map: Record<string, OutfitCardData> = {};
 
-    const usersById = Object.fromEntries(users.map((u) => [u.user_id, u]));
     schemes.forEach((scheme) => {
       const pieces = (scheme.pieces ?? []).map((piece) => ({
         id: piece.id,
-        wardrobeItemId: piece.sourceType === 'wardrobe' ? piece.sourceId : undefined,
         name: piece.name || 'Selected piece',
         brand: piece.brand || 'Selection Brand',
         pieceType: piece.pieceType || SLOT_PREVIEW_DEFAULTS[piece.slot].pieceType,
@@ -119,7 +111,6 @@ export default function SearchItemsView() {
               outfitName: scheme.title || 'Untitled Outfit',
             }),
         heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
-        creatorName: usersById[scheme.user_id]?.username || usersById[scheme.user_id]?.name || 'usuario',
         outfitBackground: (() => {
           try {
             const parsed = JSON.parse(scheme.description || '{}') as { outfitBackground?: OutfitCardData['outfitBackground'] };
@@ -141,7 +132,7 @@ export default function SearchItemsView() {
     });
 
     return map;
-  }, [schemes, users]);
+  }, [schemes]);
 
   const groupedSearch = useMemo(() => {
     const filteredUsers = users.filter((user) => {
@@ -150,8 +141,7 @@ export default function SearchItemsView() {
       return blob.includes(queryNorm);
     });
 
-    const publicFromOthers = authUserId ? schemes.filter((scheme) => scheme.user_id !== authUserId) : []; // Require resolved profile to enforce "others only" invariant
-    const textFiltered = publicFromOthers.filter((scheme) => {
+    const textFiltered = schemes.filter((scheme) => {
       if (!queryNorm) return true;
       const card = outfitsById[scheme.scheme_id];
       const brands = card?.brands?.join(' ') ?? '';
@@ -169,14 +159,14 @@ export default function SearchItemsView() {
     });
 
     return { users: filteredUsers, outfits, brands: [], wardrobeItems: [], styles: [] };
-  }, [outfitsById, queryNorm, schemes, users, outfitFilter, outfitFavorites, outfitAvailability, authUserId]);
+  }, [outfitsById, queryNorm, schemes, users, outfitFilter, outfitFavorites, outfitAvailability]);
 
   return (
     <div className="space-y-6">
       <PageHeader title="Buscar" subtitle="Hub de descoberta interativa de usuários, looks, marcas, estilos e roupas." />
 
       <SectionBlock title="Busca Global" subtitle="Busque usuários, looks, marcas, estilos e roupas.">
-        <label className="mt-4 flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
+        <label className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-accent px-4 py-3">
           <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.8">
             <circle cx="11" cy="11" r="6" />
             <path d="m20 20-4.2-4.2" />
@@ -186,7 +176,7 @@ export default function SearchItemsView() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Busque looks, marcas, estilos ou roupas"
-            className="w-full bg-transparent text-white placeholder:text-white/60 focus:outline-none"
+            className="w-full bg-transparent text-white placeholder:text-muted-foreground focus:outline-none"
           />
         </label>
       </SectionBlock>
@@ -203,7 +193,7 @@ export default function SearchItemsView() {
               onOpenProfile={() => router.push(`/profile/${user.user_id}?section=user-info`)}
             />
           ))}
-          {!groupedSearch.users.length ? <p className="text-sm text-white/70">Nenhum usuário encontrado.</p> : null}
+          {!groupedSearch.users.length ? <p className="text-sm text-muted-foreground">Nenhum usuário encontrado.</p> : null}
         </div>
       </SectionBlock>
 
@@ -218,7 +208,7 @@ export default function SearchItemsView() {
               className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
                 outfitFilter === tab.key
                   ? 'border-cyan-400/70 bg-cyan-500/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.18)]'
-                  : 'border-white/20 bg-white/5 text-white/65 hover:border-white/35 hover:bg-white/10 hover:text-white'
+                  : 'border-border bg-accent text-white/65 hover:border-white/35 hover:bg-accent hover:text-white'
               }`}
             >
               {tab.label}
@@ -233,26 +223,26 @@ export default function SearchItemsView() {
 
             return (
               <div key={scheme.scheme_id} className="space-y-2">
-                <SearchOutfitCard data={cardData} onOpenDetail={() => setSelectedOutfit(cardData)} onOpenPieceInDressTester={handleOpenPieceInDressTester} />
+                <SearchOutfitCard data={cardData} onOpenDetail={() => setSelectedOutfit(cardData)} />
                 <div className="flex flex-wrap gap-1.5 px-1">
                   <button
                     type="button"
                     onClick={() => setOutfitFavorites((prev) => ({ ...prev, [scheme.scheme_id]: !prev[scheme.scheme_id] }))}
-                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${outfitFavorites[scheme.scheme_id] ? 'border-amber-300/50 bg-amber-500/20 text-amber-100' : 'border-white/25 text-white/60 hover:bg-white/10 hover:text-white'}`}
+                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${outfitFavorites[scheme.scheme_id] ? 'border-amber-300/50 bg-amber-500/20 text-amber-100' : 'border-border text-muted-foreground hover:bg-accent hover:text-white'}`}
                   >
                     ★ Favorito
                   </button>
                   <button
                     type="button"
                     onClick={() => setOutfitAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'available' }))}
-                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${(outfitAvailability[scheme.scheme_id] ?? 'available') === 'available' ? 'border-emerald-300/50 bg-emerald-500/20 text-emerald-100' : 'border-white/25 text-white/60 hover:bg-white/10 hover:text-white'}`}
+                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${(outfitAvailability[scheme.scheme_id] ?? 'available') === 'available' ? 'border-emerald-300/50 bg-emerald-500/20 text-emerald-100' : 'border-border text-muted-foreground hover:bg-accent hover:text-white'}`}
                   >
                     Disponível
                   </button>
                   <button
                     type="button"
                     onClick={() => setOutfitAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'unavailable' }))}
-                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${outfitAvailability[scheme.scheme_id] === 'unavailable' ? 'border-rose-300/50 bg-rose-500/20 text-rose-100' : 'border-white/25 text-white/60 hover:bg-white/10 hover:text-white'}`}
+                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${outfitAvailability[scheme.scheme_id] === 'unavailable' ? 'border-rose-300/50 bg-rose-500/20 text-rose-100' : 'border-border text-muted-foreground hover:bg-accent hover:text-white'}`}
                   >
                     Indisponível
                   </button>
@@ -261,7 +251,7 @@ export default function SearchItemsView() {
             );
           })}
           {!groupedSearch.outfits.length ? (
-            <p className="text-sm text-white/70">
+            <p className="text-sm text-muted-foreground">
               {outfitFilter === 'favorites' && 'Nenhum look favoritado ainda.'}
               {outfitFilter === 'available' && 'Nenhum look disponível.'}
               {outfitFilter === 'unavailable' && 'Nenhum look indisponível.'}
@@ -273,9 +263,9 @@ export default function SearchItemsView() {
 
       <SectionBlock title="Grupos de Descoberta" subtitle="Resultados organizados para marcas, roupas e estilos.">
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/75">
-          <span className="rounded-full border border-white/25 px-2 py-1">Marcas: {groupedSearch.brands.length}</span>
-          <span className="rounded-full border border-white/25 px-2 py-1">Roupas: {groupedSearch.wardrobeItems.length}</span>
-          <span className="rounded-full border border-white/25 px-2 py-1">Estilos: {groupedSearch.styles.length}</span>
+          <span className="rounded-full border border-border px-2 py-1">Marcas: {groupedSearch.brands.length}</span>
+          <span className="rounded-full border border-border px-2 py-1">Roupas: {groupedSearch.wardrobeItems.length}</span>
+          <span className="rounded-full border border-border px-2 py-1">Estilos: {groupedSearch.styles.length}</span>
         </div>
       </SectionBlock>
 
