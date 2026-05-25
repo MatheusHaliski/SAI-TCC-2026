@@ -8,6 +8,7 @@ import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import SaiModalAlert from '@/app/components/shared/SaiModalAlert';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import FancySelect from '@/app/components/ui/fancy-select';
+import DescriptionModeSelector from '@/app/components/create-scheme/DescriptionModeSelector';
 import GenerationModePanel from '@/app/components/create-scheme/GenerationModePanel';
 import SaveSummaryPanel from '@/app/components/create-scheme/SaveSummaryPanel';
 import SchemeStepCard from '@/app/components/create-scheme/SchemeStepCard';
@@ -41,6 +42,7 @@ type SchemePieceSnapshot = {
 };
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
+type DescriptionMode = 'ai' | 'manual' | 'none';
 type GenerationMode = 'manual' | 'ai';
 
 type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
@@ -136,6 +138,8 @@ export default function CreateMySchemeView() {
   const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [outfitBackgroundConfig, setOutfitBackgroundConfig] = useState<OutfitBackgroundConfig>(DEFAULT_BACKGROUND_CONFIG);
   const [backgroundStudioOpen, setBackgroundStudioOpen] = useState(false);
+  const [descriptionMode, setDescriptionMode] = useState<DescriptionMode>('ai');
+  const [manualDescription, setManualDescription] = useState('');
   const [descriptionOverride, setDescriptionOverride] = useState('');
   const [titleFontFamily, setTitleFontFamily] = useState('Inter, Segoe UI, sans-serif');
   const [palette, setPalette] = useState('Neutral');
@@ -161,6 +165,7 @@ export default function CreateMySchemeView() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState('');
   const [generatedCardData, setGeneratedCardData] = useState<OutfitCardData | null>(null);
+  const [isGeneratingPremiumDesc, setIsGeneratingPremiumDesc] = useState(false);
 
   const inputClassName =
     'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
@@ -320,17 +325,21 @@ export default function CreateMySchemeView() {
     const description =
       descriptionOverride.trim()
         ? descriptionOverride.trim()
-        : buildOutfitDescriptionRich({
-            outfitName: title.trim() || 'My New Scheme',
-            style,
-            occasion,
-            visibility,
-            brand: selectedBrand?.name || 'Selection',
-            palette,
-            mood,
-            pieces,
-            titleFontFamily,
-          });
+        : descriptionMode === 'manual'
+          ? manualDescription.trim() || undefined
+          : descriptionMode === 'none'
+            ? ''
+            : buildOutfitDescriptionRich({
+                outfitName: title.trim() || 'My New Scheme',
+                style,
+                occasion,
+                visibility,
+                brand: selectedBrand?.name || 'Selection',
+                palette,
+                mood,
+                pieces,
+      titleFontFamily,
+              });
 
     return {
       outfitName: title.trim() || 'My New Scheme',
@@ -408,6 +417,8 @@ export default function CreateMySchemeView() {
           title: title.trim() || 'My New Scheme',
           description: JSON.stringify({
             outfitBackground: selectedBackground,
+            descriptionMode,
+            descriptionText: descriptionMode === 'manual' ? manualDescription.trim() : null,
             mood,
             palette,
             titleFontFamily,
@@ -538,6 +549,59 @@ export default function CreateMySchemeView() {
     }
   };
 
+  const generatePremiumDescription = async () => {
+    setIsGeneratingPremiumDesc(true);
+    try {
+      const piecesData = (Object.keys(slots) as SlotKey[]).map((slot) => {
+        const selectedValue = slots[slot];
+        if (!selectedValue) return null;
+        const item = items.find((i) => i.wardrobe_item_id === selectedValue);
+        const suggested = DEFAULT_SLOT_SUGGESTIONS[slot].find((s) => s.value === selectedValue);
+        return {
+          name: item?.name || suggested?.label || `${slot} piece`,
+          brand: resolveBrandForSlot(slot)?.name || 'Unknown',
+        };
+      }).filter(Boolean);
+
+      if (piecesData.length === 0) {
+        setAlertMessage('Please select at least one piece to generate a description.');
+        return;
+      }
+
+      const response = await fetch('/api/ai/fashion/generate-card-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pieces: piecesData,
+          overallColors: [palette].filter(Boolean),
+          dominantStyle: style,
+          season: 'all-season',
+          userIntent: aiPrompt,
+          occasion: occasion,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        setAlertMessage(payload.message || 'Error generating description');
+        return;
+      }
+
+      const data = payload.data;
+      if (data.editorialTitle) setTitle(data.editorialTitle);
+      if (data.dominantStyle) setStyle(data.dominantStyle);
+      if (data.longDescription) {
+        setManualDescription(data.longDescription);
+        setDescriptionMode('manual');
+      }
+      setAlertMessage('Premium editorial description generated successfully!');
+    } catch (error: any) {
+      setAlertMessage(error.message || 'Error generating description');
+    } finally {
+      setIsGeneratingPremiumDesc(false);
+    }
+  };
+
   const handleFinalSave = async () => {
     if (!isFormValid) {
       setAlertMessage('Fill title, style, occasion, and assign at least one slot before saving.');
@@ -556,9 +620,9 @@ export default function CreateMySchemeView() {
     <SectionBlock
       title="Build Outfit"
       subtitle="Define metadata, description behavior, and slot assignment manually."
-      className="sa-surface-header h-auto border-white/20"
+      style={{ background:"var(--brand-gradient)", borderRadius:"0.75rem", padding:"1rem", color:"#fff" }}
     >
-      <form className="mt-4 grid gap-3 rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md md:grid-cols-2">
+      <form className="fai-form-grid" style={{ marginTop:"1rem", padding:"1rem", background:"var(--accent)", borderRadius:"0.875rem", border:"1px solid var(--border)" }}>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -650,9 +714,9 @@ export default function CreateMySchemeView() {
           className={`${slotCardClassName} md:col-span-2`}
           onClick={() => setBackgroundStudioOpen(true)}
         >
-          <p className="text-xs uppercase tracking-[0.13em] text-white/60">Background</p>
+          <p style={{ fontSize:"0.75rem", textTransform:"uppercase", letterSpacing:"0.1em", color:"var(--muted-foreground)" }}>Background</p>
           <div className="mt-2 flex items-center gap-3">
-            <span className="h-10 w-10 rounded-lg border border-white/30" style={(() => {
+            <span style={{ width:"2.5rem", height:"2.5rem", borderRadius:"0.5rem", border:"1px solid var(--border)" }} style={(() => {
               const resolved = resolveOutfitBackgroundForRender(outfitBackgroundConfig);
               if (resolved.background_mode === 'solid') {
                 return { background: resolved.solid_color || '#111827' };
@@ -664,8 +728,8 @@ export default function CreateMySchemeView() {
               return { backgroundImage: `url(${resolved.ai_artwork?.image_url || '/models/model-default.jpeg'})`, backgroundSize: 'cover' };
             })()} />
             <div className="text-left">
-              <p className="text-sm font-semibold text-white">Open Studio</p>
-              <p className="text-xs text-white/70">
+              <p style={{ fontSize:"0.875rem", fontWeight:700, color:"var(--foreground)" }}>Open Studio</p>
+              <p style={{ fontSize:"0.75rem", color:"var(--muted-foreground)" }}>
                 Current mode: {outfitBackgroundConfig.background_mode.replace('_', ' ')}
               </p>
             </div>
@@ -673,18 +737,18 @@ export default function CreateMySchemeView() {
         </button>
 
         <label className={`${inputClassName} block cursor-pointer`}>
-          <span className="block text-[11px] uppercase tracking-[0.12em] text-white/60">Hero image upload</span>
+          <span style={{ fontSize:"0.6875rem", textTransform:"uppercase", letterSpacing:"0.1em", color:"var(--muted-foreground)" }}>Hero image upload</span>
           <input
             type="file"
             accept="image/*"
-            className="mt-2 block w-full text-xs text-white file:mr-3 file:rounded-lg file:border-0 file:bg-white/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-white/30"
+            className="fai-file-input" style={{ marginTop:"0.5rem" }}
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               uploadHeroImage(file);
             }}
           />
-          <span className="mt-1 block text-xs text-white/65">
+          <span style={{ marginTop:"0.25rem", fontSize:"0.75rem", color:"var(--muted-foreground)" }}>
             {heroImageUploading
               ? 'Uploading image...'
               : heroImageUrl
@@ -693,9 +757,29 @@ export default function CreateMySchemeView() {
           </span>
         </label>
 
+        <DescriptionModeSelector value={descriptionMode} onChange={setDescriptionMode} />
+
+        <button
+          type="button"
+          onClick={generatePremiumDescription}
+          disabled={isGeneratingPremiumDesc || filledSlotsCount === 0}
+          className={`${primaryButtonClassName} md:col-span-2 flex justify-center items-center gap-2`}
+        >
+          <span>✨</span> {isGeneratingPremiumDesc ? 'Generating Premium Editorial Copy...' : 'Generate Premium Editorial Copy with Google AI'}
+        </button>
+
+        {descriptionMode === 'manual' ? (
+          <textarea
+            value={manualDescription}
+            onChange={(e) => setManualDescription(e.target.value)}
+            placeholder="Write the description for this outfit card..."
+            className={`${inputClassName} min-h-24 md:col-span-2`}
+          />
+        ) : null}
+
         {(['upper', 'lower', 'shoes', 'accessory'] as const).map((slot) => (
           <div key={slot} className={`${slotCardClassName} relative overflow-visible`}>
-            <p className="text-sm font-semibold capitalize text-white">{slot} piece</p>
+            <p style={{ fontSize:"0.875rem", fontWeight:600, color:"var(--foreground)", textTransform:"capitalize" }}>{slot} piece</p>
 
             <div className="mt-2">
               <FancySelect
@@ -751,9 +835,9 @@ export default function CreateMySchemeView() {
               />
             </div>
 
-            <div className="mt-3 rounded-lg border border-white/20 bg-white/5 px-3 py-2">
-              <p className="text-[11px] uppercase tracking-[0.12em] text-white/60">Selected</p>
-              <p className="mt-1 text-sm font-semibold text-white">{resolveSlotSelectionLabel(slot)}</p>
+            <div style={{ marginTop:"0.75rem", borderRadius:"0.5rem", border:"1px solid var(--border)", background:"var(--accent)", padding:"0.5rem 0.75rem" }}>
+              <p style={{ fontSize:"0.6875rem", textTransform:"uppercase", letterSpacing:"0.1em", color:"var(--muted-foreground)" }}>Selected</p>
+              <p style={{ marginTop:"0.25rem", fontSize:"0.875rem", fontWeight:600, color:"var(--foreground)" }}>{resolveSlotSelectionLabel(slot)}</p>
             </div>
           </div>
         ))}
@@ -765,7 +849,7 @@ export default function CreateMySchemeView() {
     <SectionBlock
       title="Scheme Basics"
       subtitle="Defina claramente os dados que orientam a geração do card final."
-      className="sa-surface-header h-auto border-white/20"
+      style={{ background:"var(--brand-gradient)", borderRadius:"0.75rem", padding:"1rem", color:"#fff" }}
     >
       <div className="mt-4 space-y-4">
         <GenerationModePanel mode={generationMode} onChange={setGenerationMode} />
@@ -784,7 +868,7 @@ export default function CreateMySchemeView() {
     <SectionBlock
       title="AI Assist"
       subtitle="A IA sugere combinações com base nos seus itens e metadata."
-      className="sa-surface-header h-auto border-white/20"
+      style={{ background:"var(--brand-gradient)", borderRadius:"0.75rem", padding:"1rem", color:"#fff" }}
     >
       <div className="mt-4 space-y-3">
         <textarea
@@ -810,10 +894,10 @@ export default function CreateMySchemeView() {
           </button>
         </div>
         {aiInterpretation ? (
-          <div className="rounded-xl border border-white/20 bg-white/5 p-3 text-sm text-white/90">
-            <p className="font-semibold text-white">Structured interpretation</p>
-            <p className="mt-1 text-white/70">{aiInterpretation.description || aiInterpretation.prompt}</p>
-            <ul className="mt-2 space-y-1 text-xs text-white/80">
+          <div style={{ borderRadius:"0.75rem", border:"1px solid var(--border)", background:"var(--accent)", padding:"0.75rem", fontSize:"0.875rem", color:"var(--foreground)" }}>
+            <p style={{ fontWeight:700, color:"var(--foreground)" }}>Structured interpretation</p>
+            <p style={{ marginTop:"0.25rem", color:"var(--muted-foreground)" }}>{aiInterpretation.description || aiInterpretation.prompt}</p>
+            <ul style={{ marginTop:"0.5rem", display:"flex", flexDirection:"column", gap:"0.25rem", fontSize:"0.75rem", color:"var(--foreground)" }}>
               {aiInterpretation.items.map((item, index) => (
                 <li key={`${item.display_label}-${index}`}>
                   • {item.display_label} · {item.piece_type}
@@ -842,7 +926,7 @@ export default function CreateMySchemeView() {
     <SectionBlock
       title="Slots Review"
       subtitle="Loadout-style review for each slot with completeness feedback."
-      className="sa-surface-header h-auto border-white/20"
+      style={{ background:"var(--brand-gradient)", borderRadius:"0.75rem", padding:"1rem", color:"#fff" }}
     >
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {(Object.keys(slots) as SlotKey[]).map((slot) => (
@@ -856,7 +940,7 @@ export default function CreateMySchemeView() {
         ))}
       </div>
       <p className="mt-4 text-sm text-white/75">
-        Composition status: <span className="font-semibold text-white">{filledSlotsCount} of 4 slots filled</span>.
+        Composition status: <span style={{ fontWeight:700, color:"var(--foreground)" }}>{filledSlotsCount} of 4 slots filled</span>.
       </p>
     </SectionBlock>
   );
@@ -866,7 +950,7 @@ export default function CreateMySchemeView() {
     <SectionBlock
       title="Card Background"
       subtitle="Ajuste cor, gradiente ou IA e persista no draft atual."
-      className="sa-surface-header h-auto border-white/20"
+      style={{ background:"var(--brand-gradient)", borderRadius:"0.75rem", padding:"1rem", color:"#fff" }}
     >
       <div className="mt-4">
         <button type="button" className={primaryButtonClassName} onClick={() => setBackgroundStudioOpen(true)}>
@@ -880,11 +964,12 @@ export default function CreateMySchemeView() {
     <SectionBlock
       title="Save & Generate"
       subtitle="Final preview, validation, and generation confirmation."
-      className="sa-surface-header h-auto border-white/20"
+      style={{ background:"var(--brand-gradient)", borderRadius:"0.75rem", padding:"1rem", color:"#fff" }}
     >
       <div className="mt-4 space-y-4">
         <SaveSummaryPanel
           mode={generationMode}
+          descriptionMode={descriptionMode}
           filledSlots={filledSlotsCount}
           totalSlots={4}
         />
@@ -924,7 +1009,7 @@ export default function CreateMySchemeView() {
             <SectionBlock
               title="Generated Outfit Card"
               subtitle="Rendered after the final save & generate action."
-              className="sa-surface-header h-auto border-white/20"
+              style={{ background:"var(--brand-gradient)", borderRadius:"0.75rem", padding:"1rem", color:"#fff" }}
             >
               <OutfitCard data={generatedCardData} />
             </SectionBlock>
