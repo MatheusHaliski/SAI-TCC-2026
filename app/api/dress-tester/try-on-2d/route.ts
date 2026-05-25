@@ -21,18 +21,26 @@ export async function POST(request: NextRequest) {
     const garmentBuffer = Buffer.from(await garmentFetch.arrayBuffer());
     const contentType = garmentFetch.headers.get('content-type') ?? 'image/jpeg';
 
+    const removeBgApiKey = process.env.REMOVE_BG_API_KEY;
+    if (!removeBgApiKey) {
+      return NextResponse.json({ status: 'error', resultImageUrl: null, error: 'Chave de API remove.bg ausente (REMOVE_BG_API_KEY). Verifique as variáveis de ambiente.' }, { status: 502 });
+    }
+
     const removeBgForm = new FormData();
     removeBgForm.append('image_file', new Blob([garmentBuffer], { type: contentType }), 'garment.jpg');
     removeBgForm.append('size', 'auto');
 
     const removeBgRes = await fetch('https://api.remove.bg/v1.0/removebg', {
       method: 'POST',
-      headers: { 'X-Api-Key': process.env.REMOVE_BG_API_KEY ?? '' },
+      headers: { 'X-Api-Key': removeBgApiKey },
       body: removeBgForm,
     });
     if (!removeBgRes.ok) {
       const errText = await removeBgRes.text().catch(() => '');
       console.error('[try-on-2d] remove.bg error', { status: removeBgRes.status, body: errText });
+      if (removeBgRes.status === 401 || removeBgRes.status === 403) {
+        return NextResponse.json({ status: 'error', resultImageUrl: null, error: 'Chave de API remove.bg inválida ou ausente (REMOVE_BG_API_KEY). Verifique as variáveis de ambiente.' }, { status: 502 });
+      }
       return NextResponse.json({ status: 'error', resultImageUrl: null, error: `Background removal failed (${removeBgRes.status}): ${errText}` }, { status: 502 });
     }
 

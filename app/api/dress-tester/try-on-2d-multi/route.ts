@@ -32,17 +32,22 @@ async function removeBgAndUpload(
   const garmentBuffer = Buffer.from(await garmentFetch.arrayBuffer());
   const contentType = garmentFetch.headers.get('content-type') ?? 'image/jpeg';
 
+  const removeBgApiKey = process.env.REMOVE_BG_API_KEY;
+  if (!removeBgApiKey) {
+    throw new Error('Chave de API remove.bg ausente (REMOVE_BG_API_KEY). Verifique as variáveis de ambiente.');
+  }
+
   const removeBgForm = new FormData();
   removeBgForm.append('image_file', new Blob([garmentBuffer], { type: contentType }), 'garment.jpg');
   removeBgForm.append('size', 'auto');
 
   const removeBgRes = await fetch('https://api.remove.bg/v1.0/removebg', {
     method: 'POST',
-    headers: { 'X-Api-Key': process.env.REMOVE_BG_API_KEY ?? '' },
+    headers: { 'X-Api-Key': removeBgApiKey },
     body: removeBgForm,
   });
   if (!removeBgRes.ok) {
-    if (removeBgRes.status === 401) {
+    if (removeBgRes.status === 401 || removeBgRes.status === 403) {
       throw new Error('Chave de API remove.bg inválida ou ausente (REMOVE_BG_API_KEY). Verifique as variáveis de ambiente.');
     }
     const errText = await removeBgRes.text().catch(() => '');
