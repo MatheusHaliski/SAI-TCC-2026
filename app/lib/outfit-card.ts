@@ -371,11 +371,11 @@ export function resolveBrandLogoUrlByName(brandName?: string) {
 }
 
 export function buildOutfitDescriptionRich(input: DescriptionGeneratorInput) {
-  const style = input.style?.trim() || 'casual';
-  const occasion = input.occasion?.trim() || 'daily';
+  const style = (typeof input.style === 'string' ? input.style : '').trim() || 'casual';
+  const occasion = (typeof input.occasion === 'string' ? input.occasion : '').trim() || 'daily';
   const styleLine = `${style} ${occasion}`;
-  const mood = input.mood?.trim() || 'refined urban';
-  const palette = input.palette?.trim() || 'balanced neutral';
+  const mood = (typeof input.mood === 'string' ? input.mood : '').trim() || 'refined urban';
+  const palette = (typeof input.palette === 'string' ? input.palette : '').trim() || 'balanced neutral';
   const heroPiece = input.pieces[0]?.name || 'the selected hero piece';
   const piecesSummary = input.pieces
     .slice(0, 3)
