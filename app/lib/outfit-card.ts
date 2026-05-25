@@ -2,7 +2,6 @@ export type PieceCategory = 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
 
 export type OutfitPiece = {
   id: string;
-  wardrobeItemId?: string;
   name: string;
   brand: string;
   brandLogoUrl?: string;
@@ -105,7 +104,6 @@ export type OutfitCardData = {
   pieces: OutfitPiece[];
   schemeId?: string;
   creatorId?: string;
-  creatorName?: string;
   titleFontFamily?: string;
 };
 
@@ -113,11 +111,11 @@ const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {
   background_mode: 'gradient',
   gradient: {
     type: 'linear',
-    angle: 145,
-    intensity: 110,
+    angle: 180,
+    intensity: 100,
     stops: [
-      { color: '#0f172a', position: 0 },
-      { color: '#312e81', position: 100 },
+      { color: '#f8fafc', position: 0 },
+      { color: '#ffffff', position: 100 },
     ],
   },
   shape: 'none',
@@ -194,8 +192,24 @@ export function buildBackgroundCssStyle(background: OutfitBackgroundConfig) {
   }
 
   if (background.background_mode === 'ai_artwork' && background.ai_artwork?.image_url) {
+    const gradient = background.gradient?.stops?.length
+      ? background.gradient.stops
+          .slice(0, 3)
+          .map((stop) => `${hexToRgba(stop.color, 0.34)} ${clamp(stop.position, 0, 100)}%`)
+          .join(', ')
+      : null;
+    const gradientType = background.gradient?.type || 'linear';
+    const gradientOverlay = gradient
+      ? gradientType === 'radial'
+        ? `radial-gradient(circle at center, ${gradient})`
+        : gradientType === 'conic'
+          ? `conic-gradient(from ${background.gradient?.angle ?? 180}deg at 50% 50%, ${gradient})`
+          : `linear-gradient(${background.gradient?.angle ?? 135}deg, ${gradient})`
+      : null;
     return {
-      backgroundImage: `url(${background.ai_artwork.image_url})`,
+      backgroundImage: gradientOverlay
+        ? `${gradientOverlay}, url(${background.ai_artwork.image_url})`
+        : `url(${background.ai_artwork.image_url})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
     };
@@ -288,7 +302,6 @@ type DescriptionGeneratorInput = {
   pieces: OutfitPiece[];
   schemeId?: string;
   creatorId?: string;
-  creatorName?: string;
   titleFontFamily?: string;
 };
 
@@ -371,11 +384,11 @@ export function resolveBrandLogoUrlByName(brandName?: string) {
 }
 
 export function buildOutfitDescriptionRich(input: DescriptionGeneratorInput) {
-  const style = (typeof input.style === 'string' ? input.style : '').trim() || 'casual';
-  const occasion = (typeof input.occasion === 'string' ? input.occasion : '').trim() || 'daily';
+  const style = input.style?.trim() || 'casual';
+  const occasion = input.occasion?.trim() || 'daily';
   const styleLine = `${style} ${occasion}`;
-  const mood = (typeof input.mood === 'string' ? input.mood : '').trim() || 'refined urban';
-  const palette = (typeof input.palette === 'string' ? input.palette : '').trim() || 'balanced neutral';
+  const mood = input.mood?.trim() || 'refined urban';
+  const palette = input.palette?.trim() || 'balanced neutral';
   const heroPiece = input.pieces[0]?.name || 'the selected hero piece';
   const piecesSummary = input.pieces
     .slice(0, 3)
