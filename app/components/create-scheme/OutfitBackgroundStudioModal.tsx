@@ -503,15 +503,17 @@ function detectColorFromPrompt(prompt: string): ColorTokens | null {
   return null;
 }
 
-function buildColorGradientVariations(t: ColorTokens): OutfitBackgroundConfig[] {
-  const g = (angle: number, stops: Array<{ color: string; position: number }>, type: 'linear' | 'radial' = 'linear'): OutfitBackgroundConfig => ({
+function buildColorGradientVariations(t: ColorTokens, shape?: NonNullable<OutfitBackgroundConfig['shape']>): OutfitBackgroundConfig[] {
+  const s = shape && shape !== 'none' ? shape : undefined;
+  const g = (angle: number, stops: Array<{ color: string; position: number }>, type: 'linear' | 'radial' = 'linear', withShape = false): OutfitBackgroundConfig => ({
     background_mode: 'gradient',
     gradient: { type, angle, intensity: 100, stops },
+    ...(withShape && s ? { shape: s } : {}),
   });
   return [
-    g(135, [{ color: t.light, position: 0 }, { color: t.mid,  position: 100 }]),
-    g(145, [{ color: t.dark,  position: 0 }, { color: t.mid,  position: 100 }]),
-    g(0,   [{ color: t.mid,   position: 0 }, { color: t.dark, position: 100 }], 'radial'),
+    g(135, [{ color: t.light, position: 0 }, { color: t.mid,  position: 100 }], 'linear', true),
+    g(145, [{ color: t.dark,  position: 0 }, { color: t.mid,  position: 100 }], 'linear', true),
+    g(0,   [{ color: t.mid,   position: 0 }, { color: t.dark, position: 100 }], 'radial',  true),
     g(60,  [{ color: t.light, position: 0 }, { color: t.mid,  position: 50 }, { color: t.dark,  position: 100 }]),
     g(180, [{ color: '#020617', position: 0 }, { color: t.dark, position: 40 }, { color: t.mid, position: 100 }]),
     g(120, [{ color: t.light, position: 0 }, { color: '#0f172a', position: 100 }]),
@@ -2626,12 +2628,11 @@ export default function OutfitBackgroundStudioModal({
     // Detect colour keywords first — instant local gradients, correct hues, no API.
     const colorTokens = detectColorFromPrompt(aiPrompt);
     if (colorTokens) {
-      const variations = buildColorGradientVariations(colorTokens);
+      const detectedGeometry = detectGeometryFromPrompt(aiPrompt) ?? 'circles';
+      const detectedShape = GEOMETRY_TO_BACKGROUND_SHAPE[detectedGeometry];
+      const variations = buildColorGradientVariations(colorTokens, detectedShape);
       setAiGradientResults(variations);
       setDraft((prev) => ({ ...prev, ...variations[0] }));
-
-      // Populate the 3 artwork slots: 3 different geometry families for variety.
-      const detectedGeometry = detectGeometryFromPrompt(aiPrompt) ?? 'circles';
       const GEOMETRY_FALLBACK_ORDER: GeometryFamily[] = ['circles', 'stars', 'triangles', 'arrows', 'waves', 'diamond'];
       const primaryGeo = detectedGeometry;
       // Pick two other distinct families
@@ -2693,10 +2694,12 @@ export default function OutfitBackgroundStudioModal({
       const cssAngleMatch = typeof data.cssSuggestion === 'string' ? /(\d+)deg/.exec(data.cssSuggestion) : null;
       const suggestedAngle = cssAngleMatch ? Number(cssAngleMatch[1]) : 135;
 
+      const aiDetectedGeo = detectGeometryFromPrompt(aiPrompt);
+      const aiDetectedShape = aiDetectedGeo ? GEOMETRY_TO_BACKGROUND_SHAPE[aiDetectedGeo] : 'none';
       const paletteOptions: OutfitBackgroundConfig[] = [
-        { background_mode: 'gradient', gradient: { type: 'linear', angle: suggestedAngle, intensity: 100, stops: [{ color: c0, position: 0 }, { color: cLast, position: 100 }] }, shape: 'none' },
-        { background_mode: 'gradient', gradient: { type: 'linear', angle: (suggestedAngle + 45) % 360, intensity: 100, stops: [{ color: c0, position: 0 }, { color: c1, position: 50 }, { color: cLast, position: 100 }] }, shape: 'none' },
-        { background_mode: 'gradient', gradient: { type: 'radial', angle: 0, intensity: 100, stops: [{ color: c1, position: 0 }, { color: c0, position: 100 }] }, shape: 'none' },
+        { background_mode: 'gradient', gradient: { type: 'linear', angle: suggestedAngle, intensity: 100, stops: [{ color: c0, position: 0 }, { color: cLast, position: 100 }] }, shape: aiDetectedShape },
+        { background_mode: 'gradient', gradient: { type: 'linear', angle: (suggestedAngle + 45) % 360, intensity: 100, stops: [{ color: c0, position: 0 }, { color: c1, position: 50 }, { color: cLast, position: 100 }] }, shape: aiDetectedShape },
+        { background_mode: 'gradient', gradient: { type: 'radial', angle: 0, intensity: 100, stops: [{ color: c1, position: 0 }, { color: c0, position: 100 }] }, shape: aiDetectedShape },
         { background_mode: 'gradient', gradient: { type: 'linear', angle: (suggestedAngle + 90) % 360, intensity: 100, stops: [{ color: c2, position: 0 }, { color: c1, position: 50 }, { color: c0, position: 100 }] }, shape: 'none' },
         { background_mode: 'gradient', gradient: { type: 'linear', angle: (suggestedAngle + 180) % 360, intensity: 100, stops: [{ color: c0, position: 0 }, { color: c2, position: 60 }, { color: cLast, position: 100 }] }, shape: 'none' },
       ];
@@ -3168,10 +3171,16 @@ export default function OutfitBackgroundStudioModal({
                         <button
                           key={`ai-gradient-${index}`}
                           type="button"
-                          className={`h-20 rounded-xl border ${draft.background_mode === 'gradient' && JSON.stringify(draft.gradient) === JSON.stringify(result.gradient) ? 'border-violet-300 shadow-[0_0_0_1px_rgba(196,181,253,0.5)]' : 'border-white/20'}`}
+                          className={`relative h-20 overflow-hidden rounded-xl border ${draft.background_mode === 'gradient' && JSON.stringify(draft.gradient) === JSON.stringify(result.gradient) ? 'border-violet-300 shadow-[0_0_0_1px_rgba(196,181,253,0.5)]' : 'border-white/20'}`}
                           style={buildBackgroundCssStyle(resolveOutfitBackgroundForRender(result))}
                           onClick={() => setDraft((prev) => ({ ...prev, ...resolveOutfitBackgroundForRender(result), background_mode: 'gradient' }))}
-                        />
+                        >
+                          {result.shape && result.shape !== 'none' ? (
+                            <span className="absolute bottom-1 left-1 rounded bg-black/55 px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-white/90">
+                              {result.shape}
+                            </span>
+                          ) : null}
+                        </button>
                       ))}
                     </div>
                   </div>
