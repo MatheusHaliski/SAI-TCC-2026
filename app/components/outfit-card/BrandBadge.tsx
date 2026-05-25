@@ -2,31 +2,23 @@
 
 import { useState } from 'react';
 
-
-const BRAND_GRADIENTS: Record<string, string> = {
-  adidas: 'linear-gradient(120deg, rgba(203,213,225,0.42), rgba(148,163,184,0.24), rgba(34,211,238,0.15))',
-  nike: 'linear-gradient(120deg, rgba(251,113,133,0.35), rgba(244,63,94,0.24), rgba(190,24,93,0.2))',
-  lacoste: 'linear-gradient(120deg, rgba(16,185,129,0.35), rgba(5,150,105,0.24), rgba(6,182,212,0.2))',
-  puma: 'linear-gradient(120deg, rgba(251,146,60,0.35), rgba(249,115,22,0.24), rgba(217,70,239,0.2))',
+const BRAND_COLORS: Record<string, { bg: string; border: string }> = {
+  adidas:  { bg: 'rgba(148,163,184,0.25)', border: 'rgba(148,163,184,0.6)' },
+  nike:    { bg: 'rgba(239,68,68,0.2)',    border: 'rgba(239,68,68,0.6)' },
+  lacoste: { bg: 'rgba(16,185,129,0.2)',   border: 'rgba(16,185,129,0.6)' },
+  puma:    { bg: 'rgba(249,115,22,0.2)',   border: 'rgba(249,115,22,0.6)' },
+  zara:    { bg: 'rgba(124,58,237,0.2)',   border: 'rgba(124,58,237,0.6)' },
+  hm:      { bg: 'rgba(219,39,119,0.2)',   border: 'rgba(219,39,119,0.6)' },
+  'h&m':   { bg: 'rgba(219,39,119,0.2)',   border: 'rgba(219,39,119,0.6)' },
 };
 
-const BRAND_BORDER_COLORS: Record<string, string> = {
-  adidas: 'rgba(125, 211, 252, 0.8)',
-  nike: 'rgba(251, 113, 133, 0.8)',
-  lacoste: 'rgba(52, 211, 153, 0.78)',
-  puma: 'rgba(251, 146, 60, 0.8)',
-};
-
-function fallbackGradient(name: string) {
-  const hash = name.toLowerCase().split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const hueA = hash % 360;
-  const hueB = (hash + 70) % 360;
-  return `linear-gradient(120deg, hsla(${hueA}, 72%, 65%, 0.35), hsla(${hueB}, 72%, 55%, 0.24))`;
-}
-
-function fallbackBorderColor(name: string) {
-  const hash = name.toLowerCase().split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  return `hsla(${hash % 360}, 82%, 70%, 0.8)`;
+function fallbackColor(name: string): { bg: string; border: string } {
+  const hash = name.toLowerCase().split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const hue = hash % 360;
+  return {
+    bg: `hsla(${hue},60%,60%,0.18)`,
+    border: `hsla(${hue},70%,65%,0.55)`,
+  };
 }
 
 interface BrandBadgeProps {
@@ -37,33 +29,63 @@ interface BrandBadgeProps {
 
 export default function BrandBadge({ brandName, brandLogoUrl, variant = 'default' }: BrandBadgeProps) {
   const [logoFailed, setLogoFailed] = useState(false);
+
   const initials = brandName
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
-    .map((chunk) => chunk[0]?.toUpperCase())
+    .map(w => w[0]?.toUpperCase())
     .join('') || 'BR';
 
-  const pillClass = variant === 'compact' ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1.5 text-xs';
-  const imageClass = variant === 'compact' ? 'h-5 w-5' : 'h-6 w-6';
+  const colors = BRAND_COLORS[brandName.toLowerCase()] ?? fallbackColor(brandName);
+  const isCompact = variant === 'compact';
 
-  const gradient = BRAND_GRADIENTS[brandName.toLowerCase()] || fallbackGradient(brandName);
-  const borderColor = BRAND_BORDER_COLORS[brandName.toLowerCase()] || fallbackBorderColor(brandName);
+  const avatarSize = isCompact ? '1.25rem' : '1.5rem';
+  const fontSize = isCompact ? '0.6875rem' : '0.75rem';
+  const padding = isCompact ? '0.2rem 0.5rem' : '0.3rem 0.75rem';
 
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-full border-2 ${pillClass} text-white shadow-[0_0_24px_rgba(139,92,246,0.28)]`}
-      style={{ backgroundImage: gradient, borderColor }}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.375rem',
+        borderRadius: '9999px',
+        border: `1.5px solid ${colors.border}`,
+        background: colors.bg,
+        padding,
+        fontSize,
+        fontWeight: 600,
+        color: '#fff',
+        backdropFilter: 'blur(6px)',
+        maxWidth: '9rem',
+        overflow: 'hidden',
+      }}
     >
       {brandLogoUrl && !logoFailed ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={brandLogoUrl} alt={`${brandName} logo`} className={`${imageClass} rounded-full object-contain`} onError={() => setLogoFailed(true)} />
+        <img
+          src={brandLogoUrl}
+          alt={`${brandName} logo`}
+          style={{ width: avatarSize, height: avatarSize, borderRadius: '50%', objectFit: 'contain', flexShrink: 0 }}
+          onError={() => setLogoFailed(true)}
+        />
       ) : (
-        <span className={`${imageClass} inline-flex items-center justify-center rounded-full border border-white/35 bg-white/15 text-[11px] font-bold`}>
+        <span
+          style={{
+            width: avatarSize, height: avatarSize,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            borderRadius: '50%',
+            border: '1px solid rgba(255,255,255,0.3)',
+            background: 'rgba(255,255,255,0.15)',
+            fontSize: '0.625rem', fontWeight: 700,
+            flexShrink: 0,
+          }}
+        >
           {initials}
         </span>
       )}
-      <span className="max-w-28 truncate font-semibold">{brandName}</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{brandName}</span>
     </span>
   );
 }
