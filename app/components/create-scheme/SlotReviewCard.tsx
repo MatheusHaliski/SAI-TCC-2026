@@ -7,9 +7,9 @@ interface SlotReviewCardProps {
 
 export default function SlotReviewCard({ slot, icon, selected, status }: SlotReviewCardProps) {
   return (
-    <article className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md">
+    <article className="rounded-2xl border border-border bg-accent p-4 backdrop-blur-md">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold capitalize text-white">
+        <h4 className="text-sm font-semibold capitalize text-foreground">
           {icon} {slot}
         </h4>
         <span
