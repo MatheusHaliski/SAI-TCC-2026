@@ -1,0 +1,7 @@
+{
+  "/api/3d-worker/reconcile/route": "app/api/3d-worker/reconcile/route.js",
+  "/api/3d-worker/submit/route": "app/api/3d-worker/submit/route.js",
+  "/api/model-proxy/route": "app/api/model-proxy/route.js",
+  "/api/wardrobe-items/user/[userId]/route": "app/api/wardrobe-items/user/[userId]/route.js",
+  "/my-wardrobe/page": "app/my-wardrobe/page.js"
+}
