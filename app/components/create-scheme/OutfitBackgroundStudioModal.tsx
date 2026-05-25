@@ -906,6 +906,27 @@ async function loadImageFromSource(source: string): Promise<HTMLImageElement> {
   });
 }
 
+async function compressImageDataUrl(dataUrl: string, maxW = 1200, maxH = 900, quality = 0.82): Promise<string> {
+  if (typeof window === 'undefined') return dataUrl;
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxW / img.width, maxH / img.height);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(dataUrl); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 function createLogoTile(image: HTMLImageElement, tileW: number, tileH: number): HTMLCanvasElement {
   const tileCanvas = createOffscreenCanvas(tileW, tileH);
   if (!tileCanvas) throw new Error('canvas_unavailable');
@@ -979,7 +1000,7 @@ async function buildTiledMotifFromReferenceImage(
   ctx.fillRect(0, 0, 680, 460);
   ctx.fillStyle = 'rgba(2,6,23,0.08)';
   ctx.fillRect(0, 0, CW, CH);
-  const outputUrl = canvas.toDataURL('image/png');
+  const outputUrl = canvas.toDataURL('image/jpeg', 0.82);
   return {
     background_mode: 'ai_artwork',
     ai_artwork: {
@@ -1426,7 +1447,7 @@ async function buildTechAmberEnergyAsync(
   ctx.moveTo(0, 520); ctx.lineTo(560, 440); ctx.lineTo(440, CH); ctx.lineTo(0, CH);
   ctx.closePath(); ctx.fill();
 
-  const imageUrl = canvas.toDataURL('image/png');
+  const imageUrl = canvas.toDataURL('image/jpeg', 0.82);
   return {
     background_mode: 'ai_artwork',
     ai_artwork: { prompt: 'tech amber energy canvas — amber gradient + uploaded image', image_url: imageUrl, generation_status: 'done' },
@@ -1487,10 +1508,10 @@ async function buildEditorialLogoAsync(
 
   // Brand name
   ctx.font = 'bold 52px "Arial Black", Arial, sans-serif';
-  ctx.fillStyle = 'rgba(15,23,42,0.30)';
-  ctx.fillText(context.brandName || '', 88, 120);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText(context.brandName || '', 60, 110);
 
-  const imageUrl = canvas.toDataURL('image/png');
+  const imageUrl = canvas.toDataURL('image/jpeg', 0.82);
   return {
     background_mode: 'ai_artwork',
     ai_artwork: { prompt: 'editorial logo — Premium Fashion Artwork + uploaded reference', image_url: imageUrl, generation_status: 'done' },
@@ -1607,7 +1628,7 @@ async function buildEditorialCollageAsync(
   ctx.letterSpacing = '8px';
   ctx.fillText('EDITORIAL COLLAGE', 52, 764);
 
-  const outputUrl = canvas.toDataURL('image/png');
+  const outputUrl = canvas.toDataURL('image/jpeg', 0.82);
   return {
     background_mode: 'ai_artwork',
     ai_artwork: {
@@ -1711,7 +1732,7 @@ async function buildLuxuryFabricMonogramAsync(
   ctx.fillStyle = 'rgba(219,234,254,0.82)';
   ctx.fillText(`${context.brandName} MONOGRAM`, 80, 718);
 
-  const imageUrl = canvas.toDataURL('image/png');
+  const imageUrl = canvas.toDataURL('image/jpeg', 0.82);
   return {
     background_mode: 'ai_artwork',
     ai_artwork: { prompt: `${context.brandName} luxury monogram grid — canvas render`, image_url: imageUrl, generation_status: 'done' },
@@ -3091,9 +3112,10 @@ export default function OutfitBackgroundStudioModal({
                         }
 
                         const reader = new FileReader();
-                        reader.onload = () => {
-                          const result = typeof reader.result === 'string' ? reader.result : '';
-                          setAiReferenceImageDataUrl(result);
+                        reader.onload = async () => {
+                          const raw = typeof reader.result === 'string' ? reader.result : '';
+                          const compressed = raw ? await compressImageDataUrl(raw) : '';
+                          setAiReferenceImageDataUrl(compressed);
                           setAiReferenceFileName(file.name);
                         };
                         reader.readAsDataURL(file);
