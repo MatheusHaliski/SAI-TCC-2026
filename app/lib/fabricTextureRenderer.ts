@@ -249,9 +249,6 @@ export function renderFabricTextureToCanvas(input: FabricTextureRenderInput): Fa
 
   if (!textureCtx) return { textureDataUrl: null, decorativeDataUrl: null };
 
-  textureCtx.fillStyle = tint(input.color, -6, 0.95);
-  textureCtx.fillRect(0, 0, width, height);
-
   const noiseAlpha = 0.08 + clamp(material.surfaceContrast, 0, 100) / 650;
   for (let y = 0; y < height; y += 2) {
     for (let x = 0; x < width; x += 2) {
