@@ -18,7 +18,6 @@ import {
   submitBlenderWorkerJob,
 } from '@/app/services/blenderWorkerClient';
 import type { SearchIntentOutput } from '@/app/lib/ai/providers/types';
-import { pushSystemInboxMessage } from '@/app/lib/systemInboxNotifications';
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -105,7 +104,6 @@ export default function MyWardrobeView() {
   // Tracks which item last showed a stall error so the Retry click bypasses the stall check.
   const stalledItemIdRef = useRef<string | null>(null);
   const STALL_TTL_MS = 10 * 60 * 1000;
-  const completionNotifiedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const loadWardrobeData = async () => {
@@ -176,9 +174,9 @@ export default function MyWardrobeView() {
 
   const activeGroups = useMemo(() => {
     const groups = [
-      { key: 'available', title: 'Available Pieces', data: grouped.available },
-      { key: 'unavailable', title: 'Unavailable Pieces', data: grouped.unavailable },
-      { key: 'favorite', title: 'Favorite Pieces', data: grouped.favorite },
+      { key: 'available', title: 'Peças Disponíveis', data: grouped.available },
+      { key: 'unavailable', title: 'Peças Indisponíveis', data: grouped.unavailable },
+      { key: 'favorite', title: 'Peças Favoritas', data: grouped.favorite },
     ] as const;
 
     const sectionToGroupKey: Record<string, (typeof groups)[number]['key']> = {
@@ -249,21 +247,6 @@ export default function MyWardrobeView() {
       setIsSearching(false);
     }
   };
-
-  useEffect(() => {
-    if (!progressItem) return;
-    if (assetJob.status !== 'completed') return;
-
-    const notifyKey = `${progressItem.wardrobe_item_id}:${assetJob.jobId ?? 'no-job'}`;
-    if (completionNotifiedRef.current === notifyKey) return;
-
-    pushSystemInboxMessage({
-      title: '3D model ready',
-      summary: `"${progressItem.name}" has been generated and is ready to view.`,
-      level: 'success',
-    });
-    completionNotifiedRef.current = notifyKey;
-  }, [assetJob.jobId, assetJob.status, progressItem]);
 
   const handleOpenViewerIntent = async (item: WardrobeItem) => {
     if (progressItem !== null && !['completed', 'failed', 'timed_out', 'cancelled', 'idle'].includes(assetJob.status)) {
@@ -377,20 +360,20 @@ export default function MyWardrobeView() {
     <>
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <ContextSectionMenu
-          title="Virtual Wardrobe"
+          title="Guarda-roupa"
           sections={sections}
           selectedSection={sections.find((section) => section.toLowerCase() === selectedSection) ?? sections[0]}
           onSelectSection={(section) => setSelectedSection(section.toLowerCase())}
         />
         <div className="space-y-6">
-          <PageHeader title="Virtual Wardrobe" subtitle="Classify pieces as available, unavailable, and favorites." />
+          <PageHeader title="Guarda-roupa" subtitle="Organize suas peças: disponíveis, indisponíveis e favoritas." />
 
-          <div className="sa-surface-header overflow-visible rounded-3xl border-8 border-white p-5 shadow-lg backdrop-blur-sm">
+          <div style={{ borderRadius:"1rem", border:"1px solid var(--border)", background:"var(--accent)", padding:"1rem", marginBottom:"1rem" }}>
             <form onSubmit={handleSearch} className="flex flex-col gap-2 md:flex-row">
               <input
                 type="text"
                 placeholder="✨ Busca semântica (ex: roupas de inverno pretas)"
-                className="flex-1 rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white placeholder-white/50"
+                style={{ flex:1, borderRadius:"0.75rem", border:"1px solid var(--border)", background:"var(--input-background)", padding:"0.5rem 1rem", fontSize:"0.875rem", color:"var(--foreground)", outline:"none", width:"100%" }}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -400,26 +383,26 @@ export default function MyWardrobeView() {
               <button
                 type="submit"
                 disabled={isSearching}
-                className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-2 font-semibold text-white shadow-lg transition hover:scale-[1.02] disabled:opacity-50"
+                style={{ borderRadius:"0.75rem", background:"linear-gradient(135deg,#7c3aed,#db2777)", padding:"0.5rem 1.5rem", fontWeight:700, color:"#fff", border:"none", cursor:"pointer" }}
               >
                 {isSearching ? 'Searching...' : 'AI Search'}
               </button>
             </form>
             {searchIntent && (
-               <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-white/70">
-                 {searchIntent.colors.map(c => <span key={c} className="rounded border border-white/20 bg-white/10 px-1 py-0.5">🎨 {c}</span>)}
-                 {searchIntent.season.map(s => <span key={s} className="rounded border border-white/20 bg-white/10 px-1 py-0.5">❄️ {s}</span>)}
-                 {searchIntent.piece_item.map(p => <span key={p} className="rounded border border-white/20 bg-white/10 px-1 py-0.5">👕 {p}</span>)}
-                 {searchIntent.style.map(s => <span key={s} className="rounded border border-white/20 bg-white/10 px-1 py-0.5">✨ {s}</span>)}
-                 {searchIntent.brand.map(b => <span key={b} className="rounded border border-white/20 bg-white/10 px-1 py-0.5">🏷️ {b}</span>)}
+               <div style={{ marginTop:"0.75rem", display:"flex", flexWrap:"wrap" as const, gap:"0.5rem", fontSize:"0.75rem", color:"var(--muted-foreground)" }}>
+                 {searchIntent.colors.map(c => <span key={c} style={{ borderRadius:"0.25rem", border:"1px solid var(--border)", background:"var(--muted)", padding:"0.125rem 0.375rem" }}>🎨 {c}</span>)}
+                 {searchIntent.season.map(s => <span key={s} style={{ borderRadius:"0.25rem", border:"1px solid var(--border)", background:"var(--muted)", padding:"0.125rem 0.375rem" }}>❄️ {s}</span>)}
+                 {searchIntent.piece_item.map(p => <span key={p} style={{ borderRadius:"0.25rem", border:"1px solid var(--border)", background:"var(--muted)", padding:"0.125rem 0.375rem" }}>👕 {p}</span>)}
+                 {searchIntent.style.map(s => <span key={s} style={{ borderRadius:"0.25rem", border:"1px solid var(--border)", background:"var(--muted)", padding:"0.125rem 0.375rem" }}>✨ {s}</span>)}
+                 {searchIntent.brand.map(b => <span key={b} style={{ borderRadius:"0.25rem", border:"1px solid var(--border)", background:"var(--muted)", padding:"0.125rem 0.375rem" }}>🏷️ {b}</span>)}
                </div>
             )}
           </div>
 
           {activeGroups.map((group) => (
-            <SectionBlock key={group.key} title={group.title} subtitle="Manage list status for each wardrobe item.">
+            <SectionBlock key={group.key} title={group.title} subtitle="Gerencie o status de cada peça do guarda-roupa.">
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {isInitialLoading ? <p className="text-sm text-white/70">Loading wardrobe items…</p> : null}
+                {isInitialLoading ? <p style={{ fontSize:"0.875rem", color:"var(--muted-foreground)" }}>Loading wardrobe items…</p> : null}
                 {group.data.map((item) => {
                   const cardState = mapItemState(item);
                   return (
@@ -439,16 +422,16 @@ export default function MyWardrobeView() {
                     />
                   );
                 })}
-                {!group.data.length ? <p className="text-sm text-white/70">No pieces in this list.</p> : null}
+                {!group.data.length ? <p style={{ fontSize:"0.875rem", color:"var(--muted-foreground)" }}>No pieces in this list.</p> : null}
               </div>
               {group.key === 'available' && hasMore ? (
                 <div className="mt-4 flex items-center justify-between">
-                  <p className="text-xs text-white/60">Page {page + 1} · Cached cursors: {Object.keys(cursorCache).length}</p>
+                  <p style={{ fontSize:"0.75rem", color:"var(--muted-foreground)" }}>Page {page + 1} · Cached cursors: {Object.keys(cursorCache).length}</p>
                   <button
                     type="button"
                     onClick={() => void loadMore()}
                     disabled={isLoadingMore}
-                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-white disabled:opacity-60"
+                    style={{ borderRadius:"9999px", border:"1px solid var(--border)", padding:"0.25rem 0.75rem", fontSize:"0.75rem", color:"var(--foreground)", background:"var(--card)", cursor:"pointer" }}
                   >
                     {isLoadingMore ? 'Loading…' : 'Load more'}
                   </button>
