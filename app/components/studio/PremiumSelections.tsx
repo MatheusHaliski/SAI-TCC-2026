@@ -20,11 +20,11 @@ const SCALE = THUMB_W / CARD_W;
 
 const LABELS: Record<string, { title: string; subtitle: string }> = {
   'pt-BR': {
-    title: 'Sete escolhas de seleções premium',
+    title: 'Estilos premium de card',
     subtitle: 'Escolha o estilo visual do seu card de outfit.',
   },
   'en': {
-    title: 'Seven premium card styles',
+    title: 'Premium card styles',
     subtitle: 'Choose the visual style for your outfit card.',
   },
 };
