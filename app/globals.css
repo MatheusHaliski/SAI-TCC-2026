@@ -567,7 +567,6 @@ html.dark-mode body textarea::placeholder {
 
 :root[data-theme='light'] .sa-home-shell :is(
   .sa-surface-topbar,
-  .sa-surface-sidebar,
   .sa-surface-header,
   .sa-surface-context,
   .sa-topbar-shell,
