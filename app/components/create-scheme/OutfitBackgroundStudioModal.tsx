@@ -26,6 +26,8 @@ import type {
 import { applyArtworkToOutfitCard } from '@/app/lib/artwork-studio';
 import FancySelect from '@/app/components/ui/fancy-select';
 import { MATERIAL_PRESETS, applyFabricMaterialToCard, buildFabricPresetConfig, type FabricMaterialConfig } from '@/app/lib/materialPresets';
+import PremiumSelections from '@/app/components/studio/PremiumSelections';
+import type { CardSkinId } from '@/app/lib/outfit-card';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
 type GeometryFamily = 'arrows' | 'waves' | 'diamond' | 'mesh' | 'circles' | 'triangles' | 'stars' | 'flowers' | 'beams' | 'panels' | 'mixed';
@@ -34,7 +36,6 @@ type BackgroundPresetId =
   | 'selection_editorial_logo'
   | 'selection_tonal_geometry'
   | 'selection_logo_image_fusion'
-  | 'selection_tech_amber_energy'
   | 'selection_metallic_sport_identity'
   | 'selection_neon_motion_grid'
   | 'selection_luxury_fabric_monogram'
@@ -100,6 +101,8 @@ interface OutfitBackgroundStudioModalProps {
   outfitMetadata?: OutfitMetadata;
   onClose: () => void;
   onApply: (value: OutfitBackgroundConfig) => void;
+  selectedCardSkin?: CardSkinId;
+  onSelectSkin?: (skinId: CardSkinId) => void;
 }
 
 const COLOR_SWATCHES = ['#0a0a0a', '#ffffff', '#c0c0c0', '#2e1065', '#047857', '#ddc7a1', '#1d4ed8', '#fff8dc'];
@@ -1204,7 +1207,6 @@ function buildCompositionRecipe(input: {
     selection_editorial_logo: { ...common, presetId: input.presetId, compositionMode: 'hero', motifDensity: 'low', repeatMode: 'grid', logoWeight: 0.98, imageWeight: 0.35 },
     selection_tonal_geometry: { ...common, presetId: input.presetId, compositionMode: 'editorial', motifDensity: 'medium', repeatMode: 'diagonal', geometryWeight: 0.8 },
     selection_logo_image_fusion: { ...common, presetId: input.presetId, compositionMode: 'fusion', motifDensity: 'medium', logoWeight: 0.72, imageWeight: 0.88, geometryWeight: 0.6, glowWeight: 0.48 },
-    selection_tech_amber_energy: { ...common, presetId: input.presetId, compositionMode: 'tech', motifDensity: 'high', repeatMode: 'diagonal', logoWeight: 0.78, imageWeight: 0.66, geometryWeight: 0.86, glowWeight: 0.82, safeAreaBias: 'medium' },
     selection_metallic_sport_identity: { ...common, presetId: input.presetId, compositionMode: 'tech', motifDensity: 'medium', repeatMode: 'grid', logoWeight: 0.72, imageWeight: 0.62, geometryWeight: 0.76, glowWeight: 0.46 },
     selection_neon_motion_grid: { ...common, presetId: input.presetId, compositionMode: 'tech', motifDensity: 'high', repeatMode: 'diagonal', logoWeight: 0.7, imageWeight: 0.7, geometryWeight: 0.9, glowWeight: 0.88, safeAreaBias: 'medium' },
     selection_luxury_fabric_monogram: { ...common, presetId: input.presetId, compositionMode: 'pattern', motifDensity: 'medium', repeatMode: 'staggered', logoWeight: 0.84, imageWeight: 0.48, geometryWeight: 0.26, glowWeight: 0.14 },
@@ -1279,70 +1281,6 @@ function buildTonalGeometryConfig(context: PresetContext, referenceImage?: strin
   };
 }
 
-// Tech Amber gradient matches the preset gradient tab values:
-// angle 271° (nearly vertical top→bottom), intensity 120%,
-// stops: #7c2d12 → #ea580c → #f59e0b → #fef3c7
-const TECH_AMBER_GRADIENT: NonNullable<OutfitBackgroundConfig['gradient']> = {
-  type: 'linear',
-  angle: 271,
-  intensity: 120,
-  stops: [
-    { color: '#7c2d12', position: 0 },
-    { color: '#ea580c', position: 34 },
-    { color: '#f59e0b', position: 68 },
-    { color: '#fef3c7', position: 100 },
-  ],
-};
-
-function buildTechAmberEnergyConfig(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
-  const safeReferenceImage = referenceImage || context.brandLogoUrl || '';
-  const brand = escapeSvgAttribute(context.brandName);
-  const amberSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-    <defs>
-      <linearGradient id='amberBg' x1='0%' y1='0%' x2='0%' y2='100%'>
-        <stop offset='0%' stop-color='#7c2d12'/>
-        <stop offset='34%' stop-color='#ea580c'/>
-        <stop offset='68%' stop-color='#f59e0b'/>
-        <stop offset='100%' stop-color='#fef3c7'/>
-      </linearGradient>
-      <filter id='amberGlow' x='-20%' y='-20%' width='140%' height='140%'>
-        <feGaussianBlur stdDeviation='14' result='blur'/>
-        <feMerge><feMergeNode in='blur'/><feMergeNode in='SourceGraphic'/></feMerge>
-      </filter>
-      <clipPath id='imgClip'><rect x='694' y='88' width='448' height='612' rx='0'/></clipPath>
-    </defs>
-    <rect width='1200' height='800' fill='url(#amberBg)'/>
-    <rect width='1200' height='800' fill='rgba(15,10,2,0.28)'/>
-    ${Array.from({ length: 5 }, (_, i) => `<path d='M${-80 + i * 290},0 L${i * 290 + 80},800' stroke='rgba(253,186,116,0.22)' stroke-width='${3 - i * 0.4 > 0.5 ? (3 - i * 0.4).toFixed(1) : 0.8}'/>`).join('')}
-    <path d='M0,0 L580,0 L440,800 L0,800 Z' fill='rgba(124,45,18,0.40)'/>
-    <path d='M0,0 L560,0 L420,800 L0,800 Z' fill='rgba(234,88,12,0.18)'/>
-    <circle cx='260' cy='300' r='220' fill='rgba(251,191,36,0.28)' filter='url(#amberGlow)'/>
-    <circle cx='260' cy='300' r='110' fill='rgba(253,230,138,0.18)'/>
-    ${Array.from({ length: 6 }, (_, i) => `<circle cx='260' cy='300' r='${55 + i * 48}' fill='none' stroke='rgba(253,186,116,${(0.40 - i * 0.05).toFixed(2)})' stroke-width='${2 - i * 0.25 > 0.3 ? (2 - i * 0.25).toFixed(1) : 0.3}'/>`).join('')}
-    <path d='M0,520 L560,440 L440,800 L0,800 Z' fill='rgba(124,45,18,0.50)'/>
-    <path d='M0,580 L530,510 L440,800 L0,800 Z' fill='rgba(120,53,15,0.62)'/>
-    ${safeReferenceImage ? `
-      <rect x='694' y='88' width='448' height='612' fill='rgba(124,45,18,0.55)'/>
-      <image href='${safeReferenceImage}' x='694' y='88' width='448' height='612' preserveAspectRatio='xMidYMid meet' opacity='0.92' clip-path='url(#imgClip)'/>
-      <rect x='694' y='88' width='448' height='612' fill='none' stroke='rgba(254,243,199,0.75)' stroke-width='3'/>
-      <line x1='694' y1='88' x2='1142' y2='88' stroke='rgba(251,191,36,0.55)' stroke-width='6'/>
-      <line x1='694' y1='700' x2='1142' y2='700' stroke='rgba(251,191,36,0.55)' stroke-width='6'/>
-    ` : ''}
-    <text x='56' y='718' font-size='48' fill='rgba(254,243,199,0.90)' font-family='Arial Black,Arial,sans-serif' letter-spacing='2'>${brand}</text>
-    <text x='56' y='762' font-size='22' fill='rgba(253,186,116,0.70)' font-family='Arial,sans-serif' letter-spacing='8'>TECH AMBER ENERGY</text>
-  </svg>`;
-  return {
-    background_mode: 'ai_artwork',
-    ai_artwork: {
-      prompt: `${context.brandName} tech amber energy — amber gradient diagonal composition`,
-      image_url: asDataUri(amberSvg),
-      generation_status: 'done',
-    },
-    gradient: TECH_AMBER_GRADIENT,
-    shape: 'none',
-  };
-}
-
 function drawGradientOnCanvas(
   ctx: CanvasRenderingContext2D,
   CW: number,
@@ -1367,93 +1305,6 @@ function drawGradientOnCanvas(
   gradient.stops.forEach((stop) => grd.addColorStop(stop.position / 100, stop.color));
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, CW, CH);
-}
-
-async function buildTechAmberEnergyAsync(
-  uploadedImage: string | null,
-  context: PresetContext,
-): Promise<OutfitBackgroundConfig> {
-  const CW = 1200, CH = 800;
-  const canvas = createOffscreenCanvas(CW, CH);
-  if (!canvas) return buildTechAmberEnergyConfig(context, uploadedImage);
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return buildTechAmberEnergyConfig(context, uploadedImage);
-
-  // Amber gradient base
-  drawGradientOnCanvas(ctx, CW, CH, TECH_AMBER_GRADIENT);
-
-  // Dark overlay for depth
-  ctx.fillStyle = 'rgba(15,10,2,0.28)';
-  ctx.fillRect(0, 0, CW, CH);
-
-  // Diagonal beam lines
-  for (let i = 0; i < 5; i++) {
-    ctx.strokeStyle = 'rgba(253,186,116,0.28)';
-    ctx.lineWidth = Math.max(0.8, 3 - i * 0.4);
-    ctx.beginPath();
-    ctx.moveTo(-80 + i * 290, 0);
-    ctx.lineTo(i * 290 + 80, CH);
-    ctx.stroke();
-  }
-
-  // Left diagonal overlay planes
-  ctx.fillStyle = 'rgba(124,45,18,0.40)';
-  ctx.beginPath();
-  ctx.moveTo(0, 0); ctx.lineTo(580, 0); ctx.lineTo(440, CH); ctx.lineTo(0, CH);
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle = 'rgba(234,88,12,0.18)';
-  ctx.beginPath();
-  ctx.moveTo(0, 0); ctx.lineTo(560, 0); ctx.lineTo(420, CH); ctx.lineTo(0, CH);
-  ctx.closePath(); ctx.fill();
-
-  // Radial glow
-  const glowGrd = ctx.createRadialGradient(260, 300, 0, 260, 300, 220);
-  glowGrd.addColorStop(0, 'rgba(251,191,36,0.42)');
-  glowGrd.addColorStop(0.6, 'rgba(251,191,36,0.12)');
-  glowGrd.addColorStop(1, 'rgba(251,191,36,0)');
-  ctx.fillStyle = glowGrd;
-  ctx.beginPath();
-  ctx.arc(260, 300, 220, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Uploaded image panel — right side
-  if (uploadedImage) {
-    try {
-      const img = await loadImageFromSource(uploadedImage);
-      const PX = 694, PY = 88, PW = 448, PH = 612;
-      // Amber tint behind image
-      ctx.fillStyle = 'rgba(124,45,18,0.55)';
-      ctx.fillRect(PX, PY, PW, PH);
-      // Draw image
-      ctx.drawImage(img, PX, PY, PW, PH);
-      // Amber overlay on image
-      ctx.fillStyle = 'rgba(120,45,18,0.30)';
-      ctx.fillRect(PX, PY, PW, PH);
-      // Frame border
-      ctx.strokeStyle = 'rgba(254,243,199,0.75)';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(PX, PY, PW, PH);
-      // Top/bottom accent lines
-      ctx.strokeStyle = 'rgba(251,191,36,0.60)';
-      ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.moveTo(PX, PY + 3); ctx.lineTo(PX + PW, PY + 3); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(PX, PY + PH - 3); ctx.lineTo(PX + PW, PY + PH - 3); ctx.stroke();
-    } catch { /* no image loaded */ }
-  }
-
-  // Bottom vignette
-  ctx.fillStyle = 'rgba(124,45,18,0.50)';
-  ctx.beginPath();
-  ctx.moveTo(0, 520); ctx.lineTo(560, 440); ctx.lineTo(440, CH); ctx.lineTo(0, CH);
-  ctx.closePath(); ctx.fill();
-
-  const imageUrl = canvas.toDataURL('image/jpeg', 0.82);
-  return {
-    background_mode: 'ai_artwork',
-    ai_artwork: { prompt: 'tech amber energy canvas — amber gradient + uploaded image', image_url: imageUrl, generation_status: 'done' },
-    gradient: TECH_AMBER_GRADIENT,
-    shape: 'none',
-  };
 }
 
 async function buildEditorialLogoAsync(
@@ -1932,7 +1783,6 @@ function buildSurfaceFromRecipe(
 
   const generators: Partial<Record<BackgroundPresetId, () => OutfitBackgroundConfig>> = {
     selection_logo_image_fusion: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#020617'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.58'/><path d='M0,640 C250,560 520,730 860,620 C1030,565 1130,500 1200,440 V800 H0 Z' fill='rgba(15,23,42,0.64)'/><image href='${safeReferenceImage || ''}' x='730' y='120' width='350' height='430' preserveAspectRatio='xMidYMid meet' opacity='0.88'/><text x='90' y='690' font-size='74' font-family='Arial Black,Arial,sans-serif' fill='rgba(255,255,255,0.86)'>${brand}</text></svg>`, 'orb'),
-    selection_tech_amber_energy: () => buildTechAmberEnergyConfig(context, safeReferenceImage),
     selection_metallic_sport_identity: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='metal' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='42%' stop-color='#374151'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#metal)'/><path d='M0,560 L1200,190 L1200,380 L0,760 Z' fill='rgba(148,163,184,0.24)'/><image href='${safeReferenceImage || ''}' x='100' y='120' width='420' height='420' opacity='0.22' preserveAspectRatio='xMidYMid meet'/><image href='${safeReferenceImage || ''}' x='760' y='170' width='330' height='330' opacity='0.92' preserveAspectRatio='xMidYMid meet'/><rect x='742' y='150' width='366' height='366' rx='34' fill='none' stroke='rgba(226,232,240,0.62)' stroke-width='4'/><text x='84' y='716' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>METALLIC SPORT IDENTITY</text></svg>`, 'diamond'),
     selection_neon_motion_grid: () => buildNeonMotionGridConfig(context, safeReferenceImage),
     selection_editorial_collage: () => {
@@ -2051,7 +1901,6 @@ function getRecommendedPresets(outfitMetadata: OutfitMetadata | undefined, runti
     { id: 'selection_editorial_logo', category: 'editorial_branding', label: 'Selection editorial logo', description: 'Uses the uploaded logo as a hero element in a clean campaign-style composition.' },
     { id: 'selection_editorial_collage', category: 'editorial_branding', label: 'Selection editorial collage', description: 'Fuses cropped logo and treated imagery into a depth-rich editorial card.' },
     { id: 'selection_soft_premium_minimal', category: 'editorial_branding', label: 'Selection soft premium minimal', description: 'Minimal, high-readability premium composition with restrained visual weight.' },
-    { id: 'selection_tech_amber_energy', category: 'tech_energy', label: 'Selection tech amber energy', description: 'Fuses uploaded logo with high-energy amber/orange AI-tech visual treatment.' },
     { id: 'selection_neon_motion_grid', category: 'tech_energy', label: 'Selection neon motion grid', description: 'Adds diagonal neon movement, digital grid rhythm, and logo anchoring.' },
     { id: 'selection_metallic_sport_identity', category: 'tech_energy', label: 'Selection metallic sport identity', description: 'Applies silver/graphite highlights for premium sport-tech brand identity.' },
     { id: 'selection_logo_image_fusion', category: 'hybrid_fusion', label: 'Selection logo + stylized image fusion', description: 'Blends uploaded logo with stylized image composition for richer hero surfaces.' },
@@ -2073,7 +1922,7 @@ function getRecommendedPresets(outfitMetadata: OutfitMetadata | undefined, runti
   if (isTechSportDirection) {
     return allPresets
       .filter((preset) => availablePresetIds.includes(preset.id))
-      .filter((preset) => ['selection_tonal_geometry', 'selection_tech_amber_energy', 'selection_neon_motion_grid'].includes(preset.id))
+      .filter((preset) => ['selection_tonal_geometry', 'selection_neon_motion_grid', 'selection_metallic_sport_identity'].includes(preset.id))
       .slice(0, 3);
   }
 
@@ -2159,6 +2008,8 @@ export default function OutfitBackgroundStudioModal({
   outfitMetadata,
   onClose,
   onApply,
+  selectedCardSkin,
+  onSelectSkin,
 }: OutfitBackgroundStudioModalProps) {
   const buildNoMaterialConfig = (baseColor: string): FabricMaterialConfig => ({
     ...buildFabricPresetConfig(baseColor),
@@ -2438,30 +2289,6 @@ export default function OutfitBackgroundStudioModal({
       setDraft((prev) => ({ ...prev, ...logoConfig }));
       setAiResults([logoVariation]);
       setSelectedAiResult(logoVariation);
-      setAiGradientResults([]);
-      return;
-    }
-
-    if (selectedRecommendedPreset === 'selection_tech_amber_energy') {
-      let amberConfig: OutfitBackgroundConfig;
-      try {
-        amberConfig = await buildTechAmberEnergyAsync(uploadedReferenceImage, presetContext);
-      } catch {
-        setAiLoading(false);
-        setAiError('Could not build Tech Amber Energy composition.');
-        return;
-      }
-      const amberUrl = amberConfig.ai_artwork?.image_url || '';
-      const amberVariation: ArtworkVariation = {
-        variation_id: `tech_amber_${Date.now()}`,
-        preview_url: amberUrl, output_url: amberUrl, thumbnail_url: amberUrl,
-        provider: 'procedural', provider_job_id: null, provider_model: 'tech-amber-canvas',
-        metadata: { source: 'tech_amber_energy' },
-      };
-      setAiLoading(false);
-      setDraft((prev) => ({ ...prev, ...amberConfig }));
-      setAiResults([amberVariation]);
-      setSelectedAiResult(amberVariation);
       setAiGradientResults([]);
       return;
     }
@@ -3348,6 +3175,14 @@ export default function OutfitBackgroundStudioModal({
               ) : null}
             </section>
 
+            {onSelectSkin ? (
+              <PremiumSelections
+                data={previewData}
+                selectedSkin={selectedCardSkin}
+                onSelectSkin={onSelectSkin}
+              />
+            ) : null}
+
             <section className="rounded-xl border border-white/20 bg-white/10 p-3">
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Recommended presets based on current outfit</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -3362,7 +3197,7 @@ export default function OutfitBackgroundStudioModal({
                   });
                   const badgeLabel = !isAvailable
                     ? `🟡 ${availabilityReason}`
-                    : ['selection_tech_amber_energy', 'selection_neon_motion_grid', 'selection_metallic_sport_identity'].includes(preset.id)
+                    : ['selection_neon_motion_grid', 'selection_metallic_sport_identity'].includes(preset.id)
                       ? '🔵 AI enhanced'
                       : '🟢 Ready';
 
