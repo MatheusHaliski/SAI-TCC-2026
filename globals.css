@@ -292,8 +292,40 @@ body {
 }
 
 .sa-surface-sidebar {
-  background-image: var(--sidebar-gradient);
-  box-shadow: var(--drawer-surface-shadow);
+  background-image: none;
+  background-color: #ffffff;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+}
+
+.sa-surface-sidebar .sa-sidebar-heading {
+  color: #1e293b;
+}
+
+.sa-surface-sidebar .sa-sidebar-nav-item {
+  color: #334155;
+}
+
+.sa-surface-sidebar .sa-sidebar-nav-item:hover {
+  color: #1e293b;
+  border-color: rgba(0, 0, 0, 0.1);
+  background-image: linear-gradient(135deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.02));
+}
+
+.sa-surface-sidebar .sa-sidebar-nav-item .sa-sidebar-nav-helper {
+  color: rgba(15, 23, 42, 0.6);
+}
+
+.sa-surface-sidebar .sa-sidebar-nav-item svg {
+  color: #475569;
+}
+
+.sa-surface-sidebar .border-t {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.sa-surface-sidebar .sa-premium-gradient-surface-soft {
+  background-image: linear-gradient(135deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.02));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .sa-right-drawer {
