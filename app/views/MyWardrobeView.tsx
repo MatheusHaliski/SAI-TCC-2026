@@ -42,7 +42,7 @@ interface WardrobeItem {
   piece_type: string;
 }
 
-const sections = ['Available', 'Unavailable', 'Favorites'];
+const sections = ['Disponíveis', 'Indisponíveis', 'Favoritos'];
 
 const READY_STATUSES = new Set(['done', 'ready', 'completed', 'asset_available']);
 const FAILED_STATUSES = new Set(['failed', 'failed_geometry_scope']);
@@ -176,15 +176,15 @@ export default function MyWardrobeView() {
 
   const activeGroups = useMemo(() => {
     const groups = [
-      { key: 'available', title: 'Available Pieces', data: grouped.available },
-      { key: 'unavailable', title: 'Unavailable Pieces', data: grouped.unavailable },
-      { key: 'favorite', title: 'Favorite Pieces', data: grouped.favorite },
+      { key: 'available', title: 'Peças Disponíveis', data: grouped.available },
+      { key: 'unavailable', title: 'Peças Indisponíveis', data: grouped.unavailable },
+      { key: 'favorite', title: 'Peças Favoritas', data: grouped.favorite },
     ] as const;
 
     const sectionToGroupKey: Record<string, (typeof groups)[number]['key']> = {
-      available: 'available',
-      unavailable: 'unavailable',
-      favorites: 'favorite',
+      'disponíveis': 'available',
+      'indisponíveis': 'unavailable',
+      'favoritos': 'favorite',
     };
 
     let selectedGroupData = groups.find((group) => group.key === (sectionToGroupKey[selectedSection] ?? 'available'))?.data || [];
@@ -377,13 +377,13 @@ export default function MyWardrobeView() {
     <>
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <ContextSectionMenu
-          title="Virtual Wardrobe"
+          title="Guarda-Roupa"
           sections={sections}
           selectedSection={sections.find((section) => section.toLowerCase() === selectedSection) ?? sections[0]}
           onSelectSection={(section) => setSelectedSection(section.toLowerCase())}
         />
         <div className="space-y-6">
-          <PageHeader title="Virtual Wardrobe" subtitle="Classify pieces as available, unavailable, and favorites." />
+          <PageHeader title="Guarda-Roupa Virtual" subtitle="Classifique peças como disponíveis, indisponíveis e favoritas." />
 
           <div className="sa-surface-header overflow-visible rounded-3xl border-8 border-white p-5 shadow-lg backdrop-blur-sm">
             <form onSubmit={handleSearch} className="flex flex-col gap-2 md:flex-row">

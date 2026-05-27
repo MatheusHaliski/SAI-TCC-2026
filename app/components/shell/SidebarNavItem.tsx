@@ -9,30 +9,11 @@ interface SidebarNavItemProps {
   onSelect: (route: AppRoute) => void;
 }
 
-
-
 const RouteIcon = ({ route }: { route: AppRoute }) => {
   if (route === 'my-wardrobe') {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z" />
-      </svg>
-    );
-  }
-  if (route === 'search-items') {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <circle cx="11" cy="11" r="6" />
-        <path d="m20 20-4.2-4.2" />
-      </svg>
-    );
-  }
-
-  if (route === 'search-pieces') {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M12 5v14M5 12h14" />
-        <path d="M4 19h16" />
       </svg>
     );
   }
@@ -46,8 +27,63 @@ const RouteIcon = ({ route }: { route: AppRoute }) => {
   if (route === 'explore-scheme') {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <circle cx="12" cy="12" r="8" />
-        <path d="M8 12h8M12 8v8" />
+        <rect x="3" y="3" width="7" height="9" rx="1.5" />
+        <rect x="14" y="3" width="7" height="5" rx="1.5" />
+        <rect x="14" y="12" width="7" height="9" rx="1.5" />
+        <rect x="3" y="16" width="7" height="5" rx="1.5" />
+      </svg>
+    );
+  }
+  if (route === 'autopilot') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="12" r="2.5" />
+        <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21" />
+        <path d="M8.5 8.5l2.2 2.2M13.3 13.3l2.2 2.2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (route === 'dress-tester') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="12" cy="5" r="2" />
+        <path d="M8 9c1 1 2.5 1.5 4 1.5S15 10 16 9" />
+        <path d="M8 9l-2 12h12L16 9" />
+        <path d="M10 14h4" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (route === 'search-items') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="11" cy="11" r="6" />
+        <path d="m20 20-4.2-4.2" />
+      </svg>
+    );
+  }
+  if (route === 'search-pieces') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M12 3L4 9v12h16V9z" />
+        <path d="M9 21V12h6v9" />
+        <path d="M4 9l8-6 8 6" />
+      </svg>
+    );
+  }
+  if (route === 'profile') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+      </svg>
+    );
+  }
+  if (route === 'profile-settings') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77" strokeLinecap="round" />
       </svg>
     );
   }

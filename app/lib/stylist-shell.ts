@@ -9,27 +9,27 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { route: 'my-wardrobe', label: 'Virtual Wardrobe', helperText: 'Available, unavailable and favorites', icon: '⌂', path: '/my-wardrobe' },
-  { route: 'create-my-scheme', label: 'Create Outfit', helperText: 'Build manually or with AI', icon: '✦', path: '/create-my-scheme' },
-  { route: 'explore-scheme', label: 'Saved Outfit Cards', helperText: 'Manage outfits by occasion and preferences', icon: '◍', path: '/explore-scheme' },
-  { route: 'autopilot', label: 'Autopilot', helperText: 'Daily looks and weekly planner', icon: '◎', path: '/autopilot' },
-  { route: 'profile', label: 'Profile', helperText: 'Manage your account details', icon: '◉', path: '/profile' },
-  { route: 'profile-settings', label: 'Settings', helperText: 'Profile settings and privacy', icon: '⚙︎', path: '/profile/settings' },
-  { route: 'search-items', label: 'Search', helperText: 'Find users and outfits', icon: '⌕', path: '/search-items' },
-  { route: 'search-pieces', label: 'Search Pieces', helperText: 'Discover public pieces from creators', icon: '◈', path: '/search-pieces' },
-  { route: 'dress-tester', label: 'Dress Tester', helperText: '2D premium mannequin studio', icon: '◌', path: '/dress-tester' },
+  { route: 'my-wardrobe', label: 'Guarda-Roupa', helperText: 'Disponível, indisponível e favoritos', icon: '⌂', path: '/my-wardrobe' },
+  { route: 'create-my-scheme', label: 'Criar Look', helperText: 'Monte manualmente ou com IA', icon: '✦', path: '/create-my-scheme' },
+  { route: 'explore-scheme', label: 'Looks Salvos', helperText: 'Gerencie looks por ocasião', icon: '◍', path: '/explore-scheme' },
+  { route: 'autopilot', label: 'Autopiloto', helperText: 'Looks diários e planejamento semanal', icon: '◎', path: '/autopilot' },
+  { route: 'dress-tester', label: 'Provador 2D', helperText: 'Estúdio premium de manequim', icon: '◌', path: '/dress-tester' },
+  { route: 'search-pieces', label: 'Peças Públicas', helperText: 'Descubra peças de criadores', icon: '◈', path: '/search-pieces' },
+  { route: 'search-items', label: 'Buscar', helperText: 'Encontre usuários e looks', icon: '⌕', path: '/search-items' },
+  { route: 'profile', label: 'Perfil', helperText: 'Gerencie sua conta', icon: '◉', path: '/profile' },
+  { route: 'profile-settings', label: 'Configurações', helperText: 'Preferências e privacidade', icon: '⚙︎', path: '/profile/settings' },
 ];
 
 export const ROUTE_TITLES: Record<AppRoute, string> = {
-  'my-wardrobe': 'Virtual Wardrobe',
-  'create-my-scheme': 'Create Outfit',
-  'explore-scheme': 'Saved Outfit Cards',
-  autopilot: 'Autopilot',
-  profile: 'Profile',
-  'profile-settings': 'Settings',
-  'search-items': 'Search',
-  'search-pieces': 'Search Pieces',
-  'dress-tester': 'Dress Tester',
+  'my-wardrobe': 'Guarda-Roupa Virtual',
+  'create-my-scheme': 'Criar Look',
+  'explore-scheme': 'Looks Salvos',
+  autopilot: 'Autopiloto',
+  profile: 'Perfil',
+  'profile-settings': 'Configurações',
+  'search-items': 'Buscar',
+  'search-pieces': 'Peças Públicas',
+  'dress-tester': 'Provador 2D',
 };
 
 export const PATH_TO_ROUTE: Record<string, AppRoute> = {
