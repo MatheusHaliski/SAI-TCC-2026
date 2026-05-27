@@ -494,7 +494,6 @@ html.dark-mode body textarea::placeholder {
 :root[data-theme='light'] .sa-right-drawer .sa-apply-background,
 :root[data-theme='light'] .sa-surface-topbar,
 :root[data-theme='light'] .sa-surface-header,
-:root[data-theme='light'] .sa-surface-sidebar,
 :root[data-theme='light'] .sa-surface-context,
 :root[data-theme='light'] .sa-topbar-shell,
 :root[data-theme='light'] .sa-topbar-action,
@@ -510,6 +509,15 @@ html.dark-mode body textarea::placeholder {
   backdrop-filter: var(--liquid-glass-blur);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   box-shadow: var(--liquid-glass-shadow);
+}
+
+:root[data-theme='light'] .sa-surface-sidebar {
+  background-image: none !important;
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: transparent !important;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08) !important;
 }
 
 :root[data-theme='light'] .sa-topbar-search input,
