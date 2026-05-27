@@ -233,6 +233,11 @@ export interface WardrobeViewItem {
   season: string;
   gender: string;
   piece_type: string;
+  color?: string;
+  material?: string;
+  style_tags?: string[];
+  occasion_tags?: string[];
+  is_favorite?: boolean;
 }
 
 export interface PieceItemSearchResult {
@@ -474,3 +479,32 @@ export interface OutfitExport {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── Piece Card types ─────────────────────────────────────────────────────────
+
+export interface PieceLike {
+  like_id: EntityId;
+  wardrobe_item_id: EntityId;
+  user_id: EntityId;
+  createdAt: string;
+}
+
+export interface PieceRating {
+  rating_id: EntityId;
+  wardrobe_item_id: EntityId;
+  user_id: EntityId;
+  stars: 1 | 2 | 3 | 4 | 5;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PieceStats {
+  wardrobe_item_id: EntityId;
+  like_count: number;
+  avg_rating: number;
+  rating_count: number;
+  owner_count: number;
+  updatedAt: string;
+}
+
+// ─── End Piece Card types ─────────────────────────────────────────────────────
