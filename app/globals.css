@@ -300,8 +300,35 @@ body {
 }
 
 .sa-surface-sidebar {
-  background-image: var(--sidebar-gradient);
-  box-shadow: var(--drawer-surface-shadow);
+  background-color: #ffffff !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08) !important;
+}
+
+.sa-surface-sidebar .sa-sidebar-heading {
+  color: #0f172a !important;
+}
+
+.sa-surface-sidebar .sa-sidebar-nav-item {
+  color: #1e293b !important;
+  background-image: none !important;
+}
+
+.sa-surface-sidebar .sa-sidebar-nav-item .sa-sidebar-nav-helper,
+.sa-surface-sidebar .sa-sidebar-nav-item svg {
+  color: rgba(15, 23, 42, 0.55) !important;
+}
+
+.sa-surface-sidebar .sa-sidebar-nav-item:not([class*='bg-[']):hover {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+  background-image: none !important;
+}
+
+.sa-surface-sidebar .sa-premium-gradient-surface-soft {
+  background-image: none !important;
+  background-color: rgba(15, 23, 42, 0.06) !important;
 }
 
 .sa-right-drawer {
@@ -389,7 +416,6 @@ html.dark-mode body textarea::placeholder {
 
 :root[data-theme='dark'] .sa-surface-topbar,
 :root[data-theme='dark'] .sa-surface-header,
-:root[data-theme='dark'] .sa-surface-sidebar,
 :root[data-theme='dark'] .sa-surface-context,
 :root[data-theme='dark'] .sa-topbar-shell,
 :root[data-theme='dark'] .sa-topbar-action,
@@ -404,11 +430,6 @@ html.dark-mode body textarea::placeholder {
   background-color: rgba(17, 24, 39, 0.85);
 }
 
-:root[data-theme='dark'] .sa-surface-sidebar {
-  background-image: var(--sidebar-gradient);
-  box-shadow: var(--drawer-surface-shadow);
-  filter: brightness(0.82) saturate(0.92);
-}
 
 :root[data-theme='dark'] .sa-topbar-search span,
 :root[data-theme='dark'] .sa-topbar-search input,
@@ -462,7 +483,6 @@ html.dark-mode body textarea::placeholder {
 :root[data-theme='light'] .sa-right-drawer .sa-apply-background,
 :root[data-theme='light'] .sa-surface-topbar,
 :root[data-theme='light'] .sa-surface-header,
-:root[data-theme='light'] .sa-surface-sidebar,
 :root[data-theme='light'] .sa-surface-context,
 :root[data-theme='light'] .sa-topbar-shell,
 :root[data-theme='light'] .sa-topbar-action,
@@ -527,7 +547,6 @@ html.dark-mode body textarea::placeholder {
 
 :root[data-theme='light'] .sa-home-shell :is(
   .sa-surface-topbar,
-  .sa-surface-sidebar,
   .sa-surface-header,
   .sa-surface-context,
   .sa-topbar-shell,

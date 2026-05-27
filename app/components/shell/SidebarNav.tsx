@@ -39,7 +39,7 @@ function NavContent({
         ))}
       </nav>
 
-      <div className="my-1 border-t border-white/10" />
+      <div className="my-1 border-t border-black/10" />
 
       <nav className="space-y-1.5">
         {secondary.map((item) => (
@@ -67,7 +67,7 @@ export default function SidebarNav({
   return (
     <>
       {/* Desktop persistent sidebar */}
-      <aside className="sa-premium-gradient-surface sa-surface-sidebar hidden h-screen w-64 shrink-0 flex-col border-r border-white/20 lg:flex">
+      <aside className="sa-premium-gradient-surface sa-surface-sidebar hidden h-screen w-64 shrink-0 flex-col border-r border-black/10 lg:flex">
         <NavContent activeRoute={activeRoute} onRouteChange={onRouteChange} />
       </aside>
 
@@ -75,7 +75,7 @@ export default function SidebarNav({
       {mobileOpen ? (
         <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={onCloseMobile}>
           <aside
-            className="sa-premium-gradient-surface sa-surface-sidebar h-full w-72 border-r border-white/20 backdrop-blur"
+            className="sa-premium-gradient-surface sa-surface-sidebar h-full w-72 border-r border-black/10"
             onClick={(event) => event.stopPropagation()}
           >
             <NavContent
