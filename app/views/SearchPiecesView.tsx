@@ -33,9 +33,9 @@ export default function SearchPiecesView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Search Pieces" subtitle="Global discovery feed of public wardrobe pieces from creators across the platform." />
+      <PageHeader title="Peças Públicas" subtitle="Feed global de peças públicas de criadores da plataforma." />
 
-      <SectionBlock title="Discover Pieces" subtitle="Search, filter, and open premium details with 3D preview when available.">
+      <SectionBlock title="Descobrir Peças" subtitle="Busque, filtre e abra detalhes premium com prévia 3D quando disponível.">
         <div className="mt-4 space-y-2">
           <PieceSearchInput value={query} onChange={setQuery} />
           <PieceFilterBar
@@ -46,11 +46,11 @@ export default function SearchPiecesView() {
             onBrandChange={setBrand}
             onRarityChange={setRarity}
           />
-          <p className="text-xs text-white/70">{pieces.length} discoverable pieces found.</p>
+          <p className="text-xs text-white/70">{pieces.length} peças encontradas.</p>
         </div>
       </SectionBlock>
 
-      <SectionBlock title="Trending Pieces" subtitle="Quick visual picks from the live global feed.">
+      <SectionBlock title="Peças em Destaque" subtitle="Seleções visuais rápidas do feed global ao vivo.">
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {trendingPieces.map((piece) => (
             <PieceDiscoveryCard key={`trend-${piece.wardrobe_item_id}`} piece={piece} onOpen={setSelectedPiece} />
