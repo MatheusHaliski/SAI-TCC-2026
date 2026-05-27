@@ -410,6 +410,8 @@ export default function AuthViewClient() {
                 "auth/invalid-credential": "Sua sessão de autenticação está inválida. Atualize a página e tente novamente.",
                 "auth/popup-blocked": "Seu navegador bloqueou o popup de login. Permita popups para este site e tente novamente.",
                 "auth/popup-closed-by-user": "O popup de login foi fechado antes da conclusão. Tente novamente.",
+                "auth/operation-not-allowed": `O login com ${providerLabel} não está habilitado. Ative o provedor ${providerLabel} no Firebase Console (Authentication → Sign-in method).`,
+                "auth/unauthorized-domain": "Este domínio não está autorizado no Firebase. Adicione-o em Authentication → Settings → Authorized domains.",
             };
 
             const fallbackMessage = "Não foi possível autenticar com o provedor selecionado. Verifique a configuração do Firebase Auth e tente novamente.";
