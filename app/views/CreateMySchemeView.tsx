@@ -21,6 +21,7 @@ import {
   OutfitBackgroundConfig,
   OutfitCardData,
   OutfitPiece,
+  CardSkinId,
   resolveOutfitBackgroundForRender,
   buildOutfitDescriptionRich,
   resolveBrandLogoUrlByName,
@@ -136,6 +137,7 @@ export default function CreateMySchemeView() {
   const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [outfitBackgroundConfig, setOutfitBackgroundConfig] = useState<OutfitBackgroundConfig>(DEFAULT_BACKGROUND_CONFIG);
   const [backgroundStudioOpen, setBackgroundStudioOpen] = useState(false);
+  const [cardSkin, setCardSkin] = useState<CardSkinId | undefined>(undefined);
   const [descriptionOverride, setDescriptionOverride] = useState('');
   const [titleFontFamily, setTitleFontFamily] = useState('Inter, Segoe UI, sans-serif');
   const [palette, setPalette] = useState('Neutral');
@@ -347,6 +349,7 @@ export default function CreateMySchemeView() {
       ].filter(Boolean) as NonNullable<OutfitCardData['metaBadges']>,
       pieces,
       titleFontFamily,
+      cardSkin,
     };
   };
 
@@ -411,6 +414,7 @@ export default function CreateMySchemeView() {
             mood,
             palette,
             titleFontFamily,
+            cardSkin: cardSkin ?? null,
             descriptionOverride: descriptionOverride.trim() || null,
           }),
           style: style.trim() || 'Minimal',
@@ -953,6 +957,8 @@ export default function CreateMySchemeView() {
             brands: selectedBrand?.name ? [selectedBrand.name] : undefined,
           }}
           previewCardData={buildGeneratedOutfitCardData()}
+          selectedCardSkin={cardSkin}
+          onSelectSkin={setCardSkin}
         />
       ) : null}
     </>

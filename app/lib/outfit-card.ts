@@ -10,6 +10,10 @@ export type OutfitPiece = {
   pieceTypeIconUrl?: string;
   category?: PieceCategory;
   wearstyles?: string[];
+  /** Community-quality base, 0–5. Default by tier: Premium→3.5, Rare→3.0, LimitedEdition→3.2, Standard→2.5 */
+  baseQuality?: number;
+  /** Aggregated like count, maintained via pieceLikes subcollection. */
+  likes?: number;
 };
 
 export type OutfitMetaBadge = {
