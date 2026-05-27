@@ -46,8 +46,6 @@
   --home-shell-bg:
     radial-gradient(circle at 14% 14%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.04) 44%),
     radial-gradient(circle at 84% 10%, rgba(191, 172, 255, 0.24) 0%, rgba(191, 172, 255, 0) 45%),
-    linear-gradient(130deg, rgba(235, 226, 255, 0.42) 0%, rgba(255, 214, 226, 0.34) 40%, rgba(206, 225, 255, 0.3) 72%, rgba(255, 234, 210, 0.26) 100%),
-    url('/Fart.png');
   --sidebar-gradient: var(--liquid-glass-gradient);
   --sidebar-gradient-soft: var(--liquid-glass-gradient);
   --drawer-surface-bg: var(--liquid-glass-gradient);
