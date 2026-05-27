@@ -154,8 +154,8 @@ export default function DressTesterView() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Tester 2D" subtitle="Multi-piece 2D try-on powered by Fashn.ai — up to 4 slots (upper, lower, shoes, accessory)" />
-      <SectionBlock title="Controls" subtitle="Choose the mannequin and build your outfit">
+      <PageHeader title="Provador 2D" subtitle="Experimentação 2D com múltiplas peças via Fashn.ai — até 4 slots (superior, inferior, calçado, acessório)" />
+      <SectionBlock title="Controles" subtitle="Escolha o manequim e monte seu look">
         <Tester2DMannequinSelector mannequins={mannequins} selectedId={selectedMannequin} onChange={setSelectedMannequin} />
       </SectionBlock>
 
