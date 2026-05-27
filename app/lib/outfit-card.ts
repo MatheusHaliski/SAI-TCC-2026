@@ -90,6 +90,8 @@ export type OutfitBackgroundConfig = {
   studioStyleConfig?: BackgroundStudioStyleConfig;
 };
 
+export type CardSkinId = 'atelier' | 'spread' | 'index' | 'trading' | 'fai_max' | 'stub' | 'specimen';
+
 export type OutfitCardData = {
   outfitName: string;
   outfitStyleLine: string;
@@ -107,6 +109,8 @@ export type OutfitCardData = {
   creatorId?: string;
   creatorName?: string;
   titleFontFamily?: string;
+  score?: number;
+  cardSkin?: CardSkinId;
 };
 
 const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {

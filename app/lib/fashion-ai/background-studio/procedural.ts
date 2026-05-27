@@ -462,7 +462,6 @@ export function buildCompositionRecipe(input: {
     selection_editorial_logo: { ...common, presetId: input.presetId, compositionMode: 'hero', motifDensity: 'low', repeatMode: 'grid', logoWeight: 0.98, imageWeight: 0.35 },
     selection_tonal_geometry: { ...common, presetId: input.presetId, compositionMode: 'editorial', motifDensity: 'medium', repeatMode: 'diagonal', geometryWeight: 0.8 },
     selection_logo_image_fusion: { ...common, presetId: input.presetId, compositionMode: 'fusion', motifDensity: 'medium', logoWeight: 0.72, imageWeight: 0.88, geometryWeight: 0.6, glowWeight: 0.48 },
-    selection_tech_amber_energy: { ...common, presetId: input.presetId, compositionMode: 'tech', motifDensity: 'high', repeatMode: 'diagonal', logoWeight: 0.78, imageWeight: 0.66, geometryWeight: 0.86, glowWeight: 0.82, safeAreaBias: 'medium' },
     selection_metallic_sport_identity: { ...common, presetId: input.presetId, compositionMode: 'tech', motifDensity: 'medium', repeatMode: 'grid', logoWeight: 0.72, imageWeight: 0.62, geometryWeight: 0.76, glowWeight: 0.46 },
     selection_neon_motion_grid: { ...common, presetId: input.presetId, compositionMode: 'tech', motifDensity: 'high', repeatMode: 'diagonal', logoWeight: 0.7, imageWeight: 0.7, geometryWeight: 0.9, glowWeight: 0.88, safeAreaBias: 'medium' },
     selection_luxury_fabric_monogram: { ...common, presetId: input.presetId, compositionMode: 'pattern', motifDensity: 'medium', repeatMode: 'staggered', logoWeight: 0.84, imageWeight: 0.48, geometryWeight: 0.26, glowWeight: 0.14 },
@@ -519,52 +518,6 @@ export function buildTonalGeometryConfig(context: PresetContext, referenceImage?
         composedWithReferenceImage: Boolean(tonalReferenceImage),
       },
     },
-  };
-}
-
-export function buildTechAmberEnergyConfig(context: PresetContext, referenceImage?: string | null): OutfitBackgroundConfig {
-  const safeReferenceImage = referenceImage || context.brandLogoUrl || '';
-  const amberSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
-    <defs>
-      <linearGradient id='amberPremium' x1='4%' y1='8%' x2='96%' y2='92%'>
-        <stop offset='0%' stop-color='#2b1606'/>
-        <stop offset='35%' stop-color='#8a4b0f'/>
-        <stop offset='68%' stop-color='#f59e0b'/>
-        <stop offset='100%' stop-color='#fde68a'/>
-      </linearGradient>
-      <filter id='amberGlow'>
-        <feGaussianBlur stdDeviation='8'/>
-      </filter>
-    </defs>
-    <rect width='1200' height='800' fill='url(#amberPremium)'/>
-    <rect width='1200' height='800' fill='rgba(17,24,39,0.24)'/>
-    <g stroke='rgba(253,230,138,0.34)' stroke-width='1.8'>
-      ${Array.from({ length: 12 }).map((_, i) => `<line x1='${i * 115}' y1='-20' x2='${i * 115 + 240}' y2='820'/>`).join('')}
-    </g>
-    <circle cx='340' cy='260' r='188' fill='rgba(251,191,36,0.36)' filter='url(#amberGlow)'/>
-    ${safeReferenceImage ? `<image href='${safeReferenceImage}' x='760' y='132' width='308' height='436' opacity='0.92' preserveAspectRatio='xMidYMid slice'/>` : ''}
-    ${safeReferenceImage ? `<rect x='736' y='108' width='356' height='486' rx='36' fill='none' stroke='rgba(254,243,199,0.62)' stroke-width='3'/>` : ''}
-    <text x='82' y='712' font-size='54' fill='rgba(17,24,39,0.74)' font-family='Arial Black,Arial,sans-serif'>${escapeSvgAttribute(context.brandName)} · TECH AMBER ENERGY</text>
-  </svg>`;
-  return {
-    background_mode: 'ai_artwork',
-    ai_artwork: {
-      prompt: `${context.brandName} amber energy premium tech treatment`,
-      image_url: asDataUri(amberSvg),
-      generation_status: 'done',
-    },
-    gradient: {
-      type: 'linear',
-      angle: 128,
-      intensity: 108,
-      stops: [
-        { color: '#2b1606', position: 0 },
-        { color: '#8a4b0f', position: 40 },
-        { color: '#f59e0b', position: 76 },
-        { color: '#fde68a', position: 100 },
-      ],
-    },
-    shape: 'none',
   };
 }
 
@@ -740,7 +693,6 @@ export function buildSurfaceFromRecipe(
 
   const generators: Partial<Record<BackgroundPresetId, () => OutfitBackgroundConfig>> = {
     selection_logo_image_fusion: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#020617'/><image href='${safeReferenceImage || ''}' x='0' y='0' width='1200' height='800' preserveAspectRatio='xMidYMid slice' opacity='0.58'/><path d='M0,640 C250,560 520,730 860,620 C1030,565 1130,500 1200,440 V800 H0 Z' fill='rgba(15,23,42,0.64)'/><image href='${safeReferenceImage || ''}' x='730' y='120' width='350' height='430' preserveAspectRatio='xMidYMid meet' opacity='0.88'/><text x='90' y='690' font-size='74' font-family='Arial Black,Arial,sans-serif' fill='rgba(255,255,255,0.86)'>${brand}</text></svg>`, 'orb'),
-    selection_tech_amber_energy: () => buildTechAmberEnergyConfig(context, safeReferenceImage),
     selection_metallic_sport_identity: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><defs><linearGradient id='metal' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#020617'/><stop offset='42%' stop-color='#374151'/><stop offset='100%' stop-color='#cbd5e1'/></linearGradient></defs><rect width='1200' height='800' fill='url(#metal)'/><path d='M0,560 L1200,190 L1200,380 L0,760 Z' fill='rgba(148,163,184,0.24)'/><image href='${safeReferenceImage || ''}' x='100' y='120' width='420' height='420' opacity='0.22' preserveAspectRatio='xMidYMid meet'/><image href='${safeReferenceImage || ''}' x='760' y='170' width='330' height='330' opacity='0.92' preserveAspectRatio='xMidYMid meet'/><rect x='742' y='150' width='366' height='366' rx='34' fill='none' stroke='rgba(226,232,240,0.62)' stroke-width='4'/><text x='84' y='716' font-size='52' fill='rgba(248,250,252,0.8)' font-family='Arial Black,Arial,sans-serif'>METALLIC SPORT IDENTITY</text></svg>`, 'diamond'),
     selection_neon_motion_grid: () => buildNeonMotionGridConfig(context, safeReferenceImage),
     selection_luxury_fabric_monogram: () => buildImageSurface(`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#1f2937'/></svg>`, 'none'),
@@ -838,7 +790,6 @@ export function getRecommendedPresets(outfitMetadata: OutfitMetadata | undefined
     { id: 'selection_editorial_logo', category: 'editorial_branding', label: 'Selection editorial logo', description: 'Uses the uploaded logo as a hero element in a clean campaign-style composition.' },
     { id: 'selection_editorial_collage', category: 'editorial_branding', label: 'Selection editorial collage', description: 'Fuses cropped logo and treated imagery into a depth-rich editorial card.' },
     { id: 'selection_soft_premium_minimal', category: 'editorial_branding', label: 'Selection soft premium minimal', description: 'Minimal, high-readability premium composition with restrained visual weight.' },
-    { id: 'selection_tech_amber_energy', category: 'tech_energy', label: 'Selection tech amber energy', description: 'Fuses uploaded logo with high-energy amber/orange AI-tech visual treatment.' },
     { id: 'selection_neon_motion_grid', category: 'tech_energy', label: 'Selection neon motion grid', description: 'Adds diagonal neon movement, digital grid rhythm, and logo anchoring.' },
     { id: 'selection_metallic_sport_identity', category: 'tech_energy', label: 'Selection metallic sport identity', description: 'Applies silver/graphite highlights for premium sport-tech brand identity.' },
     { id: 'selection_logo_image_fusion', category: 'hybrid_fusion', label: 'Selection logo + stylized image fusion', description: 'Blends uploaded logo with stylized image composition for richer hero surfaces.' },
@@ -860,7 +811,7 @@ export function getRecommendedPresets(outfitMetadata: OutfitMetadata | undefined
   if (isTechSportDirection) {
     return allPresets
       .filter((preset) => availablePresetIds.includes(preset.id))
-      .filter((preset) => ['selection_tonal_geometry', 'selection_tech_amber_energy', 'selection_neon_motion_grid'].includes(preset.id))
+      .filter((preset) => ['selection_tonal_geometry', 'selection_neon_motion_grid', 'selection_metallic_sport_identity'].includes(preset.id))
       .slice(0, 3);
   }
 
