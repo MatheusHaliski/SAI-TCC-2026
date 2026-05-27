@@ -43,18 +43,13 @@ export class AutopilotService {
       weather = { temp_c: 20, condition: 'partly_cloudy', city: request.city };
     }
 
-    const suggestions = this.rankingService.generateTop3(wardrobe, {
-      occasion: request.occasion,
-      mood: request.mood,
-      weather,
-      preferences: prefs,
-    });
+    const suggestions = this.rankingService.generateTop3(
+      wardrobe,
+      { occasion: request.occasion, mood: request.mood, weather, preferences: prefs },
+      request.exclude_scheme_ids ?? [],
+    );
 
-    const filteredSuggestions = request.exclude_scheme_ids?.length
-      ? suggestions.filter((s) => !request.exclude_scheme_ids!.includes(s.scheme_id))
-      : suggestions;
-
-    return { suggestions: filteredSuggestions, weather };
+    return { suggestions, weather };
   }
 
   async confirmDailyLook(
