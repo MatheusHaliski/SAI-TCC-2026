@@ -9,7 +9,6 @@ export type BackgroundPresetId =
   | 'selection_editorial_logo'
   | 'selection_tonal_geometry'
   | 'selection_logo_image_fusion'
-  | 'selection_tech_amber_energy'
   | 'selection_metallic_sport_identity'
   | 'selection_neon_motion_grid'
   | 'selection_luxury_fabric_monogram'
