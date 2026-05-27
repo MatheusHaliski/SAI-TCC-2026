@@ -11,6 +11,7 @@ import ThreeDViewerModal from '@/app/components/wardrobe/ThreeDViewerModal';
 import WardrobeItemViewerModal from '@/app/components/wardrobe/WardrobeItemViewerModal';
 import ThreeDGenerationProgressModal from '@/app/components/wardrobe/ThreeDGenerationProgressModal';
 import WardrobeItemCard from '@/app/components/wardrobe/WardrobeItemCard';
+import EditPieceModal from '@/app/components/pieces/EditPieceModal';
 import { use3dAssetJob } from '@/app/hooks/use3dAssetJob';
 import {
   buildBlenderWorkerSubmitPayload,
@@ -98,6 +99,7 @@ export default function MyWardrobeView() {
   const [modalItem, setModalItem] = useState<WardrobeItem | null>(null);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [progressItem, setProgressItem] = useState<WardrobeItem | null>(null);
+  const [editItemId, setEditItemId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -444,6 +446,7 @@ export default function MyWardrobeView() {
                       onAvailable={() => setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'available' }))}
                       onUnavailable={() => setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'unavailable' }))}
                       onToggleFavorite={() => setFavorites((prev) => ({ ...prev, [item.wardrobe_item_id]: !prev[item.wardrobe_item_id] }))}
+                      onEdit={() => setEditItemId(item.wardrobe_item_id)}
                     />
                   );
                 })}
@@ -504,6 +507,24 @@ export default function MyWardrobeView() {
           }}
         />
       ) : null}
+
+      <EditPieceModal
+        open={Boolean(editItemId)}
+        itemId={editItemId}
+        onClose={() => setEditItemId(null)}
+        onSaved={() => {
+          setItems((prev) =>
+            prev.map((item) =>
+              item.wardrobe_item_id === editItemId ? { ...item } : item,
+            ),
+          );
+          setEditItemId(null);
+        }}
+        onDeleted={() => {
+          setItems((prev) => prev.filter((item) => item.wardrobe_item_id !== editItemId));
+          setEditItemId(null);
+        }}
+      />
     </>
   );
 }
