@@ -7,6 +7,7 @@ import MyWardrobeView from '@/app/views/MyWardrobeView';
 import SearchItemsView from '@/app/views/SearchItemsView';
 import DressTesterView from '@/app/views/DressTesterView';
 import SearchPiecesView from '@/app/views/SearchPiecesView';
+import AutopilotView from '@/app/views/AutopilotView';
 
 interface ContentRouterProps {
   route: AppRoute;
@@ -19,5 +20,6 @@ export default function ContentRouter({ route }: ContentRouterProps) {
   if (route === 'profile' || route === 'profile-settings') return <ProfileView />;
   if (route === 'search-pieces') return <SearchPiecesView />;
   if (route === 'dress-tester') return <Suspense><DressTesterView /></Suspense>;
+  if (route === 'autopilot') return <AutopilotView />;
   return <MyWardrobeView />;
 }
