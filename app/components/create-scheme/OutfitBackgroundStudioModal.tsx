@@ -1934,6 +1934,15 @@ function getRecommendedPresets(outfitMetadata: OutfitMetadata | undefined, runti
   ].filter(Boolean).slice(0, 3) as RecommendedPreset[];
 }
 
+const TEMPLATE_PICKER_PRESETS: RecommendedPreset[] = [
+  { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Monograma de tecido', description: 'Superfície de moda com textura de monograma da marca.' },
+  { id: 'selection_tonal_geometry', category: 'pattern_surface', label: 'Geometria tonal', description: 'Paleta tonal com painéis geométricos sutis.' },
+  { id: 'selection_soft_premium_minimal', category: 'editorial_branding', label: 'Minimalismo premium', description: 'Composição limpa e de alta legibilidade.' },
+  { id: 'selection_neon_motion_grid', category: 'tech_energy', label: 'Grade neon digital', description: 'Grade diagonal neon com ritmo digital.' },
+  { id: 'selection_metallic_sport_identity', category: 'tech_energy', label: 'Identidade esportiva', description: 'Destaques grafite/prata para brand sport-tech.' },
+  { id: 'selection_editorial_collage', category: 'editorial_branding', label: 'Colagem editorial', description: 'Fusão de imagens em composição editorial profunda.' },
+];
+
 const EMERALD_LUXURY_ASSET_CANDIDATES = ['png', 'jpg', 'jpeg', 'webp'].map((ext) => `/${encodeURIComponent(`Sem título (25).${ext}`)}`);
 
 const encodeDataUri = (value: string) => value
@@ -2057,6 +2066,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiGradientResults, setAiGradientResults] = useState<OutfitBackgroundConfig[]>([]);
   const [selectedAiResult, setSelectedAiResult] = useState<ArtworkVariation | null>(null);
   const [selectedRecommendedPreset, setSelectedRecommendedPreset] = useState<BackgroundPresetId | null>(null);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
@@ -2119,8 +2129,6 @@ export default function OutfitBackgroundStudioModal({
   ) => {
     console.info('[background-studio] preset selected', { presetId, hasReferenceImage: Boolean(uploadedReferenceImage) });
     setPresetRequirementMessage(null);
-    const preset = recommendedPresets.find((item) => item.id === presetId);
-    if (!preset) return;
     if (!isPresetAvailable(presetId, context, uploadedReferenceImage)) {
       const requirementMessage = getPresetAvailabilityReason(presetId, context, uploadedReferenceImage) || 'Preset unavailable for current state.';
       if (presetId === 'selection_tiled_motif' && !uploadedReferenceImage) {
@@ -3184,9 +3192,9 @@ export default function OutfitBackgroundStudioModal({
             ) : null}
 
             <section className="rounded-xl border border-white/20 bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-white/65">Recommended presets based on current outfit</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                {recommendedPresets.map((preset) => {
+              <p className="text-xs uppercase tracking-[0.12em] text-white/65">Predefinições recomendadas para o look atual</p>
+              <div className="mt-2 grid gap-2 grid-cols-2">
+                {recommendedPresets.slice(0, 2).map((preset) => {
                   const isAvailable = isPresetAvailable(preset.id, presetContext, uploadedReferenceImage);
                   const availabilityReason = getPresetAvailabilityReason(preset.id, presetContext, uploadedReferenceImage);
                   const previewConfig = applyPresetPreview({
@@ -3195,95 +3203,116 @@ export default function OutfitBackgroundStudioModal({
                     referenceImage: uploadedReferenceImage,
                     gradient: draft.gradient,
                   });
+                  const isSelected = selectedRecommendedPreset === preset.id;
                   const badgeLabel = !isAvailable
                     ? `🟡 ${availabilityReason}`
-                    : ['selection_neon_motion_grid', 'selection_metallic_sport_identity'].includes(preset.id)
-                      ? '🔵 AI enhanced'
-                      : '🟢 Ready';
-
-                  // Editorial logo card: div wrapper so file input can live inside
-                  if (preset.id === 'selection_editorial_logo') {
-                    return (
-                      <div key={preset.id} className={`rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition ${isAvailable ? 'hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)]' : 'cursor-not-allowed opacity-40'}`}>
-                        <button
-                          type="button"
-                          disabled={!isAvailable}
-                          className="w-full text-left"
-                          onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
-                        >
-                          <p className="text-[10px] uppercase tracking-[0.12em] text-white/60">{preset.category.replaceAll('_', ' / ')}</p>
-                          <p className="text-xs font-semibold">{preset.label}</p>
-                          <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
-                          <p className={`mt-1 text-[10px] ${isAvailable ? 'text-emerald-200' : 'text-amber-200'}`}>{badgeLabel}</p>
-                        </button>
-                        <label
-                          className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-white/30 bg-white/8 px-2 py-1.5 text-[10px] text-white/70 transition hover:border-fuchsia-300/60 hover:text-white/90"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <span>📎</span>
-                          <span className="truncate">{aiReferenceFileName || 'Upload reference image'}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="sr-only"
-                            onChange={(event) => {
-                              const file = event.target.files?.[0];
-                              if (!file) return;
-                              const previewUrl = URL.createObjectURL(file);
-                              if (aiReferenceImageUrl.startsWith('blob:')) URL.revokeObjectURL(aiReferenceImageUrl);
-                              setAiReferenceImageUrl(previewUrl);
-                              setAiReferenceImageDataUrl('');
-                              setAiReferenceFileName(file.name);
-                              setBackendWarning(null);
-                            }}
-                          />
-                        </label>
-                        <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
-                          <FancySelect
-                            value={editorialLogoBgUrl}
-                            label="Imagem de fundo"
-                            onChange={(value) => {
-                              setEditorialLogoBgUrl(value);
-                              void buildEditorialLogoAsync(uploadedReferenceImage, presetContext, draft, value)
-                                .then((config) => setDraft((prev) => ({ ...prev, ...config })));
-                            }}
-                            options={CURATED_IMAGE_PICKER_OPTIONS.map((opt) => ({
-                              value: opt.imageUrl,
-                              label: opt.label,
-                              hint: 'Aplicar sobreposição sobre esta imagem',
-                            }))}
-                          />
-                        </div>
-                        <span
-                          className="mt-2 block h-14 rounded-lg border border-white/15"
-                          style={{ ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)), backgroundColor: '#0f172a' }}
-                        />
-                      </div>
-                    );
-                  }
+                    : isSelected
+                      ? '● Aplicado'
+                      : '🟢 Pronto';
 
                   return (
                     <button
                       key={preset.id}
                       type="button"
                       disabled={!isAvailable}
-                      className="rounded-xl border border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent p-2 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_10px_30px_rgba(192,132,252,0.24)] disabled:cursor-not-allowed disabled:opacity-40"
+                      className={`rounded-xl border p-2 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_10px_30px_rgba(192,132,252,0.2)] disabled:cursor-not-allowed disabled:opacity-40 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent'}`}
                       onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
                     >
-                      <p className="text-[10px] uppercase tracking-[0.12em] text-white/60">{preset.category.replaceAll('_', ' / ')}</p>
-                      <p className="text-xs font-semibold">{preset.label}</p>
-                      <p className="mt-1 text-[11px] text-white/70">{preset.description}</p>
-                      <p className={`mt-1 text-[10px] ${isAvailable ? 'text-emerald-200' : 'text-amber-200'}`}>{badgeLabel}</p>
-                      <span
-                        className="mt-2 block h-14 rounded-lg border border-white/15"
+                      <p className="text-[9px] uppercase tracking-[0.12em] text-white/50">{preset.category.replaceAll('_', ' / ')}</p>
+                      <p className="text-[11px] font-semibold leading-tight">{preset.label}</p>
+                      <p className="mt-0.5 text-[10px] text-white/60 line-clamp-2">{preset.description}</p>
+                      <div
+                        className="mt-2 rounded-md border border-white/10 overflow-hidden"
                         style={{
+                          height: 72,
                           ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)),
                           backgroundColor: '#0f172a',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
                         }}
-                      />
+                      >
+                        <div className="h-full flex flex-col justify-between p-1.5" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.45))' }}>
+                          <div className="h-1 w-6 bg-white/25 rounded-full" />
+                          <div className="space-y-0.5">
+                            <div className="h-1.5 w-12 bg-white/40 rounded-full" />
+                            <div className="h-1 w-8 bg-white/22 rounded-full" />
+                          </div>
+                        </div>
+                      </div>
+                      <p className={`mt-1 text-[9px] ${isAvailable ? (isSelected ? 'text-fuchsia-300' : 'text-emerald-300') : 'text-amber-200'}`}>{badgeLabel}</p>
                     </button>
                   );
                 })}
+
+                {/* Template picker — full width, replaces tech_energy slot */}
+                <div className="col-span-2 rounded-xl border border-white/20 bg-gradient-to-br from-violet-900/15 via-fuchsia-900/8 to-transparent">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between px-3 py-2.5 text-left"
+                    onClick={() => setTemplatePickerOpen((prev) => !prev)}
+                  >
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.12em] text-violet-300/70">Templates pré-configurados</p>
+                      <p className="text-[11px] font-semibold">Escolher template pré-configurado</p>
+                      <p className="mt-0.5 text-[10px] text-white/55">Selecione um dos templates visuais disponíveis.</p>
+                    </div>
+                    <svg
+                      className="ml-2 h-4 w-4 shrink-0 text-white/50 transition-transform"
+                      style={{ transform: templatePickerOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {templatePickerOpen && (
+                    <div className="border-t border-white/10 px-3 pb-3 pt-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        {TEMPLATE_PICKER_PRESETS.map((preset) => {
+                          const isAvailable = isPresetAvailable(preset.id, presetContext, uploadedReferenceImage);
+                          const previewConfig = applyPresetPreview({
+                            presetId: preset.id,
+                            context: presetContext,
+                            referenceImage: uploadedReferenceImage,
+                            gradient: draft.gradient,
+                          });
+                          const isSelected = selectedRecommendedPreset === preset.id;
+
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              disabled={!isAvailable}
+                              className={`rounded-lg border p-1.5 text-left transition enabled:hover:border-white/35 enabled:hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-35 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/15 bg-white/5'}`}
+                              onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
+                            >
+                              <div
+                                className="rounded border border-white/10 overflow-hidden"
+                                style={{
+                                  height: 68,
+                                  ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)),
+                                  backgroundColor: '#0f172a',
+                                  backgroundSize: 'cover',
+                                  backgroundPosition: 'center',
+                                }}
+                              >
+                                <div className="h-full flex flex-col justify-between p-1" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))' }}>
+                                  <div className="h-0.5 w-4 bg-white/25 rounded-full" />
+                                  <div className="space-y-0.5">
+                                    <div className="h-1 w-8 bg-white/40 rounded-full" />
+                                    <div className="h-0.5 w-5 bg-white/22 rounded-full" />
+                                  </div>
+                                </div>
+                              </div>
+                              <p className="mt-1 text-[9px] font-semibold leading-tight text-white/90 line-clamp-2">{preset.label}</p>
+                              {isSelected && <p className="mt-0.5 text-[8px] text-fuchsia-300">● Aplicado</p>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </section>
           </section>

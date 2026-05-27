@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import { getBest2DAssetForWardrobeItem } from '@/app/services/Tester2DAssetResolver';
+import PieceIdentityCard, { type PieceCardItem } from './PieceIdentityCard';
 
 interface WardrobeViewerItem {
   name: string;
@@ -16,17 +17,27 @@ interface WardrobeViewerItem {
     normalized_2d_preview_url?: string | null;
     approved_catalog_2d_url?: string | null;
   };
+  // Piece card fields
+  wardrobe_item_id?: string;
+  brand?: string;
+  piece_type?: string;
+  color?: string;
+  material?: string;
+  style_tags?: string[];
+  occasion_tags?: string[];
+  is_favorite?: boolean;
+  isolated_piece_image_url?: string | null;
 }
 
 interface Props {
   open: boolean;
   item: WardrobeViewerItem | null;
   onClose: () => void;
-  onOpen3D: () => void;
+  userId?: string;
 }
 
-export default function WardrobeItemViewerModal({ open, item, onClose, onOpen3D }: Props) {
-  const [activeTab, setActiveTab] = useState<'2d' | '3d'>('2d');
+export default function WardrobeItemViewerModal({ open, item, onClose, userId }: Props) {
+  const [activeTab, setActiveTab] = useState<'2d' | 'card'>('2d');
 
   const image2d = useMemo(() => {
     if (!item) return '';
@@ -34,6 +45,21 @@ export default function WardrobeItemViewerModal({ open, item, onClose, onOpen3D 
   }, [item]);
 
   if (!open || !item) return null;
+
+  const cardItem: PieceCardItem = {
+    wardrobe_item_id: item.wardrobe_item_id ?? 'unknown',
+    name: item.name,
+    brand: item.brand ?? '',
+    piece_type: item.piece_type ?? '',
+    color: item.color,
+    material: item.material,
+    style_tags: item.style_tags,
+    occasion_tags: item.occasion_tags,
+    is_favorite: item.is_favorite,
+    image_url: item.image_url,
+    isolated_piece_image_url: item.isolated_piece_image_url,
+    image_assets: item.image_assets,
+  };
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm sm:p-5" onClick={onClose}>
@@ -64,14 +90,14 @@ export default function WardrobeItemViewerModal({ open, item, onClose, onOpen3D 
             2D (default)
           </button>
           <button
-            onClick={() => setActiveTab('3d')}
+            onClick={() => setActiveTab('card')}
             className={`rounded-xl border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
-              activeTab === '3d'
+              activeTab === 'card'
                 ? 'border-indigo-400/60 bg-[linear-gradient(135deg,#6366f1_0%,#8b5cf6_100%)] text-white shadow-[0_10px_24px_rgba(79,70,229,0.32)]'
                 : 'border-white/80 bg-white/65 text-slate-700 hover:bg-white/80'
             }`}
           >
-            3D
+            ▲ Piece Card
           </button>
         </div>
 
@@ -85,19 +111,8 @@ export default function WardrobeItemViewerModal({ open, item, onClose, onOpen3D 
             </div>
           </div>
         ) : (
-          <div className="rounded-[18px] border border-slate-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#f4f7fb_100%)] p-5">
-            <p className="mb-3 text-sm text-slate-600">Open the immersive model viewer for this item.</p>
-            {String(item.model_status ?? '').trim().toLowerCase() === 'completed' && item.brand_applied === false ? (
-              <p className="mb-3 rounded-lg border border-amber-300/70 bg-amber-100/70 px-3 py-2 text-xs text-amber-900">
-                3D model generated without logo branding.
-              </p>
-            ) : null}
-            <button
-              onClick={onOpen3D}
-              className="rounded-xl border border-indigo-400/60 bg-[linear-gradient(135deg,#4f46e5_0%,#7c3aed_100%)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(79,70,229,0.32)]"
-            >
-              Open 3D viewer
-            </button>
+          <div className="py-2">
+            <PieceIdentityCard item={cardItem} userId={userId} />
           </div>
         )}
       </div>

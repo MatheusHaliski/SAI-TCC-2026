@@ -198,6 +198,11 @@ export class WardrobeItemsRepository extends BaseRepository {
         season: market?.season ?? 'Unknown',
         gender: market?.gender ?? 'Unknown',
         piece_type: String(item.piece_type ?? ''),
+        color: String(item.color ?? ''),
+        material: String(item.material ?? ''),
+        style_tags: Array.isArray(item.style_tags) ? item.style_tags.map(String) : [],
+        occasion_tags: Array.isArray(item.occasion_tags) ? item.occasion_tags.map(String) : [],
+        is_favorite: Boolean(item.is_favorite),
       };
     });
 

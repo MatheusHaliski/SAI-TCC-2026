@@ -30,6 +30,7 @@ interface WardrobeItem {
   model_preview_url?: string | null;
   model_base_3d_url?: string | null;
   model_branded_3d_url?: string | null;
+  isolated_piece_image_url?: string | null;
   model_status?: string;
   model_generation_error?: string | null;
   processingStartedAt?: string | null;
@@ -40,6 +41,11 @@ interface WardrobeItem {
   season: string;
   gender: string;
   piece_type: string;
+  color?: string;
+  material?: string;
+  style_tags?: string[];
+  occasion_tags?: string[];
+  is_favorite?: boolean;
 }
 
 const sections = ['Disponíveis', 'Indisponíveis', 'Favoritos'];
@@ -92,6 +98,7 @@ export default function MyWardrobeView() {
   const [modalItem, setModalItem] = useState<WardrobeItem | null>(null);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [progressItem, setProgressItem] = useState<WardrobeItem | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchIntent, setSearchIntent] = useState<SearchIntentOutput | null>(null);
@@ -125,6 +132,7 @@ export default function MyWardrobeView() {
         return;
       }
 
+      setCurrentUserId(userId);
       const wardrobeResponse = await fetch(`/api/wardrobe-items/user/${userId}?status=active&limit=24`);
       const wardrobePayload = await wardrobeResponse.json().catch(() => ({ items: [], nextCursor: null }));
       const nextItems = wardrobeResponse.ok && Array.isArray(wardrobePayload?.items) ? wardrobePayload.items : [];
@@ -464,11 +472,7 @@ export default function MyWardrobeView() {
         open={Boolean(modalItem)}
         item={modalItem}
         onClose={() => setModalItem(null)}
-        onOpen3D={() => {
-          if (!modalItem) return;
-          setModalItem(null);
-          void handleOpenViewerIntent(modalItem);
-        }}
+        userId={currentUserId || undefined}
       />
 
       <ThreeDGenerationProgressModal
