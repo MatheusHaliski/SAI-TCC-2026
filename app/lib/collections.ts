@@ -12,6 +12,9 @@ export const COLLECTIONS = {
   DAILY_LOOKS: 'saiDailyLooks',
   OUTFIT_PREFERENCES: 'saiOutfitPreferences',
   WEEK_PLANS: 'saiWeekPlans',
+  PIECE_LIKES: 'saiPieceLikes',
+  PIECE_RATINGS: 'saiPieceRatings',
+  PIECE_STATS: 'saiPieceStats',
 } as const;
 
 export const LEGACY_COLLECTIONS = [
