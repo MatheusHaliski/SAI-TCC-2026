@@ -15,6 +15,14 @@ export const COLLECTIONS = {
   PIECE_LIKES: 'saiPieceLikes',
   PIECE_RATINGS: 'saiPieceRatings',
   PIECE_STATS: 'saiPieceStats',
+  // FLAIR card game
+  FLAIR_PROFILES: 'saiFlairProfiles',
+  FLAIR_CARDS: 'saiFlairCards',
+  FLAIR_QUESTS: 'saiFlairQuests',
+  FLAIR_REWARDS: 'saiFlairRewards',
+  FLAIR_VOUCHERS: 'saiFlairVouchers',
+  FLAIR_DUELS: 'saiFlairDuels',
+  FLAIR_SEASON_EVENTS: 'saiFlairSeasonEvents',
 } as const;
 
 export const LEGACY_COLLECTIONS = [
