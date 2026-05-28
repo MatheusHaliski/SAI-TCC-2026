@@ -1,11 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import Tester2DMannequinSelector from '@/app/components/tester2d/Tester2DMannequinSelector';
 import OutfitSlotsPanel from '@/app/components/tester2d/OutfitSlotsPanel';
+import FitScorePanel, { type FitScoreResult } from '@/app/components/tester2d/FitScorePanel';
+import SaveLookCard from '@/app/components/tester2d/SaveLookCard';
 import Image from 'next/image';
 import Tester2DWardrobePanel, { type OutfitSlot, type Tester2DWardrobeItem } from '@/app/components/tester2d/Tester2DWardrobePanel';
 import { MannequinProfile } from '@/app/lib/fashion-ai/types/mannequin';
@@ -41,7 +43,9 @@ export default function DressTesterView() {
   const [stageImageUrl, setStageImageUrl] = useState('');
   const [stageError, setStageError] = useState<string | null>(null);
   const [outfitCache, setOutfitCache] = useState<Record<string, string>>({});
+  const [fitScore, setFitScore] = useState<FitScoreResult | null>(null);
 
+  const sessionPayloadApplied = useRef(false);
   const searchParams = useSearchParams();
 
   const mannequin = useMemo(() => mannequins.find((m) => m.id === selectedMannequin) ?? mannequins[0], [mannequins, selectedMannequin]);
@@ -52,6 +56,20 @@ export default function DressTesterView() {
     if (typeof window === 'undefined') return mannequin.baseImageUrl;
     return new URL(mannequin.baseImageUrl, window.location.origin).toString();
   }, [mannequin]);
+
+  // Derived: pieces in outfit formatted for FitScorePanel
+  const fitScorePieces = useMemo(
+    () =>
+      SLOT_ORDER.filter((s) => outfit[s]).map((s) => ({
+        name: outfit[s]!.name,
+        brand: '',
+        pieceType: outfit[s]!.garmentCategory,
+        slotType: s,
+      })),
+    [outfit],
+  );
+
+  const filledSlots = useMemo(() => SLOT_ORDER.filter((s) => outfit[s]), [outfit]);
 
   const refreshData = useCallback(async () => {
     setLoading(true);
@@ -72,6 +90,7 @@ export default function DressTesterView() {
 
   useEffect(() => { void refreshData(); }, [refreshData]);
 
+  // Load single piece from ?pieceId= query param
   useEffect(() => {
     const pieceId = searchParams.get('pieceId');
     if (!pieceId || !pieces.length) return;
@@ -81,12 +100,43 @@ export default function DressTesterView() {
     setActiveSlot(piece.slotType as OutfitSlot);
   }, [pieces, searchParams]);
 
+  // Load full outfit from sessionStorage when ?source=outfit
+  useEffect(() => {
+    if (sessionPayloadApplied.current || !pieces.length) return;
+    const source = searchParams.get('source');
+    if (source !== 'outfit') return;
+    const raw = sessionStorage.getItem('sai_dress_tester_payload');
+    if (!raw) return;
+    sessionPayloadApplied.current = true;
+    try {
+      const data = JSON.parse(raw) as { pieces?: Array<{ wardrobeItemId?: string }> };
+      const newOutfit: Outfit = {};
+      for (const p of data.pieces ?? []) {
+        if (!p.wardrobeItemId) continue;
+        const item = pieces.find((w) => w.pieceId === p.wardrobeItemId);
+        if (!item || newOutfit[item.slotType]) continue;
+        newOutfit[item.slotType] = item;
+      }
+      if (Object.keys(newOutfit).length > 0) {
+        setOutfit(newOutfit);
+      }
+    } catch { /* malformed session payload — ignore */ }
+  }, [pieces, searchParams]);
+
+  // Reset stage + score when mannequin changes
   useEffect(() => {
     setStageError(null);
     setOutfit({});
     setActiveSlot('upper');
     setStageImageUrl('');
+    setFitScore(null);
+    sessionPayloadApplied.current = false;
   }, [selectedMannequin]);
+
+  // Reset score when outfit changes (new stage needed)
+  useEffect(() => {
+    setFitScore(null);
+  }, [outfit]);
 
   const runOutfitTryOn = useCallback(async () => {
     if (!mannequin || !mannequinImageAbsoluteUrl) return;
@@ -103,6 +153,7 @@ export default function DressTesterView() {
     if (items.length === 0) return;
 
     setStageError(null);
+    setStageImageUrl('');
     const cacheKey = buildOutfitCacheKey(selectedMannequin, outfit);
     const cached = outfitCache[cacheKey];
     if (cached) {
@@ -132,7 +183,6 @@ export default function DressTesterView() {
 
   const handleApplyPiece = useCallback((item: Tester2DWardrobeItem) => {
     setOutfit((prev) => ({ ...prev, [activeSlot]: item }));
-    // Auto-advance to the next empty AI slot
     const nextEmpty = (['upper', 'lower', 'shoes'] as OutfitSlot[]).find((s) => s !== activeSlot && !outfit[s]);
     if (nextEmpty) setActiveSlot(nextEmpty);
   }, [activeSlot, outfit]);
@@ -145,79 +195,108 @@ export default function DressTesterView() {
     });
     setStageImageUrl('');
     setStageError(null);
+    setFitScore(null);
   }, []);
 
-  if (loading) return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Loading Tester 2D...</div>;
-  if (!mannequin) return <div className="p-6 text-sm text-white/70">No mannequin profiles found.</div>;
+  if (loading) return <div className="p-6 text-sm uppercase tracking-[0.2em] text-white/70">Carregando Provador 2D...</div>;
+  if (!mannequin) return <div className="p-6 text-sm text-white/70">Nenhum manequim encontrado.</div>;
 
   const activePieceId = outfit[activeSlot]?.pieceId ?? null;
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Provador 2D" subtitle="Experimentação 2D com múltiplas peças via Fashn.ai — até 4 slots (superior, inferior, calçado, acessório)" />
-      <SectionBlock title="Controles" subtitle="Escolha o manequim e monte seu look">
+      <PageHeader title="Provador 2D" subtitle="Monte seu look com até 4 peças — IA da Fashn.ai aplica cada peça sequencialmente" />
+      <SectionBlock title="Manequim" subtitle="Escolha o manequim e monte seu look">
         <Tester2DMannequinSelector mannequins={mannequins} selectedId={selectedMannequin} onChange={setSelectedMannequin} />
       </SectionBlock>
 
-      <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_360px]">
-        <SectionBlock title="Outfit Builder" subtitle="Select a slot, then pick a piece from the wardrobe">
-          <OutfitSlotsPanel
-            outfit={outfit}
-            activeSlot={activeSlot}
-            onSelectSlot={setActiveSlot}
-            onRemovePiece={handleRemovePiece}
-            onTryOn={runOutfitTryOn}
-            processing={processing}
-          />
-        </SectionBlock>
-
-        <SectionBlock title="Editing Stage" subtitle="AI-fitted outfit render — Fashn.ai chains each garment sequentially">
-          <div className="rounded-3xl border border-white/20 bg-black/35 p-4">
-            <div className="relative mx-auto aspect-[2/3] w-full max-w-[420px] overflow-hidden rounded-2xl bg-gradient-to-b from-black/30 to-black/65">
-              <Image
-                src={stageImageUrl || mannequin.baseImageUrl}
-                alt="Try-on stage"
-                fill
-                className="object-contain transition-opacity duration-400 ease-in"
-                unoptimized
-                priority
+      <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
+        {/* ── Left: Outfit Builder + Fit Score ── */}
+        <SectionBlock title="Outfit Builder" subtitle="Selecione um slot e escolha a peça">
+          <div className="mt-4 space-y-3">
+            <OutfitSlotsPanel
+              outfit={outfit}
+              activeSlot={activeSlot}
+              onSelectSlot={setActiveSlot}
+              onRemovePiece={handleRemovePiece}
+              onTryOn={runOutfitTryOn}
+              processing={processing}
+            />
+            {stageImageUrl && (
+              <FitScorePanel
+                key={stageImageUrl}
+                pieces={fitScorePieces}
+                filledSlots={filledSlots}
+                mannequin={selectedMannequin}
+                onScoreReady={setFitScore}
               />
-              {processing ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/50 text-white">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  <div className="text-center">
-                    <p className="text-sm font-medium">Fitting outfit...</p>
-                    <p className="mt-1 text-xs text-white/60">Fashn.ai is processing each piece sequentially</p>
-                  </div>
-                </div>
-              ) : null}
-              {stageError ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-4">
-                  <div className="rounded-xl border border-rose-300/40 bg-rose-950/70 p-4 text-center text-rose-100">
-                    <p className="text-sm">⚠️ {stageError}</p>
-                    <button
-                      type="button"
-                      className="mt-3 rounded-lg border border-rose-200/60 px-3 py-1 text-xs"
-                      onClick={() => { setStageError(null); void runOutfitTryOn(); }}
-                    >
-                      Try again
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-            </div>
+            )}
           </div>
         </SectionBlock>
 
-        <SectionBlock title="Wardrobe 2D Library" subtitle={`Browsing ${activeSlot} — click to assign to slot`}>
-          <Tester2DWardrobePanel
-            items={pieces}
-            activePieceId={activePieceId}
-            processingPieceId={null}
-            activeSlot={activeSlot}
-            onSlotChange={setActiveSlot}
-            onApply={handleApplyPiece}
-          />
+        {/* ── Center: Stage + Save Look ── */}
+        <SectionBlock title="Provador" subtitle="Render com IA — Fashn.ai aplica as peças em sequência">
+          <div className="mt-4 space-y-4">
+            <div className="rounded-3xl border border-white/20 bg-black/35 p-4">
+              <div className="relative mx-auto aspect-[2/3] w-full max-w-[420px] overflow-hidden rounded-2xl bg-gradient-to-b from-black/30 to-black/65">
+                <Image
+                  src={stageImageUrl || mannequin.baseImageUrl}
+                  alt="Try-on stage"
+                  fill
+                  className="object-contain transition-opacity duration-400 ease-in"
+                  unoptimized
+                  priority
+                />
+                {processing ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 text-white">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-fuchsia-400/30 border-t-fuchsia-400" />
+                    <div className="text-center">
+                      <p className="text-sm font-medium">Encaixando o look...</p>
+                      <p className="mt-1 text-xs text-white/50">Fashn.ai processa cada peça em sequência</p>
+                    </div>
+                  </div>
+                ) : null}
+                {stageError ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-4">
+                    <div className="rounded-xl border border-rose-300/40 bg-rose-950/70 p-4 text-center text-rose-100">
+                      <p className="text-sm">⚠️ {stageError}</p>
+                      <button
+                        type="button"
+                        className="mt-3 rounded-lg border border-rose-200/60 px-3 py-1 text-xs"
+                        onClick={() => { setStageError(null); void runOutfitTryOn(); }}
+                      >
+                        Tentar novamente
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Save Look — appears after AI analysis is ready */}
+            {stageImageUrl && fitScore && (
+              <SaveLookCard
+                key={stageImageUrl}
+                stageImageUrl={stageImageUrl}
+                outfit={outfit}
+                fitScore={fitScore}
+              />
+            )}
+          </div>
+        </SectionBlock>
+
+        {/* ── Right: Wardrobe ── */}
+        <SectionBlock title="Guarda-roupa" subtitle={`Navegando: ${activeSlot} — clique para atribuir ao slot`}>
+          <div className="mt-4">
+            <Tester2DWardrobePanel
+              items={pieces}
+              activePieceId={activePieceId}
+              processingPieceId={null}
+              activeSlot={activeSlot}
+              onSlotChange={setActiveSlot}
+              onApply={handleApplyPiece}
+            />
+          </div>
         </SectionBlock>
       </div>
     </div>
