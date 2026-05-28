@@ -174,6 +174,10 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
           brandBadges={brandBadges}
           titleFontFamily={data.titleFontFamily}
           creatorName={data.creatorName}
+          ratingStars={data.ratingStars}
+          ownersCount={data.ownersCount}
+          outfitLikes={data.outfitLikes}
+          occasion={data.occasion}
         />
         <OutfitPieceList
           pieces={data.pieces}

@@ -8,12 +8,13 @@ import TierChip from '@/app/components/outfit-card/badges/TierChip';
 import LikesBadge from '@/app/components/outfit-card/badges/LikesBadge';
 import QualityBadge from '@/app/components/outfit-card/badges/QualityBadge';
 import QualityRail from '@/app/components/outfit-card/badges/QualityRail';
+import PieceCardModal from '@/app/components/outfit-card/PieceCardModal';
 import { FILTER_GLOW_LINE, GLOW_LINE, TEXT_GLOW } from '@/app/lib/uiToken';
 
 interface OutfitPieceCardProps {
   piece: OutfitPiece;
   compact?: boolean;
-  /** Called when the user clicks "Visualizar card da peça". */
+  /** @deprecated Use the built-in modal instead. Kept for callers not yet migrated. */
   onViewPieceCard?: () => void;
   /** schemeId needed to persist like toggles. Omit to run optimistic-only. */
   schemeId?: string;
@@ -26,6 +27,8 @@ export default function OutfitPieceCard({ piece, compact = false, onViewPieceCar
   const tier        = piece.category ?? 'Standard';
   const pieceType   = piece.pieceType || 'Garment';
   const baseQuality = piece.baseQuality ?? 2.5;
+
+  const [modalOpen, setModalOpen] = useState(false);
 
   // Optimistic like state — initialised from Firestore snapshot on the piece.
   const [likes, setLikes]   = useState(piece.likes ?? 0);
@@ -107,16 +110,18 @@ export default function OutfitPieceCard({ piece, compact = false, onViewPieceCar
         ) : null}
 
         {/* Action button */}
-        {onViewPieceCard ? (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onViewPieceCard(); }}
-            className="mt-1 w-full rounded-lg border border-cyan-300/50 bg-cyan-500/15 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/30 hover:border-cyan-200/70"
-          >
-            Visualizar card da peça
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setModalOpen(true); onViewPieceCard?.(); }}
+          className="mt-1 w-full rounded-lg border border-cyan-300/50 bg-cyan-500/15 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/30 hover:border-cyan-200/70"
+        >
+          Visualizar card da peça
+        </button>
       </div>
+
+      {modalOpen ? (
+        <PieceCardModal piece={piece} onClose={() => setModalOpen(false)} />
+      ) : null}
     </article>
   );
 }
