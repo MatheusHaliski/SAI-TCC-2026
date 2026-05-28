@@ -98,8 +98,13 @@ export class OutfitRankingService {
         combo.shoes,
       ].filter((item): item is AutopilotWardrobeItem => item !== null);
 
+      const scheme_id = items
+        .map((i) => i.wardrobe_item_id)
+        .sort()
+        .join('_');
+
       return {
-        scheme_id: `tmp-${index + 1}`,
+        scheme_id,
         title: `Look do Dia #${index + 1}`,
         items,
         weather_fit_note: this.weatherService.buildWeatherFitNote(context.weather.temp_c, context.weather.condition),
