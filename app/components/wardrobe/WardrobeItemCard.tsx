@@ -13,6 +13,8 @@ interface Props {
   pieceType: string;
   statusLabel: string;
   state: CardState;
+  forSale?: boolean;
+  listingPrice?: number;
   onClick: () => void;
   onAvailable: () => void;
   onUnavailable: () => void;
@@ -32,7 +34,15 @@ export default function WardrobeItemCard(props: Props) {
 
   return (
     <article onClick={props.onClick} className={`cursor-pointer rounded-2xl border p-4 transition hover:border-cyan-300/60 ${STYLE_BY_STATE[props.state]}`}>
-      <Image src={preview2D} alt={props.name} width={640} height={360} className="h-36 w-full rounded-xl object-cover" unoptimized />
+      <div className="relative">
+        <Image src={preview2D} alt={props.name} width={640} height={360} className="h-36 w-full rounded-xl object-cover" unoptimized />
+        {props.forSale ? (
+          <span className="absolute left-2 top-2 rounded-full bg-emerald-500/90 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-white shadow">
+            Para vender
+            {props.listingPrice !== undefined ? ` · R$ ${props.listingPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}
+          </span>
+        ) : null}
+      </div>
       <h3 className="mt-3 text-base font-semibold text-white">{props.name}</h3>
       <p className="text-sm text-white/70">Brand: {props.brand}</p>
       <p className="text-sm text-white/70">Type: {props.pieceType}</p>
