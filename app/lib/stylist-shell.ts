@@ -1,4 +1,4 @@
-export type AppRoute = 'my-wardrobe' | 'create-my-scheme' | 'explore-scheme' | 'profile' | 'profile-settings' | 'search-items' | 'search-pieces' | 'dress-tester' | 'autopilot';
+export type AppRoute = 'my-wardrobe' | 'create-my-scheme' | 'explore-scheme' | 'profile' | 'profile-settings' | 'search-items' | 'search-pieces' | 'dress-tester' | 'autopilot' | 'my-photos';
 
 export interface NavItem {
   route: AppRoute;
@@ -16,6 +16,7 @@ export const NAV_ITEMS: NavItem[] = [
   { route: 'dress-tester', label: 'Provador 2D', helperText: 'Estúdio premium de manequim', icon: '◌', path: '/dress-tester' },
   { route: 'search-pieces', label: 'Peças Públicas', helperText: 'Descubra peças de criadores', icon: '◈', path: '/search-pieces' },
   { route: 'search-items', label: 'Buscar', helperText: 'Encontre usuários e looks', icon: '⌕', path: '/search-items' },
+  { route: 'my-photos', label: 'Minhas Fotos', helperText: 'Galeria de peças e looks', icon: '⬡', path: '/my-photos' },
   { route: 'profile', label: 'Perfil', helperText: 'Gerencie sua conta', icon: '◉', path: '/profile' },
   { route: 'profile-settings', label: 'Configurações', helperText: 'Preferências e privacidade', icon: '⚙︎', path: '/profile/settings' },
 ];
@@ -30,6 +31,7 @@ export const ROUTE_TITLES: Record<AppRoute, string> = {
   'search-items': 'Buscar',
   'search-pieces': 'Peças Públicas',
   'dress-tester': 'Provador 2D',
+  'my-photos': 'Minhas Fotos',
 };
 
 export const PATH_TO_ROUTE: Record<string, AppRoute> = {
@@ -47,4 +49,5 @@ export const PATH_TO_ROUTE: Record<string, AppRoute> = {
   '/search-pieces': 'search-pieces',
   '/add-wardrobe-item': 'search-pieces',
   '/dress-tester': 'dress-tester',
+  '/my-photos': 'my-photos',
 };
