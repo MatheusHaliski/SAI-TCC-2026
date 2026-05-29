@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
 const controller = new AutopilotController();
 
-const VALID_OCCASIONS = new Set<Occasion>(['trabalho', 'casual', 'balada', 'academia', 'evento']);
+const VALID_OCCASIONS = new Set<Occasion>(['trabalho', 'casual', 'festa', 'academia', 'evento']);
 const VALID_MOODS = new Set<Mood>(['disposto', 'cansado', 'confiante', 'criativo']);
 
 export async function POST(request: NextRequest) {

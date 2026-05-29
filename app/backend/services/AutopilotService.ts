@@ -2,6 +2,8 @@ import { DailyLookFeedback, GenerateDailyRequest, GenerateDailyResponse, Mood, O
 import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
 import { OutfitPreferencesRepository } from '@/app/backend/repositories/OutfitPreferencesRepository';
 import { DailyLooksRepository } from '@/app/backend/repositories/DailyLooksRepository';
+import { SchemesRepository } from '@/app/backend/repositories/SchemesRepository';
+import { SchemeItemsRepository } from '@/app/backend/repositories/SchemeItemsRepository';
 import { OutfitRankingService } from './OutfitRankingService';
 import { WeatherService } from './WeatherService';
 import { PreferenceLearningService } from './PreferenceLearningService';
@@ -9,6 +11,22 @@ import { ServiceError } from './errors';
 
 const MIN_PIECES = Number(process.env.AUTOPILOT_MIN_WARDROBE_PIECES ?? 3);
 const ENABLE_AUTOPILOT = String(process.env.ENABLE_AUTOPILOT ?? 'true').toLowerCase() !== 'false';
+
+const OCCASION_LABEL_MAP: Record<string, string> = {
+  trabalho: 'Trabalho',
+  casual: 'Casual',
+  festa: 'Festa',
+  academia: 'Academia',
+  evento: 'Evento',
+};
+
+function pieceTypeToSlot(pieceType: string): 'upper' | 'lower' | 'shoes' | 'accessory' {
+  const t = pieceType.toLowerCase();
+  if (t.includes('upper') || ['top', 'blouse', 'shirt', 'jacket', 'coat', 'outerwear', 'sweater', 'hoodie', 'camiseta', 'blusão', 'camisa', 'dress', 'jumpsuit', 'romper', 'vestido', 'macacão'].includes(t)) return 'upper';
+  if (t.includes('lower') || ['bottom', 'pants', 'jeans', 'skirt', 'shorts', 'trousers', 'calça', 'saia', 'bermuda'].includes(t)) return 'lower';
+  if (t.includes('shoes') || t.includes('shoe') || ['boots', 'sneakers', 'sandals', 'heels', 'sapatos', 'tênis', 'bota', 'sandália'].includes(t)) return 'shoes';
+  return 'accessory';
+}
 
 export class AutopilotService {
   constructor(
@@ -18,6 +36,8 @@ export class AutopilotService {
     private readonly rankingService = new OutfitRankingService(),
     private readonly weatherService = new WeatherService(),
     private readonly preferenceLearningService = new PreferenceLearningService(),
+    private readonly schemesRepo = new SchemesRepository(),
+    private readonly schemeItemsRepo = new SchemeItemsRepository(),
   ) {}
 
   async generateDaily(userId: string, request: GenerateDailyRequest): Promise<GenerateDailyResponse> {
@@ -63,8 +83,8 @@ export class AutopilotService {
       scheme_id: input.scheme_id,
       occasion: input.occasion,
       mood: input.mood,
-      weather_c: input.weather.temp_c,
-      city: input.weather.city,
+      weather_c: input.weather?.temp_c ?? null,
+      city: input.weather?.city ?? '',
     });
     return dailyLook;
   }
