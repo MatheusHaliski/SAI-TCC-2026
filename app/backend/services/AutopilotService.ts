@@ -63,48 +63,13 @@ export class AutopilotService {
       weather = { temp_c: 20, condition: 'partly_cloudy', city: request.city };
     }
 
-    const suggestions = this.rankingService.generateTop3(wardrobe, {
-      occasion: request.occasion,
-      mood: request.mood,
-      weather,
-      preferences: prefs,
-    });
-
-    const occasionLabel = OCCASION_LABEL_MAP[request.occasion] ?? request.occasion;
-
-    const savedSuggestions = await Promise.all(
-      suggestions.map(async (suggestion, index) => {
-        const title = `Autopiloto — ${occasionLabel} #${index + 1}`;
-        const schemeItems = suggestion.items.map((item, i) => ({
-          wardrobe_item_id: item.wardrobe_item_id,
-          slot: pieceTypeToSlot(item.piece_type),
-          sort_order: i + 1,
-        }));
-
-        const scheme = await this.schemesRepo.create({
-          user_id: userId,
-          title,
-          creation_mode: 'ai',
-          style: 'Autopiloto',
-          occasion: request.occasion,
-          visibility: 'private',
-          pieces: [],
-          items: schemeItems,
-        });
-
-        await this.schemeItemsRepo.createMany(
-          schemeItems.map((item) => ({ ...item, scheme_id: scheme.scheme_id })),
-        );
-
-        return { ...suggestion, scheme_id: scheme.scheme_id, title };
-      }),
+    const suggestions = this.rankingService.generateTop3(
+      wardrobe,
+      { occasion: request.occasion, mood: request.mood, weather, preferences: prefs },
+      request.exclude_scheme_ids ?? [],
     );
 
-    const filteredSuggestions = request.exclude_scheme_ids?.length
-      ? savedSuggestions.filter((s) => !request.exclude_scheme_ids!.includes(s.scheme_id))
-      : savedSuggestions;
-
-    return { suggestions: filteredSuggestions, weather };
+    return { suggestions, weather };
   }
 
   async confirmDailyLook(
