@@ -17,6 +17,7 @@ interface Props {
   onAvailable: () => void;
   onUnavailable: () => void;
   onToggleFavorite: () => void;
+  onEdit?: () => void;
 }
 
 const STYLE_BY_STATE: Record<CardState, string> = {
@@ -38,9 +39,12 @@ export default function WardrobeItemCard(props: Props) {
       <p className="text-sm text-white/70">Type: {props.pieceType}</p>
       <p className="mt-1 text-xs">{props.statusLabel}</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" onClick={(event) => { event.stopPropagation(); props.onAvailable(); }} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">Available</button>
-        <button type="button" onClick={(event) => { event.stopPropagation(); props.onUnavailable(); }} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">Unavailable</button>
-        <button type="button" onClick={(event) => { event.stopPropagation(); props.onToggleFavorite(); }} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">★ Favorite</button>
+        <button type="button" onClick={(event) => { event.stopPropagation(); props.onAvailable(); }} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">Disponível</button>
+        <button type="button" onClick={(event) => { event.stopPropagation(); props.onUnavailable(); }} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">Indisponível</button>
+        <button type="button" onClick={(event) => { event.stopPropagation(); props.onToggleFavorite(); }} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white">★ Favorito</button>
+        {props.onEdit && (
+          <button type="button" onClick={(event) => { event.stopPropagation(); props.onEdit!(); }} className="rounded-lg border border-white/30 px-2 py-1 text-xs text-white hover:border-violet-400/60 hover:text-violet-200 transition">✎ Editar</button>
+        )}
       </div>
     </article>
   );

@@ -10,7 +10,7 @@ const ACCESSORY_TYPES = new Set(['accessory_piece', 'accessory', 'bag', 'hat', '
 const OCCASION_WEIGHTS: Record<Occasion, string[]> = {
   trabalho: ['formal', 'trabalho', 'social', 'casual'],
   casual: ['casual', 'street', 'day', 'relax'],
-  balada: ['party', 'night', 'balada', 'festivo', 'chic'],
+  festa: ['party', 'night', 'festa', 'festivo', 'chic'],
   academia: ['sport', 'academia', 'fitness', 'esportivo'],
   evento: ['event', 'formal', 'gala', 'evento', 'social'],
 };
