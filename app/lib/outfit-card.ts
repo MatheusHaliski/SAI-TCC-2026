@@ -92,6 +92,8 @@ export type OutfitBackgroundConfig = {
   };
   shape?: 'none' | 'orb' | 'diamond' | 'mesh' | 'stars' | 'circles' | 'triangles' | 'waves' | 'beams' | 'flowers' | 'arrows';
   studioStyleConfig?: BackgroundStudioStyleConfig;
+  /** When true the card background is driven by the Aura system (based on like count) instead of the static config set in Studio. */
+  dynamicBackground?: boolean;
 };
 
 export type CardSkinId = 'atelier' | 'spread' | 'index' | 'trading' | 'fai_max' | 'stub' | 'specimen';
@@ -115,6 +117,8 @@ export type OutfitCardData = {
   titleFontFamily?: string;
   score?: number;
   cardSkin?: CardSkinId;
+  /** Aggregated like count used by the Aura system when dynamicBackground is enabled. */
+  likes?: number;
 };
 
 const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {
