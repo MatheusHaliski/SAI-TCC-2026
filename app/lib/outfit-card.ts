@@ -14,6 +14,8 @@ export type OutfitPiece = {
   baseQuality?: number;
   /** Aggregated like count, maintained via pieceLikes subcollection. */
   likes?: number;
+  /** First-person emotional expression: how the user feels wearing this piece in this specific occasion */
+  expressao?: string;
 };
 
 export type OutfitMetaBadge = {
