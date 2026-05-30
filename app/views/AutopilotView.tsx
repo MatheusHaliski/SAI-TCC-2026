@@ -9,14 +9,14 @@ import SectionBlock from '@/app/components/shared/SectionBlock';
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
-type Occasion = 'trabalho' | 'casual' | 'balada' | 'academia' | 'evento';
+type Occasion = 'trabalho' | 'casual' | 'festa' | 'academia' | 'evento';
 type Mood = 'disposto' | 'cansado' | 'confiante' | 'criativo';
 type FeedbackValue = 'loved' | 'used' | 'skipped';
 
 const OCCASIONS: { value: Occasion; label: string }[] = [
   { value: 'trabalho', label: 'Trabalho' },
   { value: 'casual', label: 'Casual' },
-  { value: 'balada', label: 'Balada' },
+  { value: 'festa', label: 'Festa' },
   { value: 'academia', label: 'Academia' },
   { value: 'evento', label: 'Evento' },
 ];
@@ -28,16 +28,6 @@ const MOODS: { value: Mood; label: string }[] = [
   { value: 'criativo', label: 'Criativo' },
 ];
 
-const WEATHER_CONDITION_LABELS: Record<string, string> = {
-  clear: '☀️ Limpo',
-  partly_cloudy: '⛅ Nublado',
-  fog: '🌫️ Neblina',
-  drizzle: '🌦️ Garoa',
-  rain: '🌧️ Chuva',
-  snow: '❄️ Neve',
-  thunderstorm: '⛈️ Tempestade',
-};
-
 const FEEDBACK_LABELS: Record<FeedbackValue, string> = {
   loved: '❤️ Amei',
   used: '👍 Usei',
@@ -47,7 +37,7 @@ const FEEDBACK_LABELS: Record<FeedbackValue, string> = {
 const OCCASION_LABELS: Record<string, string> = {
   trabalho: 'Trabalho',
   casual: 'Casual',
-  balada: 'Balada',
+  festa: 'Festa',
   academia: 'Academia',
   evento: 'Evento',
 };
@@ -74,14 +64,7 @@ interface Suggestion {
   scheme_id: string;
   title: string;
   items: AutopilotItem[];
-  weather_fit_note: string;
   score: number;
-}
-
-interface WeatherInfo {
-  temp_c: number;
-  condition: string;
-  city: string;
 }
 
 function DailyLookPanel() {
@@ -90,7 +73,6 @@ function DailyLookPanel() {
   const [city, setCity] = useState('São Paulo');
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [weather, setWeather] = useState<WeatherInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmedId, setConfirmedId] = useState<string | null>(null);
   const [feedbackSent, setFeedbackSent] = useState<Record<string, FeedbackValue>>({});
@@ -100,7 +82,6 @@ function DailyLookPanel() {
     setLoading(true);
     setError(null);
     setSuggestions([]);
-    setWeather(null);
     setConfirmedId(null);
     setDailyLookId(null);
     try {
@@ -116,7 +97,6 @@ function DailyLookPanel() {
         return;
       }
       setSuggestions(data.suggestions ?? []);
-      setWeather(data.weather ?? null);
     } catch {
       setError('Erro de conexão. Tente novamente.');
     } finally {
@@ -125,13 +105,17 @@ function DailyLookPanel() {
   }
 
   async function confirmLook(suggestion: Suggestion) {
-    if (!weather) return;
     try {
       const response = await fetch('/api/autopilot/daily/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ scheme_id: suggestion.scheme_id, occasion, mood, weather }),
+        body: JSON.stringify({
+          scheme_id: suggestion.scheme_id,
+          occasion,
+          mood,
+          weather: { temp_c: 20, condition: 'partly_cloudy', city },
+        }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -164,7 +148,7 @@ function DailyLookPanel() {
 
   return (
     <div className="space-y-4">
-      <SectionBlock title="Configurar Look" subtitle="Escolha a ocasião, humor e cidade para gerar sugestões personalizadas">
+      <SectionBlock title="Configurar Look" subtitle="Escolha a ocasião e humor para gerar looks do seu guarda-roupa">
         <div className="mt-4 space-y-4">
           <div className="space-y-1">
             <label className="text-xs text-white/50">Ocasião</label>
@@ -205,7 +189,7 @@ function DailyLookPanel() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-white/50">Cidade</label>
+            <label className="text-xs text-white/50">Cidade (opcional)</label>
             <input
               type="text"
               value={city}
@@ -220,7 +204,7 @@ function DailyLookPanel() {
             disabled={loading}
             className="w-full rounded-lg bg-white py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? 'Gerando...' : 'Gerar Looks'}
+            {loading ? 'Gerando looks...' : 'Gerar Looks'}
           </button>
         </div>
       </SectionBlock>
@@ -231,18 +215,8 @@ function DailyLookPanel() {
         </div>
       )}
 
-      {weather && (
-        <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm">
-          <span className="text-white/60">
-            {WEATHER_CONDITION_LABELS[weather.condition] ?? weather.condition}
-          </span>
-          <span className="font-semibold">{weather.temp_c.toFixed(0)}°C</span>
-          <span className="text-white/40">{weather.city}</span>
-        </div>
-      )}
-
       {suggestions.length > 0 && (
-        <SectionBlock title={`${suggestions.length} Sugestões`} subtitle="Selecione o look que mais combina com o seu dia">
+        <SectionBlock title={`${suggestions.length} Looks Gerados`} subtitle="Selecione o look que mais combina com o seu dia — os looks foram salvos automaticamente em Looks Salvos">
           <div className="mt-4 space-y-4">
             {suggestions.map((suggestion) => {
               const isConfirmed = confirmedId === suggestion.scheme_id;
@@ -261,8 +235,6 @@ function DailyLookPanel() {
                       </span>
                     )}
                   </div>
-
-                  <p className="text-xs text-white/50">{suggestion.weather_fit_note}</p>
 
                   <div className="flex gap-2 overflow-x-auto">
                     {suggestion.items.map((item) => (
@@ -329,17 +301,19 @@ interface DayInput {
   occasion: Occasion;
 }
 
-interface WeekPlanDay {
+interface WeekPlanDayResult {
   date: string;
   occasion: Occasion;
   scheme_id: string | null;
   gap_hints: string[];
+  scheme_title?: string;
+  scheme_items?: AutopilotItem[];
 }
 
-interface WeekPlan {
+interface WeekPlanResult {
   week_plan_id: string;
   week_start: string;
-  days: WeekPlanDay[];
+  days: WeekPlanDayResult[];
 }
 
 function getNextMonday(): string {
@@ -364,7 +338,7 @@ function WeekPlanPanel() {
   const [city, setCity] = useState('São Paulo');
   const [days, setDays] = useState<DayInput[]>(() => buildDefaultDays(getNextMonday()));
   const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState<WeekPlan | null>(null);
+  const [plan, setPlan] = useState<WeekPlanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -401,7 +375,7 @@ function WeekPlanPanel() {
 
   return (
     <div className="space-y-4">
-      <SectionBlock title="Configurar Semana" subtitle="Defina a data de início, cidade e ocasião para cada dia">
+      <SectionBlock title="Configurar Semana" subtitle="Defina a data de início e a ocasião para cada dia — os looks serão vinculados à sua agenda semanal">
         <div className="mt-4 space-y-4">
           <div className="flex gap-4 flex-wrap">
             <div className="space-y-1 flex-1 min-w-[160px]">
@@ -414,7 +388,7 @@ function WeekPlanPanel() {
               />
             </div>
             <div className="space-y-1 flex-1 min-w-[160px]">
-              <label className="text-xs text-white/50">Cidade</label>
+              <label className="text-xs text-white/50">Cidade (opcional)</label>
               <input
                 type="text"
                 value={city}
@@ -467,7 +441,7 @@ function WeekPlanPanel() {
       )}
 
       {plan && (
-        <SectionBlock title={`Plano — Semana de ${plan.week_start}`} subtitle="Looks gerados para cada dia da semana">
+        <SectionBlock title={`Plano — Semana de ${plan.week_start}`} subtitle="Looks gerados para cada dia — todos salvos automaticamente em Looks Salvos">
           <div className="mt-4 space-y-3">
             {plan.days.map((day, index) => (
               <div
@@ -476,7 +450,7 @@ function WeekPlanPanel() {
                   day.scheme_id ? 'border-white/10 bg-white/5' : 'border-amber-500/20 bg-amber-500/5'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
                     <p className="text-sm font-semibold">
                       {DAY_LABELS[index]} <span className="text-white/40 font-normal">— {day.date}</span>
@@ -484,13 +458,35 @@ function WeekPlanPanel() {
                     <p className="text-xs text-white/50 mt-0.5">
                       {OCCASIONS.find((o) => o.value === day.occasion)?.label ?? day.occasion}
                     </p>
+                    {day.scheme_title && (
+                      <p className="text-xs text-white/40 mt-0.5 italic">{day.scheme_title}</p>
+                    )}
                   </div>
                   {day.scheme_id ? (
-                    <span className="text-xs rounded-full bg-white/10 px-2 py-0.5 text-white/60">Look gerado ✓</span>
+                    <span className="text-xs rounded-full bg-white/10 px-2 py-0.5 text-white/60 flex-shrink-0">Look gerado ✓</span>
                   ) : (
-                    <span className="text-xs rounded-full bg-amber-500/20 px-2 py-0.5 text-amber-400">Lacuna</span>
+                    <span className="text-xs rounded-full bg-amber-500/20 px-2 py-0.5 text-amber-400 flex-shrink-0">Lacuna</span>
                   )}
                 </div>
+
+                {day.scheme_items && day.scheme_items.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto">
+                    {day.scheme_items.map((item) => (
+                      <div key={item.wardrobe_item_id} className="flex-shrink-0 space-y-1">
+                        <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-white/5">
+                          {item.image_url ? (
+                            <Image src={item.image_url} alt={item.name} fill className="object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-white/20 text-xs">
+                              {item.piece_type}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-white/40 text-center w-16 truncate">{item.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {day.gap_hints.length > 0 && (
                   <div className="mt-2 space-y-1">
@@ -516,7 +512,7 @@ interface DailyLook {
   date: string;
   occasion: string;
   mood: string;
-  weather_c: number;
+  weather_c: number | null;
   city: string;
   feedback: FeedbackValue | null;
   created_at: string;
@@ -639,9 +635,7 @@ function HistoryPanel() {
                         {MOOD_LABELS[look.mood] ?? look.mood}
                       </span>
                     </div>
-                    <span className="text-xs text-white/30">
-                      {look.weather_c.toFixed(0)}°C — {look.city}
-                    </span>
+                    <span className="text-xs text-white/30">{look.city}</span>
                   </div>
 
                   {look.feedback ? (
@@ -677,11 +671,11 @@ const SECTIONS = ['Looks Diários', 'Semana', 'Histórico'];
 const SECTION_META: Record<string, { title: string; subtitle: string }> = {
   'Looks Diários': {
     title: 'Autopiloto de Looks',
-    subtitle: 'Looks diários personalizados com base no clima, ocasião e humor',
+    subtitle: 'Gera esquemas de moda do seu guarda-roupa com base na ocasião e humor',
   },
   'Semana': {
     title: 'Planejamento Semanal',
-    subtitle: 'Organize looks para a semana inteira com base nas suas ocasiões',
+    subtitle: 'Gera looks para cada dia da semana vinculados à sua agenda',
   },
   'Histórico': {
     title: 'Histórico de Looks',

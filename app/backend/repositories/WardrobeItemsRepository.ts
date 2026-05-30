@@ -198,6 +198,11 @@ export class WardrobeItemsRepository extends BaseRepository {
         season: market?.season ?? 'Unknown',
         gender: market?.gender ?? 'Unknown',
         piece_type: String(item.piece_type ?? ''),
+        color: String(item.color ?? ''),
+        material: String(item.material ?? ''),
+        style_tags: Array.isArray(item.style_tags) ? item.style_tags.map(String) : [],
+        occasion_tags: Array.isArray(item.occasion_tags) ? item.occasion_tags.map(String) : [],
+        is_favorite: Boolean(item.is_favorite),
       };
     });
 
@@ -386,6 +391,39 @@ export class WardrobeItemsRepository extends BaseRepository {
       wardrobe_item_id: doc.id,
       ...(doc.data() as Record<string, unknown>),
     };
+  }
+
+  async updateFields(
+    wardrobeItemId: string,
+    fields: {
+      name?: string;
+      piece_type?: string;
+      color?: string;
+      material?: string;
+      style_tags?: string[];
+      occasion_tags?: string[];
+      brand_id?: string;
+      image_url?: string;
+      description?: string;
+      is_favorite?: boolean;
+    },
+  ): Promise<void> {
+    const payload: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+    if (fields.name !== undefined) payload.name = fields.name;
+    if (fields.piece_type !== undefined) payload.piece_type = fields.piece_type;
+    if (fields.color !== undefined) payload.color = fields.color;
+    if (fields.material !== undefined) payload.material = fields.material;
+    if (fields.style_tags !== undefined) payload.style_tags = fields.style_tags;
+    if (fields.occasion_tags !== undefined) payload.occasion_tags = fields.occasion_tags;
+    if (fields.brand_id !== undefined) payload.brand_id = fields.brand_id;
+    if (fields.image_url !== undefined) payload.image_url = fields.image_url;
+    if (fields.description !== undefined) payload.description = fields.description;
+    if (fields.is_favorite !== undefined) payload.is_favorite = fields.is_favorite;
+    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update(payload);
+  }
+
+  async deleteById(wardrobeItemId: string): Promise<void> {
+    await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).delete();
   }
 
 
