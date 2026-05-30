@@ -181,6 +181,8 @@ export interface SchemePieceSnapshot {
   category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
   pieceType: string;
   wearstyles: string[];
+  /** Short first-person emotional expression of how the user feels wearing this piece in this occasion */
+  expressao?: string;
 }
 
 export interface SchemeItem {

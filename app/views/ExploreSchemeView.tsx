@@ -31,6 +31,7 @@ type SchemePieceSnapshot = {
   category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
   pieceType: string;
   wearstyles: string[];
+  expressao?: string;
 };
 type SchemeDetailItem = {
   scheme_item_id: string;
@@ -156,6 +157,7 @@ export default function ExploreSchemeView() {
             || 'Garment',
           category: piece.category,
           wearstyles: piece.wearstyles,
+          expressao: (piece as { expressao?: string }).expressao,
         }))
       : relatedItems.length
         ? relatedItems.map((item) => {

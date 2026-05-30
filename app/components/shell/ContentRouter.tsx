@@ -9,6 +9,8 @@ import DressTesterView from '@/app/views/DressTesterView';
 import SearchPiecesView from '@/app/views/SearchPiecesView';
 import AutopilotView from '@/app/views/AutopilotView';
 import MyPhotosView from '@/app/views/MyPhotosView';
+import FutureTopicsView from '@/app/views/FutureTopicsView';
+import MaisonView from '@/app/views/MaisonView';
 
 interface ContentRouterProps {
   route: AppRoute;
@@ -23,5 +25,7 @@ export default function ContentRouter({ route }: ContentRouterProps) {
   if (route === 'dress-tester') return <Suspense><DressTesterView /></Suspense>;
   if (route === 'autopilot') return <AutopilotView />;
   if (route === 'my-photos') return <MyPhotosView />;
+  if (route === 'future-topics') return <FutureTopicsView />;
+  if (route === 'maison') return <MaisonView />;
   return <MyWardrobeView />;
 }

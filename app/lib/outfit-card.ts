@@ -6,14 +6,23 @@ export type OutfitPiece = {
   name: string;
   brand: string;
   brandLogoUrl?: string;
+  /** Direct 2D image URL for piece card modal visualization. */
+  imageUrl?: string;
   pieceType: string;
   pieceTypeIconUrl?: string;
   category?: PieceCategory;
   wearstyles?: string[];
+  description?: string;
+  creatorName?: string;
+  occasion?: string;
   /** Community-quality base, 0–5. Default by tier: Premium→3.5, Rare→3.0, LimitedEdition→3.2, Standard→2.5 */
   baseQuality?: number;
   /** Aggregated like count, maintained via pieceLikes subcollection. */
   likes?: number;
+  /** How many users own this piece. */
+  ownersCount?: number;
+  /** 0–5 explicit rating (distinct from computed quality stars). */
+  ratingStars?: number;
 };
 
 export type OutfitMetaBadge = {
@@ -116,6 +125,14 @@ export type OutfitCardData = {
   creatorName?: string;
   titleFontFamily?: string;
   score?: number;
+  /** 0–5 star rating rendered in the outfit header. */
+  ratingStars?: number;
+  /** How many users have saved/own this outfit. */
+  ownersCount?: number;
+  /** Outfit-level like count (distinct from individual piece likes). */
+  outfitLikes?: number;
+  /** Occasion label rendered alongside the style line. */
+  occasion?: string;
   cardSkin?: CardSkinId;
   /** Aggregated like count used by the Aura system when dynamicBackground is enabled. */
   likes?: number;
