@@ -181,6 +181,8 @@ export interface SchemePieceSnapshot {
   category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
   pieceType: string;
   wearstyles: string[];
+  /** Short first-person emotional expression of how the user feels wearing this piece in this occasion */
+  expressao?: string;
 }
 
 export interface SchemeItem {
@@ -233,6 +235,11 @@ export interface WardrobeViewItem {
   season: string;
   gender: string;
   piece_type: string;
+  color?: string;
+  material?: string;
+  style_tags?: string[];
+  occasion_tags?: string[];
+  is_favorite?: boolean;
 }
 
 export interface PieceItemSearchResult {
@@ -348,7 +355,7 @@ export interface OutfitSelection2D {
 
 // ─── Autopilot types ──────────────────────────────────────────────────────────
 
-export type Occasion = 'trabalho' | 'casual' | 'balada' | 'academia' | 'evento';
+export type Occasion = 'trabalho' | 'casual' | 'festa' | 'academia' | 'evento';
 export type Mood = 'disposto' | 'cansado' | 'confiante' | 'criativo';
 export type DailyLookFeedback = 'loved' | 'used' | 'skipped';
 
@@ -380,6 +387,8 @@ export interface WeekPlanDay {
   occasion: Occasion;
   scheme_id: string | null;
   gap_hints: string[];
+  scheme_title?: string;
+  scheme_items?: AutopilotWardrobeItem[];
 }
 
 export interface WeekPlan {
@@ -472,3 +481,32 @@ export interface OutfitExport {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── Piece Card types ─────────────────────────────────────────────────────────
+
+export interface PieceLike {
+  like_id: EntityId;
+  wardrobe_item_id: EntityId;
+  user_id: EntityId;
+  createdAt: string;
+}
+
+export interface PieceRating {
+  rating_id: EntityId;
+  wardrobe_item_id: EntityId;
+  user_id: EntityId;
+  stars: 1 | 2 | 3 | 4 | 5;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PieceStats {
+  wardrobe_item_id: EntityId;
+  like_count: number;
+  avg_rating: number;
+  rating_count: number;
+  owner_count: number;
+  updatedAt: string;
+}
+
+// ─── End Piece Card types ─────────────────────────────────────────────────────
