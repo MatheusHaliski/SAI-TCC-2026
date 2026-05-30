@@ -21,13 +21,11 @@ import {
   OutfitBackgroundConfig,
   OutfitCardData,
   OutfitPiece,
-  PieceRole,
   CardSkinId,
   resolveOutfitBackgroundForRender,
   buildOutfitDescriptionRich,
   resolveBrandLogoUrlByName,
 } from '@/app/lib/outfit-card';
-import { PAPEL_CONFIG } from '@/app/components/outfit-card/PieceRoleBadge';
 
 type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type SchemePieceSnapshot = {
@@ -41,8 +39,7 @@ type SchemePieceSnapshot = {
   pieceType: string;
   category: NonNullable<OutfitPiece['category']>;
   wearstyles: string[];
-  papel?: PieceRole;
-  nota?: string;
+  expressao?: string;
 };
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
@@ -164,13 +161,7 @@ export default function CreateMySchemeView() {
     shoes: null,
     accessory: null,
   });
-  const [slotPapel, setSlotPapel] = useState<Record<SlotKey, string>>({
-    upper: '',
-    lower: '',
-    shoes: '',
-    accessory: '',
-  });
-  const [slotNota, setSlotNota] = useState<Record<SlotKey, string>>({
+  const [slotExpressao, setSlotExpressao] = useState<Record<SlotKey, string>>({
     upper: '',
     lower: '',
     shoes: '',
@@ -373,8 +364,7 @@ export default function CreateMySchemeView() {
     pieces.map((piece) => {
       const slot = (Object.keys(slots) as SlotKey[]).find((slotKey) => slots[slotKey] === piece.id) || 'upper';
       const sourceType = piece.id.startsWith('suggested:') ? 'suggested' : 'wardrobe';
-      const rawPapel = slotPapel[slot as SlotKey]?.trim();
-      const rawNota = slotNota[slot as SlotKey]?.trim();
+      const expressao = slotExpressao[slot as SlotKey]?.trim() || undefined;
       return {
         id: piece.id,
         slot,
@@ -386,8 +376,7 @@ export default function CreateMySchemeView() {
         pieceType: piece.pieceType,
         category: piece.category || 'Standard',
         wearstyles: piece.wearstyles || [],
-        papel: (rawPapel as PieceRole) || undefined,
-        nota: rawNota || undefined,
+        expressao,
       };
     });
 
@@ -775,48 +764,44 @@ export default function CreateMySchemeView() {
               />
             </div>
 
-            {/* Papel da peça no look */}
-            <div className="mt-3 space-y-1.5">
-              <p className="text-[11px] uppercase tracking-[0.12em] text-white/60">Papel no look</p>
+            {/* Expressão emocional da peça */}
+            <div className="mt-3 space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-white/60">Como me sinto</p>
               <div className="flex flex-wrap gap-1.5">
-                {(Object.entries(PAPEL_CONFIG) as Array<[PieceRole, typeof PAPEL_CONFIG[PieceRole]]>).map(([key, cfg]) => (
+                {[
+                  'Me sinto confiante',
+                  'Me sinto elegante',
+                  'Animado e à vontade',
+                  'Poderoso e presente',
+                  'Discreto e sofisticado',
+                  'Leve e descontraído',
+                  'Criativo e expressivo',
+                  'Clássico e seguro',
+                ].map((chip) => (
                   <button
-                    key={key}
+                    key={chip}
                     type="button"
-                    title={cfg.description}
-                    onClick={() =>
-                      setSlotPapel((prev) => ({
-                        ...prev,
-                        [slot]: prev[slot] === key ? '' : key,
-                      }))
-                    }
-                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition ${
-                      slotPapel[slot] === key
-                        ? cfg.pill
-                        : 'border-white/15 bg-white/5 text-white/45 hover:border-white/30 hover:text-white/70'
-                    }`}
+                    onClick={() => setSlotExpressao((prev) => ({ ...prev, [slot]: chip }))}
+                    className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-white/55 hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-white/80 transition"
                   >
-                    <span className="text-[9px]">{cfg.icon}</span>
-                    {cfg.label}
+                    {chip}
                   </button>
                 ))}
               </div>
-              {slotPapel[slot] && (
-                <p className="text-[10px] text-white/40 italic">{PAPEL_CONFIG[slotPapel[slot] as PieceRole]?.description}</p>
-              )}
-            </div>
-
-            {/* Nota pessoal */}
-            {slotPapel[slot] && (
               <input
                 type="text"
-                maxLength={80}
-                value={slotNota[slot]}
-                onChange={(e) => setSlotNota((prev) => ({ ...prev, [slot]: e.target.value }))}
-                placeholder="Nota pessoal (opcional)..."
-                className="mt-2 w-full rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder:text-white/35 focus:border-white/30 focus:outline-none"
+                maxLength={120}
+                value={slotExpressao[slot]}
+                onChange={(e) => setSlotExpressao((prev) => ({ ...prev, [slot]: e.target.value }))}
+                placeholder="Ou escreva com suas palavras..."
+                className="w-full rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder:text-white/35 focus:border-violet-400/40 focus:outline-none transition"
               />
-            )}
+              {slotExpressao[slot]?.trim() && (
+                <p className="text-[10px] italic text-white/40">
+                  &ldquo;{slotExpressao[slot].trim()}&rdquo;
+                </p>
+              )}
+            </div>
 
             <div className="mt-3 rounded-lg border border-white/20 bg-white/5 px-3 py-2">
               <p className="text-[11px] uppercase tracking-[0.12em] text-white/60">Selected</p>
