@@ -203,6 +203,8 @@ export class WardrobeItemsRepository extends BaseRepository {
         style_tags: Array.isArray(item.style_tags) ? item.style_tags.map(String) : [],
         occasion_tags: Array.isArray(item.occasion_tags) ? item.occasion_tags.map(String) : [],
         is_favorite: Boolean(item.is_favorite),
+        for_sale: item.for_sale === true ? true : undefined,
+        listing_price: typeof item.listing_price === 'number' ? item.listing_price : undefined,
       };
     });
 
