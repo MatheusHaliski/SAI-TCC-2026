@@ -181,6 +181,10 @@ export interface SchemePieceSnapshot {
   category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
   pieceType: string;
   wearstyles: string[];
+  /** Role the piece plays within the outfit composition */
+  papel?: 'ancora' | 'destaque' | 'base' | 'contraste' | 'acento';
+  /** Short personal note explaining the user's motivation for this piece */
+  nota?: string;
 }
 
 export interface SchemeItem {
