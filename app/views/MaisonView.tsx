@@ -45,6 +45,18 @@ interface BrandProfile {
   sustainability: { rating: SustainabilityRating; note: string };
 }
 
+// Strips brand_ prefix that BootstrapSaiCatalogService adds to document IDs,
+// matching the canonical form that WardrobeService.canonicalizeBrandId() stores.
+function canonicalizeBrandId(brandId: string): string {
+  return brandId.replace(/^brand_/, '');
+}
+
+// Normalizes punctuation so "Levis" matches the "levi's" profile key and
+// "C&A" matches "c&a". Strips apostrophes/right-single-quotes; preserves &.
+function normalizeBrandKey(name: string): string {
+  return name.toLowerCase().replace(/['’`]/g, '');
+}
+
 const BRAND_PROFILES: Record<string, BrandProfile> = {
   adidas: {
     category: 'Esportivo & Streetwear',
@@ -313,6 +325,15 @@ const BRAND_PROFILES: Record<string, BrandProfile> = {
   },
 };
 
+// Pre-built normalized index — keys are normalizeBrandKey(originalKey)
+const BRAND_PROFILE_INDEX: Record<string, BrandProfile> = Object.fromEntries(
+  Object.entries(BRAND_PROFILES).map(([k, v]) => [normalizeBrandKey(k), v]),
+);
+
+function getBrandProfile(name: string): BrandProfile | undefined {
+  return BRAND_PROFILE_INDEX[normalizeBrandKey(name)];
+}
+
 const PRICE_COLORS: Record<PriceRange, { bg: string; border: string; text: string }> = {
   Acessível: { bg: 'rgba(16,185,129,0.15)', border: 'rgba(52,211,153,0.5)', text: 'text-emerald-200' },
   Moderado: { bg: 'rgba(59,130,246,0.15)', border: 'rgba(96,165,250,0.5)', text: 'text-blue-200' },
@@ -355,8 +376,7 @@ function SustainabilityStars({ rating }: { rating: SustainabilityRating }) {
 }
 
 function BrandPanel({ brand, onClose }: { brand: BrandData; onClose: () => void }) {
-  const nameKey = brand.name.toLowerCase();
-  const profile = BRAND_PROFILES[nameKey];
+  const profile = getBrandProfile(brand.name);
   const logoUrl = brand.logo_url || resolveBrandLogoUrlByName(brand.name) || undefined;
   const [pieces, setPieces] = useState<WardrobePreviewItem[]>([]);
   const [loadingPieces, setLoadingPieces] = useState(true);
@@ -364,7 +384,10 @@ function BrandPanel({ brand, onClose }: { brand: BrandData; onClose: () => void 
 
   useEffect(() => {
     setLoadingPieces(true);
-    fetch(`/api/wardrobe-items?brand_id=${encodeURIComponent(brand.brand_id)}&limit=10`)
+    // canonicalizeBrandId strips "brand_" prefix so the query matches wardrobe items
+    // stored by WardrobeService.canonicalizeBrandId() (e.g. "adidas", not "brand_adidas")
+    const canonicalId = canonicalizeBrandId(brand.brand_id);
+    fetch(`/api/wardrobe-items?brand_id=${encodeURIComponent(canonicalId)}&limit=10`)
       .then((res) => (res.ok ? res.json() : { items: [] }))
       .then((data) => {
         const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
@@ -681,7 +704,7 @@ export default function MaisonView() {
   }, [brands, searchQuery]);
 
   const enrichedCount = useMemo(
-    () => brands.filter((b) => BRAND_PROFILES[b.name.toLowerCase()]).length,
+    () => brands.filter((b) => getBrandProfile(b.name)).length,
     [brands],
   );
 
@@ -729,8 +752,7 @@ export default function MaisonView() {
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {filteredBrands.map((brand) => {
-                const nameKey = brand.name.toLowerCase();
-                const profile = BRAND_PROFILES[nameKey];
+                const profile = getBrandProfile(brand.name);
                 const logoUrl = brand.logo_url || resolveBrandLogoUrlByName(brand.name) || undefined;
                 const accentColor = profile?.accentColor ?? 'rgba(203,213,225,0.8)';
                 const priceColors = profile ? PRICE_COLORS[profile.priceRange] : null;
