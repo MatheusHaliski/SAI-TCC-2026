@@ -2046,6 +2046,7 @@ export default function OutfitBackgroundStudioModal({
 
   const [activeTab, setActiveTab] = useState<StudioTab>('color');
   const [draft, setDraft] = useState<OutfitBackgroundConfig>(() => resolveOutfitBackgroundForRender(value));
+  const [dynamicBackground, setDynamicBackground] = useState<boolean>(() => Boolean(value.dynamicBackground));
   const [recentColors, setRecentColors] = useState<string[]>([]);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiStylePreset, setAiStylePreset] = useState<ArtworkStylePreset>('editorial_fashion');
@@ -2229,8 +2230,9 @@ export default function OutfitBackgroundStudioModal({
       hasReferenceImage: Boolean(getUploadedReferenceImage()),
       styleConfig: draft.studioStyleConfig ?? null,
       previewUpdated: true,
+      dynamicBackground,
     });
-    onApply(draft);
+    onApply({ ...draft, dynamicBackground });
   };
 
   const saveBackgroundConfig = () => {
@@ -2238,8 +2240,9 @@ export default function OutfitBackgroundStudioModal({
       presetId: draft.studioStyleConfig?.presetId ?? selectedRecommendedPreset ?? null,
       hasReferenceImage: Boolean(getUploadedReferenceImage()),
       styleConfig: draft.studioStyleConfig ?? null,
+      dynamicBackground,
     });
-    onApply(draft);
+    onApply({ ...draft, dynamicBackground });
   };
 
   const generateAiBackground = async () => {
@@ -3358,11 +3361,48 @@ export default function OutfitBackgroundStudioModal({
           />
         </div>
 
-        <footer className="mt-2 flex flex-wrap justify-end gap-2 border-t border-white/15 pt-4">
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancel / Close</button>
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Reset</button>
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={saveBackgroundConfig}>Save Background</button>
-          <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={applyDraftToCard}>Apply to Card · {draft.shape || 'none'}</button>
+        <footer className="mt-2 border-t border-white/15 pt-4 space-y-3">
+          {/* Dynamic Background toggle */}
+          <label className="flex items-start gap-3 rounded-xl border border-white/12 bg-white/4 px-4 py-3 cursor-pointer hover:bg-white/8 transition-colors select-none">
+            <div className="mt-0.5 flex-shrink-0">
+              <input
+                type="checkbox"
+                checked={dynamicBackground}
+                onChange={(e) => setDynamicBackground(e.target.checked)}
+                className="sr-only"
+                id="dynamic-bg-toggle"
+              />
+              <div
+                className={`w-10 h-5 rounded-full transition-colors duration-200 relative ${dynamicBackground ? 'bg-gradient-to-r from-violet-600 to-fuchsia-500' : 'bg-white/15'}`}
+              >
+                <div
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${dynamicBackground ? 'translate-x-5' : 'translate-x-0.5'}`}
+                />
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-white leading-tight flex items-center gap-1.5">
+                Background dinâmico
+                {dynamicBackground && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/25 border border-violet-400/40 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wide text-violet-300">
+                    ✦ Aura Ativo
+                  </span>
+                )}
+              </p>
+              <p className="mt-0.5 text-[11px] text-white/50 leading-tight">
+                {dynamicBackground
+                  ? 'O background evolui automaticamente com os likes — cada marco desbloqueia uma nova Aura visual.'
+                  : 'Desativado — o background definido aqui será fixo neste card.'}
+              </p>
+            </div>
+          </label>
+
+          <div className="flex flex-wrap justify-end gap-2">
+            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancel / Close</button>
+            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Reset</button>
+            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={saveBackgroundConfig}>Save Background</button>
+            <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={applyDraftToCard}>Apply to Card · {draft.shape || 'none'}</button>
+          </div>
         </footer>
       </div>
     </div>
