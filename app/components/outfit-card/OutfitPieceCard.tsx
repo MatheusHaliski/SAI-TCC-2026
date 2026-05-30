@@ -52,7 +52,11 @@ export default function OutfitPieceCard({ piece, compact = false, onViewPieceCar
         const { getAuth } = await import('firebase/auth');
         const user = getAuth().currentUser;
         if (!user) return;
-        await toggleLikePiece(schemeId, piece.id, user.uid);
+        const result = await toggleLikePiece(schemeId, piece.id, user.uid);
+        // Reconcile with the authoritative Firestore result (handles the case
+        // where the user already liked this piece in a previous session).
+        setLiked(result.liked);
+        setLikes(result.likes);
       } catch {
         // Rollback on failure.
         setLiked(liked);
@@ -112,7 +116,7 @@ export default function OutfitPieceCard({ piece, compact = false, onViewPieceCar
         {/* Action button */}
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); setModalOpen(true); onViewPieceCard?.(); }}
+          onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
           className="mt-1 w-full rounded-lg border border-cyan-300/50 bg-cyan-500/15 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/30 hover:border-cyan-200/70"
         >
           Visualizar card da peça
