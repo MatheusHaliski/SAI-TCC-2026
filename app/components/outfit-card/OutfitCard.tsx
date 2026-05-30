@@ -14,6 +14,7 @@ import {
 } from '@/app/lib/outfit-card';
 import { buildFabricScopeStyle, renderFabricTextureToCanvas } from '@/app/lib/fabricTextureRenderer';
 import { buildFabricPresetConfig } from '@/app/lib/materialPresets';
+import { getAuraLevel, buildAuraCardStyle, buildAuraBackgroundOverride } from '@/app/lib/aura-system';
 
 interface GeneratedOutfitCardProps {
   data: OutfitCardData;
@@ -36,8 +37,12 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
         })
       : data.outfitDescription?.trim() || undefined;
 
-  const resolvedBackground = resolveOutfitBackgroundForRender(data.outfitBackground);
+  const isDynamicBg = Boolean(data.outfitBackground && 'dynamicBackground' in data.outfitBackground && (data.outfitBackground as { dynamicBackground?: boolean }).dynamicBackground);
+  const auraLevel = isDynamicBg ? getAuraLevel(data.likes ?? 0) : null;
+  const auraBackgroundOverride = auraLevel ? buildAuraBackgroundOverride(auraLevel) : null;
+  const resolvedBackground = resolveOutfitBackgroundForRender(auraBackgroundOverride ?? data.outfitBackground);
   const backgroundStyle = buildBackgroundCssStyle(resolvedBackground);
+  const auraCardStyle = auraLevel ? buildAuraCardStyle(auraLevel) : {};
   const materialLayer = resolvedBackground.materialLayer;
   const decorativeLayer = resolvedBackground.decorativeOverlayLayer;
   const materialRender = useMemo(() => {
@@ -134,8 +139,23 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
   return (
     <section
       className={`relative overflow-hidden rounded-2xl border border-slate-200/60 shadow-[0_8px_24px_rgba(15,23,42,0.08)] ${variant === 'compact' ? 'space-y-2 p-2.5' : 'space-y-3 p-3 sm:p-4'}`}
-      style={backgroundStyle}
+      style={{ ...backgroundStyle, ...auraCardStyle }}
     >
+      {auraLevel && auraLevel.id !== 'raw' ? (
+        <div
+          aria-label={`Aura level: ${auraLevel.name}`}
+          className="pointer-events-none absolute right-2 top-2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-mono font-semibold uppercase tracking-widest"
+          style={{
+            background: 'rgba(0,0,0,0.55)',
+            backdropFilter: 'blur(6px)',
+            border: `1px solid ${auraLevel.badgeColor}44`,
+            color: auraLevel.badgeColor,
+          }}
+        >
+          <span>{auraLevel.badge}</span>
+          <span>{auraLevel.name}</span>
+        </div>
+      ) : null}
       {materialRender.textureDataUrl ? (
         <div
           aria-hidden
