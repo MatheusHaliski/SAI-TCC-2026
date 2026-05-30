@@ -34,6 +34,8 @@ type SchemePieceSnapshot = {
   category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
   pieceType: string;
   wearstyles: string[];
+  papel?: string;
+  nota?: string;
 };
 
 type UserPreview = { user_id: string; name: string; username: string; descriptor: string; avatarUrl?: string };
@@ -99,6 +101,8 @@ export default function SearchItemsView() {
         pieceType: piece.pieceType || SLOT_PREVIEW_DEFAULTS[piece.slot].pieceType,
         category: piece.category || SLOT_PREVIEW_DEFAULTS[piece.slot].category,
         wearstyles: piece.wearstyles?.length ? piece.wearstyles : SLOT_PREVIEW_DEFAULTS[piece.slot].wearstyles,
+        papel: piece.papel as import('@/app/lib/outfit-card').PieceRole | undefined,
+        nota: piece.nota,
       }));
 
       const brands = [...new Set(pieces.map((piece) => piece.brand).filter(Boolean))].slice(0, 4);

@@ -1,5 +1,7 @@
 export type PieceCategory = 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
 
+export type PieceRole = 'ancora' | 'destaque' | 'base' | 'contraste' | 'acento';
+
 export type OutfitPiece = {
   id: string;
   wardrobeItemId?: string;
@@ -14,6 +16,10 @@ export type OutfitPiece = {
   baseQuality?: number;
   /** Aggregated like count, maintained via pieceLikes subcollection. */
   likes?: number;
+  /** Role this piece plays within the outfit composition */
+  papel?: PieceRole;
+  /** Short personal motivation note for including this piece */
+  nota?: string;
 };
 
 export type OutfitMetaBadge = {

@@ -2,6 +2,7 @@ import { OutfitPiece, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
 import WearstyleChips from '@/app/components/outfit-card/WearstyleChips';
 import VisualToken from '@/app/components/outfit-card/VisualToken';
 import BrandBadge from '@/app/components/outfit-card/BrandBadge';
+import PieceRoleBadge from '@/app/components/outfit-card/PieceRoleBadge';
 import { FILTER_GLOW_LINE, GLOW_LINE, TEXT_GLOW } from '@/app/lib/uiToken';
 
 interface OutfitPieceCardProps {
@@ -40,6 +41,8 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
         </div>
 
         {!compact ? <WearstyleChips wearstyles={piece.wearstyles} pieceType={piece.pieceType} /> : null}
+
+        {piece.papel ? <PieceRoleBadge papel={piece.papel} nota={piece.nota} /> : null}
 
         {onOpenInDressTester ? (
           <button
