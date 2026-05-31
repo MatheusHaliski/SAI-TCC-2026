@@ -141,7 +141,7 @@ export default function DressTesterView() {
   const runOutfitTryOn = useCallback(async () => {
     if (!mannequin || !mannequinImageAbsoluteUrl) return;
 
-    const aiSlots: OutfitSlot[] = ['upper', 'lower', 'shoes'];
+    const aiSlots: OutfitSlot[] = ['upper', 'lower'];
     const items = aiSlots
       .filter((slot) => outfit[slot])
       .map((slot) => ({
@@ -235,7 +235,7 @@ export default function DressTesterView() {
         </SectionBlock>
 
         {/* ── Center: Stage + Save Look ── */}
-        <SectionBlock title="Provador" subtitle="Render com IA">
+        <SectionBlock title="Provador">
           <div className="mt-4 space-y-4">
             <div className="rounded-3xl border border-white/20 bg-black/35 p-4">
               <div className="relative mx-auto aspect-[2/3] w-full max-w-[420px] overflow-hidden rounded-2xl bg-gradient-to-b from-black/30 to-black/65">
@@ -247,6 +247,32 @@ export default function DressTesterView() {
                   unoptimized
                   priority
                 />
+                {/* Shoes 2D overlay — Fashn.ai does not support footwear */}
+                {outfit.shoes && !processing && (() => {
+                  const bbox = mannequin.slots.shoes?.bbox;
+                  if (!bbox) return null;
+                  const cw = mannequin.canvasWidth;
+                  const ch = mannequin.canvasHeight;
+                  return (
+                    <div
+                      className="absolute pointer-events-none"
+                      style={{
+                        left: `${(bbox.x / cw) * 100}%`,
+                        top: `${(bbox.y / ch) * 100}%`,
+                        width: `${(bbox.w / cw) * 100}%`,
+                        height: `${(bbox.h / ch) * 100}%`,
+                      }}
+                    >
+                      <Image
+                        src={outfit.shoes.imageUrl}
+                        alt={outfit.shoes.name}
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                  );
+                })()}
                 {processing ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 text-white">
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-fuchsia-400/30 border-t-fuchsia-400" />

@@ -9,11 +9,11 @@ type OutfitSlot = 'upper' | 'lower' | 'shoes' | 'accessory';
 const SLOT_TO_FASHN_CATEGORY: Record<OutfitSlot, FashnCategory | null> = {
   upper: 'tops',
   lower: 'bottoms',
-  shoes: 'bottoms',
+  shoes: null, // Fashn.ai does not support footwear — shoes are rendered as a 2D overlay client-side
   accessory: null,
 };
 
-const SLOT_PROCESS_ORDER: OutfitSlot[] = ['upper', 'lower', 'shoes'];
+const SLOT_PROCESS_ORDER: OutfitSlot[] = ['upper', 'lower'];
 
 interface GarmentItem {
   garmentId: string;
