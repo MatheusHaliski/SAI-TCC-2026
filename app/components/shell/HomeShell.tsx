@@ -12,11 +12,7 @@ import { DiscoverySearchProvider } from '@/app/components/shell/DiscoverySearchC
 
 /* ── Icons ── */
 const SparklesIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/>
-    <path d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75z"/>
-    <path d="M19 13l.75 2.25L22 16l-2.25.75L19 19l-.75-2.25L16 16l2.25-.75z"/>
-  </svg>
+  <img src="/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg" alt="sparkles" className="w-6 h-6" style={{ objectFit: 'cover', borderRadius: '4px' }} />
 );
 const HomeIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
