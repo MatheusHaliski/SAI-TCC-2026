@@ -205,7 +205,7 @@ export default function DressTesterView() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Provador 2D" subtitle="Monte seu look com até 4 peças — IA da Fashn.ai aplica cada peça sequencialmente" />
+      <PageHeader title="Provador 2D" subtitle="Monte seu look com até 4 peças" />
       <SectionBlock title="Manequim" subtitle="Escolha o manequim e monte seu look">
         <Tester2DMannequinSelector mannequins={mannequins} selectedId={selectedMannequin} onChange={setSelectedMannequin} />
       </SectionBlock>
@@ -235,7 +235,7 @@ export default function DressTesterView() {
         </SectionBlock>
 
         {/* ── Center: Stage + Save Look ── */}
-        <SectionBlock title="Provador" subtitle="Render com IA — Fashn.ai aplica as peças em sequência">
+        <SectionBlock title="Provador" subtitle="Render com IA">
           <div className="mt-4 space-y-4">
             <div className="rounded-3xl border border-white/20 bg-black/35 p-4">
               <div className="relative mx-auto aspect-[2/3] w-full max-w-[420px] overflow-hidden rounded-2xl bg-gradient-to-b from-black/30 to-black/65">
@@ -252,7 +252,7 @@ export default function DressTesterView() {
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-fuchsia-400/30 border-t-fuchsia-400" />
                     <div className="text-center">
                       <p className="text-sm font-medium">Encaixando o look...</p>
-                      <p className="mt-1 text-xs text-white/50">Fashn.ai processa cada peça em sequência</p>
+
                     </div>
                   </div>
                 ) : null}
