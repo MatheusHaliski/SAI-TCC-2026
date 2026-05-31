@@ -33,9 +33,30 @@ export default function OutfitSlotsPanel({ outfit, activeSlot, onSelectSlot, onR
   const filledAiSlots = aiSlots.filter((s) => outfit[s]).length;
   const totalFilled = SLOT_ORDER.filter((s) => outfit[s]).length;
   const canTryOn = filledAiSlots >= 1 && !processing;
+  const isComplete = totalFilled === SLOT_ORDER.length;
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Completion progress */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-white/40">Progresso do Look</span>
+          {isComplete && (
+            <span className="text-[10px] font-semibold text-emerald-400">Look Completo ✓</span>
+          )}
+        </div>
+        <div className="flex gap-1">
+          {SLOT_ORDER.map((slot) => (
+            <div
+              key={slot}
+              className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                outfit[slot] ? 'bg-gradient-to-r from-fuchsia-400 to-cyan-400' : 'bg-white/12'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-2">
         {SLOT_ORDER.map((slot) => {
           const piece = outfit[slot];
@@ -104,9 +125,9 @@ export default function OutfitSlotsPanel({ outfit, activeSlot, onSelectSlot, onR
       </button>
 
       {totalFilled > 0 && !processing && (
-        <p className="text-center text-[10px] leading-relaxed text-white/35">
-          Upper, lower &amp; shoes are processed via Fashn.ai.
-          {outfit.accessory ? ' Accessory shown as overlay.' : ''}
+        <p className="text-center text-[10px] leading-relaxed text-white/30">
+          Superior, inferior e calçado via Fashn.ai.
+          {outfit.accessory ? ' Acessório como sobreposição.' : ''}
         </p>
       )}
     </div>

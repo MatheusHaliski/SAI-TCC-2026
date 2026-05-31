@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { OutfitPiece, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
 import { computeQualityStars } from '@/app/lib/pieces/quality';
 import BrandBadge from '@/app/components/outfit-card/BrandBadge';
@@ -20,48 +20,23 @@ interface OutfitPieceCardProps {
   schemeId?: string;
 }
 
-export default function OutfitPieceCard({ piece, compact = false, onViewPieceCard, schemeId }: OutfitPieceCardProps) {
-  const pieceName   = piece.name?.trim()  || 'Unnamed Piece';
-  const brandName   = piece.brand?.trim() || 'Brand not specified';
+export default function OutfitPieceCard({ piece, compact = false, onOpenInDressTester }: OutfitPieceCardProps) {
+  const [launching, setLaunching] = useState(false);
+  const pieceName = piece.name?.trim() || 'Unnamed Piece';
+  const brandName = piece.brand?.trim() || 'Brand not specified';
   const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
-  const tier        = piece.category ?? 'Standard';
-  const pieceType   = piece.pieceType || 'Garment';
-  const baseQuality = piece.baseQuality ?? 2.5;
+  const categoryLabel = piece.category ?? 'Standard';
+  const pieceTypeLabel = piece.pieceType || 'Garment';
 
-  const [modalOpen, setModalOpen] = useState(false);
-
-  // Optimistic like state — initialised from Firestore snapshot on the piece.
-  const [likes, setLikes]   = useState(piece.likes ?? 0);
-  const [liked, setLiked]   = useState(false);
-  const [pending, startToggle] = useTransition();
-
-  const handleToggleLike = () => {
-    const nextLiked = !liked;
-    const nextLikes = Math.max(0, likes + (nextLiked ? 1 : -1));
-
-    // Optimistic update first.
-    setLiked(nextLiked);
-    setLikes(nextLikes);
-
-    if (!schemeId || !piece.id) return;
-
-    startToggle(async () => {
-      try {
-        const { toggleLikePiece } = await import('@/app/lib/pieces/likes');
-        // Requires auth — import lazily to avoid breaking SSR.
-        const { getAuth } = await import('firebase/auth');
-        const user = getAuth().currentUser;
-        if (!user) return;
-        await toggleLikePiece(schemeId, piece.id, user.uid);
-      } catch {
-        // Rollback on failure.
-        setLiked(liked);
-        setLikes(likes);
-      }
-    });
+  const handleExperiment = (e: { stopPropagation: () => void }) => {
+    e.stopPropagation();
+    if (launching || !onOpenInDressTester) return;
+    setLaunching(true);
+    setTimeout(() => {
+      setLaunching(false);
+      onOpenInDressTester();
+    }, 400);
   };
-
-  const computed = computeQualityStars(baseQuality, likes);
 
   return (
     <article
@@ -69,6 +44,15 @@ export default function OutfitPieceCard({ piece, compact = false, onViewPieceCar
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.28)_0%,rgba(255,255,255,0)_44%),linear-gradient(130deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0)_48%,rgba(14,116,144,0.2)_100%)] opacity-90" />
       <div aria-hidden className="pointer-events-none absolute inset-[1px] rounded-2xl border border-cyan-100/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),inset_0_0_38px_rgba(8,145,178,0.2)]" />
+
+      {/* Launch flash overlay */}
+      {launching && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-[2] animate-ping rounded-2xl bg-fuchsia-400/20"
+          style={{ animationDuration: '0.35s', animationIterationCount: 1 }}
+        />
+      )}
 
       <div className="relative z-[1] space-y-3">
         {/* Header row — name + tier */}
@@ -103,10 +87,19 @@ export default function OutfitPieceCard({ piece, compact = false, onViewPieceCar
               <QualityBadge baseQuality={baseQuality} likes={likes} />
             </div>
 
-            <div className="pb-3">
-              <QualityRail baseQuality={baseQuality} likes={likes} />
-            </div>
-          </div>
+        {onOpenInDressTester ? (
+          <button
+            type="button"
+            onClick={handleExperiment}
+            disabled={launching}
+            className={`mt-2 w-full rounded-xl py-2 text-[11px] font-semibold uppercase tracking-wide transition-all duration-300 ${
+              launching
+                ? 'scale-95 border border-fuchsia-300/50 bg-fuchsia-500/25 text-fuchsia-100'
+                : 'border border-fuchsia-400/45 bg-fuchsia-500/15 text-fuchsia-100 hover:scale-[1.02] hover:border-fuchsia-300/65 hover:bg-fuchsia-500/28'
+            }`}
+          >
+            {launching ? '✦ Abrindo Provador...' : '✦ Experimentar'}
+          </button>
         ) : null}
 
         {/* Action button */}
