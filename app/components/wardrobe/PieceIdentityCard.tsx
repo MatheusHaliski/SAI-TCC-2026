@@ -149,7 +149,7 @@ export default function PieceIdentityCard({ item, userId }: PieceIdentityCardPro
   const [likeLoading, setLikeLoading] = useState(false);
   const [ratingLoading, setRatingLoading] = useState(false);
 
-  const wearCount = 0; // TODO: wire to DailyLooks API when available
+  const wearCount: number = 0; // TODO: wire to DailyLooks API when available
   const aiAffinity = 0.5; // TODO: wire to OutfitPreferences.piece_weights
 
   const category = deriveCategory(wearCount, item.is_favorite ?? false, item.style_tags ?? []);
