@@ -103,6 +103,8 @@ interface OutfitBackgroundStudioModalProps {
   onApply: (value: OutfitBackgroundConfig) => void;
   selectedCardSkin?: CardSkinId;
   onSelectSkin?: (skinId: CardSkinId) => void;
+  /** Render as an inline page section instead of a fixed modal overlay */
+  asPage?: boolean;
 }
 
 const COLOR_SWATCHES = ['#0a0a0a', '#ffffff', '#c0c0c0', '#2e1065', '#047857', '#ddc7a1', '#1d4ed8', '#fff8dc'];
@@ -247,7 +249,7 @@ const CURATED_IMAGE_PICKER_OPTIONS = [
   hint: `Applies ${label || fileName} as artwork surface`,
   imageUrl: `/${encodeURIComponent(fileName)}`,
 }));
-const BACKGROUND_IMAGE_OPTIONS = CURATED_IMAGE_PICKER_OPTIONS.filter((opt) => /^image:a\d+\.png$/.test(opt.value));
+const BACKGROUND_IMAGE_OPTIONS = CURATED_IMAGE_PICKER_OPTIONS.filter((opt) => /^image:[ac]\d+\.png$/.test(opt.value));
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
   'none',
   'orb',
@@ -2025,6 +2027,7 @@ export default function OutfitBackgroundStudioModal({
   onApply,
   selectedCardSkin,
   onSelectSkin,
+  asPage = false,
 }: OutfitBackgroundStudioModalProps) {
   const buildNoMaterialConfig = (baseColor: string): FabricMaterialConfig => ({
     ...buildFabricPresetConfig(baseColor),
@@ -2618,23 +2621,26 @@ export default function OutfitBackgroundStudioModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, aiResults.length, aiLoading]);
 
-  return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="flex h-[98vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]"
-        style={{ backgroundColor: 'var(--user-surface-solid)' }}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-white/70">Background Studio</p>
-            <h2 className="text-2xl font-semibold">Customize the visual surface of your outfit card</h2>
-          </div>
-          <button type="button" className="rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold" onClick={onClose}>Close ✕</button>
-        </header>
+  const innerContent = (
+    <div
+      className={asPage
+        ? 'flex flex-col gap-4 text-white'
+        : 'flex h-[98vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]'}
+      style={asPage ? undefined : { backgroundColor: 'var(--user-surface-solid)' }}
+      onClick={asPage ? undefined : (event) => event.stopPropagation()}
+    >
+      <header className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-white/70">Estúdio de Fundo</p>
+          <h2 className={asPage ? 'text-xl font-semibold' : 'text-2xl font-semibold'}>Personalize a superfície visual do seu card de look</h2>
+        </div>
+        {!asPage && (
+          <button type="button" className="rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold" onClick={onClose}>Fechar ✕</button>
+        )}
+      </header>
 
-        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]">
-          <section className="min-h-0 space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4">
+      <div className={asPage ? 'grid gap-4 lg:grid-cols-[1fr_1.1fr]' : 'grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]'}>
+        <section className={asPage ? 'space-y-4 rounded-2xl border border-white/15 bg-white/5 p-4' : 'min-h-0 space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
             <div className="inline-flex rounded-xl border border-white/20 bg-white/5 p-1">
               {([
                 ['color', 'Color'],
@@ -3326,8 +3332,8 @@ export default function OutfitBackgroundStudioModal({
             </section>
           </section>
 
-          <section className="min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-white/65">Live Preview</p>
+          <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
+            <p className="text-xs uppercase tracking-[0.12em] text-white/65">Pré-visualização</p>
             <OutfitCard data={previewData} variant="default" />
             <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/85">
               <p>Contrast recommendation: <span className="font-semibold">Use {recommendTextTone} text/icons</span>.</p>
@@ -3404,13 +3410,24 @@ export default function OutfitBackgroundStudioModal({
           </label>
 
           <div className="flex flex-wrap justify-end gap-2">
-            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancel / Close</button>
-            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Reset</button>
-            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={saveBackgroundConfig}>Save Background</button>
-            <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={applyDraftToCard}>Apply to Card · {draft.shape || 'none'}</button>
+            {!asPage && (
+              <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancelar / Fechar</button>
+            )}
+            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Redefinir</button>
+            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={saveBackgroundConfig}>Salvar Fundo</button>
+            <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={applyDraftToCard}>Aplicar ao Card · {draft.shape || 'none'}</button>
           </div>
         </footer>
       </div>
+  );
+
+  if (asPage) {
+    return innerContent;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      {innerContent}
     </div>
   );
 }
