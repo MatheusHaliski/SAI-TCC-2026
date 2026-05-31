@@ -30,26 +30,23 @@ firebase-adminsdk*.json
 keys/
 secrets/
 
-# Backups de banco — armazenar fora do repositório
+# Backups — armazenar fora do repositório
 database/backups/*
 !database/backups/.gitkeep
-projects-migrados/*/database/backups/*
-!projects-migrados/*/database/backups/.gitkeep
 *.sql.gz
 *.sql.bz2
 *.dump
 *.dmp
-*_backup_*.sql
 
-# Dumps e exports do Firestore — nunca versionar dados reais
-database/backups/firebase-export/
-migration-report.json
+# Dumps SQL reais — NUNCA versionar
+*_backup_*.sql
+migration-data-*.sql
 
 # Logs
 *.log
 logs/
 
-# Cache e build info
+# Cache
 .cache/
 .turbo/
 *.tsbuildinfo
@@ -63,7 +60,3 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
-
-# Arquivos de chave pública/privada encontrados na raiz (risco de segurança)
-codelab-friendlyeats-web-main
-codelab-friendlyeats-web-main.pub
