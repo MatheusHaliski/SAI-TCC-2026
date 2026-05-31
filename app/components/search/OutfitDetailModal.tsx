@@ -51,7 +51,15 @@ export default function OutfitDetailModal({ open, data, onClose }: OutfitDetailM
             Close ✕
           </button>
         </div>
-        <OutfitCard data={data} variant="default" />
+        <OutfitCard
+          data={data}
+          variant="default"
+          onOpenOutfitInDressTester={() => {
+            sessionStorage.setItem('sai_dress_tester_payload', JSON.stringify(data));
+            router.push('/dress-tester?source=outfit');
+            onClose();
+          }}
+        />
         <OutfitActionBar
           isFavorite={isFavorite}
           loadingFavorite={loadingFavorite}

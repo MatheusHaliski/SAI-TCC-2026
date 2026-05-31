@@ -31,6 +31,7 @@ type SchemePieceSnapshot = {
   category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
   pieceType: string;
   wearstyles: string[];
+  expressao?: string;
 };
 type SchemeDetailItem = {
   scheme_item_id: string;
@@ -83,8 +84,10 @@ export default function ExploreSchemeView() {
   const authUserId = useMemo(() => getAuthSessionProfile().user_id?.trim() || '', []);
 
   useEffect(() => {
+    if (!authUserId) return;
+
     const loadSchemesWithItems = async () => {
-      const response = await fetch('/api/schemes/public');
+      const response = await fetch(`/api/schemes/user/${authUserId}`);
       const data = await response.json();
       const safeSchemes = Array.isArray(data) ? (data as Scheme[]) : [];
       setSchemes(safeSchemes);
@@ -117,7 +120,7 @@ export default function ExploreSchemeView() {
       setSchemes([]);
       setItemsBySchemeId({});
     });
-  }, []);
+  }, [authUserId]);
 
   const usersById = useMemo(() => Object.fromEntries(users.map((u) => [u.user_id, u])), [users]);
 
@@ -154,6 +157,7 @@ export default function ExploreSchemeView() {
             || 'Garment',
           category: piece.category,
           wearstyles: piece.wearstyles,
+          expressao: (piece as { expressao?: string }).expressao,
         }))
       : relatedItems.length
         ? relatedItems.map((item) => {
@@ -189,18 +193,17 @@ export default function ExploreSchemeView() {
   };
 
   const filteredSchemes = useMemo(() => {
-    const ownSchemes = authUserId ? schemes.filter((s) => s.user_id === authUserId) : []; // Never fall back to public schemes when session profile is unavailable
     switch (activeFilter) {
       case 'favorites':
-        return ownSchemes.filter((s) => favorites[s.scheme_id]);
+        return schemes.filter((s) => favorites[s.scheme_id]);
       case 'available':
-        return ownSchemes.filter((s) => (availability[s.scheme_id] ?? 'available') === 'available');
+        return schemes.filter((s) => (availability[s.scheme_id] ?? 'available') === 'available');
       case 'unavailable':
-        return ownSchemes.filter((s) => availability[s.scheme_id] === 'unavailable');
+        return schemes.filter((s) => availability[s.scheme_id] === 'unavailable');
       default:
-        return ownSchemes;
+        return schemes;
     }
-  }, [activeFilter, favorites, availability, schemes, authUserId]);
+  }, [activeFilter, favorites, availability, schemes]);
 
   const grouped = useMemo(() => {
     const byOccasion = new Map<string, Scheme[]>();

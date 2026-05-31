@@ -181,6 +181,8 @@ export interface SchemePieceSnapshot {
   category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
   pieceType: string;
   wearstyles: string[];
+  /** Short first-person emotional expression of how the user feels wearing this piece in this occasion */
+  expressao?: string;
 }
 
 export interface SchemeItem {
@@ -353,7 +355,7 @@ export interface OutfitSelection2D {
 
 // ─── Autopilot types ──────────────────────────────────────────────────────────
 
-export type Occasion = 'trabalho' | 'casual' | 'balada' | 'academia' | 'evento';
+export type Occasion = 'trabalho' | 'casual' | 'festa' | 'academia' | 'evento';
 export type Mood = 'disposto' | 'cansado' | 'confiante' | 'criativo';
 export type DailyLookFeedback = 'loved' | 'used' | 'skipped';
 
@@ -385,6 +387,8 @@ export interface WeekPlanDay {
   occasion: Occasion;
   scheme_id: string | null;
   gap_hints: string[];
+  scheme_title?: string;
+  scheme_items?: AutopilotWardrobeItem[];
 }
 
 export interface WeekPlan {

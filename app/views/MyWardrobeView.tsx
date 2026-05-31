@@ -42,14 +42,11 @@ interface WardrobeItem {
   season: string;
   gender: string;
   piece_type: string;
-  color?: string;
-  material?: string;
-  style_tags?: string[];
-  occasion_tags?: string[];
-  is_favorite?: boolean;
+  for_sale?: boolean;
+  listing_price?: number;
 }
 
-const sections = ['Disponíveis', 'Indisponíveis', 'Favoritos'];
+const sections = ['Disponíveis', 'Indisponíveis', 'Favoritos', 'Para vender'];
 
 const READY_STATUSES = new Set(['done', 'ready', 'completed', 'asset_available']);
 const FAILED_STATUSES = new Set(['failed', 'failed_geometry_scope']);
@@ -181,7 +178,8 @@ export default function MyWardrobeView() {
     const available = items.filter((item) => (availability[item.wardrobe_item_id] ?? 'available') === 'available');
     const unavailable = items.filter((item) => (availability[item.wardrobe_item_id] ?? 'available') === 'unavailable');
     const favorite = items.filter((item) => favorites[item.wardrobe_item_id]);
-    return { available, unavailable, favorite };
+    const forsale = items.filter((item) => item.for_sale);
+    return { available, unavailable, favorite, forsale };
   }, [availability, favorites, items]);
 
   const activeGroups = useMemo(() => {
@@ -189,12 +187,14 @@ export default function MyWardrobeView() {
       { key: 'available', title: 'Peças Disponíveis', data: grouped.available },
       { key: 'unavailable', title: 'Peças Indisponíveis', data: grouped.unavailable },
       { key: 'favorite', title: 'Peças Favoritas', data: grouped.favorite },
+      { key: 'forsale', title: 'Peças Para Vender', data: grouped.forsale },
     ] as const;
 
     const sectionToGroupKey: Record<string, (typeof groups)[number]['key']> = {
       'disponíveis': 'available',
       'indisponíveis': 'unavailable',
       'favoritos': 'favorite',
+      'para vender': 'forsale',
     };
 
     let selectedGroupData = groups.find((group) => group.key === (sectionToGroupKey[selectedSection] ?? 'available'))?.data || [];
@@ -442,6 +442,8 @@ export default function MyWardrobeView() {
                       pieceType={item.piece_type}
                       state={cardState}
                       statusLabel={stateLabel(cardState, item.model_status, item)}
+                      forSale={item.for_sale}
+                      listingPrice={item.listing_price}
                       onClick={() => setModalItem(item)}
                       onAvailable={() => setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'available' }))}
                       onUnavailable={() => setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'unavailable' }))}
@@ -450,7 +452,11 @@ export default function MyWardrobeView() {
                     />
                   );
                 })}
-                {!group.data.length ? <p className="text-sm text-white/70">No pieces in this list.</p> : null}
+                {!group.data.length ? (
+                  <p className="text-sm text-white/70">
+                    {group.key === 'forsale' ? 'Nenhuma peça para venda no momento.' : 'No pieces in this list.'}
+                  </p>
+                ) : null}
               </div>
               {group.key === 'available' && hasMore ? (
                 <div className="mt-4 flex items-center justify-between">
