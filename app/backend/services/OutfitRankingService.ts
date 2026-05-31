@@ -10,7 +10,7 @@ const ACCESSORY_TYPES = new Set(['accessory_piece', 'accessory', 'bag', 'hat', '
 const OCCASION_WEIGHTS: Record<Occasion, string[]> = {
   trabalho: ['formal', 'trabalho', 'social', 'casual'],
   casual: ['casual', 'street', 'day', 'relax'],
-  balada: ['party', 'night', 'balada', 'festivo', 'chic'],
+  festa: ['party', 'night', 'festa', 'festivo', 'chic'],
   academia: ['sport', 'academia', 'fitness', 'esportivo'],
   evento: ['event', 'formal', 'gala', 'evento', 'social'],
 };
@@ -77,6 +77,7 @@ export class OutfitRankingService {
   generateTop3(
     wardrobe: AutopilotWardrobeItem[],
     context: RankingContext,
+    excludeSchemeIds: string[] = [],
   ): SchemeSuggestion[] {
     const uppers = wardrobe.filter((i) => this.classifyItem(i) === 'upper');
     const lowers = wardrobe.filter((i) => this.classifyItem(i) === 'lower');
@@ -86,12 +87,15 @@ export class OutfitRankingService {
     const tempCategory = this.weatherService.getTemperatureCategory(context.weather.temp_c);
     const candidates = this.buildCandidates(uppers, lowers, dresses, shoes, tempCategory);
 
-    const scored = candidates
+    const excludeSet = new Set(excludeSchemeIds);
+
+    const top = candidates
       .map((combo) => ({ combo, score: this.scoreCombo(combo, context, tempCategory) }))
       .sort((a, b) => b.score - a.score)
+      .filter(({ combo }) => !excludeSet.has(this.comboSchemeId(combo)))
       .slice(0, this.topN);
 
-    return scored.map(({ combo, score }, index) => {
+    return top.map(({ combo, score }, index) => {
       const items: AutopilotWardrobeItem[] = [
         combo.dress ?? combo.upper,
         combo.lower,
@@ -99,13 +103,29 @@ export class OutfitRankingService {
       ].filter((item): item is AutopilotWardrobeItem => item !== null);
 
       return {
-        scheme_id: `tmp-${index + 1}`,
+        scheme_id: this.comboSchemeId(combo),
         title: `Look do Dia #${index + 1}`,
         items,
         weather_fit_note: this.weatherService.buildWeatherFitNote(context.weather.temp_c, context.weather.condition),
         score,
       };
     });
+  }
+
+  private comboSchemeId(combo: Combination): string {
+    const key = [combo.upper, combo.lower, combo.dress, combo.shoes]
+      .filter((i): i is AutopilotWardrobeItem => i !== null)
+      .map((i) => i.wardrobe_item_id)
+      .sort()
+      .join('|');
+    // FNV-1a over two 32-bit accumulators — no Node imports needed
+    let h1 = 0x811c9dc5, h2 = 0xc4ceb9fe;
+    for (let i = 0; i < key.length; i++) {
+      const c = key.charCodeAt(i);
+      h1 = (Math.imul(h1 ^ c, 0x01000193)) >>> 0;
+      h2 = (Math.imul(h2 ^ c, 0x01000193)) >>> 0;
+    }
+    return `autopilot-${h1.toString(16).padStart(8, '0')}${h2.toString(16).padStart(8, '0')}`;
   }
 
   private classifyItem(item: AutopilotWardrobeItem): 'upper' | 'lower' | 'dress' | 'shoes' | 'accessory' | 'unknown' {
