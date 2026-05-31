@@ -126,8 +126,7 @@ export default function OutfitSlotsPanel({ outfit, activeSlot, onSelectSlot, onR
 
       {totalFilled > 0 && !processing && (
         <p className="text-center text-[10px] leading-relaxed text-white/30">
-          Superior, inferior e calçado via Fashn.ai.
-          {outfit.accessory ? ' Acessório como sobreposição.' : ''}
+          {outfit.accessory ? 'Acessório como sobreposição.' : ''}
         </p>
       )}
     </div>
