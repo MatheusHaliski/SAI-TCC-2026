@@ -802,7 +802,7 @@ export default function MaisonView() {
       <SectionBlock title="Sobre o Maison" subtitle="O feed de identidade das marcas do Fashion AI.">
         <div className="mt-3 space-y-2 text-sm text-white/65 leading-relaxed">
           <p>
-            O <span className="font-semibold text-white/85">Maison</span> é o espaço dedicado às marcas do universo SAI.
+            O <span className="font-semibold text-white/85">Maison</span> é o espaço dedicado às marcas do universo FAI.
             Explore o perfil completo de cada grife: categoria de moda, público-alvo, top 10 peças icônicas,
             recomendações por estação climática, paleta de cores e muito mais.
           </p>
