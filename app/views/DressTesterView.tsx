@@ -138,6 +138,37 @@ export default function DressTesterView() {
     setFitScore(null);
   }, [outfit]);
 
+  const overlayAccessoryOnImage = useCallback((baseUrl: string, accessoryUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('No canvas context')); return; }
+
+      const baseImg = new window.Image();
+      baseImg.crossOrigin = 'anonymous';
+      baseImg.onload = () => {
+        canvas.width = baseImg.naturalWidth;
+        canvas.height = baseImg.naturalHeight;
+        ctx.drawImage(baseImg, 0, 0);
+
+        const accImg = new window.Image();
+        accImg.crossOrigin = 'anonymous';
+        accImg.onload = () => {
+          // Overlay accessory centered horizontally at ~15% from top (neck/shoulder area)
+          const accSize = Math.min(canvas.width * 0.28, canvas.height * 0.18);
+          const x = (canvas.width - accSize) / 2;
+          const y = canvas.height * 0.14;
+          ctx.drawImage(accImg, x, y, accSize, accSize);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        accImg.onerror = () => reject(new Error('Failed to load accessory image'));
+        accImg.src = accessoryUrl;
+      };
+      baseImg.onerror = () => reject(new Error('Failed to load base image'));
+      baseImg.src = baseUrl;
+    });
+  }, []);
+
   const runOutfitTryOn = useCallback(async () => {
     if (!mannequin || !mannequinImageAbsoluteUrl) return;
 
@@ -150,7 +181,8 @@ export default function DressTesterView() {
         slotType: slot,
       }));
 
-    if (items.length === 0) return;
+    const hasAccessory = !!outfit.accessory;
+    if (items.length === 0 && !hasAccessory) return;
 
     setStageError(null);
     setStageImageUrl('');
@@ -163,23 +195,40 @@ export default function DressTesterView() {
 
     setProcessing(true);
     try {
-      const response = await fetch('/api/dress-tester/try-on-2d-multi', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mannequinImageUrl: mannequinImageAbsoluteUrl, items }),
-      });
-      const payload = await response.json() as { status: string; resultImageUrl: string | null; error?: string };
-      if (!response.ok || payload.status !== 'completed' || !payload.resultImageUrl) {
-        const errRaw = payload.error;
-        setStageError(typeof errRaw === 'string' ? errRaw : 'Could not fit outfit right now.');
-        return;
+      let resultUrl: string;
+
+      if (items.length > 0) {
+        const response = await fetch('/api/dress-tester/try-on-2d-multi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mannequinImageUrl: mannequinImageAbsoluteUrl, items }),
+        });
+        const payload = await response.json() as { status: string; resultImageUrl: string | null; error?: string };
+        if (!response.ok || payload.status !== 'completed' || !payload.resultImageUrl) {
+          const errRaw = payload.error;
+          setStageError(typeof errRaw === 'string' ? errRaw : 'Could not fit outfit right now.');
+          return;
+        }
+        resultUrl = payload.resultImageUrl;
+      } else {
+        // Accessory-only — overlay directly on mannequin base image
+        resultUrl = mannequinImageAbsoluteUrl;
       }
-      setStageImageUrl(payload.resultImageUrl);
-      setOutfitCache((prev) => ({ ...prev, [cacheKey]: payload.resultImageUrl as string }));
+
+      if (hasAccessory && outfit.accessory) {
+        try {
+          resultUrl = await overlayAccessoryOnImage(resultUrl, outfit.accessory.imageUrl);
+        } catch {
+          // Accessory overlay failed — continue with AI result as-is
+        }
+      }
+
+      setStageImageUrl(resultUrl);
+      setOutfitCache((prev) => ({ ...prev, [cacheKey]: resultUrl }));
     } finally {
       setProcessing(false);
     }
-  }, [mannequin, mannequinImageAbsoluteUrl, outfit, selectedMannequin, outfitCache]);
+  }, [mannequin, mannequinImageAbsoluteUrl, outfit, selectedMannequin, outfitCache, overlayAccessoryOnImage]);
 
   const handleApplyPiece = useCallback((item: Tester2DWardrobeItem) => {
     setOutfit((prev) => ({ ...prev, [activeSlot]: item }));
