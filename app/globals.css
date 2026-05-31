@@ -684,3 +684,9 @@ html.dark-mode body textarea::placeholder {
 @media (max-width: 640px) {
   .fai-form-grid { grid-template-columns: 1fr; }
 }
+
+/* Responsive sidebar: hide desktop sidebar and show hamburger on mobile */
+@media (max-width: 768px) {
+  .sa-sidebar-desktop { display: none !important; }
+  .sa-hamburger-mobile { display: flex !important; }
+}
