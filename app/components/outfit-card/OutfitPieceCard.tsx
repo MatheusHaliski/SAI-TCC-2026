@@ -7,7 +7,6 @@ import BrandBadge from '@/app/components/outfit-card/BrandBadge';
 import TierChip from '@/app/components/outfit-card/badges/TierChip';
 import LikesBadge from '@/app/components/outfit-card/badges/LikesBadge';
 import QualityBadge from '@/app/components/outfit-card/badges/QualityBadge';
-import QualityRail from '@/app/components/outfit-card/badges/QualityRail';
 import PieceCardModal from '@/app/components/outfit-card/PieceCardModal';
 import { FILTER_GLOW_LINE, GLOW_LINE, TEXT_GLOW } from '@/app/lib/uiToken';
 
@@ -18,15 +17,30 @@ interface OutfitPieceCardProps {
   onViewPieceCard?: () => void;
   /** schemeId needed to persist like toggles. Omit to run optimistic-only. */
   schemeId?: string;
+  onOpenInDressTester?: () => void;
 }
 
-export default function OutfitPieceCard({ piece, compact = false, onOpenInDressTester }: OutfitPieceCardProps) {
+export default function OutfitPieceCard({ piece, compact = false, onViewPieceCard, onOpenInDressTester }: OutfitPieceCardProps) {
   const [launching, setLaunching] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [pending, setPending] = useState(false);
+
   const pieceName = piece.name?.trim() || 'Unnamed Piece';
   const brandName = piece.brand?.trim() || 'Brand not specified';
   const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
-  const categoryLabel = piece.category ?? 'Standard';
+  const tier = piece.category ?? 'Standard';
   const pieceTypeLabel = piece.pieceType || 'Garment';
+  const baseQuality = piece.baseQuality ?? 2.5;
+  const likes = piece.likes ?? 0;
+  const computed = computeQualityStars(baseQuality, likes);
+
+  const handleToggleLike = () => {
+    if (pending) return;
+    setPending(true);
+    setLiked((prev) => !prev);
+    setTimeout(() => setPending(false), 400);
+  };
 
   const handleExperiment = (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
@@ -45,7 +59,6 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.28)_0%,rgba(255,255,255,0)_44%),linear-gradient(130deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0)_48%,rgba(14,116,144,0.2)_100%)] opacity-90" />
       <div aria-hidden className="pointer-events-none absolute inset-[1px] rounded-2xl border border-cyan-100/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),inset_0_0_38px_rgba(8,145,178,0.2)]" />
 
-      {/* Launch flash overlay */}
       {launching && (
         <div
           aria-hidden
@@ -59,7 +72,7 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 space-y-0.5">
             <p className={`truncate text-sm font-semibold ${TEXT_GLOW}`}>{pieceName}</p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">{pieceType}</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">{pieceTypeLabel}</p>
           </div>
           <TierChip tier={tier} />
         </div>
@@ -87,19 +100,21 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
               <QualityBadge baseQuality={baseQuality} likes={likes} />
             </div>
 
-        {onOpenInDressTester ? (
-          <button
-            type="button"
-            onClick={handleExperiment}
-            disabled={launching}
-            className={`mt-2 w-full rounded-xl py-2 text-[11px] font-semibold uppercase tracking-wide transition-all duration-300 ${
-              launching
-                ? 'scale-95 border border-fuchsia-300/50 bg-fuchsia-500/25 text-fuchsia-100'
-                : 'border border-fuchsia-400/45 bg-fuchsia-500/15 text-fuchsia-100 hover:scale-[1.02] hover:border-fuchsia-300/65 hover:bg-fuchsia-500/28'
-            }`}
-          >
-            {launching ? '✦ Abrindo Provador...' : '✦ Experimentar'}
-          </button>
+            {onOpenInDressTester ? (
+              <button
+                type="button"
+                onClick={handleExperiment}
+                disabled={launching}
+                className={`mt-2 w-full rounded-xl py-2 text-[11px] font-semibold uppercase tracking-wide transition-all duration-300 ${
+                  launching
+                    ? 'scale-95 border border-fuchsia-300/50 bg-fuchsia-500/25 text-fuchsia-100'
+                    : 'border border-fuchsia-400/45 bg-fuchsia-500/15 text-fuchsia-100 hover:scale-[1.02] hover:border-fuchsia-300/65 hover:bg-fuchsia-500/28'
+                }`}
+              >
+                {launching ? '✦ Abrindo Provador...' : '✦ Experimentar'}
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
         {/* Action button */}
@@ -112,9 +127,9 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
         </button>
       </div>
 
-      {modalOpen ? (
+      {modalOpen && (
         <PieceCardModal piece={piece} onClose={() => setModalOpen(false)} />
-      ) : null}
+      )}
     </article>
   );
 }

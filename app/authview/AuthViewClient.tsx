@@ -261,7 +261,7 @@ export default function AuthViewClient() {
                 try { await signInWithGoogleRedirect(); return; } catch {}
             }
             if (shouldSkipFirebaseSignIn(error)) { setSocialSubmitting(null); return; }
-            const userMessage = resolveOAuthUserMessage(error);
+            const userMessage = resolveOAuthUserMessage(error, "Não foi possível entrar com Google.");
             setSocialErrorMessage(userMessage);
             void VSModalPaged({ title: "Falha no login social", messages: [userMessage], tone: "error" });
         } finally { setSocialSubmitting(null); }

@@ -335,7 +335,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
             {SHAPE_SEGMENT_OPTIONS.map((s) => {
               const isActive = shape === s;
               return (
-                <button key={s} type="button" onClick={() => setShape(s)}
+                <button key={s} type="button" onClick={() => setShape(s as PageBackgroundShape)}
                   style={{ borderRadius:'0.75rem', border: isActive ? '2px solid var(--primary)' : '2px solid var(--border)', background: isActive ? 'rgba(124,58,237,0.1)' : 'var(--accent)', overflow:'hidden', cursor:'pointer', padding:0, transition:'all 0.15s', boxShadow: isActive ? '0 0 0 3px rgba(124,58,237,0.2)' : 'none' }}>
                   <div style={{ height:'3rem', overflow:'hidden', background:'linear-gradient(135deg,#0f172a,#1e1040)', position:'relative' }}>
                     {s !== 'none' && (
