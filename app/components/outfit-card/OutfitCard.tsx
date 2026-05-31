@@ -25,10 +25,10 @@ interface GeneratedOutfitCardProps {
     tone?: 'default' | 'danger' | 'accent';
   }>;
   onOpenInDressTester?: (wardrobeItemId: string) => void;
-  onViewPieceCard?: (wardrobeItemId: string) => void;
+  onOpenOutfitInDressTester?: () => void;
 }
 
-export default function OutfitCard({ data, variant = 'default', actions = [], onOpenInDressTester, onViewPieceCard }: GeneratedOutfitCardProps) {
+export default function OutfitCard({ data, variant = 'default', actions = [], onOpenInDressTester, onOpenOutfitInDressTester }: GeneratedOutfitCardProps) {
   const description =
     data.outfitDescription === undefined
       ? buildOutfitDescriptionFallback({
@@ -206,6 +206,18 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
           onViewPieceCard={onViewPieceCard}
           onOpenInDressTester={onOpenInDressTester}
         />
+        <OutfitPieceList pieces={data.pieces} compact={variant === 'compact'} onOpenInDressTester={onOpenInDressTester} />
+
+        {onOpenOutfitInDressTester && variant !== 'compact' ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onOpenOutfitInDressTester(); }}
+            className="w-full rounded-xl bg-gradient-to-r from-fuchsia-600/80 to-cyan-600/75 py-2.5 text-[12px] font-bold uppercase tracking-[0.15em] text-white shadow-[0_4px_20px_rgba(168,85,247,0.25)] transition hover:from-fuchsia-500/90 hover:to-cyan-500/85 hover:shadow-[0_6px_28px_rgba(168,85,247,0.38)]"
+          >
+            ✦ Montar Look no Provador
+          </button>
+        ) : null}
+
         {actions.length ? <CompactCardActionBar actions={actions} /> : null}
       </div>
     </section>
