@@ -44,6 +44,8 @@ export default function DressTesterView() {
   const [stageError, setStageError] = useState<string | null>(null);
   const [outfitCache, setOutfitCache] = useState<Record<string, string>>({});
   const [fitScore, setFitScore] = useState<FitScoreResult | null>(null);
+  const [shoesBgRemovedUrl, setShoesBgRemovedUrl] = useState<string | null>(null);
+  const [shoesBgProcessing, setShoesBgProcessing] = useState(false);
 
   const sessionPayloadApplied = useRef(false);
   const searchParams = useSearchParams();
@@ -138,6 +140,27 @@ export default function DressTesterView() {
     setFitScore(null);
   }, [outfit]);
 
+  // Trigger background removal for shoes when they change
+  useEffect(() => {
+    const shoes = outfit.shoes;
+    if (!shoes) { setShoesBgRemovedUrl(null); return; }
+    // Use existing tryOn2dImageUrl if it was processed as a bg-removed overlay
+    if (shoes.tryOn2dImageUrl) { setShoesBgRemovedUrl(shoes.tryOn2dImageUrl); return; }
+    let cancelled = false;
+    setShoesBgProcessing(true);
+    setShoesBgRemovedUrl(null);
+    fetch('/api/dress-tester/remove-bg', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pieceId: shoes.pieceId, imageUrl: shoes.imageUrl }),
+    })
+      .then((r) => r.json() as Promise<{ bgRemovedUrl: string | null; error: string | null }>)
+      .then(({ bgRemovedUrl }) => { if (!cancelled && bgRemovedUrl) setShoesBgRemovedUrl(bgRemovedUrl); })
+      .catch(() => { /* fall back to raw image */ })
+      .finally(() => { if (!cancelled) setShoesBgProcessing(false); });
+    return () => { cancelled = true; };
+  }, [outfit.shoes?.pieceId]);
+
   const runOutfitTryOn = useCallback(async () => {
     if (!mannequin || !mannequinImageAbsoluteUrl) return;
 
@@ -163,10 +186,16 @@ export default function DressTesterView() {
 
     setProcessing(true);
     try {
+      // Build shoes overlay payload if shoes are equipped and bg-removed
+      const shoesBbox = mannequin.slots.shoes?.bbox;
+      const shoesOverlay = (shoesBgRemovedUrl && shoesBbox)
+        ? { bgRemovedUrl: shoesBgRemovedUrl, bbox: shoesBbox }
+        : undefined;
+
       const response = await fetch('/api/dress-tester/try-on-2d-multi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mannequinImageUrl: mannequinImageAbsoluteUrl, items }),
+        body: JSON.stringify({ mannequinImageUrl: mannequinImageAbsoluteUrl, items, shoesOverlay }),
       });
       const payload = await response.json() as { status: string; resultImageUrl: string | null; error?: string };
       if (!response.ok || payload.status !== 'completed' || !payload.resultImageUrl) {
@@ -247,8 +276,9 @@ export default function DressTesterView() {
                   unoptimized
                   priority
                 />
-                {/* Shoes 2D overlay — Fashn.ai does not support footwear */}
-                {outfit.shoes && !processing && (() => {
+                {/* Shoes preview overlay — shown on mannequin base only (before try-on).
+                    After try-on, shoes are baked into stageImageUrl by the server. */}
+                {outfit.shoes && !processing && !stageImageUrl && (() => {
                   const bbox = mannequin.slots.shoes?.bbox;
                   if (!bbox) return null;
                   const cw = mannequin.canvasWidth;
@@ -263,13 +293,19 @@ export default function DressTesterView() {
                         height: `${(bbox.h / ch) * 100}%`,
                       }}
                     >
-                      <Image
-                        src={outfit.shoes.imageUrl}
-                        alt={outfit.shoes.name}
-                        fill
-                        className="object-contain"
-                        unoptimized
-                      />
+                      {shoesBgProcessing ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        </div>
+                      ) : (
+                        <Image
+                          src={shoesBgRemovedUrl ?? outfit.shoes.imageUrl}
+                          alt={outfit.shoes.name}
+                          fill
+                          className="object-contain opacity-70"
+                          unoptimized
+                        />
+                      )}
                     </div>
                   );
                 })()}
