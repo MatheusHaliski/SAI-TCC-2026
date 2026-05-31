@@ -224,7 +224,7 @@ export default function DressTesterView() {
             />
             {stageImageUrl && (
               <FitScorePanel
-                key={stageImageUrl}
+                key={stageImageUrl + '|' + filledSlots.join(',')}
                 pieces={fitScorePieces}
                 filledSlots={filledSlots}
                 mannequin={selectedMannequin}
