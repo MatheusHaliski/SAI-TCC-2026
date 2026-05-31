@@ -44,6 +44,8 @@ export default function DressTesterView() {
   const [stageError, setStageError] = useState<string | null>(null);
   const [outfitCache, setOutfitCache] = useState<Record<string, string>>({});
   const [fitScore, setFitScore] = useState<FitScoreResult | null>(null);
+  const [shoesBgRemovedUrl, setShoesBgRemovedUrl] = useState<string | null>(null);
+  const [shoesBgProcessing, setShoesBgProcessing] = useState(false);
 
   const sessionPayloadApplied = useRef(false);
   const searchParams = useSearchParams();
@@ -137,6 +139,27 @@ export default function DressTesterView() {
   useEffect(() => {
     setFitScore(null);
   }, [outfit]);
+
+  // Trigger background removal for shoes when they change
+  useEffect(() => {
+    const shoes = outfit.shoes;
+    if (!shoes) { setShoesBgRemovedUrl(null); return; }
+    // Use existing tryOn2dImageUrl if it was processed as a bg-removed overlay
+    if (shoes.tryOn2dImageUrl) { setShoesBgRemovedUrl(shoes.tryOn2dImageUrl); return; }
+    let cancelled = false;
+    setShoesBgProcessing(true);
+    setShoesBgRemovedUrl(null);
+    fetch('/api/dress-tester/remove-bg', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pieceId: shoes.pieceId, imageUrl: shoes.imageUrl }),
+    })
+      .then((r) => r.json() as Promise<{ bgRemovedUrl: string | null; error: string | null }>)
+      .then(({ bgRemovedUrl }) => { if (!cancelled && bgRemovedUrl) setShoesBgRemovedUrl(bgRemovedUrl); })
+      .catch(() => { /* fall back to raw image */ })
+      .finally(() => { if (!cancelled) setShoesBgProcessing(false); });
+    return () => { cancelled = true; };
+  }, [outfit.shoes?.pieceId]);
 
   const runOutfitTryOn = useCallback(async () => {
     if (!mannequin || !mannequinImageAbsoluteUrl) return;
@@ -253,6 +276,7 @@ export default function DressTesterView() {
                   if (!bbox) return null;
                   const cw = mannequin.canvasWidth;
                   const ch = mannequin.canvasHeight;
+                  const shoesImgUrl = shoesBgRemovedUrl ?? outfit.shoes.imageUrl;
                   return (
                     <div
                       className="absolute pointer-events-none"
@@ -263,13 +287,19 @@ export default function DressTesterView() {
                         height: `${(bbox.h / ch) * 100}%`,
                       }}
                     >
-                      <Image
-                        src={outfit.shoes.imageUrl}
-                        alt={outfit.shoes.name}
-                        fill
-                        className="object-contain"
-                        unoptimized
-                      />
+                      {shoesBgProcessing ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        </div>
+                      ) : (
+                        <Image
+                          src={shoesImgUrl}
+                          alt={outfit.shoes.name}
+                          fill
+                          className="object-contain"
+                          unoptimized
+                        />
+                      )}
                     </div>
                   );
                 })()}
