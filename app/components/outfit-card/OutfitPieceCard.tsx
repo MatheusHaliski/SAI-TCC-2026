@@ -16,17 +16,25 @@ interface OutfitPieceCardProps {
   compact?: boolean;
   /** @deprecated Use the built-in modal instead. Kept for callers not yet migrated. */
   onViewPieceCard?: () => void;
+  onOpenInDressTester?: () => void;
   /** schemeId needed to persist like toggles. Omit to run optimistic-only. */
   schemeId?: string;
 }
 
-export default function OutfitPieceCard({ piece, compact = false, onOpenInDressTester }: OutfitPieceCardProps) {
+export default function OutfitPieceCard({ piece, compact = false, onOpenInDressTester, onViewPieceCard }: OutfitPieceCardProps) {
   const [launching, setLaunching] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [pending, setPending] = useState(false);
+
   const pieceName = piece.name?.trim() || 'Unnamed Piece';
   const brandName = piece.brand?.trim() || 'Brand not specified';
   const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
-  const categoryLabel = piece.category ?? 'Standard';
   const pieceTypeLabel = piece.pieceType || 'Garment';
+  const tier = piece.category ?? 'Standard';
+  const baseQuality = piece.baseQuality ?? 2.5;
+  const likes = piece.likes ?? 0;
+  const computed = computeQualityStars(baseQuality, likes);
 
   const handleExperiment = (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
@@ -38,6 +46,13 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
     }, 400);
   };
 
+  const handleToggleLike = () => {
+    if (pending) return;
+    setPending(true);
+    setLiked((prev: boolean) => !prev);
+    setTimeout(() => setPending(false), 500);
+  };
+
   return (
     <article
       className={`group relative overflow-hidden rounded-2xl border border-cyan-200/45 bg-[linear-gradient(145deg,rgba(59,130,246,0.34)_0%,rgba(20,184,166,0.3)_52%,rgba(6,182,212,0.26)_100%)] ${compact ? 'p-3' : 'p-4'} backdrop-blur-[14px] shadow-[0_10px_30px_rgba(2,6,23,0.36)] transition duration-300 hover:scale-[1.02] hover:border-cyan-100/70 hover:shadow-[0_16px_42px_rgba(34,211,238,0.24)] ${FILTER_GLOW_LINE} ${GLOW_LINE}`}
@@ -45,7 +60,6 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.28)_0%,rgba(255,255,255,0)_44%),linear-gradient(130deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0)_48%,rgba(14,116,144,0.2)_100%)] opacity-90" />
       <div aria-hidden className="pointer-events-none absolute inset-[1px] rounded-2xl border border-cyan-100/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),inset_0_0_38px_rgba(8,145,178,0.2)]" />
 
-      {/* Launch flash overlay */}
       {launching && (
         <div
           aria-hidden
@@ -59,7 +73,7 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 space-y-0.5">
             <p className={`truncate text-sm font-semibold ${TEXT_GLOW}`}>{pieceName}</p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">{pieceType}</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">{pieceTypeLabel}</p>
           </div>
           <TierChip tier={tier} />
         </div>
@@ -86,6 +100,8 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
               />
               <QualityBadge baseQuality={baseQuality} likes={likes} />
             </div>
+          </div>
+        ) : null}
 
         {onOpenInDressTester ? (
           <button
