@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { wardrobeItemId: string } },
+  { params }: { params: Promise<{ wardrobeItemId: string }> },
 ) {
-  const { wardrobeItemId } = params;
+  const { wardrobeItemId } = await params;
   const userId = request.nextUrl.searchParams.get('userId')?.trim() || request.headers.get('x-user-id') || '';
 
   if (!wardrobeItemId) return NextResponse.json({ error: 'wardrobeItemId is required' }, { status: 400 });

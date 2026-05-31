@@ -2,15 +2,22 @@
 
 import { useState } from 'react';
 import { OutfitPiece, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
-import WearstyleChips from '@/app/components/outfit-card/WearstyleChips';
-import VisualToken from '@/app/components/outfit-card/VisualToken';
+import { computeQualityStars } from '@/app/lib/pieces/quality';
 import BrandBadge from '@/app/components/outfit-card/BrandBadge';
+import TierChip from '@/app/components/outfit-card/badges/TierChip';
+import LikesBadge from '@/app/components/outfit-card/badges/LikesBadge';
+import QualityBadge from '@/app/components/outfit-card/badges/QualityBadge';
+import QualityRail from '@/app/components/outfit-card/badges/QualityRail';
+import PieceCardModal from '@/app/components/outfit-card/PieceCardModal';
 import { FILTER_GLOW_LINE, GLOW_LINE, TEXT_GLOW } from '@/app/lib/uiToken';
 
 interface OutfitPieceCardProps {
   piece: OutfitPiece;
   compact?: boolean;
-  onOpenInDressTester?: () => void;
+  /** @deprecated Use the built-in modal instead. Kept for callers not yet migrated. */
+  onViewPieceCard?: () => void;
+  /** schemeId needed to persist like toggles. Omit to run optimistic-only. */
+  schemeId?: string;
 }
 
 export default function OutfitPieceCard({ piece, compact = false, onOpenInDressTester }: OutfitPieceCardProps) {
@@ -48,21 +55,37 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
       )}
 
       <div className="relative z-[1] space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex items-center gap-2">
-            <p className={`truncate pr-1 text-sm font-semibold ${TEXT_GLOW}`}>{pieceName}</p>
+        {/* Header row — name + tier */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 space-y-0.5">
+            <p className={`truncate text-sm font-semibold ${TEXT_GLOW}`}>{pieceName}</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">{pieceType}</p>
           </div>
-          <VisualToken type="category" value={pieceTypeLabel} compact />
+          <TierChip tier={tier} />
         </div>
 
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <BrandBadge brandName={brandName} brandLogoUrl={brandLogoUrl} variant="compact" />
-          </div>
-          <VisualToken type="rarity" value={categoryLabel} compact />
-        </div>
+        {/* Brand */}
+        <BrandBadge brandName={brandName} brandLogoUrl={brandLogoUrl} variant="compact" />
 
-        {!compact ? <WearstyleChips wearstyles={piece.wearstyles} pieceType={piece.pieceType} /> : null}
+        {/* Community signal section */}
+        {!compact ? (
+          <div className="space-y-2 pt-1">
+            <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/50">
+              Community Signal
+              <span className="ml-2 text-white/35">
+                base {baseQuality.toFixed(1)} · {computed > baseQuality ? `+${(computed - baseQuality).toFixed(1)} likes` : 'no boost yet'}
+              </span>
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <LikesBadge
+                likes={likes}
+                liked={liked}
+                onToggle={handleToggleLike}
+                disabled={pending}
+              />
+              <QualityBadge baseQuality={baseQuality} likes={likes} />
+            </div>
 
         {onOpenInDressTester ? (
           <button
@@ -78,7 +101,20 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
             {launching ? '✦ Abrindo Provador...' : '✦ Experimentar'}
           </button>
         ) : null}
+
+        {/* Action button */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setModalOpen(true); onViewPieceCard?.(); }}
+          className="mt-1 w-full rounded-lg border border-cyan-300/50 bg-cyan-500/15 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/30 hover:border-cyan-200/70"
+        >
+          Visualizar card da peça
+        </button>
       </div>
+
+      {modalOpen ? (
+        <PieceCardModal piece={piece} onClose={() => setModalOpen(false)} />
+      ) : null}
     </article>
   );
 }

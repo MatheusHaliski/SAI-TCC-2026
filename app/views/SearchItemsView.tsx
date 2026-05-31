@@ -34,6 +34,7 @@ type SchemePieceSnapshot = {
   category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
   pieceType: string;
   wearstyles: string[];
+  expressao?: string;
 };
 
 type UserPreview = { user_id: string; name: string; username: string; descriptor: string; avatarUrl?: string };
@@ -99,6 +100,7 @@ export default function SearchItemsView() {
         pieceType: piece.pieceType || SLOT_PREVIEW_DEFAULTS[piece.slot].pieceType,
         category: piece.category || SLOT_PREVIEW_DEFAULTS[piece.slot].category,
         wearstyles: piece.wearstyles?.length ? piece.wearstyles : SLOT_PREVIEW_DEFAULTS[piece.slot].wearstyles,
+        expressao: piece.expressao,
       }));
 
       const brands = [...new Set(pieces.map((piece) => piece.brand).filter(Boolean))].slice(0, 4);
