@@ -45,9 +45,14 @@ export default function HomeView({ onNavigate }: HomeViewProps) {
   const navigate = (route: AppRoute) => {
     if (onNavigate) { onNavigate(route); return; }
     const paths: Record<AppRoute, string> = {
+      'home': '/',
       'my-wardrobe': '/my-wardrobe',
       'create-my-scheme': '/create-my-scheme',
       'explore-scheme': '/explore-scheme',
+      'autopilot': '/autopilot',
+      'my-photos': '/my-photos',
+      'future-topics': '/future-topics',
+      'maison': '/maison',
       'profile': '/profile',
       'profile-settings': '/profile/settings',
       'search-items': '/search-items',

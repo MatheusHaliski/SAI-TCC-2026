@@ -29,7 +29,7 @@ interface Props {
 }
 
 export default function OutfitSlotsPanel({ outfit, activeSlot, onSelectSlot, onRemovePiece, onTryOn, processing }: Props) {
-  const aiSlots: OutfitSlot[] = ['upper', 'lower', 'shoes'];
+  const aiSlots: OutfitSlot[] = ['upper', 'lower'];
   const filledAiSlots = aiSlots.filter((s) => outfit[s]).length;
   const totalFilled = SLOT_ORDER.filter((s) => outfit[s]).length;
   const canTryOn = filledAiSlots >= 1 && !processing;
