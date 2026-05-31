@@ -9,7 +9,14 @@ import {
   STYLE_TAG_SYNONYMS,
 } from '@/app/lib/outfit-piece-options';
 
-type WardrobeItem = { wardrobe_item_id: string; name: string; piece_type: string };
+type WardrobeItem = {
+  wardrobe_item_id: string;
+  name: string;
+  piece_type: string;
+  image_url?: string | null;
+  normalized_2d_preview_url?: string | null;
+  raw_upload_image_url?: string | null;
+};
 
 const tokenize = (value: string) =>
   value
@@ -98,26 +105,63 @@ export function mapAiInterpretationToManualForm(params: {
   wardrobeItems: WardrobeItem[];
 }) {
   const slotAssignments: Partial<Record<OutfitSlotKey, string | null>> = {};
-  const aiSlotOptions: Record<OutfitSlotKey, Array<{ value: string; label: string }>> = {
-    upper: [],
-    lower: [],
-    shoes: [],
-    accessory: [],
+  const aiSlotOptions: Record<OutfitSlotKey, Array<{ value: string; label: string; imageUrl?: string }>> = {
+    upper: [], lower: [], shoes: [], accessory: [],
   };
 
+  /* ── 1. Try to match AI detected items to wardrobe ── */
   params.interpretation.items.forEach((item, index) => {
     const slot = normalizeDetectedPieceType(item.piece_type) ?? normalizeDetectedPieceType(item.display_label);
     if (!slot) return;
 
-    const inventoryMatch = params.wardrobeItems.find((wardrobeItem) =>
-      wardrobeItem.name.toLowerCase().includes(item.display_label.toLowerCase()),
+    /* First try: exact name match in wardrobe */
+    let inventoryMatch = params.wardrobeItems.find((w) =>
+      w.name.toLowerCase().includes(item.display_label.toLowerCase()) ||
+      item.display_label.toLowerCase().includes(w.name.toLowerCase()),
     );
 
+    /* Second try: match by piece_type */
+    if (!inventoryMatch) {
+      const aliases = SLOT_TYPE_ALIASES[slot] ?? [];
+      inventoryMatch = params.wardrobeItems.find((w) =>
+        aliases.some((alias) => w.piece_type?.toLowerCase().includes(alias)),
+      );
+    }
+
     const aiOptionId = `suggested:${slot}:ai-${index + 1}`;
-    aiSlotOptions[slot].push({ value: aiOptionId, label: item.display_label });
+    aiSlotOptions[slot].push({
+      value: inventoryMatch?.wardrobe_item_id ?? aiOptionId,
+      label: inventoryMatch?.name ?? item.display_label,
+      imageUrl: inventoryMatch?.normalized_2d_preview_url || inventoryMatch?.raw_upload_image_url || inventoryMatch?.image_url || undefined,
+    });
 
     if (!slotAssignments[slot]) {
-      slotAssignments[slot] = inventoryMatch?.wardrobe_item_id || aiOptionId;
+      slotAssignments[slot] = inventoryMatch?.wardrobe_item_id ?? aiOptionId;
+    }
+  });
+
+  /* ── 2. Fallback: if no items detected, fill slots from wardrobe by piece_type ── */
+  const slots: OutfitSlotKey[] = ['upper', 'lower', 'shoes', 'accessory'];
+  slots.forEach((slot) => {
+    if (slotAssignments[slot]) return; /* already filled */
+
+    const aliases = SLOT_TYPE_ALIASES[slot] ?? [];
+    const match = params.wardrobeItems.find((w) =>
+      aliases.some((alias) => w.piece_type?.toLowerCase().includes(alias)),
+    );
+
+    if (match) {
+      slotAssignments[slot] = match.wardrobe_item_id;
+      aiSlotOptions[slot].push({
+        value: match.wardrobe_item_id,
+        label: match.name,
+        imageUrl: match.normalized_2d_preview_url || match.raw_upload_image_url || match.image_url || undefined,
+      });
+    } else {
+      /* absolute fallback: suggested placeholder */
+      const aiOptionId = `suggested:${slot}:ai-fallback`;
+      slotAssignments[slot] = aiOptionId;
+      aiSlotOptions[slot].push({ value: aiOptionId, label: `Sugestão de ${slot}` });
     }
   });
 

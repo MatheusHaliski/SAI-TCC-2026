@@ -1,5 +1,6 @@
 import { FashionAIProvider, AnalyzeImageInput, CardDescriptionInput, TesterFitInput, BackgroundPromptInput, SearchIntentInput } from './providers/types';
 import { GoogleProvider } from './providers/googleProvider';
+import { OpenAIProvider } from './providers/openaiProvider';
 import { FallbackProvider } from './providers/fallbackProvider';
 
 class GoogleFashionAI {
@@ -7,19 +8,29 @@ class GoogleFashionAI {
 
   constructor() {
     const isGoogleEnabled = process.env.GOOGLE_AI_PROVIDER_ENABLED === 'true';
-    const hasApiKey = !!process.env.GOOGLE_AI_API_KEY;
+    const hasGoogleKey   = !!process.env.GOOGLE_AI_API_KEY?.trim();
+    const hasOpenAIKey   = !!process.env.OPENAI_API_KEY?.trim();
 
-    if (isGoogleEnabled && hasApiKey) {
+    if (isGoogleEnabled && hasGoogleKey) {
       try {
         this.provider = new GoogleProvider();
-        console.log('[GoogleFashionAI] Initialized with GoogleProvider');
+        console.log('[FashionAI] Initialized with GoogleProvider');
       } catch (error) {
-        console.error('[GoogleFashionAI] Failed to initialize GoogleProvider, falling back to mock.', error);
-        this.provider = new FallbackProvider();
+        console.error('[FashionAI] GoogleProvider failed, trying OpenAI...', error);
+        if (hasOpenAIKey) {
+          this.provider = new OpenAIProvider();
+          console.log('[FashionAI] Initialized with OpenAIProvider (Google fallback)');
+        } else {
+          this.provider = new FallbackProvider();
+          console.warn('[FashionAI] Initialized with FallbackProvider (mock data)');
+        }
       }
+    } else if (hasOpenAIKey) {
+      this.provider = new OpenAIProvider();
+      console.log('[FashionAI] Initialized with OpenAIProvider');
     } else {
-      console.log('[GoogleFashionAI] Google AI disabled or API key missing. Initialized with FallbackProvider');
       this.provider = new FallbackProvider();
+      console.warn('[FashionAI] No AI provider configured — using mock data. Set GOOGLE_AI_API_KEY or OPENAI_API_KEY in .env.local');
     }
   }
 
@@ -44,5 +55,4 @@ class GoogleFashionAI {
   }
 }
 
-// Export a singleton instance
 export const googleFashionAI = new GoogleFashionAI();

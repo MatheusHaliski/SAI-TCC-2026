@@ -23,8 +23,8 @@ export default function ContextSectionMenu({ title, sections, selectedSection, o
     }, [activeSection, sections]);
 
     return (
-        <aside className="sa-surface-context rounded-2xl border-8 border-orange-500 p-4 backdrop-blur-sm lg:sticky lg:top-0 lg:h-fit">
-            <p className="mb-4 text-xl font-semibold uppercase tracking-[0.2em] text-white">
+        <aside style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:"1rem", padding:"1rem", boxShadow:"var(--shadow-sm)" }} className="lg:sticky lg:top-0 lg:h-fit">
+            <p style={{ marginBottom:"1rem", fontSize:"0.8125rem", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.12em", color:"var(--muted-foreground)" }}>
                 {title}
             </p>
             <ul className="space-y-2">
