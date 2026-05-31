@@ -4,13 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import ContentRouter from './ContentRouter';
 import { AppRoute, NAV_ITEMS, PATH_TO_ROUTE, ROUTE_TITLES } from '@/app/lib/stylist-shell';
-import { ensureSharedAccessToken } from '@/app/lib/accessTokenShare';
 import { getAuthSessionToken } from '@/app/lib/authSession';
 import { applyPageBackgroundConfig, ensureSavedPageBackgroundConfig, applySurfaceColorConfig, readSurfaceColorConfig } from '@/app/lib/pageBackground';
 import { applyTheme, readSavedTheme } from '@/app/lib/theme';
 import AddPieceModal from '@/app/components/pieces/AddPieceModal';
 import { DiscoverySearchProvider } from '@/app/components/shell/DiscoverySearchContext';
-import TopBar from './TopBar';
 
 /* ── Icons ── */
 const SparklesIcon = () => (
@@ -20,7 +18,6 @@ const SparklesIcon = () => (
     <path d="M19 13l.75 2.25L22 16l-2.25.75L19 19l-.75-2.25L16 16l2.25-.75z"/>
   </svg>
 );
-
 const HomeIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
     <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/>
@@ -87,7 +84,6 @@ const MenuIcon = () => (
   </svg>
 );
 
-/* ── Route → icon / label map (extended with prototype routes) ── */
 interface SidebarItem {
   route: AppRoute;
   label: string;
@@ -95,16 +91,16 @@ interface SidebarItem {
 }
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
-  { route: 'my-wardrobe',      label: 'Guarda-roupa',  icon: <WardrobeIcon /> },
-  { route: 'create-my-scheme', label: 'Criar Look',    icon: <CreateIcon /> },
-  { route: 'explore-scheme',   label: 'Looks Salvos',  icon: <HeartIcon /> },
-  { route: 'autopilot',        label: 'Autopiloto',    icon: <AIIcon /> },
-  { route: 'dress-tester',     label: 'Provador 2D',   icon: <DressIcon /> },
-  { route: 'my-photos',        label: 'Minhas Fotos',  icon: <ExploreIcon /> },
-  { route: 'search-items',     label: 'Explorar',      icon: <SearchIcon /> },
-  { route: 'search-pieces',    label: 'Peças Públicas',icon: <HeartIcon /> },
-  { route: 'profile',          label: 'Perfil',        icon: <HomeIcon /> },
-  { route: 'profile-settings', label: 'Configurações', icon: <SettingsIcon /> },
+  { route: 'my-wardrobe',      label: 'Guarda-roupa',   icon: <WardrobeIcon /> },
+  { route: 'create-my-scheme', label: 'Criar Look',     icon: <CreateIcon /> },
+  { route: 'explore-scheme',   label: 'Looks Salvos',   icon: <HeartIcon /> },
+  { route: 'autopilot',        label: 'Autopiloto',     icon: <AIIcon /> },
+  { route: 'dress-tester',     label: 'Provador 2D',    icon: <DressIcon /> },
+  { route: 'my-photos',        label: 'Minhas Fotos',   icon: <ExploreIcon /> },
+  { route: 'search-items',     label: 'Explorar',       icon: <SearchIcon /> },
+  { route: 'search-pieces',    label: 'Peças Públicas', icon: <HeartIcon /> },
+  { route: 'profile',          label: 'Perfil',         icon: <HomeIcon /> },
+  { route: 'profile-settings', label: 'Configurações',  icon: <SettingsIcon /> },
 ];
 
 export default function HomeShell() {
@@ -112,10 +108,10 @@ export default function HomeShell() {
   const currentRoute: AppRoute = PATH_TO_ROUTE[pathname]
     ?? (pathname.startsWith('/profile/') ? (pathname.endsWith('/settings') ? 'profile-settings' : 'profile') : 'my-wardrobe');
 
-  const [mounted, setMounted] = useState(false);
-  const [activeRoute, setActiveRoute] = useState<AppRoute>(currentRoute);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+  const [mounted,      setMounted]      = useState(false);
+  const [activeRoute,  setActiveRoute]  = useState<AppRoute>(currentRoute);
+  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [isDark,       setIsDark]       = useState(false);
   const [addPieceOpen, setAddPieceOpen] = useState(false);
   const router = useRouter();
 
@@ -154,36 +150,32 @@ export default function HomeShell() {
     router.replace('/authview');
   };
 
-  /* Antes do mount: skeleton idêntico no server e client — evita hydration mismatch */
+  /* ── Skeleton: usa a mesma classe CSS do aside real → sem hydration mismatch ── */
   if (!mounted) {
     return (
-      <div style={{ display:'flex', minHeight:'100vh' }}>
-        <aside style={{ width:'16rem', flexShrink:0, background:'linear-gradient(160deg,#4c1d95 0%,#6d28d9 40%,#be185d 100%)' }} />
-        <main style={{ flex:1 }} />
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <aside className="sa-surface-sidebar" style={{ width: '16rem' }} />
+        <main style={{ flex: 1 }} />
       </div>
     );
   }
 
   /* ── Sidebar content ── */
   const SidebarContent = () => (
-    <div style={{ display:'flex', flexDirection:'column', height:'100%', padding:'1.5rem 1rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1.5rem 1rem' }}>
       {/* Logo */}
-      <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'2rem', paddingBottom:'1.5rem', borderBottom:'1px solid rgba(255,255,255,0.15)' }}>
-        <div style={{
-          width:'2.5rem', height:'2.5rem', borderRadius:'0.625rem',
-          background:'rgba(255,255,255,0.2)', backdropFilter:'blur(8px)',
-          display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0
-        }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+        <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '0.625rem', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <SparklesIcon />
         </div>
         <div>
-          <div style={{ color:'#fff', fontWeight:700, fontSize:'1.1rem', lineHeight:1.2 }}>Fashion AI</div>
-          <div style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.75rem' }}>Seu estilista pessoal</div>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem', lineHeight: 1.2 }}>Fashion AI</div>
+          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>Seu estilista pessoal</div>
         </div>
       </div>
 
       {/* Nav items */}
-      <nav style={{ flex:1, display:'flex', flexDirection:'column', gap:'0.375rem' }}>
+      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
         {SIDEBAR_ITEMS.map(item => {
           const active = activeRoute === item.route;
           return (
@@ -191,63 +183,57 @@ export default function HomeShell() {
               key={item.route}
               onClick={() => handleRoute(item.route)}
               style={{
-                display:'flex', alignItems:'center', gap:'0.75rem',
-                padding:'0.75rem 1rem', borderRadius:'0.75rem', border:'none',
-                cursor:'pointer', textAlign:'left', width:'100%', transition:'all 0.15s',
-                background: active
-                  ? 'linear-gradient(120deg,rgba(255,255,255,0.25),rgba(255,255,255,0.12))'
-                  : 'transparent',
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                padding: '0.75rem 1rem', borderRadius: '0.75rem', border: 'none',
+                cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.15s',
+                background: active ? 'linear-gradient(120deg,rgba(255,255,255,0.25),rgba(255,255,255,0.12))' : 'transparent',
                 color: active ? '#ffffff' : 'rgba(255,255,255,0.7)',
                 boxShadow: active ? '0 2px 12px rgba(0,0,0,0.15)' : 'none',
                 borderLeft: active ? '3px solid rgba(255,255,255,0.8)' : '3px solid transparent',
               }}
             >
-              <span style={{ flexShrink:0, display:'flex' }}>{item.icon}</span>
-              <span style={{ fontSize:'0.9rem', fontWeight: active ? 600 : 400 }}>{item.label}</span>
+              <span style={{ flexShrink: 0, display: 'flex' }}>{item.icon}</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: active ? 600 : 400 }}>{item.label}</span>
             </button>
           );
         })}
       </nav>
 
       {/* Bottom actions */}
-      <div style={{ borderTop:'1px solid rgba(255,255,255,0.15)', paddingTop:'1rem', display:'flex', flexDirection:'column', gap:'0.25rem' }}>
-        <button
-          onClick={toggleDark}
-          style={{ display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.625rem 1rem', borderRadius:'0.75rem', border:'none', background:'transparent', color:'rgba(255,255,255,0.7)', cursor:'pointer', width:'100%', textAlign:'left', transition:'all 0.15s' }}
-        >
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+        <button onClick={toggleDark}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 1rem', borderRadius: '0.75rem', border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', width: '100%', textAlign: 'left', transition: 'all 0.15s' }}>
           {isDark ? <SunIcon /> : <MoonIcon />}
-          <span style={{ fontSize:'0.875rem' }}>{isDark ? 'Modo Claro' : 'Modo Escuro'}</span>
+          <span style={{ fontSize: '0.875rem' }}>{isDark ? 'Modo Claro' : 'Modo Escuro'}</span>
         </button>
-        <button
-          onClick={handleLogout}
-          style={{ display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.625rem 1rem', borderRadius:'0.75rem', border:'none', background:'transparent', color:'rgba(255,100,100,0.9)', cursor:'pointer', width:'100%', textAlign:'left', transition:'all 0.15s' }}
-        >
+        <button onClick={handleLogout}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 1rem', borderRadius: '0.75rem', border: 'none', background: 'transparent', color: 'rgba(255,100,100,0.9)', cursor: 'pointer', width: '100%', textAlign: 'left', transition: 'all 0.15s' }}>
           <LogOutIcon />
-          <span style={{ fontSize:'0.875rem' }}>Sair da Conta</span>
+          <span style={{ fontSize: '0.875rem' }}>Sair da Conta</span>
         </button>
       </div>
     </div>
   );
 
   return (
-    <div className="sa-home-shell" style={{ display:'flex', minHeight:'100vh' }}>
-      {/* ── Sidebar (desktop) ── */}
+    <div className="sa-home-shell" style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Sidebar desktop */}
       <aside
         className="sa-surface-sidebar"
-        style={{ width:'16rem', flexShrink:0, display:'flex', flexDirection:'column', position:'sticky', top:0, height:'100vh', zIndex:30 }}
+        style={{ width: '16rem', flexShrink: 0, display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh', zIndex: 30 }}
       >
         <SidebarContent />
       </aside>
 
-      {/* ── Mobile overlay ── */}
+      {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          style={{ position:'fixed', inset:0, zIndex:40, background:'rgba(0,0,0,0.6)', backdropFilter:'blur(4px)' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
           onClick={() => setMobileOpen(false)}
         >
           <aside
             className="sa-surface-sidebar"
-            style={{ width:'16rem', height:'100%', position:'absolute', left:0, top:0 }}
+            style={{ width: '16rem', height: '100%', position: 'absolute', left: 0, top: 0 }}
             onClick={e => e.stopPropagation()}
           >
             <SidebarContent />
@@ -255,39 +241,33 @@ export default function HomeShell() {
         </div>
       )}
 
-      {/* ── Main content ── */}
+      {/* Main content */}
       <DiscoverySearchProvider>
-        <main style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0, overflow:'hidden' }}>
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           {/* Topbar */}
-          <div style={{ position:'sticky', top:0, zIndex:20 }}>
-            <div className="sa-surface-topbar" style={{ padding:'0.875rem 1.5rem', display:'flex', alignItems:'center', gap:'1rem' }}>
-              {/* Mobile menu button */}
+          <div style={{ position: 'sticky', top: 0, zIndex: 20 }}>
+            <div className="sa-surface-topbar" style={{ padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <button
                 onClick={() => setMobileOpen(true)}
-                style={{ display:'flex', padding:'0.375rem', borderRadius:'0.5rem', border:'none', background:'var(--accent)', color:'var(--foreground)', cursor:'pointer' }}
+                style={{ display: 'flex', padding: '0.375rem', borderRadius: '0.5rem', border: 'none', background: 'var(--accent)', color: 'var(--foreground)', cursor: 'pointer' }}
               >
                 <MenuIcon />
               </button>
-              <h2 style={{ fontSize:'1.1rem', fontWeight:700, flex:1, margin:0 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, flex: 1, margin: 0 }}>
                 {ROUTE_TITLES[activeRoute]}
               </h2>
               <button
                 onClick={() => setAddPieceOpen(true)}
-                style={{
-                  display:'flex', alignItems:'center', gap:'0.5rem',
-                  padding:'0.5rem 1rem', borderRadius:'0.5rem', border:'none',
-                  background:'var(--brand-gradient)', color:'#fff', cursor:'pointer',
-                  fontSize:'0.875rem', fontWeight:600
-                }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: 'linear-gradient(135deg,#7c3aed,#db2777)', color: '#fff', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}
               >
-                <span style={{ fontSize:'1.1rem' }}>+</span>
+                <span style={{ fontSize: '1.1rem' }}>+</span>
                 Adicionar Peça
               </button>
             </div>
           </div>
 
           {/* Page content */}
-          <section style={{ flex:1, overflowY:'auto', padding:'1.5rem' }}>
+          <section style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
             <ContentRouter route={activeRoute} />
           </section>
         </main>
