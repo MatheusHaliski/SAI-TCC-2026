@@ -58,9 +58,7 @@ export default function ForgotPasswordPage() {
                 {/* Logo */}
                 <div style={{ display:"flex", alignItems:"center", gap:"0.75rem", marginBottom:"2rem", justifyContent:"center" }}>
                     <div style={{ width:"3rem", height:"3rem", borderRadius:"0.875rem", background:"linear-gradient(135deg,#7c3aed,#db2777)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="white" strokeWidth="1.8">
-                            <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/>
-                        </svg>
+                        <img src="/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg" alt="sparkles" width="24" height="24" style={{ objectFit: 'cover', borderRadius: '4px' }} />
                     </div>
                     <div>
                         <div style={{ fontSize:"1.25rem", fontWeight:800 }}>Fashion AI</div>

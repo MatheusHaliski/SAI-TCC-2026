@@ -13,7 +13,7 @@ interface DashboardStat {
 }
 
 const ShirtIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" width="24" height="24"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>;
-const SparklesIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" width="24" height="24"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75z"/></svg>;
+const SparklesIcon = () => <img src="/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg" alt="sparkles" width="24" height="24" style={{ objectFit: 'cover', borderRadius: '4px' }} />;
 const HeartIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" width="24" height="24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>;
 const TrendIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" width="24" height="24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>;
 const ArrowRightIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>;
@@ -117,9 +117,7 @@ export default function HomeView({ onNavigate }: HomeViewProps) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '1rem', marginBottom: '2rem' }}>
         {/* AI action */}
         <div style={{ borderRadius: '1rem', padding: '2rem', background: 'linear-gradient(135deg,#7c3aed,#db2777)', color: '#fff' }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" width="32" height="32" style={{ marginBottom: '0.75rem' }}>
-            <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/>
-          </svg>
+          <img src="/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg" alt="sparkles" width="32" height="32" style={{ objectFit: 'cover', borderRadius: '6px', marginBottom: '0.75rem' }} />
           <h3 style={{ color: '#fff', fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.5rem' }}>Criar Look com IA</h3>
           <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
             Deixe nossa IA sugerir combinações perfeitas baseadas no seu estilo
