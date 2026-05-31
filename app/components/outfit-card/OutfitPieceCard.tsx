@@ -111,6 +111,7 @@ export default function OutfitPieceCard({ piece, compact = false, onOpenInDressT
           Visualizar card da peça
         </button>
       </div>
+      </div>
 
       {modalOpen ? (
         <PieceCardModal piece={piece} onClose={() => setModalOpen(false)} />
