@@ -67,3 +67,4 @@ Thumbs.db
 # Arquivos de chave pública/privada encontrados na raiz (risco de segurança)
 codelab-friendlyeats-web-main
 codelab-friendlyeats-web-main.pub
+tsconfig.tsbuildinfo
