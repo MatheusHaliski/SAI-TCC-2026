@@ -79,6 +79,11 @@ const MenuIcon = () => (
     <path d="M4 7h16M4 12h16M4 17h16"/>
   </svg>
 );
+const MaisonIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <rect x="3" y="11" width="18" height="10" rx="1"/><path d="M12 2l9 9H3z"/>
+  </svg>
+);
 
 interface SidebarItem {
   route: AppRoute;
@@ -95,6 +100,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { route: 'my-photos',        label: 'Minhas Fotos',   icon: <ExploreIcon /> },
   { route: 'search-items',     label: 'Explorar',       icon: <SearchIcon /> },
   { route: 'search-pieces',    label: 'Peças Públicas', icon: <HeartIcon /> },
+  { route: 'maison',           label: 'Maison',         icon: <MaisonIcon /> },
   { route: 'profile',          label: 'Perfil',         icon: <HomeIcon /> },
   { route: 'profile-settings', label: 'Configurações',  icon: <SettingsIcon /> },
 ];
@@ -213,9 +219,9 @@ export default function HomeShell() {
 
   return (
     <div className="sa-home-shell" style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar desktop */}
+      {/* Sidebar desktop — hidden on mobile via class */}
       <aside
-        className="sa-surface-sidebar"
+        className="sa-surface-sidebar sa-sidebar-desktop"
         style={{ width: '16rem', flexShrink: 0, display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh', zIndex: 30 }}
       >
         <SidebarContent />
@@ -243,9 +249,11 @@ export default function HomeShell() {
           {/* Topbar */}
           <div style={{ position: 'sticky', top: 0, zIndex: 20 }}>
             <div className="sa-surface-topbar" style={{ padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {/* Hamburger: visible only on mobile when sidebar is hidden */}
               <button
                 onClick={() => setMobileOpen(true)}
-                style={{ display: 'flex', padding: '0.375rem', borderRadius: '0.5rem', border: 'none', background: 'var(--accent)', color: 'var(--foreground)', cursor: 'pointer' }}
+                className="sa-hamburger-mobile"
+                style={{ display: 'none', padding: '0.375rem', borderRadius: '0.5rem', border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer' }}
               >
                 <MenuIcon />
               </button>
