@@ -25,8 +25,11 @@ export class OutfitCardAiService {
     const prompt = input.prompt.trim();
     const normalizedPrompt = prompt.toLowerCase().replace(/\s+/g, ' ');
 
+    /* ── Se não tem OPENAI_API_KEY, usa fallback heurístico direto ── */
     if (!process.env.OPENAI_API_KEY?.trim()) {
-      throw new ServiceError('OPENAI_API_KEY não configurada. Tente novamente mais tarde.', 503);
+      console.warn('outfit-card-ai: OPENAI_API_KEY não configurada — usando fallback heurístico.');
+      const fallback = buildOutfitCardDraftFromPrompt(prompt);
+      return { prompt, normalizedPrompt, ...fallback };
     }
 
     try {
@@ -51,16 +54,12 @@ export class OutfitCardAiService {
         warnings: raw.warnings,
       };
     } catch (error) {
-      console.warn('outfit-card-ai: using heuristic fallback', {
+      /* Qualquer erro da OpenAI → fallback heurístico, nunca quebra o fluxo */
+      console.warn('outfit-card-ai: erro na OpenAI, usando fallback heurístico', {
         error: error instanceof Error ? error.message : 'unknown',
       });
-
       const fallback = buildOutfitCardDraftFromPrompt(prompt);
-      return {
-        prompt,
-        normalizedPrompt,
-        ...fallback,
-      };
+      return { prompt, normalizedPrompt, ...fallback };
     }
   }
 }
