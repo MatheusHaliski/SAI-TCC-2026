@@ -120,6 +120,12 @@ export const CURATED_IMAGE_PICKER_OPTIONS = [
   { fileName: 'streetvibes.jpg' },
   { fileName: 'flw.jpg' },
   { fileName: 'mfui.jpg' },
+  { fileName: 'c1.png', label: 'Curated Visual C1' },
+  { fileName: 'c2.png', label: 'Curated Visual C2' },
+  { fileName: 'c3.png', label: 'Curated Visual C3' },
+  { fileName: 'c4.png', label: 'Curated Visual C4' },
+  { fileName: 'c5.png', label: 'Curated Visual C5' },
+  { fileName: 'c6.png', label: 'Curated Visual C6' },
 ].map(({ fileName, label }) => ({
   value: `image:${fileName}`,
   label: label || fileName,
