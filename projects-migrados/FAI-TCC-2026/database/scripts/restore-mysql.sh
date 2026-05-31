@@ -5,8 +5,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-ENV_FILE="${PROJECT_DIR}/../../.env"
+PROJECT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
+ENV_FILE="${PROJECT_DIR}/.env"
 
 if [[ -f "$ENV_FILE" ]]; then
   set -a
