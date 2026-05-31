@@ -203,10 +203,8 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
           pieces={data.pieces}
           compact={variant === 'compact'}
           schemeId={data.schemeId}
-          onViewPieceCard={onViewPieceCard}
           onOpenInDressTester={onOpenInDressTester}
         />
-        <OutfitPieceList pieces={data.pieces} compact={variant === 'compact'} onOpenInDressTester={onOpenInDressTester} />
 
         {onOpenOutfitInDressTester && variant !== 'compact' ? (
           <button
