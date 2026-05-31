@@ -136,7 +136,6 @@ export default function CreateMySchemeView() {
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [outfitBackgroundConfig, setOutfitBackgroundConfig] = useState<OutfitBackgroundConfig>(DEFAULT_BACKGROUND_CONFIG);
-  const [backgroundStudioOpen, setBackgroundStudioOpen] = useState(false);
   const [cardSkin, setCardSkin] = useState<CardSkinId | undefined>(undefined);
   const [descriptionOverride, setDescriptionOverride] = useState('');
   const [titleFontFamily, setTitleFontFamily] = useState('Inter, Segoe UI, sans-serif');
@@ -638,21 +637,10 @@ export default function CreateMySchemeView() {
           ]}
         />
 
-        <FancySelect
-          value={outfitBackgroundConfig.background_mode}
-          onChange={() => setBackgroundStudioOpen(true)}
-          placeholder="Background Studio"
-          options={[
-            { value: 'solid', label: 'Open Background Studio · Solid' },
-            { value: 'gradient', label: 'Open Background Studio · Gradient' },
-            { value: 'ai_artwork', label: 'Open Background Studio · AI Artwork' },
-          ]}
-        />
-
         <button
           type="button"
           className={`${slotCardClassName} md:col-span-2`}
-          onClick={() => setBackgroundStudioOpen(true)}
+          onClick={() => setSelectedSection('Card Background')}
         >
           <p className="text-xs uppercase tracking-[0.13em] text-muted-foreground">Background</p>
           <div className="mt-2 flex items-center gap-3">
@@ -668,9 +656,9 @@ export default function CreateMySchemeView() {
               return { backgroundImage: `url(${resolved.ai_artwork?.image_url || '/models/model-default.jpeg'})`, backgroundSize: 'cover' };
             })()} />
             <div className="text-left">
-              <p className="text-sm font-semibold text-white">Open Studio</p>
+              <p className="text-sm font-semibold text-white">Abrir Estúdio de Fundo</p>
               <p className="text-xs text-muted-foreground">
-                Current mode: {outfitBackgroundConfig.background_mode.replace('_', ' ')}
+                Modo atual: {outfitBackgroundConfig.background_mode.replace('_', ' ')}
               </p>
             </div>
           </div>
@@ -867,17 +855,25 @@ export default function CreateMySchemeView() {
 
 
   const renderCardBackground = () => (
-    <SectionBlock
-      title="Card Background"
-      subtitle="Ajuste cor, gradiente ou IA e persista no draft atual."
-      className="sa-surface-header h-auto border-border"
-    >
-      <div className="mt-4">
-        <button type="button" className={primaryButtonClassName} onClick={() => setBackgroundStudioOpen(true)}>
-          Open Background Studio
-        </button>
-      </div>
-    </SectionBlock>
+    <OutfitBackgroundStudioModal
+      asPage
+      value={outfitBackgroundConfig}
+      onClose={() => setSelectedSection('Slots Review')}
+      onApply={(nextBackgroundConfig) => {
+        setOutfitBackgroundConfig(nextBackgroundConfig);
+        setSelectedSection('Save & Generate');
+      }}
+      outfitMetadata={{
+        style,
+        occasion,
+        palette,
+        mood,
+        brands: selectedBrand?.name ? [selectedBrand.name] : undefined,
+      }}
+      previewCardData={buildGeneratedOutfitCardData()}
+      selectedCardSkin={cardSkin}
+      onSelectSkin={setCardSkin}
+    />
   );
 
   const renderSaveGenerate = () => (
@@ -940,27 +936,6 @@ export default function CreateMySchemeView() {
         <SaiModalAlert message={alertMessage} onConfirm={() => setAlertMessage(null)} />
       ) : null}
 
-      {backgroundStudioOpen ? (
-        <OutfitBackgroundStudioModal
-          value={outfitBackgroundConfig}
-          onClose={() => setBackgroundStudioOpen(false)}
-          onApply={(nextBackgroundConfig) => {
-            setOutfitBackgroundConfig(nextBackgroundConfig);
-            setAlertMessage(`Background applied: ${nextBackgroundConfig.background_mode} · shape ${nextBackgroundConfig.shape || 'none'}`);
-            setBackgroundStudioOpen(false);
-          }}
-          outfitMetadata={{
-            style,
-            occasion,
-            palette,
-            mood,
-            brands: selectedBrand?.name ? [selectedBrand.name] : undefined,
-          }}
-          previewCardData={buildGeneratedOutfitCardData()}
-          selectedCardSkin={cardSkin}
-          onSelectSkin={setCardSkin}
-        />
-      ) : null}
     </>
   );
 }
