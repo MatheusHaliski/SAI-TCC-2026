@@ -28,8 +28,10 @@ npm install
 cp .env.example .env
 # Editar .env com os valores reais (nunca commitar)
 
-# 4. Criar banco MySQL
-mysql -u root -p < database/migrations/000_create_database_and_users.sql
+# 4. Criar banco MySQL e usuários (usa senhas do .env — não executa o .sql diretamente)
+./database/scripts/setup-users.sh
+
+# 5. Executar migrations de schema
 mysql -u root -p fai_tcc_2026 < database/migrations/001_create_users.sql
 mysql -u root -p fai_tcc_2026 < database/migrations/002_create_brands_markets.sql
 mysql -u root -p fai_tcc_2026 < database/migrations/003_create_wardrobe.sql
