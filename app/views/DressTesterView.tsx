@@ -186,10 +186,16 @@ export default function DressTesterView() {
 
     setProcessing(true);
     try {
+      // Build shoes overlay payload if shoes are equipped and bg-removed
+      const shoesBbox = mannequin.slots.shoes?.bbox;
+      const shoesOverlay = (shoesBgRemovedUrl && shoesBbox)
+        ? { bgRemovedUrl: shoesBgRemovedUrl, bbox: shoesBbox }
+        : undefined;
+
       const response = await fetch('/api/dress-tester/try-on-2d-multi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mannequinImageUrl: mannequinImageAbsoluteUrl, items }),
+        body: JSON.stringify({ mannequinImageUrl: mannequinImageAbsoluteUrl, items, shoesOverlay }),
       });
       const payload = await response.json() as { status: string; resultImageUrl: string | null; error?: string };
       if (!response.ok || payload.status !== 'completed' || !payload.resultImageUrl) {
@@ -270,13 +276,13 @@ export default function DressTesterView() {
                   unoptimized
                   priority
                 />
-                {/* Shoes 2D overlay — Fashn.ai does not support footwear */}
-                {outfit.shoes && !processing && (() => {
+                {/* Shoes preview overlay — shown on mannequin base only (before try-on).
+                    After try-on, shoes are baked into stageImageUrl by the server. */}
+                {outfit.shoes && !processing && !stageImageUrl && (() => {
                   const bbox = mannequin.slots.shoes?.bbox;
                   if (!bbox) return null;
                   const cw = mannequin.canvasWidth;
                   const ch = mannequin.canvasHeight;
-                  const shoesImgUrl = shoesBgRemovedUrl ?? outfit.shoes.imageUrl;
                   return (
                     <div
                       className="absolute pointer-events-none"
@@ -293,10 +299,10 @@ export default function DressTesterView() {
                         </div>
                       ) : (
                         <Image
-                          src={shoesImgUrl}
+                          src={shoesBgRemovedUrl ?? outfit.shoes.imageUrl}
                           alt={outfit.shoes.name}
                           fill
-                          className="object-contain"
+                          className="object-contain opacity-70"
                           unoptimized
                         />
                       )}
