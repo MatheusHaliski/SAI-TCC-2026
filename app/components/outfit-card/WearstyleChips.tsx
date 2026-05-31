@@ -11,11 +11,13 @@ export default function WearstyleChips({ wearstyles, pieceType }: WearstyleChips
   const resolvedWearstyles = normalized.length ? normalized : inferWearstylesByPieceType(pieceType);
 
   return (
-    <div className="space-y-1.5">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-white/60">WearStyle Badges</p>
-      <div className="flex flex-wrap gap-2">
-        {resolvedWearstyles.map((wearstyle) => (
-          <VisualToken key={wearstyle} type="wearstyle" value={wearstyle} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+      <p style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.55)', margin: 0 }}>
+        WearStyle Badges
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+        {resolvedWearstyles.map(ws => (
+          <VisualToken key={ws} type="wearstyle" value={ws} />
         ))}
       </div>
     </div>

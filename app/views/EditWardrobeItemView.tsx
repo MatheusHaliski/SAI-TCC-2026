@@ -106,7 +106,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
   });
 
   const inputClassName =
-    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
+    'w-full rounded-xl border border-border bg-accent px-3 py-2 text-sm text-white placeholder:text-muted-foreground shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
 
   useEffect(() => {
     const load = async () => {
@@ -278,7 +278,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <p className="text-sm text-white/50">Carregando peça...</p>
+        <p className="text-sm text-muted-foreground">Carregando peça...</p>
       </div>
     );
   }
@@ -304,7 +304,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         <SectionBlock title="Imagem da Peça" subtitle="Atualize a foto desta peça do guarda-roupa.">
           <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
             {imagePreview && (
-              <div className="relative h-44 w-44 shrink-0 overflow-hidden rounded-2xl border border-white/20">
+              <div className="relative h-44 w-44 shrink-0 overflow-hidden rounded-2xl border border-border">
                 <Image
                   src={imagePreview}
                   alt={form.name || 'Peça'}
@@ -320,7 +320,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               </div>
             )}
             <div className="flex-1 space-y-2">
-              <label className="block text-sm text-white/70">
+              <label className="block text-sm text-muted-foreground">
                 Substituir imagem
               </label>
               <input
@@ -328,7 +328,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
                 accept="image/*"
                 onChange={handleImageChange}
                 disabled={uploadingImage}
-                className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-600 file:to-fuchsia-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:brightness-110 disabled:opacity-50"
+                className="w-full rounded-xl border border-border bg-accent px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-purple-600 file:to-pink-500 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:brightness-110 disabled:opacity-50"
               />
               <p className="text-xs text-white/40">Deixe em branco para manter a imagem atual.</p>
             </div>
@@ -339,7 +339,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         <SectionBlock title="Informações Básicas" subtitle="Nome, tipo e marca da peça.">
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
-              <label className="block text-sm text-white/70">Nome da Peça *</label>
+              <label className="block text-sm text-muted-foreground">Nome da Peça *</label>
               <input
                 type="text"
                 value={form.name}
@@ -351,7 +351,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Tipo de Peça</label>
+              <label className="block text-sm text-muted-foreground">Tipo de Peça</label>
               <FancySelect
                 options={PIECE_TYPE_OPTIONS}
                 value={form.piece_type}
@@ -361,7 +361,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Marca</label>
+              <label className="block text-sm text-muted-foreground">Marca</label>
               <FancySelect
                 options={brandOptions}
                 value={form.brand_id}
@@ -376,7 +376,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         <SectionBlock title="Atributos Visuais" subtitle="Cor, material e tags de estilo da peça.">
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Cor</label>
+              <label className="block text-sm text-muted-foreground">Cor</label>
               <FancySelect
                 options={COLOR_OPTIONS.map((c) => ({ value: c, label: c }))}
                 value={form.color}
@@ -386,7 +386,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Material</label>
+              <label className="block text-sm text-muted-foreground">Material</label>
               <FancySelect
                 options={MATERIAL_OPTIONS.map((m) => ({ value: m, label: m }))}
                 value={form.material}
@@ -396,7 +396,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Tags de Estilo</label>
+              <label className="block text-sm text-muted-foreground">Tags de Estilo</label>
               <input
                 type="text"
                 value={form.style_tags}
@@ -408,7 +408,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Ocasiões</label>
+              <label className="block text-sm text-muted-foreground">Ocasiões</label>
               <input
                 type="text"
                 value={form.occasion_tags}
@@ -425,7 +425,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         <SectionBlock title="Sugestões de Tags" subtitle="Clique para adicionar rapidamente ao campo de estilos ou ocasiões.">
           <div className="mt-3 space-y-3">
             <div>
-              <p className="mb-1.5 text-xs text-white/50">Estilos</p>
+              <p className="mb-1.5 text-xs text-muted-foreground">Estilos</p>
               <div className="flex flex-wrap gap-1.5">
                 {STYLE_TAG_OPTIONS.map((tag) => (
                   <button
@@ -436,7 +436,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
                       if (current.includes(tag)) return prev;
                       return { ...prev, style_tags: [...current, tag].join(', ') };
                     })}
-                    className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-xs text-white/70 hover:border-violet-400/50 hover:text-white transition"
+                    className="rounded-full border border-border bg-accent px-2 py-0.5 text-xs text-muted-foreground hover:border-violet-400/50 hover:text-white transition"
                   >
                     {tag}
                   </button>
@@ -444,7 +444,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               </div>
             </div>
             <div>
-              <p className="mb-1.5 text-xs text-white/50">Ocasiões</p>
+              <p className="mb-1.5 text-xs text-muted-foreground">Ocasiões</p>
               <div className="flex flex-wrap gap-1.5">
                 {OCCASION_TAG_OPTIONS.map((tag) => (
                   <button
@@ -455,7 +455,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
                       if (current.includes(tag)) return prev;
                       return { ...prev, occasion_tags: [...current, tag].join(', ') };
                     })}
-                    className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-xs text-white/70 hover:border-fuchsia-400/50 hover:text-white transition"
+                    className="rounded-full border border-border bg-accent px-2 py-0.5 text-xs text-muted-foreground hover:border-fuchsia-400/50 hover:text-white transition"
                   >
                     {tag}
                   </button>
@@ -469,7 +469,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         <SectionBlock title="Descrição e Preferências" subtitle="Notas adicionais e marcação de favorito.">
           <div className="mt-4 space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Descrição</label>
+              <label className="block text-sm text-muted-foreground">Descrição</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
@@ -479,14 +479,14 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               />
             </div>
 
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/20 bg-white/5 px-4 py-3 hover:bg-white/10 transition">
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-accent px-4 py-3 hover:bg-accent transition">
               <input
                 type="checkbox"
                 checked={form.is_favorite}
                 onChange={(e) => setForm((prev) => ({ ...prev, is_favorite: e.target.checked }))}
                 className="h-4 w-4 rounded accent-violet-500"
               />
-              <span className="text-sm text-white/80">★ Marcar como favorita</span>
+              <span className="text-sm text-foreground">★ Marcar como favorita</span>
             </label>
           </div>
         </SectionBlock>
@@ -497,7 +497,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             <button
               type="submit"
               disabled={saving || uploadingImage}
-              className="flex-1 rounded-xl border border-white/20 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition hover:scale-[1.01] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex-1 rounded-xl border border-border bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition hover:scale-[1.01] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? 'Salvando...' : 'Salvar Alterações'}
             </button>
@@ -509,7 +509,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               className={`rounded-xl border px-4 py-2 text-sm font-medium transition disabled:opacity-60 ${
                 confirmDelete
                   ? 'border-rose-400/60 bg-rose-500/20 text-rose-200 hover:bg-rose-500/30'
-                  : 'border-white/20 bg-white/5 text-white/70 hover:border-rose-400/40 hover:text-rose-300'
+                  : 'border-border bg-accent text-muted-foreground hover:border-rose-400/40 hover:text-rose-300'
               }`}
             >
               {deleting ? 'Removendo...' : confirmDelete ? 'Confirmar Remoção' : 'Remover Peça'}
@@ -519,7 +519,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               <button
                 type="button"
                 onClick={() => setConfirmDelete(false)}
-                className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/60 hover:text-white transition"
+                className="rounded-xl border border-border bg-accent px-4 py-2 text-sm text-muted-foreground hover:text-white transition"
               >
                 Cancelar
               </button>
