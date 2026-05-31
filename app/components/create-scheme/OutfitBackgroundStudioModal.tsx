@@ -235,6 +235,12 @@ const CURATED_IMAGE_PICKER_OPTIONS = [
   { fileName: 'streetvibes.jpg', label: 'Neon Graffiti' },
   { fileName: 'flw.jpg', label: 'Paper Florals' },
   { fileName: 'mfui.jpg', label: 'Fuji Woodblock' },
+  { fileName: 'c1.png', label: 'Geometric Landscapes' },
+  { fileName: 'c2.png', label: 'Pop Culture Grid' },
+  { fileName: 'c3.png', label: 'Tropical Architecture' },
+  { fileName: 'c4.png', label: 'Urban Fashion Collage' },
+  { fileName: 'c5.png', label: 'Abstract Fashion Portrait' },
+  { fileName: 'c6.png', label: 'Coastal Village Escape' },
 ].map(({ fileName, label }) => ({
   value: `image:${fileName}`,
   label: label || fileName,
