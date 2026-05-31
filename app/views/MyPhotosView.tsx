@@ -62,28 +62,28 @@ function PhotoDetailModal({ photo, onClose }: PhotoDetailModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-card p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="sa-premium-gradient-surface w-full max-w-lg rounded-3xl border border-white/20 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.55)]"
+        className="sa-premium-gradient-surface w-full max-w-lg rounded-3xl border border-border p-5 shadow-[0_20px_80px_rgba(0,0,0,0.55)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold text-white">{photo.label}</h3>
-            <p className="text-sm text-white/60">{photo.sublabel}</p>
+            <p className="text-sm text-muted-foreground">{photo.sublabel}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-lg border border-white/25 px-3 py-1 text-sm text-white hover:border-fuchsia-300/60"
+            className="shrink-0 rounded-lg border border-border px-3 py-1 text-sm text-white hover:border-fuchsia-300/60"
           >
             Fechar
           </button>
         </div>
 
-        <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-white/10">
+        <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border">
           <Image
             src={photo.url}
             alt={photo.label}
@@ -201,9 +201,9 @@ export default function MyPhotosView() {
           { label: 'Peças', value: pieceCount, color: 'text-violet-300' },
           { label: 'Looks', value: outfitCount, color: 'text-fuchsia-300' },
         ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
+          <div key={label} className="rounded-2xl border border-border bg-accent p-4 text-center">
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
-            <p className="mt-1 text-xs text-white/50">{label}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{label}</p>
           </div>
         ))}
       </div>
@@ -211,8 +211,8 @@ export default function MyPhotosView() {
       {/* Search + Filter */}
       <SectionBlock title="Explorar Fotos" subtitle="Filtre e busque pelas suas imagens cadastradas.">
         <div className="mt-4 space-y-3">
-          <label className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
-            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-white/60" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <label className="flex items-center gap-3 rounded-2xl border border-border bg-accent px-4 py-3">
+            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="1.8">
               <circle cx="11" cy="11" r="6" />
               <path d="m20 20-4.2-4.2" />
             </svg>
@@ -221,7 +221,7 @@ export default function MyPhotosView() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nome ou tipo..."
-              className="w-full bg-transparent text-sm text-white placeholder:text-white/50 focus:outline-none"
+              className="w-full bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none"
             />
           </label>
 
@@ -234,7 +234,7 @@ export default function MyPhotosView() {
                 className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
                   activeCategory === tab.key
                     ? 'border-violet-400/70 bg-violet-500/20 text-violet-100 shadow-[0_0_12px_rgba(139,92,246,0.2)]'
-                    : 'border-white/20 bg-white/5 text-white/60 hover:border-white/35 hover:text-white'
+                    : 'border-border bg-accent text-muted-foreground hover:border-white/35 hover:text-white'
                 }`}
               >
                 {tab.label}
@@ -251,11 +251,11 @@ export default function MyPhotosView() {
       >
         {loading ? (
           <div className="mt-6 flex items-center justify-center py-12">
-            <p className="text-sm text-white/50">Carregando galeria...</p>
+            <p className="text-sm text-muted-foreground">Carregando galeria...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 py-12 text-center">
-            <p className="text-sm text-white/50">
+          <div className="mt-6 rounded-2xl border border-border bg-accent py-12 text-center">
+            <p className="text-sm text-muted-foreground">
               {photos.length === 0
                 ? 'Nenhuma foto encontrada. Adicione peças ou crie looks para ver sua galeria.'
                 : 'Nenhuma foto corresponde aos filtros selecionados.'}
@@ -268,7 +268,7 @@ export default function MyPhotosView() {
                 key={photo.id}
                 type="button"
                 onClick={() => setSelectedPhoto(photo)}
-                className="group relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition hover:border-violet-400/40 hover:shadow-[0_0_16px_rgba(139,92,246,0.15)]"
+                className="group relative aspect-square overflow-hidden rounded-2xl border border-border bg-accent transition hover:border-violet-400/40 hover:shadow-[0_0_16px_rgba(139,92,246,0.15)]"
               >
                 <Image
                   src={photo.url}
@@ -279,7 +279,7 @@ export default function MyPhotosView() {
                 />
                 <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-transparent to-transparent p-2 opacity-0 transition group-hover:opacity-100">
                   <p className="truncate text-[11px] font-medium text-white leading-tight">{photo.label}</p>
-                  <p className="truncate text-[10px] text-white/60 leading-tight">{photo.sublabel}</p>
+                  <p className="truncate text-[10px] text-muted-foreground leading-tight">{photo.sublabel}</p>
                 </div>
                 <div className="absolute right-1.5 top-1.5">
                   <span

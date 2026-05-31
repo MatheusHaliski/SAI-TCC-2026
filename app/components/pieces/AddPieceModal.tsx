@@ -13,15 +13,15 @@ export default function AddPieceModal({ open, onClose }: AddPieceModalProps) {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="sa-premium-gradient-surface w-full max-w-5xl rounded-3xl border border-white/20 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.55)]"
+        className="sa-premium-gradient-surface w-full max-w-5xl rounded-3xl border border-border p-5 shadow-[0_20px_80px_rgba(0,0,0,0.55)]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-white">Add Piece</h2>
-            <p className="text-sm text-white/70">Quick creator action to publish a new wardrobe piece.</p>
+            <p className="text-sm text-muted-foreground">Quick creator action to publish a new wardrobe piece.</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg border border-white/25 px-3 py-1 text-sm text-white hover:border-fuchsia-300/60">
+          <button type="button" onClick={onClose} className="rounded-lg border border-border px-3 py-1 text-sm text-white hover:border-fuchsia-300/60">
             Close
           </button>
         </div>
