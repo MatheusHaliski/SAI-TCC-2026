@@ -120,6 +120,12 @@ export const CURATED_IMAGE_PICKER_OPTIONS = [
   { fileName: 'streetvibes.jpg' },
   { fileName: 'flw.jpg' },
   { fileName: 'mfui.jpg' },
+  { fileName: 'c1.png', label: 'Geometric Landscape Collage' },
+  { fileName: 'c2.png', label: 'Vibrant Fashion Icons Grid' },
+  { fileName: 'c3.png', label: 'Colorful Mountain Village' },
+  { fileName: 'c4.png', label: 'Editorial Fashion Mosaic' },
+  { fileName: 'c5.png', label: 'Urban Streetwear Editorial' },
+  { fileName: 'c6.png', label: 'Tropical Coastal Village' },
 ].map(({ fileName, label }) => ({
   value: `image:${fileName}`,
   label: label || fileName,
