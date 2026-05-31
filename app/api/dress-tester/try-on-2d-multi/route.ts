@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminStorageBucket } from '@/app/lib/firebaseAdmin';
+import { paintShoesOntoImage } from '@/app/backend/services/ShoesPaintingService';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -19,6 +20,11 @@ interface GarmentItem {
   garmentId: string;
   garmentImageUrl: string;
   slotType: OutfitSlot;
+}
+
+interface ShoeOverlayInput {
+  bgRemovedUrl: string;
+  bbox: { x: number; y: number; w: number; h: number };
 }
 
 async function removeBgAndUpload(
@@ -104,7 +110,7 @@ async function runFashnTryOn(modelImageUrl: string, garmentImageUrl: string, cat
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as { mannequinImageUrl: string; items: GarmentItem[] };
+    const body = await request.json() as { mannequinImageUrl: string; items: GarmentItem[]; shoesOverlay?: ShoeOverlayInput };
 
     if (!body.mannequinImageUrl || !Array.isArray(body.items) || body.items.length < 1) {
       return NextResponse.json({ status: 'error', resultImageUrl: null, error: 'Invalid payload: mannequinImageUrl and at least 1 item required.' }, { status: 400 });
@@ -149,7 +155,33 @@ export async function POST(request: NextRequest) {
       currentModelUrl = await runFashnTryOn(currentModelUrl, garmentUrls[i], fashnCategory);
     }
 
-    return NextResponse.json({ status: 'completed', resultImageUrl: currentModelUrl, error: null });
+    // Paint shoes onto the fashn.ai result if a bg-removed shoe was provided
+    let finalResultUrl = currentModelUrl;
+    if (body.shoesOverlay?.bgRemovedUrl && body.shoesOverlay.bbox) {
+      try {
+        console.log('[try-on-2d-multi] painting shoes onto result');
+        const [baseRes, shoeRes] = await Promise.all([
+          fetch(currentModelUrl),
+          fetch(body.shoesOverlay.bgRemovedUrl),
+        ]);
+        if (baseRes.ok && shoeRes.ok) {
+          const [baseBuffer, shoeBuffer] = await Promise.all([
+            baseRes.arrayBuffer().then(Buffer.from),
+            shoeRes.arrayBuffer().then(Buffer.from),
+          ]);
+          const paintedBuffer = await paintShoesOntoImage(baseBuffer, shoeBuffer, body.shoesOverlay.bbox);
+          const paintedPath = `dress-tester-temp/painted-${ts}.jpg`;
+          const paintedFile = bucket.file(paintedPath);
+          await paintedFile.save(paintedBuffer, { metadata: { contentType: 'image/jpeg' } });
+          await paintedFile.makePublic();
+          finalResultUrl = `https://storage.googleapis.com/${bucket.name}/${paintedPath}`;
+        }
+      } catch (paintErr) {
+        console.error('[try-on-2d-multi] shoes painting failed, using unpainted result', paintErr);
+      }
+    }
+
+    return NextResponse.json({ status: 'completed', resultImageUrl: finalResultUrl, error: null });
   } catch (error) {
     console.error('[try-on-2d-multi] error', error);
     return NextResponse.json({ status: 'error', resultImageUrl: null, error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
