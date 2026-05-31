@@ -2,7 +2,8 @@
 
 ## Migração e Preservação
 
-- [ ] Projeto antigo (`Scores`) identificado e preservado
+- [x] Projeto antigo identificado — Firestore `(default)` em `FuncionariosListaApp2025`
+- [ ] Coleções do `(default)` mapeadas para tabelas MySQL (confirmar nomes no Console)
 - [x] Novo projeto criado (`Scores-p-2026`)
 - [x] Novo banco MySQL definido (`scores_p_2026`)
 - [ ] Banco MySQL `scores_p_2026` criado em produção
@@ -16,8 +17,9 @@
 
 - [x] Migrations criadas (000 a 003)
 - [ ] Migrations executadas em produção
-- [ ] Banco de origem do projeto Scores identificado
-- [ ] Backup do banco de origem gerado
+- [x] Banco de origem identificado — Firestore `(default)` em `FuncionariosListaApp2025`
+- [ ] Coleções do `(default)` listadas e documentadas
+- [ ] Backup (exportação JSON) do Firestore `(default)` gerado
 - [ ] Checksum do backup gerado
 - [ ] Backup não versionado no Git
 - [ ] Dados importados para MySQL

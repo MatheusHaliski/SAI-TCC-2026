@@ -5,10 +5,26 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | Scores-p-2026 |
-| **Banco antigo** | A identificar no projeto funcionarioslistaapp2025 |
-| **Banco novo** | MySQL `scores_p_2026` |
+| **Projeto Firebase de origem** | `FuncionariosListaApp2025` |
+| **Banco Firestore de origem** | `(default)` |
+| **Banco MySQL de destino** | `scores_p_2026` |
 | **Data da migração** | ______/______/________ |
 | **Responsável** | _________________________________ |
+
+## Coleções Firestore de Origem (a confirmar)
+
+As coleções do projeto Scores estão no banco `(default)` do Firebase `FuncionariosListaApp2025`.
+Os nomes exatos precisam ser confirmados no Firebase Console antes da migração.
+
+| Coleção Firestore (origem) | Tabela MySQL (destino) | Status |
+|---|---|---|
+| A confirmar | users | Pendente |
+| A confirmar | user_sessions | Pendente |
+| A confirmar | score_categories | Pendente |
+| A confirmar | scores | Pendente |
+| A confirmar | score_history | Pendente |
+| A confirmar | reports | Pendente |
+| — | security_audit_logs | Pendente |
 
 ## Tabelas Migradas
 
@@ -24,8 +40,10 @@
 
 ## Pendências
 
-- [ ] Identificar banco de dados original do projeto Scores
-- [ ] Gerar backup do banco original
+- [ ] Acessar Firebase Console → FuncionariosListaApp2025 → Firestore → banco `(default)`
+- [ ] Listar e documentar os nomes reais das coleções do Scores
+- [ ] Exportar dados do banco `(default)` para JSON (usar mesma service account do FAI)
+- [ ] Mapear coleções Firestore → tabelas MySQL
 - [ ] Executar migrations no novo banco
 - [ ] Importar dados
 - [ ] Validar contagem de registros
@@ -34,4 +52,4 @@
 
 ## Status Final
 
-**Status:** 🔴 Pendente — banco de origem ainda não identificado neste repositório.
+**Status:** 🟡 Em andamento — origem identificada (`(default)` em `FuncionariosListaApp2025`), coleções a confirmar.
