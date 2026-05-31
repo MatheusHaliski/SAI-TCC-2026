@@ -235,7 +235,7 @@ export default function DressTesterView() {
         </SectionBlock>
 
         {/* ── Center: Stage + Save Look ── */}
-        <SectionBlock title="Provador" subtitle="Render com IA">
+        <SectionBlock title="Provador">
           <div className="mt-4 space-y-4">
             <div className="rounded-3xl border border-white/20 bg-black/35 p-4">
               <div className="relative mx-auto aspect-[2/3] w-full max-w-[420px] overflow-hidden rounded-2xl bg-gradient-to-b from-black/30 to-black/65">
@@ -247,6 +247,18 @@ export default function DressTesterView() {
                   unoptimized
                   priority
                 />
+                {/* Shoes overlay — Fashn.ai doesn't support shoes; rendered as a positioned layer */}
+                {outfit.shoes?.imageUrl && stageImageUrl && !processing ? (
+                  <div className="absolute bottom-[3%] left-1/2 -translate-x-1/2 w-[42%] h-[14%]">
+                    <Image
+                      src={outfit.shoes.imageUrl}
+                      alt="shoes"
+                      fill
+                      className="object-contain drop-shadow-lg"
+                      unoptimized
+                    />
+                  </div>
+                ) : null}
                 {processing ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 text-white">
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-fuchsia-400/30 border-t-fuchsia-400" />

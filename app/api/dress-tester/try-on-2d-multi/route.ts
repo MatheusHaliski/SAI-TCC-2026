@@ -9,7 +9,7 @@ type OutfitSlot = 'upper' | 'lower' | 'shoes' | 'accessory';
 const SLOT_TO_FASHN_CATEGORY: Record<OutfitSlot, FashnCategory | null> = {
   upper: 'tops',
   lower: 'bottoms',
-  shoes: 'bottoms',
+  shoes: null,
   accessory: null,
 };
 
