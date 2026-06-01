@@ -39,6 +39,7 @@ interface WardrobeItem {
   model_base_3d_url?: string | null;
   model_branded_3d_url?: string | null;
   isolated_piece_image_url?: string | null;
+  description?: string | null;
   model_status?: string;
   model_generation_error?: string | null;
   processingStartedAt?: string | null;
@@ -300,6 +301,8 @@ export default function MyWardrobeView() {
                       name={item.name}
                       imageUrl={item.image_url}
                       imageAssets={item.image_assets}
+                      isolatedPieceImageUrl={item.isolated_piece_image_url}
+                      description={item.description}
                       brand={item.brand}
                       pieceType={item.piece_type}
                       state={cardState}

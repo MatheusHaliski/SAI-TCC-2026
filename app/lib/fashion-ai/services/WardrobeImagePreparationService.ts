@@ -1,6 +1,7 @@
 import { WardrobeRepository } from '@/app/lib/fashion-ai/repositories/WardrobeRepository';
 import { WardrobeFitProfile, WardrobeItemDocument, WardrobePieceType, WardrobeTargetGender } from '@/app/lib/fashion-ai/types/wardrobe-fit';
 import { estimateGarmentAnchors } from '@/app/lib/fashion-ai/utils/garment-anchors';
+import { RemoveBgService } from '@/app/backend/services/RemoveBgService';
 
 const PROCESSING_VERSION = 'mvp-fitprofile-v1';
 const MALE_GENDER_TOKENS = ['male', 'masculino', 'man', 'men', 'masc'];
@@ -37,7 +38,10 @@ export class WardrobePreparationError extends Error {
 }
 
 export class WardrobeImagePreparationService {
-  constructor(private readonly wardrobeRepository = new WardrobeRepository()) {}
+  constructor(
+    private readonly wardrobeRepository = new WardrobeRepository(),
+    private readonly removeBgService = new RemoveBgService(),
+  ) {}
 
   async preparePieceForTester2D(pieceId: string): Promise<{ fitProfile: WardrobeFitProfile; debug: PreparationDebugInfo }> {
     console.info('[process-piece] loading wardrobe item', { pieceId });
@@ -73,6 +77,23 @@ export class WardrobeImagePreparationService {
       warnings.push('image_url_not_http_like');
     }
 
+    const preprocessedAssetUrl = piece.segmented_png_url?.trim()
+      || piece.normalized_2d_preview_url?.trim()
+      || (preparationStatus === 'ready'
+        ? (await this.removeBgService.removeBackground({
+            imageUrl,
+            storagePrefix: 'wardrobe-prepared-pieces',
+            fileNameSeed: pieceId,
+          }).catch(() => null))?.imageUrl
+        : null);
+
+    if (!preprocessedAssetUrl && this.removeBgService.isConfigured() && preparationStatus === 'ready') {
+      warnings.push('remove_bg_failed_using_original_image');
+    }
+    if (!preprocessedAssetUrl && !this.removeBgService.isConfigured() && preparationStatus === 'ready') {
+      warnings.push('remove_bg_not_configured_using_original_image');
+    }
+
     console.info('[process-piece] building fitProfile', {
       pieceId,
       inferredPieceType,
@@ -85,8 +106,7 @@ export class WardrobeImagePreparationService {
       targetGender: inferredTargetGender,
       preparationStatus,
       originalImageUrl: imageUrl,
-      // TODO: replace with transparent processed garment asset URL from segmentation/isolation pipeline.
-      preparedAssetUrl: preparationStatus === 'ready' ? imageUrl : null,
+      preparedAssetUrl: preparationStatus === 'ready' ? (preprocessedAssetUrl || imageUrl) : null,
       // TODO: replace with real generated mask URL when segmentation is available.
       preparedMaskUrl: null,
       compatibleMannequins,
