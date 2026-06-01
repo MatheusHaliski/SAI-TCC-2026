@@ -80,14 +80,12 @@ export default function ExploreSchemeView() {
   const [togglingId,      setTogglingId]      = useState<string | null>(null);
   const [selectedCard,    setSelectedCard]    = useState<OutfitCardData | null>(null);
   const [modalOpen,       setModalOpen]       = useState(false);
-  const [userIdDebug,     setUserIdDebug]     = useState<string>('');
 
   const resolvedUserId = useRef<string>('');
 
   useEffect(() => {
     const uid = resolveUserId();
     resolvedUserId.current = uid;
-    setUserIdDebug(uid || '(vazio — não encontrado)');
     try { const s = getLS(LS_FAVORITES);    if (s) setFavorites(JSON.parse(s));    } catch {}
     try { const s = getLS(LS_AVAILABILITY); if (s) setAvailability(JSON.parse(s)); } catch {}
     if (uid) {
@@ -206,12 +204,6 @@ export default function ExploreSchemeView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <PageHeader title="Cards de Look Salvos" subtitle="Gerencie looks por ocasião, preferência, favoritos e disponibilidade." />
-
-      {/* Debug userId */}
-      <div style={{ padding: '0.625rem 1rem', borderRadius: '0.625rem', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
-        🔍 <strong>Debug userId:</strong> <code style={{ background: 'var(--muted)', padding: '0.1rem 0.3rem', borderRadius: '0.25rem' }}>{userIdDebug}</code>
-        {!resolvedUserId.current && <span style={{ marginLeft: '0.5rem', color: '#ef4444', fontWeight: 700 }}>⚠️ userId vazio — favoritos serão salvos só no navegador</span>}
-      </div>
 
       {/* Filter pills */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--accent)', padding: '0.75rem', alignItems: 'center' }}>

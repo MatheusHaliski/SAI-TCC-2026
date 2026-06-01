@@ -25,6 +25,12 @@ interface BootstrapPayload {
 }
 
 type Outfit = Partial<Record<OutfitSlot, Tester2DWardrobeItem>>;
+type ShoesOverlayPayload = {
+  imageUrl: string;
+  bgRemovedUrl?: string | null;
+  bbox: { x: number; y: number; w: number; h: number };
+  canvas: { width: number; height: number };
+};
 
 const SLOT_ORDER: OutfitSlot[] = ['upper', 'lower', 'shoes', 'accessory'];
 
@@ -159,7 +165,7 @@ export default function DressTesterView() {
       .catch(() => { /* fall back to raw image */ })
       .finally(() => { if (!cancelled) setShoesBgProcessing(false); });
     return () => { cancelled = true; };
-  }, [outfit.shoes?.pieceId]);
+  }, [outfit.shoes]);
 
   const runOutfitTryOn = useCallback(async () => {
     if (!mannequin || !mannequinImageAbsoluteUrl) return;
@@ -173,7 +179,17 @@ export default function DressTesterView() {
         slotType: slot,
       }));
 
-    if (items.length === 0) return;
+    const shoesBbox = mannequin.slots.shoes?.bbox;
+    const shoesOverlay: ShoesOverlayPayload | undefined = outfit.shoes && shoesBbox
+      ? {
+          imageUrl: outfit.shoes.imageUrl,
+          bgRemovedUrl: shoesBgRemovedUrl,
+          bbox: shoesBbox,
+          canvas: { width: mannequin.canvasWidth, height: mannequin.canvasHeight },
+        }
+      : undefined;
+
+    if (items.length === 0 && !shoesOverlay) return;
 
     setStageError(null);
     setStageImageUrl('');
@@ -186,12 +202,6 @@ export default function DressTesterView() {
 
     setProcessing(true);
     try {
-      // Build shoes overlay payload if shoes are equipped and bg-removed
-      const shoesBbox = mannequin.slots.shoes?.bbox;
-      const shoesOverlay = (shoesBgRemovedUrl && shoesBbox)
-        ? { bgRemovedUrl: shoesBgRemovedUrl, bbox: shoesBbox }
-        : undefined;
-
       const response = await fetch('/api/dress-tester/try-on-2d-multi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -208,7 +218,7 @@ export default function DressTesterView() {
     } finally {
       setProcessing(false);
     }
-  }, [mannequin, mannequinImageAbsoluteUrl, outfit, selectedMannequin, outfitCache]);
+  }, [mannequin, mannequinImageAbsoluteUrl, outfit, shoesBgRemovedUrl, selectedMannequin, outfitCache]);
 
   const handleApplyPiece = useCallback((item: Tester2DWardrobeItem) => {
     setOutfit((prev) => ({ ...prev, [activeSlot]: item }));

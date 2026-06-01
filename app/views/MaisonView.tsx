@@ -363,7 +363,6 @@ function BrandPanel({ brand, onClose }: { brand: BrandData; onClose: () => void 
   const [activeTab, setActiveTab] = useState<'perfil' | 'pecas-iconicas' | 'estacoes' | 'plataforma'>('perfil');
 
   useEffect(() => {
-    setLoadingPieces(true);
     fetch(`/api/wardrobe-items?brand_id=${encodeURIComponent(brand.brand_id)}&limit=10`)
       .then((res) => (res.ok ? res.json() : { items: [] }))
       .then((data) => {
@@ -703,7 +702,7 @@ export default function MaisonView() {
         subtitle="Feed dedicado às marcas — categoria, público-alvo, peças icônicas, recomendações por estação e muito mais."
       />
 
-      <SectionBlock title="Marcas Registradas" subtitle="Todas as marcas ativas na plataforma SAI.">
+      <SectionBlock title="Marcas Registradas" subtitle="Todas as marcas ativas na plataforma FAI.">
         <label className="mt-4 flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
           <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-white" fill="none" stroke="currentColor" strokeWidth="1.8">
             <circle cx="11" cy="11" r="6" />
@@ -740,7 +739,12 @@ export default function MaisonView() {
                     key={brand.brand_id}
                     type="button"
                     onClick={() => setSelectedBrand(brand)}
-                    className="group flex flex-col gap-3 rounded-2xl border border-white/15 bg-white/5 p-4 text-left transition hover:border-white/30 hover:bg-white/10"
+                    className="group flex flex-col gap-3 rounded-2xl border border-white/15 p-4 text-left transition hover:border-white/35"
+                    style={{
+                      background: profile
+                        ? `linear-gradient(135deg, ${accentColor.replace('0.85', '0.24')} 0%, rgba(15,23,42,0.72) 58%, rgba(88,28,135,0.32) 100%)`
+                        : 'linear-gradient(135deg, rgba(30,41,59,0.86), rgba(88,28,135,0.3))',
+                    }}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <BrandBadge brandName={brand.name} brandLogoUrl={logoUrl} variant="default" />
@@ -797,21 +801,6 @@ export default function MaisonView() {
             </div>
           </>
         )}
-      </SectionBlock>
-
-      <SectionBlock title="Sobre o Maison" subtitle="O feed de identidade das marcas do Fashion AI.">
-        <div className="mt-3 space-y-2 text-sm text-white/65 leading-relaxed">
-          <p>
-            O <span className="font-semibold text-white/85">Maison</span> é o espaço dedicado às marcas do universo FAI.
-            Explore o perfil completo de cada grife: categoria de moda, público-alvo, top 10 peças icônicas,
-            recomendações por estação climática, paleta de cores e muito mais.
-          </p>
-          <p>
-            Clique em qualquer marca para acessar seu feed exclusivo com 4 abas: <span className="text-white/80">Perfil</span>,{' '}
-            <span className="text-white/80">Top 10 Peças</span>, <span className="text-white/80">Por Estação</span> e{' '}
-            <span className="text-white/80">Na Plataforma</span>.
-          </p>
-        </div>
       </SectionBlock>
     </div>
   );
