@@ -1,1 +1,69 @@
-node_modules
+# Dependências
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Build
+.next/
+dist/
+build/
+out/
+
+# Variáveis de ambiente — NUNCA versionar
+.env
+.env.local
+.env.production
+.env.development
+.env.staging
+.env.test
+
+# Chaves e credenciais — NUNCA versionar
+*.pem
+*.key
+*.p12
+*.pfx
+serviceAccount*.json
+firebase-adminsdk*.json
+keys/
+secrets/
+
+# Backups de banco — armazenar fora do repositório
+database/backups/*
+!database/backups/.gitkeep
+projects-migrados/*/database/backups/*
+!projects-migrados/*/database/backups/.gitkeep
+*.sql.gz
+*.sql.bz2
+*.dump
+*.dmp
+*_backup_*.sql
+
+# Dumps e exports do Firestore — nunca versionar dados reais
+database/backups/firebase-export/
+migration-report.json
+
+# Logs
+*.log
+logs/
+
+# Cache e build info
+.cache/
+.turbo/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Arquivos de chave pública/privada encontrados na raiz (risco de segurança)
+codelab-friendlyeats-web-main
+codelab-friendlyeats-web-main.pub

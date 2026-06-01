@@ -23,14 +23,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'scheme_id, occasion, and mood are required' }, { status: 400 });
     }
 
+    if (!weather || weather.temp_c == null || !weather.condition) {
+      return NextResponse.json({ error: 'weather with temp_c and condition is required' }, { status: 400 });
+    }
+
     const result = await controller.confirmDailyLook(session.sub, {
       scheme_id,
       occasion,
       mood,
       weather: {
-        temp_c: Number(weather?.temp_c ?? 20),
-        condition: String(weather?.condition ?? 'partly_cloudy'),
-        city: String(weather?.city ?? ''),
+        temp_c: Number(weather.temp_c),
+        condition: String(weather.condition),
+        city: String(weather.city ?? ''),
       },
     });
 

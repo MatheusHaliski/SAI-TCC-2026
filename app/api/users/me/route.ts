@@ -1,7 +1,8 @@
 import { getAdminAuth, getAdminFirestore } from '@/app/lib/firebaseAdmin';
 import { NextRequest, NextResponse } from 'next/server';
 
-const USERS_COLLECTION = 'users';
+const USERS_COLLECTION = 'saiUsers';
+const LEGACY_USERS_COLLECTION = 'users';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +10,8 @@ export async function GET(request: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 });
 
     const db = getAdminFirestore();
-    const snapshot = await db.collection(USERS_COLLECTION).doc(userId).get();
+    let snapshot = await db.collection(USERS_COLLECTION).doc(userId).get();
+    if (!snapshot.exists) snapshot = await db.collection(LEGACY_USERS_COLLECTION).doc(userId).get();
 
     if (!snapshot.exists) return NextResponse.json({ ok: true, profile: null });
 
@@ -25,7 +27,10 @@ export async function PATCH(request: NextRequest) {
     if (!body.userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 });
 
     const payload = {
+      uid: body.userId,
+      user_id: body.userId,
       name: body.displayName?.trim() || '',
+      displayName: body.displayName?.trim() || '',
       username: body.username?.trim() || '',
       email: body.email?.trim() || '',
       bio: body.bio?.trim() || '',
@@ -62,6 +67,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await db.collection(USERS_COLLECTION).doc(userId).delete();
+    await db.collection(LEGACY_USERS_COLLECTION).doc(userId).delete().catch(() => undefined);
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Unable to delete account.' }, { status: 500 });

@@ -56,25 +56,29 @@ export default function CardSpread({ data, showHero = true }: CardSpreadProps) {
           </p>
         )}
 
-        <div className="mt-auto">
-          <div className="border-t border-neutral-200 pt-3">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-wrap gap-1">
-                {brands.slice(0, 3).map((brand) => (
-                  <span key={brand} className="font-mono text-[9px] uppercase tracking-wide text-neutral-500">{brand}</span>
-                ))}
-              </div>
-              {data.score !== undefined && (
-                <span className="font-mono text-[10px] text-neutral-400">★ {data.score}</span>
-              )}
+        <div className="mt-auto pt-4">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-neutral-400">Stack list</p>
+              {data.score !== undefined ? <span className="font-mono text-[10px] text-neutral-400">★ {data.score}</span> : null}
             </div>
-            <div className="mt-2 space-y-1">
-              {pieces.slice(0, 3).map((piece, i) => (
-                <p key={piece.id} className="font-mono text-[9px] uppercase tracking-wide text-neutral-400">
-                  {String(i + 1).padStart(2, '0')} {piece.name} · {piece.brand}
-                </p>
+            <div className="space-y-1.5">
+              {pieces.slice(0, 5).map((piece, i) => (
+                <div key={piece.id} className="grid grid-cols-[22px_1fr_auto] items-center gap-2 rounded-lg bg-neutral-50 px-2 py-1.5">
+                  <span className="font-mono text-[8px] font-bold text-neutral-400">{String(i + 1).padStart(2, '0')}</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-bold leading-tight text-neutral-900">{piece.name}</p>
+                    <p className="truncate font-mono text-[8px] uppercase tracking-wide text-neutral-400">{piece.pieceType}</p>
+                  </div>
+                  <span className="max-w-[72px] truncate text-[10px] font-semibold text-neutral-600">{piece.brand}</span>
+                </div>
               ))}
             </div>
+            {brands.length > 0 ? (
+              <p className="mt-2 truncate font-mono text-[8px] uppercase tracking-widest text-neutral-400">
+                {brands.slice(0, 4).join(' / ')}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>

@@ -133,11 +133,18 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [submitProgress, setSubmitProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiDetectedBrandId, setAiDetectedBrandId] = useState<string | null>(null);
   const pending3dPieceNameRef = useRef<string>('');
   const brandsRef = useRef<Brand[]>([]);
   const lastAutoDetectedBrandRef = useRef<string>(DEFAULT_BRAND_ID);
 
   const normalizeToken = (value: string) => value.trim().toLowerCase();
+  const normalizeBrandToken = (value: string) =>
+    normalizeToken(value)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/^brand[_\s-]*/, '')
+      .replace(/[^a-z0-9&]/g, '');
   const isGenericToken = (value: string) => {
     const token = normalizeToken(value);
     return [
@@ -183,10 +190,10 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       .filter((value) => value.length > 0 && !isGenericToken(value));
 
     for (const candidate of candidates) {
-      const token = normalizeToken(candidate);
+      const token = normalizeBrandToken(candidate);
       const matched = availableBrands.find((brand) => {
-        const name = normalizeToken(brand.name ?? '');
-        const id = normalizeToken(brand.brand_id ?? '').replace(/^brand_/, '');
+        const name = normalizeBrandToken(brand.name ?? '');
+        const id = normalizeBrandToken(brand.brand_id ?? '');
         return token === name || token === id || token.includes(name) || name.includes(token);
       });
       if (matched?.brand_id) return matched.brand_id;
@@ -207,21 +214,6 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     market_id: '',
     brand_id: DEFAULT_BRAND_ID,
   });
-
-  const inputClassName =
-    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
-
-  const fileInputClassName =
-    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-600 file:to-fuchsia-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:brightness-110';
-
-  const fileWrapperClassName =
-    'flex items-center rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md';
-
-  const infoBoxClassName =
-    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-3 text-sm text-white/90 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md';
-
-  const submitButtonClassName =
-    'w-full rounded-xl border border-white/20 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition hover:scale-[1.01] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60';
 
   useEffect(() => {
     const loadDependencies = async () => {
@@ -365,9 +357,8 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         | { wardrobe_item_id?: string }
         | null;
       const createdWardrobeItemId = createdPiece?.wardrobe_item_id?.trim();
-      console.debug('[add-piece] create success', {
-        createdWardrobeItemId,
-      });
+      console.debug('[add-piece] create success', { createdWardrobeItemId });
+
       if (createdWardrobeItemId) {
         console.debug('[add-piece] process-piece call', { pieceId: createdWardrobeItemId });
         const processResponse = await fetch('/api/wardrobe/process-piece', {
@@ -533,6 +524,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       setSelectedImageName('');
       setImagePreview('');
       setSelectedFile(null);
+      setAiDetectedBrandId(null);
       return;
     }
 
@@ -551,6 +543,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     setImagePreview(nextPreview);
     setSelectedImageName(file.name);
     setSelectedFile(file);
+    setAiDetectedBrandId(null);
     setUploadingImage(true);
 
     const payload = new FormData();
@@ -626,7 +619,6 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
       const data = payload.data;
 
-      // piece_type: always derive from AI bodyRegion, fall back to current only if unknown
       const bodyRegionMap: Record<string, string> = {
         upper: 'upper_piece',
         lower: 'lower_piece',
@@ -635,19 +627,16 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       };
       const mappedPieceType = bodyRegionMap[data.bodyRegion] ?? form.piece_type;
 
-      // gender
       const mappedGender =
         data.gender === 'male' ? 'masculino' :
         data.gender === 'female' ? 'feminino' :
         form.gender;
 
-      // color: try each primaryColor word against expanded options
       const resolvedColor = (() => {
         const primary = data.primaryColor || '';
         if (!primary || isGenericToken(primary)) return '';
         const direct = resolveOptionValue(primary, COLOR_OPTIONS);
         if (direct) return direct;
-        // Try each word in the color name (e.g. "Dark Navy Blue" → ["dark", "navy", "blue"])
         for (const word of primary.split(/[\s-]+/).reverse()) {
           const wordMatch = resolveOptionValue(word, COLOR_OPTIONS);
           if (wordMatch) return wordMatch;
@@ -655,7 +644,6 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         return '';
       })();
 
-      // material: try first few materials
       const resolvedMaterial = (() => {
         const candidates: string[] = Array.isArray(data.materials) ? data.materials : [];
         for (const mat of candidates) {
@@ -665,7 +653,6 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         return '';
       })();
 
-      // style_tags: try all returned styles against expanded options
       const resolvedStyleTag = (() => {
         const candidates: string[] = Array.isArray(data.styles) ? data.styles : [];
         for (const style of candidates) {
@@ -675,7 +662,6 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         return '';
       })();
 
-      // occasion_tags: derive from styles + semanticTags (data.occasions does not exist in the type)
       const resolvedOccasion = (() => {
         const candidates: string[] = [
           ...(Array.isArray(data.styles) ? data.styles : []),
@@ -688,20 +674,19 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         return '';
       })();
 
-      // brand — use ref to guarantee latest brands list regardless of render timing
       const resolvedBrandId = resolveBrandIdFromAI(data.brand, brandsRef.current, [
         data.pieceName || '',
         data.shortDescription || '',
         ...(Array.isArray(data.semanticTags) ? data.semanticTags : []),
       ]);
 
-      // market: match from AI season + gender
       const resolvedMarketId = resolveMarketIdFromAI(data.season, data.gender, markets);
 
-      // name: reject generic AI fallback names
       const resolvedName = !isGenericToken(data.pieceName) ? data.pieceName : '';
 
       const brandWasDetected = resolvedBrandId !== DEFAULT_BRAND_ID;
+      setAiDetectedBrandId(brandWasDetected ? resolvedBrandId : null);
+      lastAutoDetectedBrandRef.current = brandWasDetected ? resolvedBrandId : DEFAULT_BRAND_ID;
       setForm((prev) => ({
         ...prev,
         name: resolvedName || prev.name || '',
@@ -730,7 +715,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
   return (
     <>
-      <div className="space-y-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {mode === 'page' ? (
           <PageHeader
             title="Adicionar peça"
@@ -742,20 +727,20 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
           title="Formulário de peça de guarda-roupa"
           subtitle="Cadastre uma peça e classifique com tags e metadados."
         >
-          <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={handleSubmit}>
+          <form className="fai-form-grid" style={{ marginTop: '1rem' }} onSubmit={handleSubmit}>
             <input
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               placeholder="Nome da peça"
-              className={inputClassName}
+              className="fai-input"
             />
 
-            <label className={fileWrapperClassName}>
+            <label className="fai-file-wrapper">
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImageFileChange}
-                className={fileInputClassName}
+                className="fai-file-input"
               />
             </label>
 
@@ -793,14 +778,19 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
             <FancySelect
               value={form.brand_id}
-              onChange={(brandId) => setForm((prev) => ({ ...prev, brand_id: brandId }))}
+              onChange={(brandId) => {
+                setAiDetectedBrandId(null);
+                setForm((prev) => ({ ...prev, brand_id: brandId }));
+              }}
               options={[
                 { value: DEFAULT_BRAND_ID, label: 'Marca padrão', icon: { type: 'emoji', value: '🏷️', alt: 'Marca padrão' } },
                 ...brands.map((brand) => {
                   const logoUrl = resolveBrandLogoUrl(brand);
+                  const wasDetectedByAi = aiDetectedBrandId === brand.brand_id && form.brand_id === brand.brand_id;
                   return {
                     value: brand.brand_id,
-                    label: brand.name,
+                    label: wasDetectedByAi ? `${brand.name} (detectada)` : brand.name,
+                    hint: wasDetectedByAi ? 'Marca preenchida pela análise do Google IA' : undefined,
                     icon: logoUrl
                       ? { type: 'image' as const, value: logoUrl, alt: `${brand.name} logo` }
                       : { type: 'emoji' as const, value: '🏷️', alt: `${brand.name} brand` },
@@ -849,28 +839,28 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
               }))}
             />
 
-            <div className={`${infoBoxClassName} md:col-span-2`}>
-              <p className="text-sm text-white/80">
+            <div className="fai-info-box" style={{ gridColumn: '1 / -1' }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--foreground)' }}>
                 {selectedImageName
                   ? `Arquivo selecionado: ${selectedImageName}`
                   : 'Selecione um arquivo de imagem para continuar.'}
               </p>
 
               {imagePreview ? (
-                <div className="mt-3 flex flex-col items-start gap-3">
+                <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.75rem' }}>
                   <Image
                     src={imagePreview}
                     alt="Pré-visualização da peça selecionada"
                     width={512}
                     height={320}
-                    className="h-40 w-auto rounded-xl border border-white/20 object-cover"
+                    style={{ height: '10rem', width: 'auto', borderRadius: '0.75rem', border: '1px solid var(--border)', objectFit: 'cover' }}
                     unoptimized
                   />
                   <button
                     type="button"
                     onClick={handleAnalyzeWithAI}
                     disabled={isAnalyzing || uploadingImage}
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:scale-105 hover:brightness-110 disabled:opacity-50"
+                    className="fai-analyze-btn"
                   >
                     <span>✨</span>
                     {isAnalyzing ? 'Analisando com Google IA...' : 'Analisar com Google IA'}
@@ -882,25 +872,31 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
             <button
               type="submit"
               disabled={submitting || uploadingImage}
-              className={`${submitButtonClassName} md:col-span-2`}
+              className="fai-submit-btn"
+              style={{ gridColumn: '1 / -1' }}
             >
               {uploadingImage ? 'Enviando imagem...' : submitting ? 'Salvando...' : 'Adicionar peça'}
             </button>
 
             {submitting ? (
-              <div className="md:col-span-2 space-y-1" role="status" aria-live="polite">
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/20">
+              <div role="status" aria-live="polite" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                <div style={{ height: '0.5rem', width: '100%', overflow: 'hidden', borderRadius: '9999px', background: 'var(--muted)' }}>
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 transition-[width] duration-200"
-                    style={{ width: `${submitProgress}%` }}
+                    style={{
+                      height: '100%',
+                      borderRadius: '9999px',
+                      background: 'linear-gradient(90deg, #7c3aed, #db2777)',
+                      transition: 'width 0.2s',
+                      width: `${submitProgress}%`,
+                    }}
                   />
                 </div>
-                <p className="text-xs text-white/80">Adicionando peça... {submitProgress}%</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Adicionando peça... {submitProgress}%</p>
               </div>
             ) : null}
 
             {uvJobId ? (
-              <p className="md:col-span-2 text-xs text-white/80">
+              <p style={{ gridColumn: '1 / -1', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
                 Processo UV <span className="font-mono">{uvJobId}</span> status: {uvJobStatus ?? 'pendente'}
               </p>
             ) : null}

@@ -11,6 +11,8 @@ export class WardrobeRepository {
       id: doc.id,
       name: String(data.name ?? ''),
       image_url: String(data.image_url ?? ''),
+      segmented_png_url: typeof data.segmented_png_url === 'string' ? data.segmented_png_url : undefined,
+      normalized_2d_preview_url: typeof data.normalized_2d_preview_url === 'string' ? data.normalized_2d_preview_url : undefined,
       piece_type: typeof data.piece_type === 'string' ? data.piece_type : undefined,
       gender: typeof data.gender === 'string' ? data.gender : undefined,
       createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
@@ -54,6 +56,8 @@ export class WardrobeRepository {
       id: snap.id,
       name: String(data.name ?? ''),
       image_url: String(data.image_url ?? ''),
+      segmented_png_url: typeof data.segmented_png_url === 'string' ? data.segmented_png_url : undefined,
+      normalized_2d_preview_url: typeof data.normalized_2d_preview_url === 'string' ? data.normalized_2d_preview_url : undefined,
       piece_type: typeof data.piece_type === 'string' ? data.piece_type : undefined,
       gender: typeof data.gender === 'string' ? data.gender : undefined,
       createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
@@ -71,8 +75,16 @@ export class WardrobeRepository {
       lastProcessingVersion?: string;
     },
   ): Promise<void> {
+    const preparedAssetUrl = fitProfile.preparedAssetUrl?.trim();
+    const originalImageUrl = fitProfile.originalImageUrl?.trim();
+    const hasProcessedAsset = Boolean(preparedAssetUrl && preparedAssetUrl !== originalImageUrl);
+
     await getAdminFirestore().collection(COLLECTION).doc(pieceId).set({
       fitProfile,
+      ...(hasProcessedAsset ? {
+        segmented_png_url: preparedAssetUrl,
+        normalized_2d_preview_url: preparedAssetUrl,
+      } : {}),
       ...(debugMeta ?? {}),
       updatedAt: new Date().toISOString(),
     }, { merge: true });

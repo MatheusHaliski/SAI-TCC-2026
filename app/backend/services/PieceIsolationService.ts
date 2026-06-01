@@ -1,4 +1,5 @@
 import { ServiceError } from './errors';
+import { RemoveBgService } from './RemoveBgService';
 
 interface PieceIsolationInput {
   imageUrl: string;
@@ -19,6 +20,8 @@ const PIECE_TYPE_HINTS: Record<string, string> = {
 };
 
 export class PieceIsolationService {
+  constructor(private readonly removeBgService = new RemoveBgService()) {}
+
   async isolate(input: PieceIsolationInput): Promise<PieceIsolationResult> {
     const normalizedUrl = input.imageUrl.trim();
     if (!normalizedUrl) {
@@ -35,11 +38,30 @@ export class PieceIsolationService {
 
     const segmentationConfidence = Math.max(0.55, 0.9 - keywordPenalty);
 
+    const removeBgResult = await this.removeBgService.removeBackground({
+      imageUrl: normalizedUrl,
+      storagePrefix: 'wardrobe-isolated-pieces',
+      fileNameSeed: `${input.pieceType}-${pieceHint}`,
+    }).catch(() => null);
+
+    if (removeBgResult) {
+      return {
+        isolatedImageUrl: removeBgResult.imageUrl,
+        segmentationConfidence: Math.max(segmentationConfidence, 0.92),
+        stageDetails: {
+          method: 'remove_bg_api',
+          provider: removeBgResult.provider,
+          piece_hint: pieceHint,
+          keyword_penalty: keywordPenalty,
+        },
+      };
+    }
+
     return {
       isolatedImageUrl: normalizedUrl,
       segmentationConfidence,
       stageDetails: {
-        method: 'v1_url_heuristic_passthrough',
+        method: this.removeBgService.isConfigured() ? 'remove_bg_failed_passthrough' : 'remove_bg_not_configured_passthrough',
         piece_hint: pieceHint,
         keyword_penalty: keywordPenalty,
       },

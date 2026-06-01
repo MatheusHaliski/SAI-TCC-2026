@@ -39,7 +39,6 @@ type SchemePieceSnapshot = {
   pieceType: string;
   category: NonNullable<OutfitPiece['category']>;
   wearstyles: string[];
-  expressao?: string;
 };
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
@@ -137,7 +136,6 @@ export default function CreateMySchemeView() {
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [outfitBackgroundConfig, setOutfitBackgroundConfig] = useState<OutfitBackgroundConfig>(DEFAULT_BACKGROUND_CONFIG);
-  const [backgroundStudioOpen, setBackgroundStudioOpen] = useState(false);
   const [cardSkin, setCardSkin] = useState<CardSkinId | undefined>(undefined);
   const [descriptionOverride, setDescriptionOverride] = useState('');
   const [titleFontFamily, setTitleFontFamily] = useState('Inter, Segoe UI, sans-serif');
@@ -161,24 +159,18 @@ export default function CreateMySchemeView() {
     shoes: null,
     accessory: null,
   });
-  const [slotExpressao, setSlotExpressao] = useState<Record<SlotKey, string>>({
-    upper: '',
-    lower: '',
-    shoes: '',
-    accessory: '',
-  });
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState('');
   const [generatedCardData, setGeneratedCardData] = useState<OutfitCardData | null>(null);
 
   const inputClassName =
-    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
+    'w-full rounded-xl border border-border bg-accent px-3 py-2 text-sm text-white placeholder:text-muted-foreground shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
   const slotCardClassName =
-    'rounded-xl border border-white/20 bg-white/10 p-3 text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md';
+    'rounded-xl border border-border bg-accent p-3 text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md';
   const primaryButtonClassName =
-    'rounded-xl border border-white/20 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition hover:scale-[1.01] hover:brightness-110';
+    'rounded-xl border border-border bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition hover:scale-[1.01] hover:brightness-110';
   const secondaryButtonClassName =
-    'rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:scale-[1.01] hover:bg-white/15';
+    'rounded-xl border border-border bg-accent px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:scale-[1.01] hover:bg-accent';
 
   useEffect(() => {
     const draftRaw = typeof window !== 'undefined' ? sessionStorage.getItem('sai_scheme_inspiration') : null;
@@ -364,7 +356,6 @@ export default function CreateMySchemeView() {
     pieces.map((piece) => {
       const slot = (Object.keys(slots) as SlotKey[]).find((slotKey) => slots[slotKey] === piece.id) || 'upper';
       const sourceType = piece.id.startsWith('suggested:') ? 'suggested' : 'wardrobe';
-      const expressao = slotExpressao[slot as SlotKey]?.trim() || undefined;
       return {
         id: piece.id,
         slot,
@@ -376,7 +367,6 @@ export default function CreateMySchemeView() {
         pieceType: piece.pieceType,
         category: piece.category || 'Standard',
         wearstyles: piece.wearstyles || [],
-        expressao,
       };
     });
 
@@ -569,9 +559,9 @@ export default function CreateMySchemeView() {
     <SectionBlock
       title="Build Outfit"
       subtitle="Define metadata, description behavior, and slot assignment manually."
-      className="sa-surface-header h-auto border-white/20"
+      className="sa-surface-header h-auto border-border"
     >
-      <form className="mt-4 grid gap-3 rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md md:grid-cols-2">
+      <form className="mt-4 grid gap-3 rounded-2xl border border-border bg-accent p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md md:grid-cols-2">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -647,25 +637,14 @@ export default function CreateMySchemeView() {
           ]}
         />
 
-        <FancySelect
-          value={outfitBackgroundConfig.background_mode}
-          onChange={() => setBackgroundStudioOpen(true)}
-          placeholder="Background Studio"
-          options={[
-            { value: 'solid', label: 'Open Background Studio · Solid' },
-            { value: 'gradient', label: 'Open Background Studio · Gradient' },
-            { value: 'ai_artwork', label: 'Open Background Studio · AI Artwork' },
-          ]}
-        />
-
         <button
           type="button"
           className={`${slotCardClassName} md:col-span-2`}
-          onClick={() => setBackgroundStudioOpen(true)}
+          onClick={() => setSelectedSection('Card Background')}
         >
-          <p className="text-xs uppercase tracking-[0.13em] text-white/60">Background</p>
+          <p className="text-xs uppercase tracking-[0.13em] text-muted-foreground">Background</p>
           <div className="mt-2 flex items-center gap-3">
-            <span className="h-10 w-10 rounded-lg border border-white/30" style={(() => {
+            <span className="h-10 w-10 rounded-lg border border-border" style={(() => {
               const resolved = resolveOutfitBackgroundForRender(outfitBackgroundConfig);
               if (resolved.background_mode === 'solid') {
                 return { background: resolved.solid_color || '#111827' };
@@ -677,16 +656,16 @@ export default function CreateMySchemeView() {
               return { backgroundImage: `url(${resolved.ai_artwork?.image_url || '/models/model-default.jpeg'})`, backgroundSize: 'cover' };
             })()} />
             <div className="text-left">
-              <p className="text-sm font-semibold text-white">Open Studio</p>
-              <p className="text-xs text-white/70">
-                Current mode: {outfitBackgroundConfig.background_mode.replace('_', ' ')}
+              <p className="text-sm font-semibold text-white">Abrir Estúdio de Fundo</p>
+              <p className="text-xs text-muted-foreground">
+                Modo atual: {outfitBackgroundConfig.background_mode.replace('_', ' ')}
               </p>
             </div>
           </div>
         </button>
 
         <label className={`${inputClassName} block cursor-pointer`}>
-          <span className="block text-[11px] uppercase tracking-[0.12em] text-white/60">Hero image upload</span>
+          <span className="block text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Hero image upload</span>
           <input
             type="file"
             accept="image/*"
@@ -764,47 +743,8 @@ export default function CreateMySchemeView() {
               />
             </div>
 
-            {/* Expressão emocional da peça */}
-            <div className="mt-3 space-y-2">
-              <p className="text-[11px] uppercase tracking-[0.12em] text-white/60">Como me sinto</p>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  'Me sinto confiante',
-                  'Me sinto elegante',
-                  'Animado e à vontade',
-                  'Poderoso e presente',
-                  'Discreto e sofisticado',
-                  'Leve e descontraído',
-                  'Criativo e expressivo',
-                  'Clássico e seguro',
-                ].map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => setSlotExpressao((prev) => ({ ...prev, [slot]: chip }))}
-                    className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-white/55 hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-white/80 transition"
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="text"
-                maxLength={120}
-                value={slotExpressao[slot]}
-                onChange={(e) => setSlotExpressao((prev) => ({ ...prev, [slot]: e.target.value }))}
-                placeholder="Ou escreva com suas palavras..."
-                className="w-full rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder:text-white/35 focus:border-violet-400/40 focus:outline-none transition"
-              />
-              {slotExpressao[slot]?.trim() && (
-                <p className="text-[10px] italic text-white/40">
-                  &ldquo;{slotExpressao[slot].trim()}&rdquo;
-                </p>
-              )}
-            </div>
-
-            <div className="mt-3 rounded-lg border border-white/20 bg-white/5 px-3 py-2">
-              <p className="text-[11px] uppercase tracking-[0.12em] text-white/60">Selected</p>
+            <div className="mt-3 rounded-lg border border-border bg-accent px-3 py-2">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Selected</p>
               <p className="mt-1 text-sm font-semibold text-white">{resolveSlotSelectionLabel(slot)}</p>
             </div>
           </div>
@@ -817,7 +757,7 @@ export default function CreateMySchemeView() {
     <SectionBlock
       title="Scheme Basics"
       subtitle="Defina claramente os dados que orientam a geração do card final."
-      className="sa-surface-header h-auto border-white/20"
+      className="sa-surface-header h-auto border-border"
     >
       <div className="mt-4 space-y-4">
         <GenerationModePanel mode={generationMode} onChange={setGenerationMode} />
@@ -836,7 +776,7 @@ export default function CreateMySchemeView() {
     <SectionBlock
       title="AI Assist"
       subtitle="A IA sugere combinações com base nos seus itens e metadata."
-      className="sa-surface-header h-auto border-white/20"
+      className="sa-surface-header h-auto border-border"
     >
       <div className="mt-4 space-y-3">
         <textarea
@@ -862,10 +802,10 @@ export default function CreateMySchemeView() {
           </button>
         </div>
         {aiInterpretation ? (
-          <div className="rounded-xl border border-white/20 bg-white/5 p-3 text-sm text-white/90">
+          <div className="rounded-xl border border-border bg-accent p-3 text-sm text-foreground">
             <p className="font-semibold text-white">Structured interpretation</p>
-            <p className="mt-1 text-white/70">{aiInterpretation.description || aiInterpretation.prompt}</p>
-            <ul className="mt-2 space-y-1 text-xs text-white/80">
+            <p className="mt-1 text-muted-foreground">{aiInterpretation.description || aiInterpretation.prompt}</p>
+            <ul className="mt-2 space-y-1 text-xs text-foreground">
               {aiInterpretation.items.map((item, index) => (
                 <li key={`${item.display_label}-${index}`}>
                   • {item.display_label} · {item.piece_type}
@@ -894,7 +834,7 @@ export default function CreateMySchemeView() {
     <SectionBlock
       title="Slots Review"
       subtitle="Loadout-style review for each slot with completeness feedback."
-      className="sa-surface-header h-auto border-white/20"
+      className="sa-surface-header h-auto border-border"
     >
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {(Object.keys(slots) as SlotKey[]).map((slot) => (
@@ -915,24 +855,32 @@ export default function CreateMySchemeView() {
 
 
   const renderCardBackground = () => (
-    <SectionBlock
-      title="Card Background"
-      subtitle="Ajuste cor, gradiente ou IA e persista no draft atual."
-      className="sa-surface-header h-auto border-white/20"
-    >
-      <div className="mt-4">
-        <button type="button" className={primaryButtonClassName} onClick={() => setBackgroundStudioOpen(true)}>
-          Open Background Studio
-        </button>
-      </div>
-    </SectionBlock>
+    <OutfitBackgroundStudioModal
+      asPage
+      value={outfitBackgroundConfig}
+      onClose={() => setSelectedSection('Slots Review')}
+      onApply={(nextBackgroundConfig) => {
+        setOutfitBackgroundConfig(nextBackgroundConfig);
+        setSelectedSection('Save & Generate');
+      }}
+      outfitMetadata={{
+        style,
+        occasion,
+        palette,
+        mood,
+        brands: selectedBrand?.name ? [selectedBrand.name] : undefined,
+      }}
+      previewCardData={buildGeneratedOutfitCardData()}
+      selectedCardSkin={cardSkin}
+      onSelectSkin={setCardSkin}
+    />
   );
 
   const renderSaveGenerate = () => (
     <SectionBlock
       title="Save & Generate"
       subtitle="Final preview, validation, and generation confirmation."
-      className="sa-surface-header h-auto border-white/20"
+      className="sa-surface-header h-auto border-border"
     >
       <div className="mt-4 space-y-4">
         <SaveSummaryPanel
@@ -954,10 +902,10 @@ export default function CreateMySchemeView() {
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+      <div className="flex min-w-0 flex-col gap-6">
         <SchemeStepSidebar steps={sections} currentStep={selectedSection} completedSteps={completedSections} onSelect={setSelectedSection} />
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <PageHeader
             title="Create my Outfit Card"
             subtitle="Premium manual and AI generation paths for outfit cards."
@@ -976,7 +924,7 @@ export default function CreateMySchemeView() {
             <SectionBlock
               title="Generated Outfit Card"
               subtitle="Rendered after the final save & generate action."
-              className="sa-surface-header h-auto border-white/20"
+              className="sa-surface-header h-auto border-border"
             >
               <OutfitCard data={generatedCardData} />
             </SectionBlock>
@@ -988,27 +936,6 @@ export default function CreateMySchemeView() {
         <SaiModalAlert message={alertMessage} onConfirm={() => setAlertMessage(null)} />
       ) : null}
 
-      {backgroundStudioOpen ? (
-        <OutfitBackgroundStudioModal
-          value={outfitBackgroundConfig}
-          onClose={() => setBackgroundStudioOpen(false)}
-          onApply={(nextBackgroundConfig) => {
-            setOutfitBackgroundConfig(nextBackgroundConfig);
-            setAlertMessage(`Background applied: ${nextBackgroundConfig.background_mode} · shape ${nextBackgroundConfig.shape || 'none'}`);
-            setBackgroundStudioOpen(false);
-          }}
-          outfitMetadata={{
-            style,
-            occasion,
-            palette,
-            mood,
-            brands: selectedBrand?.name ? [selectedBrand.name] : undefined,
-          }}
-          previewCardData={buildGeneratedOutfitCardData()}
-          selectedCardSkin={cardSkin}
-          onSelectSkin={setCardSkin}
-        />
-      ) : null}
     </>
   );
 }

@@ -55,22 +55,26 @@ export default function CardTrading({ data, showHero = true }: CardTradingProps)
           </p>
         </div>
 
-        {/* Moves / pieces */}
+        {/* Market table / pieces */}
         <div className="flex flex-1 flex-col bg-neutral-900 px-4 pt-3 pb-4">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-neutral-500 mb-2">— Moves —</p>
+          <div className="mb-2 grid grid-cols-[24px_1fr_58px_42px] gap-2 border-b border-neutral-800 pb-1.5 font-mono text-[8px] uppercase tracking-widest text-neutral-500">
+            <span>#</span>
+            <span>Asset</span>
+            <span>Brand</span>
+            <span>Tier</span>
+          </div>
           {pieces.slice(0, 4).map((piece, i) => (
             <div
               key={piece.id}
-              className="mb-1.5 flex items-center justify-between border border-neutral-700 px-3 py-2"
+              className="mb-1.5 grid grid-cols-[24px_1fr_58px_42px] items-center gap-2 border border-neutral-700 px-2.5 py-2"
             >
-              <div>
-                <span className="font-mono text-[8px] uppercase tracking-widest text-neutral-500">{String(i + 1).padStart(2, '0')} </span>
-                <span className="text-[11px] font-bold text-white">{piece.name}</span>
-                <span className="ml-1 text-[10px] text-neutral-400">· {piece.brand}</span>
+              <span className="font-mono text-[8px] uppercase tracking-widest text-neutral-500">{String(i + 1).padStart(2, '0')}</span>
+              <div className="min-w-0">
+                <p className="truncate text-[11px] font-bold text-white">{piece.name}</p>
+                <p className="truncate font-mono text-[8px] uppercase tracking-wider text-neutral-500">{piece.pieceType}</p>
               </div>
-              <span className="font-mono text-[8px] uppercase tracking-widest text-neutral-500">
-                {piece.category ?? 'Std'}
-              </span>
+              <span className="truncate text-[10px] font-semibold text-neutral-300">{piece.brand}</span>
+              <span className="truncate text-right font-mono text-[8px] uppercase tracking-widest text-neutral-500">{piece.category ?? 'Std'}</span>
             </div>
           ))}
 
