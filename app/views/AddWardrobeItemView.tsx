@@ -133,11 +133,18 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [submitProgress, setSubmitProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiDetectedBrandId, setAiDetectedBrandId] = useState<string | null>(null);
   const pending3dPieceNameRef = useRef<string>('');
   const brandsRef = useRef<Brand[]>([]);
   const lastAutoDetectedBrandRef = useRef<string>(DEFAULT_BRAND_ID);
 
   const normalizeToken = (value: string) => value.trim().toLowerCase();
+  const normalizeBrandToken = (value: string) =>
+    normalizeToken(value)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/^brand[_\s-]*/, '')
+      .replace(/[^a-z0-9&]/g, '');
   const isGenericToken = (value: string) => {
     const token = normalizeToken(value);
     return [
@@ -183,10 +190,10 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       .filter((value) => value.length > 0 && !isGenericToken(value));
 
     for (const candidate of candidates) {
-      const token = normalizeToken(candidate);
+      const token = normalizeBrandToken(candidate);
       const matched = availableBrands.find((brand) => {
-        const name = normalizeToken(brand.name ?? '');
-        const id = normalizeToken(brand.brand_id ?? '').replace(/^brand_/, '');
+        const name = normalizeBrandToken(brand.name ?? '');
+        const id = normalizeBrandToken(brand.brand_id ?? '');
         return token === name || token === id || token.includes(name) || name.includes(token);
       });
       if (matched?.brand_id) return matched.brand_id;
@@ -517,6 +524,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       setSelectedImageName('');
       setImagePreview('');
       setSelectedFile(null);
+      setAiDetectedBrandId(null);
       return;
     }
 
@@ -535,6 +543,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     setImagePreview(nextPreview);
     setSelectedImageName(file.name);
     setSelectedFile(file);
+    setAiDetectedBrandId(null);
     setUploadingImage(true);
 
     const payload = new FormData();
@@ -676,6 +685,8 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       const resolvedName = !isGenericToken(data.pieceName) ? data.pieceName : '';
 
       const brandWasDetected = resolvedBrandId !== DEFAULT_BRAND_ID;
+      setAiDetectedBrandId(brandWasDetected ? resolvedBrandId : null);
+      lastAutoDetectedBrandRef.current = brandWasDetected ? resolvedBrandId : DEFAULT_BRAND_ID;
       setForm((prev) => ({
         ...prev,
         name: resolvedName || prev.name || '',
@@ -767,14 +778,19 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
             <FancySelect
               value={form.brand_id}
-              onChange={(brandId) => setForm((prev) => ({ ...prev, brand_id: brandId }))}
+              onChange={(brandId) => {
+                setAiDetectedBrandId(null);
+                setForm((prev) => ({ ...prev, brand_id: brandId }));
+              }}
               options={[
                 { value: DEFAULT_BRAND_ID, label: 'Marca padrão', icon: { type: 'emoji', value: '🏷️', alt: 'Marca padrão' } },
                 ...brands.map((brand) => {
                   const logoUrl = resolveBrandLogoUrl(brand);
+                  const wasDetectedByAi = aiDetectedBrandId === brand.brand_id && form.brand_id === brand.brand_id;
                   return {
                     value: brand.brand_id,
-                    label: brand.name,
+                    label: wasDetectedByAi ? `${brand.name} (detectada)` : brand.name,
+                    hint: wasDetectedByAi ? 'Marca preenchida pela análise do Google IA' : undefined,
                     icon: logoUrl
                       ? { type: 'image' as const, value: logoUrl, alt: `${brand.name} logo` }
                       : { type: 'emoji' as const, value: '🏷️', alt: `${brand.name} brand` },
