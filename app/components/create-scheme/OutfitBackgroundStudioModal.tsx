@@ -2643,7 +2643,7 @@ export default function OutfitBackgroundStudioModal({
         )}
       </header>
 
-      <div className={asPage ? 'grid gap-4 lg:grid-cols-[1fr_1.1fr]' : 'grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]'}>
+      <div className={asPage ? 'grid gap-4 lg:grid-cols-[1fr_1.5fr]' : 'grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]'}>
         <section className={asPage ? 'space-y-4 rounded-2xl border border-white/15 bg-white/5 p-4' : 'min-h-0 space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
             <div className="inline-flex rounded-xl border border-white/20 bg-white/5 p-1">
               {([
@@ -3336,12 +3336,14 @@ export default function OutfitBackgroundStudioModal({
             </section>
           </section>
 
-          <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
-            <p className="text-xs uppercase tracking-[0.12em] text-white/65">Pré-visualização</p>
+          <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4 flex flex-col' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
+            <p className="text-xs uppercase tracking-[0.12em] text-white/65 w-full">Pré-visualização ao Vivo</p>
+            <div className="w-full flex-1">
             <OutfitCard data={previewData} variant="default" />
-            <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/85">
-              <p>Contrast recommendation: <span className="font-semibold">Use {recommendTextTone} text/icons</span>.</p>
-              {shouldShowContrastWarning ? <p className="mt-1 text-amber-200">Warning: high-luminance solid background may reduce metadata readability.</p> : null}
+            </div>
+            <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/85 w-full">
+              <p className="w-full">Recomendação de contraste: <span className="font-semibold">Use {recommendTextTone} texto/ícones</span>.</p>
+              {shouldShowContrastWarning ? <p className="mt-1 text-amber-200 w-full">Aviso: fundo sólido de alta luminância pode reduzir a legibilidade dos metadados.</p> : null}
             </div>
           </section>
         </div>

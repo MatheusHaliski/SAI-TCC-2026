@@ -72,8 +72,8 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
 
   return (
     <SectionBlock
-      title="User Info"
-      subtitle={canEdit ? 'Edit your profile identity and public creator metadata.' : 'Public creator profile metadata.'}
+      title="Informações do Usuário"
+      subtitle={canEdit ? 'Edite sua identidade de perfil e metadados públicos do criador.' : 'Metadados públicos do perfil do criador.'}
     >
       <article className="mt-4 overflow-hidden rounded-3xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.25)]" style={{ backgroundColor: 'var(--user-surface-solid, #ea580c)' }}>
         <div className="relative h-56 w-full border-b border-white/20 bg-black/20">
@@ -94,19 +94,19 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
         </div>
 
         <div className="grid gap-3 p-4 md:grid-cols-2">
-          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Display name
+          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Nome de exibição
             <input disabled={!canEdit} className={`${inputClassName} mt-2 disabled:cursor-not-allowed disabled:opacity-80`} value={form.displayName} onChange={(e) => setForm((prev) => ({ ...prev, displayName: e.target.value }))} />
           </label>
 
-          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Username
+          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Nome de usuário
             <input disabled={!canEdit} className={`${inputClassName} mt-2 disabled:cursor-not-allowed disabled:opacity-80`} value={form.username} onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value }))} />
           </label>
 
-          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Email
+          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">E-mail
             <input disabled={!canEdit} className={`${inputClassName} mt-2 disabled:cursor-not-allowed disabled:opacity-80`} value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} />
           </label>
 
-          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Upload photo
+          <label className="rounded-xl border border-white/25 bg-white/10 p-3 text-xs text-white/80">Enviar foto
             <input disabled={!canEdit} type="file" accept="image/*" onChange={onAvatarUpload} className={`${inputClassName} mt-2 disabled:cursor-not-allowed disabled:opacity-80 file:mr-3 file:rounded-md file:border-0 file:bg-white/20 file:px-2 file:py-1 file:text-xs file:text-white`} />
           </label>
 
@@ -125,7 +125,7 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
             onClick={async () => {
               const profile = await updateProfile({ userId, ...form });
               if (!profile) {
-                setToast('Unable to save profile.');
+                setToast('Não foi possível salvar o perfil.');
                 return;
               }
 
@@ -148,18 +148,18 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
                 photo_url: synced.avatarUrl,
               });
 
-              setToast('Profile updated successfully.');
+              setToast('Perfil atualizado com sucesso.');
             }}
           >
-            {saving ? 'Saving...' : loadingProfile ? 'Loading...' : 'Save Changes'}
+            {saving ? 'Salvando...' : loadingProfile ? 'Carregando...' : 'Salvar Alterações'}
           </button>
           <button type="button" className="rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm" disabled={!dirty || saving} onClick={() => setForm(initial)}>
-            Cancel
+            Cancelar
           </button>
         </div>
       ) : (
         <p className="mt-4 rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-xs text-white/80">
-          You are viewing this creator profile in read-only mode.
+          Você está visualizando este perfil em modo somente leitura.
         </p>
       )}
 

@@ -59,7 +59,7 @@ const DEFAULT_SLOT_SUGGESTIONS: Record<
   accessory: OUTFIT_PIECE_OPTIONS.accessory.map((option) => ({ value: `suggested:accessory:${option.value}`, label: option.label })),
 };
 
-const sections = ['Scheme Basics', 'Build Outfit', 'AI Assist', 'Slots Review', 'Card Background', 'Save & Generate'];
+const sections = ['Básicos do Esquema', 'Montar Look', 'Assistente IA', 'Revisão de Slots', 'Fundo do Card', 'Salvar e Gerar'];
 const STYLE_OPTIONS = ['Urban', 'Casual', 'Formal', 'Outdoors'];
 const OCCASION_OPTIONS = ['Shift', 'Work', 'Daily', 'Night', 'Party'];
 const TITLE_FONT_OPTIONS = ['Inter, Segoe UI, sans-serif', 'Georgia, serif', 'Trebuchet MS, sans-serif', 'monospace'];
@@ -243,11 +243,11 @@ export default function CreateMySchemeView() {
 
 
   const completedSections = useMemo(() => sections.filter((section) => {
-    if (section === 'Scheme Basics') return Boolean(title.trim()) && Boolean(style.trim()) && Boolean(occasion.trim());
-    if (section === 'Build Outfit') return Object.values(slots).some(Boolean);
-    if (section === 'AI Assist') return Boolean(aiPrompt.trim()) || generationMode === 'ai';
-    if (section === 'Slots Review') return filledSlotsCount > 0;
-    if (section === 'Card Background') return Boolean(outfitBackgroundConfig.background_mode);
+    if (section === 'Básicos do Esquema') return Boolean(title.trim()) && Boolean(style.trim()) && Boolean(occasion.trim());
+    if (section === 'Montar Look') return Object.values(slots).some(Boolean);
+    if (section === 'Assistente IA') return Boolean(aiPrompt.trim()) || generationMode === 'ai';
+    if (section === 'Revisão de Slots') return filledSlotsCount > 0;
+    if (section === 'Fundo do Card') return Boolean(outfitBackgroundConfig.background_mode);
     return Boolean(generatedCardData);
   }), [title, style, occasion, slots, aiPrompt, generationMode, filledSlotsCount, outfitBackgroundConfig.background_mode, generatedCardData]);
 
@@ -552,20 +552,20 @@ export default function CreateMySchemeView() {
     const isSaved = await saveScheme(generationMode, pieceSnapshots);
     if (!isSaved) return;
     setGeneratedCardData(nextGeneratedCardData);
-    setSelectedSection('Save & Generate');
+    setSelectedSection('Salvar e Gerar');
   };
 
   const renderManualBuilder = () => (
     <SectionBlock
-      title="Build Outfit"
-      subtitle="Define metadata, description behavior, and slot assignment manually."
+      title="Montar Look"
+      subtitle="Defina metadados, descrição e atribuição de slots manualmente."
       className="sa-surface-header h-auto border-border"
     >
       <form className="mt-4 grid gap-3 rounded-2xl border border-border bg-accent p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md md:grid-cols-2">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Title"
+          placeholder="Título"
           className={inputClassName}
         />
 
@@ -573,11 +573,11 @@ export default function CreateMySchemeView() {
         <FancySelect
           value={titleFontFamily}
           onChange={setTitleFontFamily}
-          placeholder="Title Font"
+          placeholder="Fonte do Título"
           options={TITLE_FONT_OPTIONS.map((font) => ({ value: font, label: font }))}
         />
 
-        <input value={descriptionOverride} onChange={(e) => setDescriptionOverride(e.target.value)} placeholder="Card description override (optional)" className={`${inputClassName} md:col-span-2`} />
+        <input value={descriptionOverride} onChange={(e) => setDescriptionOverride(e.target.value)} placeholder="Descrição do card (opcional)" className={`${inputClassName} md:col-span-2`} />
 
         <FancySelect
           value={style}
@@ -610,8 +610,8 @@ export default function CreateMySchemeView() {
           ]}
         />
 
-        <input value={palette} onChange={(e) => setPalette(e.target.value)} placeholder="Palette (e.g. Blue / Neutral)" className={inputClassName} />
-        <input value={mood} onChange={(e) => setMood(e.target.value)} placeholder="Mood / aesthetic" className={inputClassName} />
+        <input value={palette} onChange={(e) => setPalette(e.target.value)} placeholder="Paleta (ex: Azul / Neutro)" className={inputClassName} />
+        <input value={mood} onChange={(e) => setMood(e.target.value)} placeholder="Mood / estética" className={inputClassName} />
 
         <FancySelect
           value={selectedBrandId}
@@ -640,7 +640,7 @@ export default function CreateMySchemeView() {
         <button
           type="button"
           className={`${slotCardClassName} md:col-span-2`}
-          onClick={() => setSelectedSection('Card Background')}
+          onClick={() => setSelectedSection('Fundo do Card')}
         >
           <p className="text-xs uppercase tracking-[0.13em] text-muted-foreground">Background</p>
           <div className="mt-2 flex items-center gap-3">
@@ -755,7 +755,7 @@ export default function CreateMySchemeView() {
 
   const renderSchemeData = () => (
     <SectionBlock
-      title="Scheme Basics"
+      title="Básicos do Esquema"
       subtitle="Defina claramente os dados que orientam a geração do card final."
       className="sa-surface-header h-auto border-border"
     >
@@ -774,15 +774,15 @@ export default function CreateMySchemeView() {
 
   const renderAiGeneration = () => (
     <SectionBlock
-      title="AI Assist"
-      subtitle="A IA sugere combinações com base nos seus itens e metadata."
+      title="Assistente IA"
+      subtitle="A IA sugere combinações com base nos seus itens e metadados."
       className="sa-surface-header h-auto border-border"
     >
       <div className="mt-4 space-y-3">
         <textarea
           value={aiPrompt}
           onChange={(e) => setAiPrompt(e.target.value)}
-          placeholder="Create a premium casual daily outfit with a visual anchor in blue tones."
+          placeholder="Crie um look casual premium diário com âncora visual em tons azuis."
           className={`${inputClassName} min-h-28`}
         />
         <div className="flex flex-wrap gap-3">
@@ -791,19 +791,19 @@ export default function CreateMySchemeView() {
             className={primaryButtonClassName}
             onClick={async () => {
               const success = await generateFromAiPrompt();
-              if (success) setSelectedSection('Slots Review');
+              if (success) setSelectedSection('Revisão de Slots');
             }}
             disabled={aiInterpreting}
           >
-            {aiInterpreting ? 'Interpreting...' : 'Interpretar look'}
+            {aiInterpreting ? 'Interpretando...' : 'Interpretar look'}
           </button>
           <button type="button" className={secondaryButtonClassName} onClick={() => setGenerationMode('ai')}>
-            Set as AI Mode
+            Definir como Modo IA
           </button>
         </div>
         {aiInterpretation ? (
           <div className="rounded-xl border border-border bg-accent p-3 text-sm text-foreground">
-            <p className="font-semibold text-white">Structured interpretation</p>
+            <p className="font-semibold text-white">Interpretação estruturada</p>
             <p className="mt-1 text-muted-foreground">{aiInterpretation.description || aiInterpretation.prompt}</p>
             <ul className="mt-2 space-y-1 text-xs text-foreground">
               {aiInterpretation.items.map((item, index) => (
@@ -818,7 +818,7 @@ export default function CreateMySchemeView() {
         ) : null}
         {aiError ? (
           <div className="rounded-xl border border-rose-300/50 bg-rose-500/10 p-3 text-sm text-rose-100">
-            <p className="font-semibold">AI generation failed</p>
+            <p className="font-semibold">Falha na geração IA</p>
             <p className="mt-1">{aiError.message}</p>
             <p className="mt-2 text-xs text-rose-100/80">
               code: {aiError.code}
@@ -832,8 +832,8 @@ export default function CreateMySchemeView() {
 
   const renderSlotsReview = () => (
     <SectionBlock
-      title="Slots Review"
-      subtitle="Loadout-style review for each slot with completeness feedback."
+      title="Revisão de Slots"
+      subtitle="Revisão de cada slot com feedback de completude."
       className="sa-surface-header h-auto border-border"
     >
       <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -848,7 +848,7 @@ export default function CreateMySchemeView() {
         ))}
       </div>
       <p className="mt-4 text-sm text-white/75">
-        Composition status: <span className="font-semibold text-white">{filledSlotsCount} of 4 slots filled</span>.
+        Status da composição: <span className="font-semibold text-white">{filledSlotsCount} de 4 slots preenchidos</span>.
       </p>
     </SectionBlock>
   );
@@ -858,10 +858,10 @@ export default function CreateMySchemeView() {
     <OutfitBackgroundStudioModal
       asPage
       value={outfitBackgroundConfig}
-      onClose={() => setSelectedSection('Slots Review')}
+      onClose={() => setSelectedSection('Revisão de Slots')}
       onApply={(nextBackgroundConfig) => {
         setOutfitBackgroundConfig(nextBackgroundConfig);
-        setSelectedSection('Save & Generate');
+        setSelectedSection('Salvar e Gerar');
       }}
       outfitMetadata={{
         style,
@@ -878,8 +878,8 @@ export default function CreateMySchemeView() {
 
   const renderSaveGenerate = () => (
     <SectionBlock
-      title="Save & Generate"
-      subtitle="Final preview, validation, and generation confirmation."
+      title="Salvar e Gerar"
+      subtitle="Pré-visualização final, validação e confirmação de geração."
       className="sa-surface-header h-auto border-border"
     >
       <div className="mt-4 space-y-4">
@@ -890,11 +890,11 @@ export default function CreateMySchemeView() {
         />
         {!isFormValid ? (
           <div className="rounded-xl border border-amber-300/40 bg-amber-500/10 p-3 text-sm text-amber-100">
-            Quality check warning: title, style, occasion, and at least one slot are required before saving.
+            Atenção: título, estilo, ocasião e pelo menos um slot são obrigatórios antes de salvar.
           </div>
         ) : null}
         <button type="button" className={primaryButtonClassName} disabled={heroImageUploading} onClick={handleFinalSave}>
-          {generationMode === 'manual' ? 'Save Outfit Card' : 'Generate Outfit Card'}
+          {generationMode === 'manual' ? 'Salvar Card de Look' : 'Gerar Card de Look'}
         </button>
       </div>
     </SectionBlock>
@@ -913,17 +913,17 @@ export default function CreateMySchemeView() {
 
           <GenerationModePanel mode={generationMode} onChange={setGenerationMode} />
 
-          {selectedSection === 'Scheme Basics' ? renderSchemeData() : null}
-          {selectedSection === 'Build Outfit' ? renderManualBuilder() : null}
-          {selectedSection === 'AI Assist' ? renderAiGeneration() : null}
-          {selectedSection === 'Slots Review' ? renderSlotsReview() : null}
-          {selectedSection === 'Card Background' ? renderCardBackground() : null}
-          {selectedSection === 'Save & Generate' ? renderSaveGenerate() : null}
+          {selectedSection === 'Básicos do Esquema' ? renderSchemeData() : null}
+          {selectedSection === 'Montar Look' ? renderManualBuilder() : null}
+          {selectedSection === 'Assistente IA' ? renderAiGeneration() : null}
+          {selectedSection === 'Revisão de Slots' ? renderSlotsReview() : null}
+          {selectedSection === 'Fundo do Card' ? renderCardBackground() : null}
+          {selectedSection === 'Salvar e Gerar' ? renderSaveGenerate() : null}
 
           {generatedCardData ? (
             <SectionBlock
-              title="Generated Outfit Card"
-              subtitle="Rendered after the final save & generate action."
+              title="Card de Look Gerado"
+              subtitle="Renderizado após salvar e gerar."
               className="sa-surface-header h-auto border-border"
             >
               <OutfitCard data={generatedCardData} />

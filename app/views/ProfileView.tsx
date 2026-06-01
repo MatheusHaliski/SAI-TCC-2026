@@ -31,6 +31,7 @@ interface SchemeItem {
   visibility: 'public' | 'private';
   creation_mode?: 'manual' | 'ai';
   updatedAt?: string;
+  pieces?: unknown[];
 }
 
 interface PublicProfile {
@@ -68,7 +69,9 @@ export default function ProfileView() {
 
   const isOwnerView = Boolean(authUserId) && Boolean(userId) && authUserId === userId;
   const forcedPublicSection = publicUserFromPath && !isOwnerView ? 'user-info' : null;
-  const selectedSection = forcedPublicSection ?? (pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section')));
+  const urlSection = forcedPublicSection ?? (pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section')));
+  const [localSection, setLocalSection] = useState<ProfileSectionKey>(urlSection);
+  const selectedSection = forcedPublicSection ?? localSection;
   const allowedSections: ProfileSectionKey[] = isOwnerView || !publicUserFromPath
     ? ALLOWED_SECTIONS
     : ['user-info'];
@@ -145,6 +148,7 @@ export default function ProfileView() {
 
   const updateSection = (section: ProfileSectionKey) => {
     const normalized = allowedSections.includes(section) ? section : allowedSections[0];
+    setLocalSection(normalized);
     const query = new URLSearchParams(searchParams.toString());
     query.set('section', normalized);
     router.replace(`${pathname}?${query.toString()}`);

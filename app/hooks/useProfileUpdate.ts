@@ -26,21 +26,27 @@ export function useProfileUpdate() {
   const updateProfile = async (payload: Payload): Promise<ProfileResponse | null> => {
     setSaving(true);
     setError(null);
-    const response = await fetch('/api/users/me', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    setSaving(false);
+    try {
+      const response = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({ error: 'Unable to update profile.' }));
-      setError(data.error || 'Unable to update profile.');
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ error: 'Não foi possível atualizar o perfil.' }));
+        setError(data.error || 'Não foi possível atualizar o perfil.');
+        return null;
+      }
+
+      const data = (await response.json().catch(() => null)) as { profile?: ProfileResponse } | null;
+      return data?.profile ?? null;
+    } catch {
+      setError('Erro de conexão. Verifique sua internet e tente novamente.');
       return null;
+    } finally {
+      setSaving(false);
     }
-
-    const data = (await response.json().catch(() => null)) as { profile?: ProfileResponse } | null;
-    return data?.profile ?? null;
   };
 
   return { saving, error, updateProfile };

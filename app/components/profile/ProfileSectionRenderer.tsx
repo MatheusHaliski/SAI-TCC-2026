@@ -25,6 +25,7 @@ interface SchemeItem {
   visibility: 'public' | 'private';
   creation_mode?: 'manual' | 'ai';
   updatedAt?: string;
+  pieces?: unknown[];
 }
 
 interface ProfileSectionRendererProps {

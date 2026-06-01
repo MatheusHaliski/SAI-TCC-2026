@@ -12,6 +12,9 @@ import {
   applyPageBackgroundConfig,
   savePageBackgroundConfig,
   ensureSavedPageBackgroundConfig,
+  applySurfaceColorConfig,
+  saveSurfaceColorConfig,
+  readSurfaceColorConfig,
   type PageBackgroundConfig,
   type PageBackgroundShape,
 } from '@/app/lib/pageBackground';
@@ -79,7 +82,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
   const [shape,      setShape]      = useState<PageBackgroundShape>('orb');
   const [shapeColor, setShapeColor] = useState('#a78bfa');
 
-  /* ── Solid color state ── */
+  /* ── Element color state (Cor dos elementos) ── */
   const [solidColor, setSolidColor] = useState('#0d0b18');
 
   /* ── Preset state — stores the full gradient string so save always works ── */
@@ -99,6 +102,10 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
 
     const savedPresetId = getLS(ACTIVE_BG_KEY);
     if (savedPresetId) setActivePresetId(savedPresetId);
+
+    /* restore element color */
+    const savedSurface = readSurfaceColorConfig();
+    if (savedSurface?.color) setSolidColor(savedSurface.color);
 
     /* restore gradient stops if saved */
     try {
@@ -127,7 +134,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
   /* ── Build current CSS gradient from active tab ── */
   const buildCurrentBackground = useCallback((): string => {
     switch (tab) {
-      case 'cor':       return solidColor;
+      case 'cor':       return ''; // handled separately via applySurfaceColorConfig
       case 'gradiente': return buildGradientCss(gradStops, gradType, gradAngle);
       case 'geometria': {
         const base = `linear-gradient(135deg, #0f172a 0%, #1e0a3c 100%)`;
@@ -141,16 +148,34 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
     }
   }, [tab, solidColor, gradStops, gradType, gradAngle, shape, shapeColor, activePresetGradient]);
 
+  /* ── Live preview on element color change ── */
+  useEffect(() => {
+    if (!mounted.current) return;
+    if (tab !== 'cor') return;
+    applySurfaceColorConfig({ color: solidColor });
+  }, [solidColor, tab]);
+
   /* ── Live preview on state change (skip first render) ── */
   useEffect(() => {
     if (!mounted.current) return;
     if (tab === 'presets') return; // presets apply immediately on click
+    if (tab === 'cor') return; // handled above
     const bg = buildCurrentBackground();
     if (bg) document.documentElement.style.setProperty('--home-shell-bg', bg);
   }, [tab, buildCurrentBackground]);
 
   /* ── Apply + save ── */
   const applyAndSave = () => {
+    if (tab === 'cor') {
+      saveSurfaceColorConfig({ color: solidColor });
+      applySurfaceColorConfig({ color: solidColor });
+      setLS(ACTIVE_TAB_KEY, tab);
+      setSaveMsg('✓ Cor dos elementos salva!');
+      setTimeout(() => setSaveMsg(''), 3000);
+      onSaved?.();
+      return;
+    }
+
     const gradient = buildCurrentBackground();
     if (!gradient) {
       setSaveMsg('⚠️ Selecione uma opção antes de salvar.');
@@ -162,7 +187,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
       shape: tab === 'geometria' ? shape : 'none',
     };
     applyPageBackgroundConfig(config);
-    savePageBackgroundConfig(config);          /* ← uses the lib's own save fn */
+    savePageBackgroundConfig(config);
     setLS(ACTIVE_TAB_KEY, tab);
     if (activePresetId) setLS(ACTIVE_BG_KEY, activePresetId);
 
@@ -221,7 +246,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
           { id:'presets',   label:'⚡ Presets'    },
           { id:'gradiente', label:'🌈 Gradiente'  },
           { id:'geometria', label:'🔷 Geometria'  },
-          { id:'cor',       label:'🎨 Cor sólida' },
+          { id:'cor',       label:'🎨 Cor dos elementos' },
         ] as const).map((t) => (
           <button key={t.id} type="button" onClick={() => setTab(t.id)} style={tabBtnStyle(tab === t.id)}>
             {t.label}
@@ -359,11 +384,16 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
         </div>
       )}
 
-      {/* ── COR SÓLIDA ── */}
+      {/* ── COR DOS ELEMENTOS ── */}
       {tab === 'cor' && (
         <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
-          <div style={{ height:'5rem', borderRadius:'0.875rem', border:'1px solid var(--border)', background:solidColor, transition:'background 0.2s' }} />
-          {sectionTitle('Escolha uma cor')}
+          <div style={{ padding:'0.75rem 1rem', borderRadius:'0.75rem', background:'rgba(124,58,237,0.08)', border:'1px solid rgba(124,58,237,0.2)', fontSize:'0.8125rem', color:'var(--foreground)' }}>
+            🎨 Escolha uma cor para os <strong>elementos da interface</strong> — sidebars, cards, painéis e superfícies internas do app.
+          </div>
+          <div style={{ height:'5rem', borderRadius:'0.875rem', border:'1px solid var(--border)', background:solidColor, transition:'background 0.2s', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <span style={{ color:'#fff', fontWeight:700, fontSize:'0.875rem', textShadow:'0 1px 4px rgba(0,0,0,0.6)' }}>Pré-visualização da cor</span>
+          </div>
+          {sectionTitle('Escolha uma cor dos elementos')}
           <div style={{ display:'flex', flexWrap:'wrap', gap:'0.5rem', alignItems:'center' }}>
             {['#0d0b18','#0f172a','#111111','#1a1a2e','#0a0f1e','#f8f7ff','#ffffff','#f3f4f6','#fdf4ff','#fff0f6','#7c3aed','#4c1d95','#db2777','#0ea5e9','#10b981'].map((c) => (
               <button key={c} type="button" onClick={() => setSolidColor(c)}
