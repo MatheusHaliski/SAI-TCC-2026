@@ -2643,7 +2643,7 @@ export default function OutfitBackgroundStudioModal({
         )}
       </header>
 
-      <div className={asPage ? 'grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.25fr)]' : 'grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]'}>
+      <div className={asPage ? 'grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(460px,1.35fr)]' : 'grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]'}>
         <section className={asPage ? 'space-y-4 rounded-2xl border border-white/15 bg-white/5 p-4' : 'min-h-0 space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
             <div className="inline-flex rounded-xl border border-white/20 bg-white/5 p-1">
               {([
@@ -3336,10 +3336,12 @@ export default function OutfitBackgroundStudioModal({
             </section>
           </section>
 
-          <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4 xl:sticky xl:top-4 xl:h-fit' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
+          <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4 lg:sticky lg:top-4 lg:h-fit' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
             <p className="text-xs uppercase tracking-[0.12em] text-white/65">Pré-visualização</p>
-            <div className="mx-auto w-full max-w-[560px]">
-              <OutfitCard data={previewData} variant="default" />
+            <div className="mx-auto w-full max-w-[832px] overflow-visible pb-[40%]">
+              <div style={{ width: '76.923%', margin: '0 auto', transform: 'scale(1.3, 1.4)', transformOrigin: 'top center' }}>
+                <OutfitCard data={previewData} variant="default" />
+              </div>
             </div>
             <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/85">
               <p>Contrast recommendation: <span className="font-semibold">Use {recommendTextTone} text/icons</span>.</p>

@@ -9,13 +9,17 @@ export default function SchemeStepSidebar({ steps, currentStep, completedSteps, 
   const progress = Math.round((completedSteps.length / steps.length) * 100);
 
   return (
-    <aside className="sa-surface-context rounded-2xl border border-white/20 p-4 backdrop-blur-sm lg:sticky lg:top-0 lg:h-fit">
-      <p className="text-lg font-semibold text-white">Create my Outfit Card</p>
-      <p className="mt-1 text-xs text-white/70">Progress {progress}%</p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/20">
-        <div className="h-full bg-gradient-to-r from-emerald-300 to-amber-300" style={{ width: `${progress}%` }} />
+    <aside className="sa-surface-context w-full rounded-2xl border border-white/20 p-4 backdrop-blur-sm">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <p className="text-lg font-semibold text-white">Create my Outfit Card</p>
+          <p className="mt-1 text-xs text-white/70">Progress {progress}%</p>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-white/20 lg:max-w-[280px]">
+          <div className="h-full bg-gradient-to-r from-emerald-300 to-amber-300" style={{ width: `${progress}%` }} />
+        </div>
       </div>
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {steps.map((step, index) => {
           const active = currentStep === step;
           const done = completedSteps.includes(step);
