@@ -11,13 +11,27 @@ const PT_TRANSLATIONS: Record<string, string> = {
   Settings: 'Configurações',
   'Profile Menu': 'Menu do perfil',
   'My Wardrobe Pieces': 'Meu Guarda-roupa',
-  'User Info': 'Informações do usuário',
   'My Schemes': 'Meus Esquemas',
   'Saved Schemes': 'Esquemas Salvos',
   'My Posts': 'Minhas postagens',
   'Active section:': 'Seção ativa:',
   Authenticated: 'Autenticado',
   'Public Profile': 'Perfil público',
+  'User Info': 'Informações do usuário',
+  'Edit your profile identity and public creator metadata.': 'Edite sua identidade de perfil e os metadados públicos de criador.',
+  'Public creator profile metadata.': 'Metadados públicos do perfil do criador.',
+  'Display name': 'Nome de exibição',
+  Username: 'Nome de usuário',
+  Email: 'E-mail',
+  'Upload photo': 'Enviar foto',
+  Bio: 'Bio',
+  'Unnamed User': 'Usuário sem nome',
+  'Save Changes': 'Salvar alterações',
+  'Saving...': 'Salvando...',
+  'Loading...': 'Carregando...',
+  'Profile updated successfully.': 'Perfil atualizado com sucesso.',
+  'Unable to save profile.': 'Não foi possível salvar o perfil.',
+  'You are viewing this creator profile in read-only mode.': 'Você está visualizando este perfil de criador em modo somente leitura.',
 
   // Language / Settings
   'Site language': 'Idioma do site',
@@ -40,6 +54,12 @@ const PT_TRANSLATIONS: Record<string, string> = {
   English: 'Inglês',
   'Visible to everyone': 'Visível para todos',
   'Only visible to you': 'Visível apenas para você',
+  'Fashion AI': 'Fashion AI',
+  'Personalize sua experiência no Fashion AI': 'Personalize sua experiência no Fashion AI',
+  'Background Studio': 'Estúdio de Fundo',
+  'Solid Color': 'Cor dos elementos',
+  'Element color': 'Cor dos elementos',
+  'Elements color': 'Cor dos elementos',
 
   // Page titles / headers
   'Saved Outfit Cards': 'Cards de Look Salvos',
@@ -49,7 +69,6 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Virtual Wardrobe': 'Guarda-Roupa Virtual',
   'Classify pieces as available, unavailable, and favorites.': 'Classifique peças como disponíveis, indisponíveis e favoritas.',
   'Create Outfit Card': 'Criar Card de Look',
-  'Background Studio': 'Estúdio de Fundo',
   'Dress Tester': 'Provador 2D',
 
   // Sections / filters
@@ -94,6 +113,9 @@ const PT_TRANSLATIONS: Record<string, string> = {
   // Wardrobe section
   'Scan and manage your pieces with premium compact cards.': 'Visualize e gerencie suas peças com cards premium compactos.',
   'No wardrobe items found yet.': 'Nenhuma peça encontrada ainda.',
+  'Delete wardrobe item': 'Excluir peça',
+  'Delete item': 'Excluir item',
+  'Use in 2D Tester': 'Usar no Provador 2D',
   'No pieces in this list.': 'Nenhuma peça nesta lista.',
   'Manage list status for each wardrobe item.': 'Gerencie o status de cada peça do guarda-roupa.',
 
@@ -110,6 +132,8 @@ const PT_TRANSLATIONS: Record<string, string> = {
   // Explore/Saved section
   'Outfits grouped by occasion.': 'Looks agrupados por ocasião.',
   'No authored schemes yet.': 'Nenhum esquema criado ainda.',
+  'No schemes created yet.': 'Nenhum esquema criado ainda.',
+  'Loading schemes...': 'Carregando esquemas...',
   'No saved schemes available.': 'Nenhum esquema salvo disponível.',
   'Authored creative assets with compact premium outfit cards.': 'Cards de look criados por você com visualização premium compacta.',
   'Compact Saved Outfit Cards card family with premium visual continuity.': 'Cards de look salvos com continuidade visual premium.',
@@ -171,6 +195,12 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Save & Generate': 'Salvar e Gerar',
   'Manual Builder': 'Construtor Manual',
   'AI Builder': 'Construtor IA',
+  'Quality check warning: title, style, occasion, and at least one slot are required before saving.':
+    'Aviso de qualidade: título, estilo, ocasião e pelo menos um slot são obrigatórios antes de salvar.',
+  'Save Outfit Card': 'Salvar Card de Look',
+  'Generate Outfit Card': 'Gerar Card de Look',
+  'Generated Outfit Card': 'Card de Look Gerado',
+  'Rendered after the final save & generate action.': 'Renderizado após a ação final de salvar e gerar.',
 
   // Filter pills (new)
   Disponíveis: 'Disponíveis',
@@ -289,7 +319,6 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'AI Artwork': 'Arte com IA',
 
   // Color tab
-  'Solid Color': 'Cor Sólida',
   'Recent colors': 'Cores recentes',
   'Subtle texture overlay': 'Textura sutil sobreposta',
 
