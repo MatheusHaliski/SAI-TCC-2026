@@ -90,29 +90,50 @@ export default function OutfitPieceCard({
   return (
     <>
       <article
-        className={`group relative overflow-hidden rounded-2xl border border-white/18 bg-black/18 transition duration-300 hover:-translate-y-0.5 hover:bg-black/24 ${compact ? 'p-3' : 'p-4'}`}
-        style={{ boxShadow: '0 16px 34px rgba(2,6,23,0.22)' }}
+        className={`group relative min-w-0 max-w-full overflow-hidden rounded-2xl transition duration-300 hover:scale-[1.02] ${compact ? 'p-3' : 'p-4'}`}
+        style={{
+          border: '1px solid rgba(124,58,237,0.35)',
+          background: 'linear-gradient(145deg, rgba(124,58,237,0.28) 0%, rgba(219,39,119,0.22) 52%, rgba(109,40,217,0.20) 100%)',
+          backdropFilter: 'blur(14px)',
+          boxShadow: '0 10px 30px rgba(2,6,23,0.36)',
+        }}
       >
         <div className="pointer-events-none absolute inset-0 rounded-[inherit] border border-white/10" />
 
-        <div className="relative z-[1] grid gap-3">
-          <div className="flex items-start gap-3">
-            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/18 bg-white/10">
-              {imageUrl ? (
-                <Image src={imageUrl} alt={pieceName} fill className="object-contain p-1.5" unoptimized />
-              ) : (
-                <span className="text-xl font-black uppercase text-white/55">{pieceTypeLabel.slice(0, 1)}</span>
-              )}
+        <div className="relative z-[1] space-y-3">
+          {/* Header — name + tier */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 space-y-0.5">
+              <p className="truncate text-sm font-semibold text-white">{pieceName}</p>
+              <p className="truncate font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">
+                {pieceTypeLabel}
+              </p>
             </div>
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-base font-black leading-tight text-white">{pieceName}</p>
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">{pieceTypeLabel}</p>
-                </div>
-                <span className="shrink-0 rounded-full border border-white/20 bg-white/12 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white/72">
-                  {categoryLabel}
+          {/* Remix flag — piece must be swapped for one the user owns */}
+          {piece.needsReplacement && (
+            <div
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wide"
+              style={{ border: '1px solid rgba(251,191,36,0.45)', background: 'rgba(251,191,36,0.14)', color: '#fcd34d' }}
+            >
+              <span>↺</span>
+              <span className="truncate">Substituir por peça sua</span>
+            </div>
+          )}
+
+          {/* Brand */}
+          <BrandBadge brandName={brandName} brandLogoUrl={brandLogoUrl} variant="compact" />
+
+          {/* Community signal */}
+          {!compact && (
+            <div className="space-y-2 pt-1">
+              <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/50">
+                Community Signal
+                <span className="ml-2 text-white/35">
+                  base {baseQuality.toFixed(1)}
+                  {computed > baseQuality
+                    ? ` · +${(computed - baseQuality).toFixed(1)} likes`
+                    : ' · no boost yet'}
                 </span>
               </div>
 
