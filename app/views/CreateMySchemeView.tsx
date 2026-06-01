@@ -902,10 +902,8 @@ export default function CreateMySchemeView() {
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <div className="lg:sticky lg:top-0 lg:h-fit">
-          <SchemeStepSidebar steps={sections} currentStep={selectedSection} completedSteps={completedSections} onSelect={setSelectedSection} />
-        </div>
+      <div className="flex min-w-0 flex-col gap-6">
+        <SchemeStepSidebar steps={sections} currentStep={selectedSection} completedSteps={completedSections} onSelect={setSelectedSection} />
 
         <div className="min-w-0 space-y-6">
           <PageHeader
