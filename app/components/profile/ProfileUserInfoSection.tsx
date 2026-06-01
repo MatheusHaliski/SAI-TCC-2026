@@ -12,9 +12,10 @@ interface ProfileUserInfoSectionProps {
   username: string;
   email: string;
   canEdit: boolean;
+  onProfileSaved?: (profile: { name?: string; username?: string; email?: string; bio?: string; photo_url?: string }) => void;
 }
 
-export default function ProfileUserInfoSection({ userId, displayName, username, email, canEdit }: ProfileUserInfoSectionProps) {
+export default function ProfileUserInfoSection({ userId, displayName, username, email, canEdit, onProfileSaved }: ProfileUserInfoSectionProps) {
   const defaultBio = 'Fashion-tech creator focused on premium essentials and elevated streetwear.';
   const defaultForm = {
     displayName,
@@ -145,6 +146,13 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
                 ...authProfile,
                 name: synced.displayName,
                 email: synced.email,
+                photo_url: synced.avatarUrl,
+              });
+              onProfileSaved?.({
+                name: synced.displayName,
+                username: synced.username,
+                email: synced.email,
+                bio: synced.bio,
                 photo_url: synced.avatarUrl,
               });
 

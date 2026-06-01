@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import SectionBlock from '@/app/components/shared/SectionBlock';
@@ -45,6 +45,10 @@ export default function ProfileWardrobeSection({ items: initialItems, onItemDele
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+
   const handleUseInTester = (item: WardrobeViewItem) => {
     const gender = resolveTesterGender(item.gender);
     const slot = resolveTesterSlot(item.piece_type);
@@ -56,7 +60,7 @@ export default function ProfileWardrobeSection({ items: initialItems, onItemDele
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      const response = await fetch(`/api/wardrobe/${deleteItem.wardrobe_item_id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/wardrobe-items/${deleteItem.wardrobe_item_id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Falha ao excluir a peça.');
       const removed = deleteItem.wardrobe_item_id;
       setItems((prev) => prev.filter((item) => item.wardrobe_item_id !== removed));
