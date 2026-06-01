@@ -1,7 +1,7 @@
 import { getAdminFirestore } from '@/app/lib/firebaseAdmin';
 import { NextResponse } from 'next/server';
 
-const USERS_COLLECTION = 'users';
+const USERS_COLLECTION = 'saiUsers';
 
 export async function GET() {
   try {
