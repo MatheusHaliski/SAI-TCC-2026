@@ -1,9 +1,12 @@
 'use client';
 
-import Image from 'next/image';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
 import { OutfitPiece, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
+import BrandBadge from '@/app/components/outfit-card/BrandBadge';
+import TierChip from '@/app/components/outfit-card/badges/TierChip';
+import LikesBadge from '@/app/components/outfit-card/badges/LikesBadge';
+import QualityBadge from '@/app/components/outfit-card/badges/QualityBadge';
 import PieceCardModal from '@/app/components/outfit-card/PieceCardModal';
 
 interface OutfitPieceCardProps {
@@ -15,10 +18,6 @@ interface OutfitPieceCardProps {
   onOpenInDressTester?: () => void;
 }
 
-function normalizeLabel(value?: string, fallback = 'Peca'): string {
-  return (value?.trim() || fallback).replaceAll('_', ' ');
-}
-
 export default function OutfitPieceCard({
   piece,
   compact = false,
@@ -26,53 +25,38 @@ export default function OutfitPieceCard({
   onOpenInDressTester,
 }: OutfitPieceCardProps) {
   const router = useRouter();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [launching, setLaunching] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState<number>(piece.likes ?? 0);
-  const [shareStatus, setShareStatus] = useState('');
+  const [modalOpen,  setModalOpen]  = useState(false);
+  const [launching,  setLaunching]  = useState(false);
+  const [liked,      setLiked]      = useState(false);
+  const [likes,      setLikes]      = useState<number>(piece.likes ?? 0);
+  const [pending,    setPending]    = useState(false);
 
-  const pieceName = piece.name?.trim() || 'Peca sem titulo';
-  const brandName = piece.brand?.trim() || 'Fashion AI';
-  const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
-  const imageUrl = piece.imageUrl || brandLogoUrl;
-  const categoryLabel = normalizeLabel(piece.category, 'Standard');
-  const pieceTypeLabel = normalizeLabel(piece.pieceType, 'Peca');
-  const statusLabel = piece.wardrobeItemId ? 'No guarda-roupa' : 'Referencia visual';
-  const description =
-    piece.description?.trim()
+  const pieceName      = piece.name?.trim()  || 'Unnamed Piece';
+  const brandName      = piece.brand?.trim() || 'Brand not specified';
+  const brandLogoUrl   = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
+  const imageUrl       = piece.imageUrl || brandLogoUrl;
+  const categoryLabel  = piece.category  ?? 'Standard';
+  const pieceTypeLabel = piece.pieceType || 'Garment';
+  const baseQuality    = (piece as { baseQuality?: number }).baseQuality ?? 3.0;
+  const computed       = Math.min(5, baseQuality + likes * 0.01);
+  const description    = piece.description?.trim()
     || `${pieceTypeLabel} da marca ${brandName}, escolhida para compor a identidade visual do look.`;
 
-  const handleToggleLike = useCallback((e: React.MouseEvent) => {
+  const handleToggleLike = async () => {
+    if (pending) return;
+    setPending(true);
+    const newLiked = !liked;
+    setLiked(newLiked);
+    setLikes((prev) => prev + (newLiked ? 1 : -1));
+    setPending(false);
+  };
+
+  const handleExperiment = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const nextLiked = !liked;
-    setLiked(nextLiked);
-    setLikes(nextLikes);
-
-    if (!schemeId || !piece.id) return;
-
-    startToggle(async () => {
-      try {
-        const { toggleLikePiece } = await import('@/app/lib/pieces/likes');
-        // Requires auth — import lazily to avoid breaking SSR.
-        const { getAuth } = await import('firebase/auth');
-        const user = getAuth().currentUser;
-        if (!user) return;
-        const result = await toggleLikePiece(schemeId, piece.id, user.uid);
-        // Reconcile with the authoritative Firestore result (handles the case
-        // where the user already liked this piece in a previous session).
-        setLiked(result.liked);
-        setLikes(result.likes);
-      } catch {
-        // Rollback on failure.
-        setLiked(liked);
-        setLikes(likes);
-      }
-    } catch {
-      setShareStatus('Falhou');
-      window.setTimeout(() => setShareStatus(''), 1600);
-    }
-  }, [description, pieceName]);
+    if (launching || !onOpenInDressTester) return;
+    setLaunching(true);
+    setTimeout(() => { setLaunching(false); onOpenInDressTester(); }, 400);
+  };
 
   const handleRemix = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,7 +82,29 @@ export default function OutfitPieceCard({
           boxShadow: '0 10px 30px rgba(2,6,23,0.36)',
         }}
       >
-        <div className="pointer-events-none absolute inset-0 rounded-[inherit] border border-white/10" />
+        {/* Inner glow */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: 'radial-gradient(circle at 20% 18%, rgba(255,255,255,0.18) 0%, transparent 44%), linear-gradient(130deg, rgba(255,255,255,0.10) 0%, transparent 48%)',
+            borderRadius: 'inherit',
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-[1px] rounded-2xl"
+          style={{ border: '1px solid rgba(255,255,255,0.15)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
+        />
+
+        {/* Launch flash */}
+        {launching && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-[2] animate-ping rounded-2xl"
+            style={{ background: 'rgba(219,39,119,0.2)', animationDuration: '0.35s', animationIterationCount: '1' }}
+          />
+        )}
 
         <div className="relative z-[1] space-y-3">
           {/* Header — name + tier */}
@@ -109,6 +115,8 @@ export default function OutfitPieceCard({
                 {pieceTypeLabel}
               </p>
             </div>
+            <TierChip tier={categoryLabel} />
+          </div>
 
           {/* Remix flag — piece must be swapped for one the user owns */}
           {piece.needsReplacement && (
@@ -135,35 +143,64 @@ export default function OutfitPieceCard({
                     ? ` · +${(computed - baseQuality).toFixed(1)} likes`
                     : ' · no boost yet'}
                 </span>
-              </div>
+              </p>
 
-              <div className="mt-3 flex items-center gap-2">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 bg-white/12">
-                  {brandLogoUrl ? (
-                    <Image src={brandLogoUrl} alt={`${brandName} logo`} width={24} height={24} className="h-6 w-6 object-contain" unoptimized />
-                  ) : (
-                    <span className="text-[10px] font-black uppercase text-white">{brandName.slice(0, 2)}</span>
-                  )}
-                </span>
-                <span className="min-w-0 truncate text-sm font-bold text-white/84">{brandName}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <LikesBadge
+                  likes={likes}
+                  liked={liked}
+                  onToggle={handleToggleLike}
+                  disabled={pending}
+                />
+                <QualityBadge baseQuality={baseQuality} likes={likes} />
               </div>
             </div>
-          </div>
-        ) : null}
+          )}
 
-        {/* Action button */}
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
-          className="mt-1 w-full rounded-lg border border-cyan-300/50 bg-cyan-500/15 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/30 hover:border-cyan-200/70"
-        >
-          Visualizar card da peça
-        </button>
-      </div>
+          {/* Dress tester button */}
+          {onOpenInDressTester && (
+            <button
+              type="button"
+              onClick={handleExperiment}
+              disabled={launching}
+              className={`w-full rounded-xl py-2 text-[11px] font-semibold uppercase tracking-wide transition-all duration-300 ${
+                launching
+                  ? 'scale-95 border border-pink-300/50 bg-pink-500/25 text-pink-100'
+                  : 'border border-pink-400/45 bg-pink-500/15 text-pink-100 hover:scale-[1.02] hover:border-pink-300/65 hover:bg-pink-500/28'
+              }`}
+            >
+              {launching ? '✦ Abrindo Provador...' : '✦ Experimentar'}
+            </button>
+          )}
 
-      {modalOpen ? (
+          {/* Remix button */}
+          <button
+            type="button"
+            onClick={handleRemix}
+            className="w-full rounded-xl border border-yellow-400/45 bg-yellow-500/12 py-2 text-[11px] font-semibold uppercase tracking-wide text-yellow-200 transition-all duration-300 hover:scale-[1.02] hover:border-yellow-300/65 hover:bg-yellow-500/22"
+          >
+            ↺ Remixar
+          </button>
+
+          {/* View piece card button */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setModalOpen(true); onViewPieceCard?.(); }}
+            className="w-full rounded-lg border px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition"
+            style={{
+              borderColor: 'rgba(124,58,237,0.5)',
+              background: 'rgba(124,58,237,0.15)',
+              color: '#c4b5fd',
+            }}
+          >
+            Visualizar card da peça
+          </button>
+        </div>
+      </article>
+
+      {modalOpen && (
         <PieceCardModal piece={piece} onClose={() => setModalOpen(false)} />
-      ) : null}
-    </article>
+      )}
+    </>
   );
 }
