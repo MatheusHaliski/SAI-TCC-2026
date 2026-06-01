@@ -902,10 +902,12 @@ export default function CreateMySchemeView() {
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <SchemeStepSidebar steps={sections} currentStep={selectedSection} completedSteps={completedSections} onSelect={setSelectedSection} />
+      <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="lg:sticky lg:top-0 lg:h-fit">
+          <SchemeStepSidebar steps={sections} currentStep={selectedSection} completedSteps={completedSections} onSelect={setSelectedSection} />
+        </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <PageHeader
             title="Create my Outfit Card"
             subtitle="Premium manual and AI generation paths for outfit cards."
