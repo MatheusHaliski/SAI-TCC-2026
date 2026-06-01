@@ -9,6 +9,34 @@ import { clearAuthSessionToken } from "@/app/lib/authSession";
 
 const ff = "'Inter', 'Segoe UI', Arial, sans-serif";
 const metallicGradient = "linear-gradient(135deg, #f7e7b2 0%, #d4af37 28%, #f4f4f5 52%, #a3a3a3 74%, #fff5cf 100%)";
+const brandLogoSrc = "/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg";
+
+function BrandLogoMark({ size = 48 }: { size?: number }) {
+    return (
+        <div
+            style={{
+                width: size,
+                height: size,
+                borderRadius: size >= 48 ? "0.875rem" : "0.625rem",
+                background: "rgba(255,255,255,0.2)",
+                backdropFilter: "blur(8px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                overflow: "hidden",
+            }}
+        >
+            <Image
+                src={brandLogoSrc}
+                alt="Fashion AI"
+                width={Math.round(size * 0.58)}
+                height={Math.round(size * 0.58)}
+                style={{ width: "58%", height: "58%", objectFit: "cover", borderRadius: 6 }}
+            />
+        </div>
+    );
+}
 
 export default function SignupViewPage() {
     const router = useRouter();
@@ -33,15 +61,7 @@ export default function SignupViewPage() {
             <div style={{ background: metallicGradient, padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
                 <div style={{ border: "2px solid rgba(255,255,255,0.92)", borderRadius: 24, background: "rgba(255,255,255,0.06)", padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1rem", textAlign: "center" }}>
-                        <div style={{ width: 168, height: 168, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255,255,255,0.35)" }}>
-                            <Image
-                                src="/Firefly_Gemini Flash_Consegue melhorar o logo da bolsa FAI para que fique com gradiente metalico do logo S 3787887.png"
-                                alt="Logo metálico oficial da FAI"
-                                width={168}
-                                height={168}
-                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                            />
-                        </div>
+                        <BrandLogoMark size={88} />
                         <div>
                             <div style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 600, fontFamily: ff }}>Create a new account in minutes!</div>
                         </div>
@@ -90,6 +110,15 @@ export default function SignupViewPage() {
                             ← Voltar para login
                         </button>
                         <div style={{ background: "#fff", border: "2px solid #000", borderRadius: 24, padding: "2rem" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.875rem", marginBottom: "1.5rem" }}>
+                                <div style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", borderRadius: "0.875rem" }}>
+                                    <BrandLogoMark size={48} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: "1.25rem", fontWeight: 800, lineHeight: 1.1, color: "#111827", fontFamily: ff }}>Fashion AI</div>
+                                    <div style={{ fontSize: "0.8125rem", color: "#6b7280", fontFamily: ff }}>Seu estilista pessoal</div>
+                                </div>
+                            </div>
                             <div style={{ marginBottom: "2rem" }}>
                                 <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem", fontFamily: ff }}>Criar sua conta</h2>
                                 <p style={{ color: "#6b7280", fontFamily: ff }}>Preencha os dados abaixo para começar</p>

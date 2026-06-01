@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { VSModalPaged } from "@/app/lib/authAlerts";
 import { clearAuthSessionToken, setAuthSessionProfile, setAuthSessionToken } from "@/app/lib/authSession";
 import { setDevSessionToken } from "@/app/lib/devSession";
@@ -34,6 +35,7 @@ const SKIPPABLE_FIREBASE_ERROR_CODES = new Set([
     "auth/app-deleted",
     "auth/app-not-authorized",
 ]);
+const BRAND_LOGO_SRC = "/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg";
 
 const normalizeFirebaseErrorCode = (error: unknown): string => {
     const maybeAuthError = error as Partial<FirebaseError> | null;
@@ -58,7 +60,7 @@ const EyeClosed = () => (
     </svg>
 );
 const SparklesIcon = () => (
-    <img src="/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg" alt="sparkles" width="28" height="28" style={{ objectFit: 'cover', borderRadius: '6px' }} />
+    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={28} height={28} style={{ objectFit: 'cover', borderRadius: '6px' }} />
 );
 const MailIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -92,7 +94,6 @@ export default function AuthViewClient() {
     const [socialSubmitting, setSocialSubmitting] = useState<"google" | "facebook" | null>(null);
     const [socialErrorMessage, setSocialErrorMessage] = useState("");
     const [emailLoginErrorMessage, setEmailLoginErrorMessage] = useState("");
-    const pathname = usePathname();
     const { firebaseApp, hasFirebaseConfig } = firebaseAuthGate();
 
     useEffect(() => { ensureSharedAccessToken(); }, [router]);
@@ -322,17 +323,6 @@ export default function AuthViewClient() {
             {/* ── Right form panel ── */}
             <div style={s.right}>
                 <div style={s.card}>
-                    {/* Mobile logo */}
-                    <div className="lg:hidden" style={{ display:"flex", alignItems:"center", gap:"0.75rem", marginBottom:"2rem" }}>
-                        <div style={{ width:"2.5rem", height:"2.5rem", borderRadius:"0.625rem", background:"linear-gradient(135deg,#7c3aed,#db2777)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            <SparklesIcon />
-                        </div>
-                        <div>
-                            <div style={{ fontSize:"1.2rem", fontWeight:800 }}>Fashion AI</div>
-                            <div style={{ fontSize:"0.75rem", color:"var(--muted-foreground)" }}>Seu estilista pessoal</div>
-                        </div>
-                    </div>
-
                     <div style={{ marginBottom:"2rem" }}>
                         <h2 style={{ fontSize:"1.75rem", fontWeight:800, marginBottom:"0.5rem" }}>Bem-vindo de volta</h2>
                         <p style={{ color:"var(--muted-foreground)", fontSize:"0.9375rem" }}>Entre com suas credenciais para acessar sua conta</p>
