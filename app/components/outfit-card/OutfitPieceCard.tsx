@@ -1,11 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
 import { OutfitPiece, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
-import BrandBadge from '@/app/components/outfit-card/BrandBadge';
-import TierChip from '@/app/components/outfit-card/badges/TierChip';
-import LikesBadge from '@/app/components/outfit-card/badges/LikesBadge';
-import QualityBadge from '@/app/components/outfit-card/badges/QualityBadge';
 import PieceCardModal from '@/app/components/outfit-card/PieceCardModal';
 
 interface OutfitPieceCardProps {
@@ -17,152 +15,185 @@ interface OutfitPieceCardProps {
   onOpenInDressTester?: () => void;
 }
 
+function normalizeLabel(value?: string, fallback = 'Peca'): string {
+  return (value?.trim() || fallback).replaceAll('_', ' ');
+}
+
 export default function OutfitPieceCard({
   piece,
   compact = false,
   onViewPieceCard,
   onOpenInDressTester,
 }: OutfitPieceCardProps) {
-  const [modalOpen,  setModalOpen]  = useState(false);
-  const [launching,  setLaunching]  = useState(false);
-  const [liked,      setLiked]      = useState(false);
-  const [likes,      setLikes]      = useState<number>(piece.likes ?? 0);
-  const [pending,    setPending]    = useState(false);
+  const router = useRouter();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [launching, setLaunching] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likes, setLikes] = useState<number>(piece.likes ?? 0);
+  const [shareStatus, setShareStatus] = useState('');
 
-  const pieceName     = piece.name?.trim()      || 'Unnamed Piece';
-  const brandName     = piece.brand?.trim()     || 'Brand not specified';
-  const brandLogoUrl  = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
-  const categoryLabel = piece.category           ?? 'Standard';
-  const pieceTypeLabel = piece.pieceType         || 'Garment';
-  const baseQuality   = (piece as { baseQuality?: number }).baseQuality ?? 3.0;
-  const computed      = Math.min(5, baseQuality + likes * 0.01);
+  const pieceName = piece.name?.trim() || 'Peca sem titulo';
+  const brandName = piece.brand?.trim() || 'Fashion AI';
+  const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
+  const imageUrl = piece.imageUrl || brandLogoUrl;
+  const categoryLabel = normalizeLabel(piece.category, 'Standard');
+  const pieceTypeLabel = normalizeLabel(piece.pieceType, 'Peca');
+  const statusLabel = piece.wardrobeItemId ? 'No guarda-roupa' : 'Referencia visual';
+  const description =
+    piece.description?.trim()
+    || `${pieceTypeLabel} da marca ${brandName}, escolhida para compor a identidade visual do look.`;
 
-  const handleToggleLike = async () => {
-    if (pending) return;
-    setPending(true);
-    const newLiked = !liked;
-    setLiked(newLiked);
-    setLikes((prev) => prev + (newLiked ? 1 : -1));
-    setPending(false);
-  };
+  const handleToggleLike = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+    setLikes((prev) => Math.max(0, prev + (nextLiked ? 1 : -1)));
+  }, [liked]);
 
-  const handleExperiment = (e: React.MouseEvent) => {
+  const handleExperiment = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (launching || !onOpenInDressTester) return;
     setLaunching(true);
-    setTimeout(() => { setLaunching(false); onOpenInDressTester(); }, 400);
-  };
+    window.setTimeout(() => {
+      setLaunching(false);
+      onOpenInDressTester();
+    }, 300);
+  }, [launching, onOpenInDressTester]);
+
+  const handleShare = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = `${pieceName} - ${description}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: pieceName, text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        setShareStatus('Copiado');
+        window.setTimeout(() => setShareStatus(''), 1600);
+      }
+    } catch {
+      setShareStatus('Falhou');
+      window.setTimeout(() => setShareStatus(''), 1600);
+    }
+  }, [description, pieceName]);
+
+  const handleRemix = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.sessionStorage.setItem('fai-remix-piece', JSON.stringify({
+      wardrobeItemId: piece.wardrobeItemId,
+      name: pieceName,
+      brand: brandName,
+      imageUrl,
+      pieceType: piece.pieceType,
+      description,
+    }));
+    router.push('/create-my-scheme');
+  }, [brandName, description, imageUrl, piece.pieceType, piece.wardrobeItemId, pieceName, router]);
 
   return (
     <>
       <article
-        className={`group relative overflow-hidden rounded-2xl transition duration-300 hover:scale-[1.02] ${compact ? 'p-3' : 'p-4'}`}
-        style={{
-          border: '1px solid rgba(124,58,237,0.35)',
-          background: 'linear-gradient(145deg, rgba(124,58,237,0.28) 0%, rgba(219,39,119,0.22) 52%, rgba(109,40,217,0.20) 100%)',
-          backdropFilter: 'blur(14px)',
-          boxShadow: '0 10px 30px rgba(2,6,23,0.36)',
-        }}
+        className={`group relative overflow-hidden rounded-2xl border border-white/18 bg-black/18 transition duration-300 hover:-translate-y-0.5 hover:bg-black/24 ${compact ? 'p-3' : 'p-4'}`}
+        style={{ boxShadow: '0 16px 34px rgba(2,6,23,0.22)' }}
       >
-        {/* Inner glow */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: 'radial-gradient(circle at 20% 18%, rgba(255,255,255,0.18) 0%, transparent 44%), linear-gradient(130deg, rgba(255,255,255,0.10) 0%, transparent 48%)',
-            borderRadius: 'inherit',
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-[1px] rounded-2xl"
-          style={{ border: '1px solid rgba(255,255,255,0.15)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-        />
+        <div className="pointer-events-none absolute inset-0 rounded-[inherit] border border-white/10" />
 
-        {/* Launch flash */}
-        {launching && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 z-[2] animate-ping rounded-2xl"
-            style={{ background: 'rgba(219,39,119,0.2)', animationDuration: '0.35s', animationIterationCount: '1' }}
-          />
-        )}
-
-        <div className="relative z-[1] space-y-3">
-          {/* Header — name + tier */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 space-y-0.5">
-              <p className="truncate text-sm font-semibold text-white">{pieceName}</p>
-              <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">
-                {pieceTypeLabel}
-              </p>
+        <div className="relative z-[1] grid gap-3">
+          <div className="flex items-start gap-3">
+            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/18 bg-white/10">
+              {imageUrl ? (
+                <Image src={imageUrl} alt={pieceName} fill className="object-contain p-1.5" unoptimized />
+              ) : (
+                <span className="text-xl font-black uppercase text-white/55">{pieceTypeLabel.slice(0, 1)}</span>
+              )}
             </div>
-            <TierChip tier={categoryLabel} />
-          </div>
 
-          {/* Brand */}
-          <BrandBadge brandName={brandName} brandLogoUrl={brandLogoUrl} variant="compact" />
-
-          {/* Community signal */}
-          {!compact && (
-            <div className="space-y-2 pt-1">
-              <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/50">
-                Community Signal
-                <span className="ml-2 text-white/35">
-                  base {baseQuality.toFixed(1)}
-                  {computed > baseQuality
-                    ? ` · +${(computed - baseQuality).toFixed(1)} likes`
-                    : ' · no boost yet'}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-base font-black leading-tight text-white">{pieceName}</p>
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">{pieceTypeLabel}</p>
+                </div>
+                <span className="shrink-0 rounded-full border border-white/20 bg-white/12 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white/72">
+                  {categoryLabel}
                 </span>
-              </p>
+              </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <LikesBadge
-                  likes={likes}
-                  liked={liked}
-                  onToggle={handleToggleLike}
-                  disabled={pending}
-                />
-                <QualityBadge baseQuality={baseQuality} likes={likes} />
+              <div className="mt-3 flex items-center gap-2">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 bg-white/12">
+                  {brandLogoUrl ? (
+                    <Image src={brandLogoUrl} alt={`${brandName} logo`} width={24} height={24} className="h-6 w-6 object-contain" unoptimized />
+                  ) : (
+                    <span className="text-[10px] font-black uppercase text-white">{brandName.slice(0, 2)}</span>
+                  )}
+                </span>
+                <span className="min-w-0 truncate text-sm font-bold text-white/84">{brandName}</span>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Dress tester button */}
-          {onOpenInDressTester && (
+          {!compact ? (
+            <p className="line-clamp-3 text-sm leading-relaxed text-white/74">{description}</p>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full border border-cyan-200/20 bg-cyan-300/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-cyan-100">
+              {statusLabel}
+            </span>
+            <span className="rounded-full border border-white/16 bg-white/8 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/62">
+              {pieceTypeLabel}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={handleExperiment}
-              disabled={launching}
-              className={`w-full rounded-xl py-2 text-[11px] font-semibold uppercase tracking-wide transition-all duration-300 ${
-                launching
-                  ? 'scale-95 border border-pink-300/50 bg-pink-500/25 text-pink-100'
-                  : 'border border-pink-400/45 bg-pink-500/15 text-pink-100 hover:scale-[1.02] hover:border-pink-300/65 hover:bg-pink-500/28'
-              }`}
+              onClick={handleToggleLike}
+              className="rounded-xl border border-white/18 bg-white/12 px-3 py-2 text-xs font-black text-white transition hover:bg-white/18"
             >
-              {launching ? '✦ Abrindo Provador...' : '✦ Experimentar'}
+              {liked ? 'Curtido' : 'Curtir'} {likes ? likes : ''}
             </button>
-          )}
+            <button
+              type="button"
+              onClick={handleShare}
+              className="rounded-xl border border-white/18 bg-white/12 px-3 py-2 text-xs font-black text-white transition hover:bg-white/18"
+            >
+              {shareStatus || 'Compartilhar'}
+            </button>
+            {onOpenInDressTester ? (
+              <button
+                type="button"
+                onClick={handleExperiment}
+                disabled={launching}
+                className="rounded-xl border border-pink-300/35 bg-pink-500/18 px-3 py-2 text-xs font-black text-pink-50 transition hover:bg-pink-500/26 disabled:opacity-70"
+              >
+                {launching ? 'Abrindo...' : 'Experimentar'}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleRemix}
+              className="rounded-xl border border-violet-200/25 bg-violet-500/20 px-3 py-2 text-xs font-black text-violet-50 transition hover:bg-violet-500/28"
+            >
+              Remixar
+            </button>
+          </div>
 
-          {/* View piece card button */}
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); setModalOpen(true); onViewPieceCard?.(); }}
-            className="w-full rounded-lg border px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition"
-            style={{
-              borderColor: 'rgba(124,58,237,0.5)',
-              background: 'rgba(124,58,237,0.15)',
-              color: '#c4b5fd',
+            onClick={(e) => {
+              e.stopPropagation();
+              setModalOpen(true);
+              onViewPieceCard?.();
             }}
+            className="w-full rounded-xl border border-white/18 bg-black/20 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-white/86 transition hover:bg-black/28"
           >
-            Visualizar card da peça
+            Visualizar card da peca
           </button>
         </div>
       </article>
 
-      {modalOpen && (
-        <PieceCardModal piece={piece} onClose={() => setModalOpen(false)} />
-      )}
+      {modalOpen ? <PieceCardModal piece={piece} onClose={() => setModalOpen(false)} /> : null}
     </>
   );
 }

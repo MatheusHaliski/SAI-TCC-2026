@@ -1,6 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 import OutfitHeroImage from '@/app/components/outfit-card/OutfitHeroImage';
 import OutfitHeader from '@/app/components/outfit-card/OutfitHeader';
 import OutfitPieceList from '@/app/components/outfit-card/OutfitPieceList';
@@ -29,6 +31,11 @@ interface GeneratedOutfitCardProps {
 }
 
 export default function OutfitCard({ data, variant = 'default', actions = [], onOpenInDressTester, onOpenOutfitInDressTester }: GeneratedOutfitCardProps) {
+  const router = useRouter();
+  const [liked, setLiked] = useState(false);
+  const [localLikes, setLocalLikes] = useState<number>(data.outfitLikes ?? data.likes ?? 0);
+  const [shareStatus, setShareStatus] = useState('');
+
   const description =
     data.outfitDescription === undefined
       ? buildOutfitDescriptionFallback({ pieces: data.pieces, outfitStyleLine: data.outfitStyleLine })
@@ -75,6 +82,46 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
     .filter((brand) => Boolean(brand.name?.trim()))
     .filter((brand, index, arr) => arr.findIndex((item) => item.name.toLowerCase() === brand.name.toLowerCase()) === index)
     .slice(0, 4);
+
+  const leadBrand = brandBadges[0];
+  const pieceCount = data.pieces.length;
+  const scoreLabel = typeof data.ratingStars === 'number' ? data.ratingStars.toFixed(1) : null;
+
+  const handleToggleLike = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+    setLocalLikes((prev) => Math.max(0, prev + (nextLiked ? 1 : -1)));
+  }, [liked]);
+
+  const handleShare = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = `${data.outfitName} - ${description || data.outfitStyleLine || 'Fashion AI'}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: data.outfitName, text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        setShareStatus('Copiado');
+        window.setTimeout(() => setShareStatus(''), 1600);
+      }
+    } catch {
+      setShareStatus('Falhou');
+      window.setTimeout(() => setShareStatus(''), 1600);
+    }
+  }, [data.outfitName, data.outfitStyleLine, description]);
+
+  const handleRemix = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.sessionStorage.setItem('fai-remix-outfit', JSON.stringify({
+      schemeId: data.schemeId,
+      outfitName: data.outfitName,
+      description,
+      pieces: data.pieces,
+      outfitBackground: data.outfitBackground,
+    }));
+    router.push('/create-my-scheme');
+  }, [data.outfitBackground, data.outfitName, data.pieces, data.schemeId, description, router]);
 
   const currentShape = resolvedBackground.shape ?? 'none';
   const shapeSvg = (svg: string) => `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
@@ -183,6 +230,32 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
           occasion={data.occasion}
         />
 
+        {variant !== 'compact' ? (
+          <div className="grid gap-2 rounded-2xl border border-white/14 bg-black/16 p-3 sm:grid-cols-[1.2fr_1fr_1fr]">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/18 bg-white/12">
+                {leadBrand?.logoUrl ? (
+                  <Image src={leadBrand.logoUrl} alt={`${leadBrand.name} logo`} width={32} height={32} className="h-8 w-8 object-contain" unoptimized />
+                ) : (
+                  <span className="text-xs font-black uppercase text-white">{(leadBrand?.name || 'FA').slice(0, 2)}</span>
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-white">{leadBrand?.name || 'Fashion AI'}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55">marca / logo</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/12 bg-white/8 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">criacao / tipo</p>
+              <p className="mt-1 truncate text-sm font-black text-white">{data.occasion || data.outfitStyleLine || 'Look autoral'}</p>
+            </div>
+            <div className="rounded-xl border border-white/12 bg-white/8 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">pecas no esquema</p>
+              <p className="mt-1 text-sm font-black text-white">{pieceCount} itens conectados</p>
+            </div>
+          </div>
+        ) : null}
+
         {/* ── OutfitPieceList — single instance, no onViewPieceCard ── */}
         <OutfitPieceList
           pieces={data.pieces}
@@ -200,6 +273,42 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
           >
             ✦ Montar Look no Provador
           </button>
+        ) : null}
+
+        {variant !== 'compact' ? (
+          <div className="flex flex-col gap-3 rounded-2xl border border-white/14 bg-black/18 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-white/16 bg-white/10 px-3 py-1.5 text-xs font-black text-white">
+                {localLikes} curtidas
+              </span>
+              <span className="rounded-full border border-white/16 bg-white/10 px-3 py-1.5 text-xs font-black text-white">
+                Score {scoreLabel || 'FAI'}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:min-w-[330px]">
+              <button
+                type="button"
+                onClick={handleToggleLike}
+                className="rounded-xl border border-white/18 bg-white/12 px-3 py-2 text-xs font-black text-white transition hover:bg-white/18"
+              >
+                {liked ? 'Curtido' : 'Curtir'}
+              </button>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="rounded-xl border border-white/18 bg-white/12 px-3 py-2 text-xs font-black text-white transition hover:bg-white/18"
+              >
+                {shareStatus || 'Compartilhar'}
+              </button>
+              <button
+                type="button"
+                onClick={handleRemix}
+                className="rounded-xl border border-violet-200/25 bg-violet-500/20 px-3 py-2 text-xs font-black text-violet-50 transition hover:bg-violet-500/28"
+              >
+                Remixar
+              </button>
+            </div>
+          </div>
         ) : null}
 
         {actions.length ? <CompactCardActionBar actions={actions} /> : null}
