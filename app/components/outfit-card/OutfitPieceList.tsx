@@ -27,7 +27,7 @@ export default function OutfitPieceList({
   };
 
   return (
-    <section className={`grid gap-3 ${compact ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
+    <section className={`grid w-full min-w-0 gap-3 ${compact ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
       {visiblePieces.map((piece) => (
         <OutfitPieceCard
           key={piece.id}

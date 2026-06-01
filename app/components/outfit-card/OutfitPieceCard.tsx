@@ -56,7 +56,7 @@ export default function OutfitPieceCard({
   return (
     <>
       <article
-        className={`group relative overflow-hidden rounded-2xl transition duration-300 hover:scale-[1.02] ${compact ? 'p-3' : 'p-4'}`}
+        className={`group relative min-w-0 max-w-full overflow-hidden rounded-2xl transition duration-300 hover:scale-[1.02] ${compact ? 'p-3' : 'p-4'}`}
         style={{
           border: '1px solid rgba(124,58,237,0.35)',
           background: 'linear-gradient(145deg, rgba(124,58,237,0.28) 0%, rgba(219,39,119,0.22) 52%, rgba(109,40,217,0.20) 100%)',
@@ -93,12 +93,23 @@ export default function OutfitPieceCard({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 space-y-0.5">
               <p className="truncate text-sm font-semibold text-white">{pieceName}</p>
-              <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">
+              <p className="truncate font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">
                 {pieceTypeLabel}
               </p>
             </div>
             <TierChip tier={categoryLabel} />
           </div>
+
+          {/* Remix flag — piece must be swapped for one the user owns */}
+          {piece.needsReplacement && (
+            <div
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wide"
+              style={{ border: '1px solid rgba(251,191,36,0.45)', background: 'rgba(251,191,36,0.14)', color: '#fcd34d' }}
+            >
+              <span>↺</span>
+              <span className="truncate">Substituir por peça sua</span>
+            </div>
+          )}
 
           {/* Brand */}
           <BrandBadge brandName={brandName} brandLogoUrl={brandLogoUrl} variant="compact" />

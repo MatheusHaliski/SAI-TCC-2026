@@ -12,6 +12,8 @@ export type OutfitPiece = {
   pieceTypeIconUrl?: string;
   category?: PieceCategory;
   wearstyles?: string[];
+  /** Remix flag: piece comes from another user's scheme and must be swapped for one the user owns. */
+  needsReplacement?: boolean;
   description?: string;
   creatorName?: string;
   occasion?: string;
