@@ -2634,16 +2634,16 @@ export default function OutfitBackgroundStudioModal({
       onClick={asPage ? undefined : (event) => event.stopPropagation()}
     >
       <header className="mb-4 flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-xs uppercase tracking-[0.18em] text-white/70">Estúdio de Fundo</p>
-          <h2 className={asPage ? 'text-xl font-semibold' : 'text-2xl font-semibold'}>Personalize a superfície visual do seu card de look</h2>
+          <h2 className={asPage ? 'max-w-none text-xl font-semibold leading-tight' : 'text-2xl font-semibold'}>Personalize a superfície visual do seu card de look</h2>
         </div>
         {!asPage && (
           <button type="button" className="rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold" onClick={onClose}>Fechar ✕</button>
         )}
       </header>
 
-      <div className={asPage ? 'grid gap-4 lg:grid-cols-[1fr_1.1fr]' : 'grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]'}>
+      <div className={asPage ? 'grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.25fr)]' : 'grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]'}>
         <section className={asPage ? 'space-y-4 rounded-2xl border border-white/15 bg-white/5 p-4' : 'min-h-0 space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
             <div className="inline-flex rounded-xl border border-white/20 bg-white/5 p-1">
               {([
@@ -3336,9 +3336,11 @@ export default function OutfitBackgroundStudioModal({
             </section>
           </section>
 
-          <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
+          <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4 xl:sticky xl:top-4 xl:h-fit' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
             <p className="text-xs uppercase tracking-[0.12em] text-white/65">Pré-visualização</p>
-            <OutfitCard data={previewData} variant="default" />
+            <div className="mx-auto w-full max-w-[560px]">
+              <OutfitCard data={previewData} variant="default" />
+            </div>
             <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/85">
               <p>Contrast recommendation: <span className="font-semibold">Use {recommendTextTone} text/icons</span>.</p>
               {shouldShowContrastWarning ? <p className="mt-1 text-amber-200">Warning: high-luminance solid background may reduce metadata readability.</p> : null}
