@@ -1,4 +1,4 @@
-import type { OutfitCardData } from '@/app/lib/outfit-card';
+import { resolveBrandLogoUrlByName, type OutfitCardData, type OutfitPiece } from '@/app/lib/outfit-card';
 import HeroPlaceholder from './HeroPlaceholder';
 
 interface CardAtelierProps {
@@ -8,6 +8,9 @@ interface CardAtelierProps {
 
 export default function CardAtelier({ data, showHero = true }: CardAtelierProps) {
   const { outfitName, outfitStyleLine, outfitDescription, heroImageUrl, creatorName, brands = [], pieces } = data;
+  const pieceTiles = pieces.slice(0, 6);
+
+  const resolveLogo = (piece: OutfitPiece) => piece.brandLogoUrl || resolveBrandLogoUrlByName(piece.brand);
 
   return (
     <div
@@ -52,16 +55,28 @@ export default function CardAtelier({ data, showHero = true }: CardAtelierProps)
           </div>
         )}
 
-        <div className="mt-auto pt-6">
-          <div className="border-t border-neutral-100 pt-4">
-            {pieces.slice(0, 4).map((piece, i) => (
-              <div key={piece.id} className="flex items-baseline justify-between py-1.5">
-                <span className="font-mono text-[9px] uppercase tracking-widest text-neutral-400">
-                  {String(i + 1).padStart(2, '0')} {piece.name}
-                </span>
-                <span className="text-[11px] font-semibold text-neutral-700">{piece.brand}</span>
-              </div>
-            ))}
+        <div className="mt-auto pt-5">
+          <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
+            {pieceTiles.map((piece, i) => {
+              const logoUrl = resolveLogo(piece);
+              return (
+                <div key={piece.id} className="flex min-h-[54px] items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white">
+                    {logoUrl ? (
+                      <img src={logoUrl} alt={`${piece.brand} logo`} className="h-5 w-5 object-contain" />
+                    ) : (
+                      <span className="font-mono text-[9px] font-bold uppercase text-neutral-500">{piece.brand.slice(0, 2)}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-bold leading-tight text-neutral-900">{piece.name}</p>
+                    <p className="mt-0.5 font-mono text-[8px] uppercase tracking-wider text-neutral-400">
+                      {String(i + 1).padStart(2, '0')} · {piece.pieceType}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

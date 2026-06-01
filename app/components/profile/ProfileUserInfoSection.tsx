@@ -76,12 +76,19 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
       title="User Info"
       subtitle={canEdit ? 'Edit your profile identity and public creator metadata.' : 'Public creator profile metadata.'}
     >
-      <article className="mt-4 overflow-hidden rounded-3xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.25)]" style={{ backgroundColor: 'var(--user-surface-solid, #ea580c)' }}>
+      <article
+        className="mt-4 overflow-hidden rounded-3xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.25)]"
+        style={{
+          backgroundColor: '#0f172a',
+          backgroundImage: 'var(--sidebar-gradient)',
+          boxShadow: 'var(--drawer-surface-shadow)',
+        }}
+      >
         <div className="relative h-56 w-full border-b border-white/20 bg-black/20">
           {form.avatarUrl ? (
             <Image src={form.avatarUrl} alt={`${form.displayName || form.username} profile`} fill className="object-cover" sizes="(max-width: 768px) 100vw, 60vw" unoptimized />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.25),rgba(0,0,0,0.35))]">
+            <div className="flex h-full w-full items-center justify-center bg-black/25">
               <span className="inline-flex h-24 w-24 items-center justify-center rounded-full border border-white/40 bg-white/15 text-4xl font-semibold text-white">
                 {(form.displayName || form.username || 'U').charAt(0).toUpperCase()}
               </span>
