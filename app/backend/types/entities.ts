@@ -240,6 +240,8 @@ export interface WardrobeViewItem {
   style_tags?: string[];
   occasion_tags?: string[];
   is_favorite?: boolean;
+  for_sale?: boolean;
+  listing_price?: number;
 }
 
 export interface PieceItemSearchResult {

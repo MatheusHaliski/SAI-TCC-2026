@@ -47,29 +47,26 @@ export default function OutfitPieceCard({
     e.stopPropagation();
     const nextLiked = !liked;
     setLiked(nextLiked);
-    setLikes((prev) => Math.max(0, prev + (nextLiked ? 1 : -1)));
-  }, [liked]);
+    setLikes(nextLikes);
 
-  const handleExperiment = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (launching || !onOpenInDressTester) return;
-    setLaunching(true);
-    window.setTimeout(() => {
-      setLaunching(false);
-      onOpenInDressTester();
-    }, 300);
-  }, [launching, onOpenInDressTester]);
+    if (!schemeId || !piece.id) return;
 
-  const handleShare = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const text = `${pieceName} - ${description}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: pieceName, text });
-      } else {
-        await navigator.clipboard.writeText(text);
-        setShareStatus('Copiado');
-        window.setTimeout(() => setShareStatus(''), 1600);
+    startToggle(async () => {
+      try {
+        const { toggleLikePiece } = await import('@/app/lib/pieces/likes');
+        // Requires auth — import lazily to avoid breaking SSR.
+        const { getAuth } = await import('firebase/auth');
+        const user = getAuth().currentUser;
+        if (!user) return;
+        const result = await toggleLikePiece(schemeId, piece.id, user.uid);
+        // Reconcile with the authoritative Firestore result (handles the case
+        // where the user already liked this piece in a previous session).
+        setLiked(result.liked);
+        setLikes(result.likes);
+      } catch {
+        // Rollback on failure.
+        setLiked(liked);
+        setLikes(likes);
       }
     } catch {
       setShareStatus('Falhou');
@@ -131,69 +128,21 @@ export default function OutfitPieceCard({
               </div>
             </div>
           </div>
+        ) : null}
 
-          {!compact ? (
-            <p className="line-clamp-3 text-sm leading-relaxed text-white/74">{description}</p>
-          ) : null}
+        {/* Action button */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
+          className="mt-1 w-full rounded-lg border border-cyan-300/50 bg-cyan-500/15 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/30 hover:border-cyan-200/70"
+        >
+          Visualizar card da peça
+        </button>
+      </div>
 
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border border-cyan-200/20 bg-cyan-300/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-cyan-100">
-              {statusLabel}
-            </span>
-            <span className="rounded-full border border-white/16 bg-white/8 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/62">
-              {pieceTypeLabel}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={handleToggleLike}
-              className="rounded-xl border border-white/18 bg-white/12 px-3 py-2 text-xs font-black text-white transition hover:bg-white/18"
-            >
-              {liked ? 'Curtido' : 'Curtir'} {likes ? likes : ''}
-            </button>
-            <button
-              type="button"
-              onClick={handleShare}
-              className="rounded-xl border border-white/18 bg-white/12 px-3 py-2 text-xs font-black text-white transition hover:bg-white/18"
-            >
-              {shareStatus || 'Compartilhar'}
-            </button>
-            {onOpenInDressTester ? (
-              <button
-                type="button"
-                onClick={handleExperiment}
-                disabled={launching}
-                className="rounded-xl border border-pink-300/35 bg-pink-500/18 px-3 py-2 text-xs font-black text-pink-50 transition hover:bg-pink-500/26 disabled:opacity-70"
-              >
-                {launching ? 'Abrindo...' : 'Experimentar'}
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={handleRemix}
-              className="rounded-xl border border-violet-200/25 bg-violet-500/20 px-3 py-2 text-xs font-black text-violet-50 transition hover:bg-violet-500/28"
-            >
-              Remixar
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setModalOpen(true);
-              onViewPieceCard?.();
-            }}
-            className="w-full rounded-xl border border-white/18 bg-black/20 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-white/86 transition hover:bg-black/28"
-          >
-            Visualizar card da peca
-          </button>
-        </div>
-      </article>
-
-      {modalOpen ? <PieceCardModal piece={piece} onClose={() => setModalOpen(false)} /> : null}
-    </>
+      {modalOpen ? (
+        <PieceCardModal piece={piece} onClose={() => setModalOpen(false)} />
+      ) : null}
+    </article>
   );
 }
