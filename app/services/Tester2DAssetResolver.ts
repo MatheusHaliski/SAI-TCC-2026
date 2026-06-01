@@ -3,6 +3,8 @@ export interface Wardrobe2DAssetShape {
   raw_upload_image_url?: string | null;
   normalized_2d_preview_url?: string | null;
   approved_catalog_2d_url?: string | null;
+  isolated_piece_image_url?: string | null;
+  bgRemovedImageUrl?: string | null;
   segmented_png_url?: string | null;
   image_assets?: {
     raw_upload_image_url?: string | null;
@@ -14,6 +16,8 @@ export interface Wardrobe2DAssetShape {
 
 export type Tester2DAssetSource =
   | 'approved_catalog_2d_url'
+  | 'isolated_piece_image_url'
+  | 'bgRemovedImageUrl'
   | 'normalized_2d_preview_url'
   | 'segmented_png_url'
   | 'raw_upload_image_url'
@@ -32,6 +36,8 @@ const normalized = (value?: string | null) => String(value ?? '').trim();
 export function getBestTester2DAssetForWardrobeItem(item: Wardrobe2DAssetShape): Tester2DResolvedAsset {
   const prioritized: Array<{ source: Tester2DAssetSource; value: string }> = [
     { source: 'approved_catalog_2d_url', value: normalized(item.image_assets?.approved_catalog_2d_url ?? item.approved_catalog_2d_url) },
+    { source: 'isolated_piece_image_url', value: normalized(item.isolated_piece_image_url) },
+    { source: 'bgRemovedImageUrl', value: normalized(item.bgRemovedImageUrl) },
     { source: 'normalized_2d_preview_url', value: normalized(item.image_assets?.normalized_2d_preview_url ?? item.normalized_2d_preview_url) },
     { source: 'segmented_png_url', value: normalized(item.image_assets?.segmented_png_url ?? item.segmented_png_url) },
     { source: 'raw_upload_image_url', value: normalized(item.image_assets?.raw_upload_image_url ?? item.raw_upload_image_url) },
