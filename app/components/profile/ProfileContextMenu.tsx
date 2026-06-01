@@ -11,12 +11,12 @@ interface ProfileContextMenuProps {
 }
 
 const sectionConfig: Array<{ key: ProfileSectionKey; label: string }> = [
-  { key: 'wardrobe', label: 'My Wardrobe Pieces' },
-  { key: 'user-info', label: 'User Info' },
-  { key: 'my-schemes', label: 'My Schemes' },
-  { key: 'saved-schemes', label: 'Saved Schemes' },
-  { key: 'my-posts', label: 'My Posts' },
-  { key: 'settings', label: 'Settings' },
+  { key: 'wardrobe', label: 'Meu Guarda-roupa' },
+  { key: 'user-info', label: 'Informações do usuário' },
+  { key: 'my-schemes', label: 'Meus esquemas' },
+  { key: 'saved-schemes', label: 'Esquemas salvos' },
+  { key: 'my-posts', label: 'Minhas postagens' },
+  { key: 'settings', label: 'Configurações' },
 ];
 
 export default function ProfileContextMenu({ selectedSection, onSelectSection, allowedSections }: ProfileContextMenuProps) {
@@ -36,8 +36,8 @@ export default function ProfileContextMenu({ selectedSection, onSelectSection, a
   const localizedConfig = sectionConfig.map((item) => ({
     ...item,
     label: isPortuguese
-      ? ({ wardrobe: 'Meu Guarda-roupa', 'user-info': 'Informações do usuário', 'my-schemes': 'Meus esquemas', 'saved-schemes': 'Esquemas salvos', 'my-posts': 'Minhas postagens', settings: 'Configurações' }[item.key])
-      : item.label,
+      ? item.label
+      : ({ wardrobe: 'My Wardrobe', 'user-info': 'User Info', 'my-schemes': 'My Schemes', 'saved-schemes': 'Saved Schemes', 'my-posts': 'My Posts', settings: 'Settings' }[item.key] ?? item.label),
   }));
   const filteredConfig = allowedSections?.length
     ? localizedConfig.filter((item) => allowedSections.includes(item.key))
@@ -47,7 +47,7 @@ export default function ProfileContextMenu({ selectedSection, onSelectSection, a
 
   return (
     <ContextSectionMenu
-      title={isPortuguese ? 'Menu do perfil' : 'Profile Menu'}
+      title="Menu do perfil"
       sections={filteredConfig.map((item) => item.label)}
       selectedSection={selectedLabel}
       onSelectSection={(label) => {

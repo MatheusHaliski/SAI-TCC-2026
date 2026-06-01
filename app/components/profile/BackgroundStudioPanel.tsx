@@ -12,6 +12,8 @@ import {
   applyPageBackgroundConfig,
   savePageBackgroundConfig,
   ensureSavedPageBackgroundConfig,
+  applySurfaceColorConfig,
+  saveSurfaceColorConfig,
   type PageBackgroundConfig,
   type PageBackgroundShape,
 } from '@/app/lib/pageBackground';
@@ -145,12 +147,25 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
   useEffect(() => {
     if (!mounted.current) return;
     if (tab === 'presets') return; // presets apply immediately on click
+    if (tab === 'cor') {
+      applySurfaceColorConfig({ color: solidColor });
+      return;
+    }
     const bg = buildCurrentBackground();
     if (bg) document.documentElement.style.setProperty('--home-shell-bg', bg);
-  }, [tab, buildCurrentBackground]);
+  }, [tab, buildCurrentBackground, solidColor]);
 
   /* ── Apply + save ── */
   const applyAndSave = () => {
+    if (tab === 'cor') {
+      saveSurfaceColorConfig({ color: solidColor });
+      setLS(ACTIVE_TAB_KEY, tab);
+      setSaveMsg('✓ Cor dos elementos salva!');
+      setTimeout(() => setSaveMsg(''), 3000);
+      onSaved?.();
+      return;
+    }
+
     const gradient = buildCurrentBackground();
     if (!gradient) {
       setSaveMsg('⚠️ Selecione uma opção antes de salvar.');
@@ -162,7 +177,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
       shape: tab === 'geometria' ? shape : 'none',
     };
     applyPageBackgroundConfig(config);
-    savePageBackgroundConfig(config);          /* ← uses the lib's own save fn */
+    savePageBackgroundConfig(config);
     setLS(ACTIVE_TAB_KEY, tab);
     if (activePresetId) setLS(ACTIVE_BG_KEY, activePresetId);
 
@@ -221,7 +236,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
           { id:'presets',   label:'⚡ Presets'    },
           { id:'gradiente', label:'🌈 Gradiente'  },
           { id:'geometria', label:'🔷 Geometria'  },
-          { id:'cor',       label:'🎨 Cor sólida' },
+          { id:'cor',       label:'🎨 Cor dos elementos' },
         ] as const).map((t) => (
           <button key={t.id} type="button" onClick={() => setTab(t.id)} style={tabBtnStyle(tab === t.id)}>
             {t.label}
@@ -359,7 +374,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
         </div>
       )}
 
-      {/* ── COR SÓLIDA ── */}
+      {/* ── COR DOS ELEMENTOS ── */}
       {tab === 'cor' && (
         <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
           <div style={{ height:'5rem', borderRadius:'0.875rem', border:'1px solid var(--border)', background:solidColor, transition:'background 0.2s' }} />
@@ -385,7 +400,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
       <div style={{ borderTop:'1px solid var(--border)', paddingTop:'1rem', display:'flex', alignItems:'center', gap:'0.75rem', flexWrap:'wrap' }}>
         <button type="button" onClick={applyAndSave}
           style={{ borderRadius:'0.625rem', border:'none', background:'linear-gradient(135deg,#7c3aed,#db2777)', color:'#fff', padding:'0.6875rem 1.5rem', fontWeight:700, fontSize:'0.875rem', cursor:'pointer', fontFamily:'inherit', boxShadow:'0 4px 12px rgba(124,58,237,0.3)' }}>
-          💾 Salvar fundo
+          {tab === 'cor' ? '💾 Salvar cor' : '💾 Salvar fundo'}
         </button>
         <button type="button" onClick={handleReset}
           style={{ borderRadius:'0.625rem', border:'1px solid var(--border)', background:'var(--accent)', color:'var(--muted-foreground)', padding:'0.6875rem 1rem', fontWeight:600, fontSize:'0.875rem', cursor:'pointer', fontFamily:'inherit' }}>

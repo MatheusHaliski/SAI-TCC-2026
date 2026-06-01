@@ -56,7 +56,7 @@ export default function ProfileWardrobeSection({ items: initialItems, onItemDele
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      const response = await fetch(`/api/wardrobe/${deleteItem.wardrobe_item_id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/wardrobe-items/${deleteItem.wardrobe_item_id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Falha ao excluir a peça.');
       const removed = deleteItem.wardrobe_item_id;
       setItems((prev) => prev.filter((item) => item.wardrobe_item_id !== removed));

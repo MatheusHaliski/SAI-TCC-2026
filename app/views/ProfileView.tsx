@@ -68,10 +68,12 @@ export default function ProfileView() {
 
   const isOwnerView = Boolean(authUserId) && Boolean(userId) && authUserId === userId;
   const forcedPublicSection = publicUserFromPath && !isOwnerView ? 'user-info' : null;
-  const selectedSection = forcedPublicSection ?? (pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section')));
+  const urlSection = forcedPublicSection ?? (pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section')));
   const allowedSections: ProfileSectionKey[] = isOwnerView || !publicUserFromPath
     ? ALLOWED_SECTIONS
     : ['user-info'];
+  const [activeSection, setActiveSection] = useState<ProfileSectionKey>(urlSection);
+  const selectedSection = activeSection;
 
   useEffect(() => {
     const loadProfileHubData = async () => {
@@ -145,6 +147,7 @@ export default function ProfileView() {
 
   const updateSection = (section: ProfileSectionKey) => {
     const normalized = allowedSections.includes(section) ? section : allowedSections[0];
+    setActiveSection(normalized);
     const query = new URLSearchParams(searchParams.toString());
     query.set('section', normalized);
     router.replace(`${pathname}?${query.toString()}`);
@@ -155,7 +158,7 @@ export default function ProfileView() {
       <ProfileContextMenu selectedSection={selectedSection} onSelectSection={updateSection} allowedSections={allowedSections} />
 
       <div className="space-y-6">
-        <PageHeader title={isOwnerView ? 'Profile' : `Creator Profile`} subtitle={isOwnerView ? 'Premium creator hub for wardrobe, schemes, publishing, and account controls.' : 'Public creator profile view.'} />
+        <PageHeader title={isOwnerView ? 'Perfil' : 'Perfil do Criador'} subtitle={isOwnerView ? 'Hub premium de criador para guarda-roupa, esquemas, publicações e controles de conta.' : 'Visualização pública do perfil de criador.'} />
 
         <ProfileSummaryCard
           username={username}
