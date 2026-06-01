@@ -37,6 +37,8 @@ interface ProfileSectionRendererProps {
   wardrobeItems: WardrobeItem[];
   schemes: SchemeItem[];
   posts: UserPostRecord[];
+  onWardrobeItemDeleted?: (id: string) => void;
+  onProfileSaved?: (profile: { name?: string; username?: string; email?: string; bio?: string; photo_url?: string }) => void;
 }
 
 // SchemeItem is used by ProfileMySchemesSection only.
@@ -52,9 +54,11 @@ export default function ProfileSectionRenderer({
   wardrobeItems,
   schemes,
   posts,
+  onWardrobeItemDeleted,
+  onProfileSaved,
 }: ProfileSectionRendererProps) {
-  if (section === 'wardrobe') return <ProfileWardrobeSection items={wardrobeItems} />;
-  if (section === 'user-info') return <ProfileUserInfoSection userId={userId} displayName={displayName} username={username} email={email} canEdit={canEdit} />;
+  if (section === 'wardrobe') return <ProfileWardrobeSection items={wardrobeItems} onItemDeleted={onWardrobeItemDeleted} />;
+  if (section === 'user-info') return <ProfileUserInfoSection userId={userId} displayName={displayName} username={username} email={email} canEdit={canEdit} onProfileSaved={onProfileSaved} />;
   if (section === 'my-schemes') return <ProfileMySchemesSection userId={userId} schemes={schemes} />;
   if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} />;
   if (section === 'my-posts') return <ProfileMyPostsSection posts={posts} />;

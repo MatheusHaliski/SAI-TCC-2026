@@ -9,9 +9,6 @@ import { applyTheme, readSavedTheme, type SaiTheme } from '@/app/lib/theme';
 import FancySelect from '@/app/components/ui/fancy-select';
 import {
   applyPageBackgroundConfig,
-  applySurfaceColorConfig,
-  ensureSavedPageBackgroundConfig,
-  readSurfaceColorConfig,
   type PageBackgroundConfig,
   type PageBackgroundShape,
   OFFICIAL_WEBSITE_BACKGROUND_GRADIENT,
@@ -158,12 +155,12 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 }
 
 export default function ProfileSettingsSection() {
-  const [theme, setTheme] = useState<SaiTheme>('dark');
+  const [theme, setTheme] = useState<SaiTheme>(() => (typeof window === 'undefined' ? 'dark' : readSavedTheme()));
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
-  const [siteLanguage, setSiteLanguage] = useState<SiteLanguage>('pt-BR');
-  const [savedLanguage, setSavedLanguage] = useState<SiteLanguage>('pt-BR');
+  const [siteLanguage, setSiteLanguage] = useState<SiteLanguage>(() => readSavedSiteLanguage());
+  const [savedLanguage, setSavedLanguage] = useState<SiteLanguage>(() => readSavedSiteLanguage());
   const [languageStatus, setLanguageStatus] = useState('');
-  const [activeBgId, setActiveBgId] = useState('default-purple');
+  const [activeBgId, setActiveBgId] = useState(() => (typeof window === 'undefined' ? 'default-purple' : window.localStorage.getItem('sai_active_bg_preset') || 'default-purple'));
   const [bgSaveStatus, setBgSaveStatus] = useState('');
   const [activeTab, setActiveTab] = useState<'geral' | 'aparencia' | 'privacidade' | 'conta'>('geral');
 
@@ -175,11 +172,6 @@ export default function ProfileSettingsSection() {
     if (legacyDark) applyTheme('dark');
     document.documentElement.classList.remove('dark-mode');
     window.localStorage.removeItem(LEGACY_DARK_MODE_STORAGE_KEY);
-    setTheme(readSavedTheme());
-    setSiteLanguage(readSavedSiteLanguage());
-    setSavedLanguage(readSavedSiteLanguage());
-    const savedBg = window.localStorage.getItem('sai_active_bg_preset');
-    if (savedBg) setActiveBgId(savedBg);
   }, []);
 
   const toggleDarkMode = () => {

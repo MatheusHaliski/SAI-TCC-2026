@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import OutfitExportModal from '@/app/components/profile/OutfitExportModal';
@@ -81,8 +81,24 @@ const buildData = (scheme: Scheme): OutfitCardData => {
 export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySchemesSectionProps) {
   const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null);
   const [exportingScheme, setExportingScheme] = useState<Scheme | null>(null);
+  const [loadedSchemes, setLoadedSchemes] = useState<Scheme[]>(schemes);
+  const [loadingSchemes, setLoadingSchemes] = useState(false);
 
-  const cards = useMemo(() => schemes.map((scheme) => ({ scheme, data: buildData(scheme) })), [schemes]);
+  useEffect(() => {
+    setLoadedSchemes(schemes);
+  }, [schemes]);
+
+  useEffect(() => {
+    if (!userId || schemes.length > 0) return;
+    setLoadingSchemes(true);
+    fetch(`/api/schemes/user/${encodeURIComponent(userId)}`)
+      .then((response) => response.json())
+      .then((data) => setLoadedSchemes(Array.isArray(data) ? data as Scheme[] : []))
+      .catch(() => setLoadedSchemes([]))
+      .finally(() => setLoadingSchemes(false));
+  }, [schemes.length, userId]);
+
+  const cards = useMemo(() => loadedSchemes.map((scheme) => ({ scheme, data: buildData(scheme) })), [loadedSchemes]);
 
   return (
     <>
@@ -102,7 +118,7 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
               ]}
             />
           ))}
-          {!cards.length ? <p className="text-sm text-white/80">Nenhum esquema criado ainda.</p> : null}
+          {!cards.length ? <p className="text-sm text-white/80">{loadingSchemes ? 'Carregando esquemas...' : 'Nenhum esquema criado ainda.'}</p> : null}
         </div>
       </SectionBlock>
 

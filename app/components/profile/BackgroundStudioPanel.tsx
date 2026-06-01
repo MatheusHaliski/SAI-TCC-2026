@@ -10,7 +10,10 @@ import {
 import { buildGeometryPreviewSvg } from '@/app/lib/fashion-ai/background-studio/procedural';
 import {
   applyPageBackgroundConfig,
+  applySurfaceColorConfig,
+  readSurfaceColorConfig,
   savePageBackgroundConfig,
+  saveSurfaceColorConfig,
   ensureSavedPageBackgroundConfig,
   type PageBackgroundConfig,
   type PageBackgroundShape,
@@ -80,7 +83,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
   const [shapeColor, setShapeColor] = useState('#a78bfa');
 
   /* ── Solid color state ── */
-  const [solidColor, setSolidColor] = useState('#0d0b18');
+  const [solidColor, setSolidColor] = useState('#1e293b');
 
   /* ── Preset state — stores the full gradient string so save always works ── */
   const [activePresetId,       setActivePresetId]       = useState<string | null>(null);
@@ -99,6 +102,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
 
     const savedPresetId = getLS(ACTIVE_BG_KEY);
     if (savedPresetId) setActivePresetId(savedPresetId);
+    setSolidColor(readSurfaceColorConfig().color);
 
     /* restore gradient stops if saved */
     try {
@@ -145,12 +149,25 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
   useEffect(() => {
     if (!mounted.current) return;
     if (tab === 'presets') return; // presets apply immediately on click
+    if (tab === 'cor') {
+      applySurfaceColorConfig({ color: solidColor });
+      return;
+    }
     const bg = buildCurrentBackground();
     if (bg) document.documentElement.style.setProperty('--home-shell-bg', bg);
   }, [tab, buildCurrentBackground]);
 
   /* ── Apply + save ── */
   const applyAndSave = () => {
+    if (tab === 'cor') {
+      saveSurfaceColorConfig({ color: solidColor });
+      setLS(ACTIVE_TAB_KEY, tab);
+      setSaveMsg('✓ Cor dos elementos salva com sucesso!');
+      setTimeout(() => setSaveMsg(''), 3000);
+      onSaved?.();
+      return;
+    }
+
     const gradient = buildCurrentBackground();
     if (!gradient) {
       setSaveMsg('⚠️ Selecione uma opção antes de salvar.');
@@ -221,7 +238,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
           { id:'presets',   label:'⚡ Presets'    },
           { id:'gradiente', label:'🌈 Gradiente'  },
           { id:'geometria', label:'🔷 Geometria'  },
-          { id:'cor',       label:'🎨 Cor sólida' },
+          { id:'cor',       label:'🎨 Cor dos elementos' },
         ] as const).map((t) => (
           <button key={t.id} type="button" onClick={() => setTab(t.id)} style={tabBtnStyle(tab === t.id)}>
             {t.label}
@@ -359,11 +376,14 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
         </div>
       )}
 
-      {/* ── COR SÓLIDA ── */}
+      {/* ── COR DOS ELEMENTOS ── */}
       {tab === 'cor' && (
         <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
           <div style={{ height:'5rem', borderRadius:'0.875rem', border:'1px solid var(--border)', background:solidColor, transition:'background 0.2s' }} />
-          {sectionTitle('Escolha uma cor')}
+          {sectionTitle('Escolha a cor dos elementos')}
+          <p style={{ fontSize:'0.75rem', color:'var(--muted-foreground)', background:'var(--accent)', borderRadius:'0.625rem', padding:'0.625rem 0.875rem', border:'1px solid var(--border)', margin:0 }}>
+            Esta cor altera superfícies menores do app, como cards, divisórias e painéis. O fundo da página permanece separado nas abas de fundo.
+          </p>
           <div style={{ display:'flex', flexWrap:'wrap', gap:'0.5rem', alignItems:'center' }}>
             {['#0d0b18','#0f172a','#111111','#1a1a2e','#0a0f1e','#f8f7ff','#ffffff','#f3f4f6','#fdf4ff','#fff0f6','#7c3aed','#4c1d95','#db2777','#0ea5e9','#10b981'].map((c) => (
               <button key={c} type="button" onClick={() => setSolidColor(c)}
@@ -385,7 +405,7 @@ export default function BackgroundStudioPanel({ onSaved }: BackgroundStudioPanel
       <div style={{ borderTop:'1px solid var(--border)', paddingTop:'1rem', display:'flex', alignItems:'center', gap:'0.75rem', flexWrap:'wrap' }}>
         <button type="button" onClick={applyAndSave}
           style={{ borderRadius:'0.625rem', border:'none', background:'linear-gradient(135deg,#7c3aed,#db2777)', color:'#fff', padding:'0.6875rem 1.5rem', fontWeight:700, fontSize:'0.875rem', cursor:'pointer', fontFamily:'inherit', boxShadow:'0 4px 12px rgba(124,58,237,0.3)' }}>
-          💾 Salvar fundo
+          💾 {tab === 'cor' ? 'Salvar cor dos elementos' : 'Salvar fundo'}
         </button>
         <button type="button" onClick={handleReset}
           style={{ borderRadius:'0.625rem', border:'1px solid var(--border)', background:'var(--accent)', color:'var(--muted-foreground)', padding:'0.6875rem 1rem', fontWeight:600, fontSize:'0.875rem', cursor:'pointer', fontFamily:'inherit' }}>
