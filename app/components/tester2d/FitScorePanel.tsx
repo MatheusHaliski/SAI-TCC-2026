@@ -80,16 +80,19 @@ export default function FitScorePanel({ pieces, filledSlots, mannequin, onScoreR
   const [errored, setErrored] = useState(false);
   const [animatedScore, setAnimatedScore] = useState(0);
   const animFrame = useRef<number | null>(null);
-  const fetched = useRef(false);
 
   useEffect(() => {
-    if (fetched.current || pieces.length === 0) return;
-    fetched.current = true;
+    if (pieces.length === 0) return;
+    const controller = new AbortController();
+    setLoading(true);
+    setErrored(false);
+    setResult(null);
 
     fetch('/api/dress-tester/fit-score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pieces, filledSlots, mannequin }),
+      signal: controller.signal,
     })
       .then((r) => r.json())
       .then((data: FitScoreResult) => {
@@ -97,10 +100,13 @@ export default function FitScorePanel({ pieces, filledSlots, mannequin, onScoreR
         setLoading(false);
         onScoreReady?.(data);
       })
-      .catch(() => {
+      .catch((err) => {
+        if ((err as Error).name === 'AbortError') return;
         setErrored(true);
         setLoading(false);
       });
+
+    return () => controller.abort();
   }, [pieces, filledSlots, mannequin, onScoreReady]);
 
   useEffect(() => {
