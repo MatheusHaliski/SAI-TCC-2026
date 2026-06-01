@@ -1,45 +1,51 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
 import { OutfitPiece, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
-import { computeQualityStars } from '@/app/lib/pieces/quality';
-import BrandBadge from '@/app/components/outfit-card/BrandBadge';
-import TierChip from '@/app/components/outfit-card/badges/TierChip';
-import LikesBadge from '@/app/components/outfit-card/badges/LikesBadge';
-import QualityBadge from '@/app/components/outfit-card/badges/QualityBadge';
-import QualityRail from '@/app/components/outfit-card/badges/QualityRail';
 import PieceCardModal from '@/app/components/outfit-card/PieceCardModal';
-import { FILTER_GLOW_LINE, GLOW_LINE, TEXT_GLOW } from '@/app/lib/uiToken';
 
 interface OutfitPieceCardProps {
   piece: OutfitPiece;
   compact?: boolean;
+  schemeId?: string;
   /** @deprecated Use the built-in modal instead. Kept for callers not yet migrated. */
   onViewPieceCard?: () => void;
-  /** schemeId needed to persist like toggles. Omit to run optimistic-only. */
-  schemeId?: string;
+  onOpenInDressTester?: () => void;
 }
 
-export default function OutfitPieceCard({ piece, compact = false, onViewPieceCard, schemeId }: OutfitPieceCardProps) {
-  const pieceName   = piece.name?.trim()  || 'Unnamed Piece';
-  const brandName   = piece.brand?.trim() || 'Brand not specified';
-  const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
-  const tier        = piece.category ?? 'Standard';
-  const pieceType   = piece.pieceType || 'Garment';
-  const baseQuality = piece.baseQuality ?? 2.5;
+function normalizeLabel(value?: string, fallback = 'Peca'): string {
+  return (value?.trim() || fallback).replaceAll('_', ' ');
+}
 
+export default function OutfitPieceCard({
+  piece,
+  compact = false,
+  onViewPieceCard,
+  onOpenInDressTester,
+}: OutfitPieceCardProps) {
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
+  const [launching, setLaunching] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likes, setLikes] = useState<number>(piece.likes ?? 0);
+  const [shareStatus, setShareStatus] = useState('');
 
-  // Optimistic like state — initialised from Firestore snapshot on the piece.
-  const [likes, setLikes]   = useState(piece.likes ?? 0);
-  const [liked, setLiked]   = useState(false);
-  const [pending, startToggle] = useTransition();
+  const pieceName = piece.name?.trim() || 'Peca sem titulo';
+  const brandName = piece.brand?.trim() || 'Fashion AI';
+  const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
+  const imageUrl = piece.imageUrl || brandLogoUrl;
+  const categoryLabel = normalizeLabel(piece.category, 'Standard');
+  const pieceTypeLabel = normalizeLabel(piece.pieceType, 'Peca');
+  const statusLabel = piece.wardrobeItemId ? 'No guarda-roupa' : 'Referencia visual';
+  const description =
+    piece.description?.trim()
+    || `${pieceTypeLabel} da marca ${brandName}, escolhida para compor a identidade visual do look.`;
 
-  const handleToggleLike = () => {
+  const handleToggleLike = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
     const nextLiked = !liked;
-    const nextLikes = Math.max(0, likes + (nextLiked ? 1 : -1));
-
-    // Optimistic update first.
     setLiked(nextLiked);
     setLikes(nextLikes);
 
@@ -62,53 +68,64 @@ export default function OutfitPieceCard({ piece, compact = false, onViewPieceCar
         setLiked(liked);
         setLikes(likes);
       }
-    });
-  };
+    } catch {
+      setShareStatus('Falhou');
+      window.setTimeout(() => setShareStatus(''), 1600);
+    }
+  }, [description, pieceName]);
 
-  const computed = computeQualityStars(baseQuality, likes);
+  const handleRemix = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.sessionStorage.setItem('fai-remix-piece', JSON.stringify({
+      wardrobeItemId: piece.wardrobeItemId,
+      name: pieceName,
+      brand: brandName,
+      imageUrl,
+      pieceType: piece.pieceType,
+      description,
+    }));
+    router.push('/create-my-scheme');
+  }, [brandName, description, imageUrl, piece.pieceType, piece.wardrobeItemId, pieceName, router]);
 
   return (
-    <article
-      className={`group relative overflow-hidden rounded-2xl border border-cyan-200/45 bg-[linear-gradient(145deg,rgba(59,130,246,0.34)_0%,rgba(20,184,166,0.3)_52%,rgba(6,182,212,0.26)_100%)] ${compact ? 'p-3' : 'p-4'} backdrop-blur-[14px] shadow-[0_10px_30px_rgba(2,6,23,0.36)] transition duration-300 hover:scale-[1.02] hover:border-cyan-100/70 hover:shadow-[0_16px_42px_rgba(34,211,238,0.24)] ${FILTER_GLOW_LINE} ${GLOW_LINE}`}
-    >
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.28)_0%,rgba(255,255,255,0)_44%),linear-gradient(130deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0)_48%,rgba(14,116,144,0.2)_100%)] opacity-90" />
-      <div aria-hidden className="pointer-events-none absolute inset-[1px] rounded-2xl border border-cyan-100/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),inset_0_0_38px_rgba(8,145,178,0.2)]" />
+    <>
+      <article
+        className={`group relative overflow-hidden rounded-2xl border border-white/18 bg-black/18 transition duration-300 hover:-translate-y-0.5 hover:bg-black/24 ${compact ? 'p-3' : 'p-4'}`}
+        style={{ boxShadow: '0 16px 34px rgba(2,6,23,0.22)' }}
+      >
+        <div className="pointer-events-none absolute inset-0 rounded-[inherit] border border-white/10" />
 
-      <div className="relative z-[1] space-y-3">
-        {/* Header row — name + tier */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 space-y-0.5">
-            <p className={`truncate text-sm font-semibold ${TEXT_GLOW}`}>{pieceName}</p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">{pieceType}</p>
-          </div>
-          <TierChip tier={tier} />
-        </div>
-
-        {/* Brand */}
-        <BrandBadge brandName={brandName} brandLogoUrl={brandLogoUrl} variant="compact" />
-
-        {/* Community signal section */}
-        {!compact ? (
-          <div className="space-y-2 pt-1">
-            <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/50">
-              Community Signal
-              <span className="ml-2 text-white/35">
-                base {baseQuality.toFixed(1)} · {computed > baseQuality ? `+${(computed - baseQuality).toFixed(1)} likes` : 'no boost yet'}
-              </span>
-            </p>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <LikesBadge
-                likes={likes}
-                liked={liked}
-                onToggle={handleToggleLike}
-                disabled={pending}
-              />
-              <QualityBadge baseQuality={baseQuality} likes={likes} />
+        <div className="relative z-[1] grid gap-3">
+          <div className="flex items-start gap-3">
+            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/18 bg-white/10">
+              {imageUrl ? (
+                <Image src={imageUrl} alt={pieceName} fill className="object-contain p-1.5" unoptimized />
+              ) : (
+                <span className="text-xl font-black uppercase text-white/55">{pieceTypeLabel.slice(0, 1)}</span>
+              )}
             </div>
 
-            <div className="pb-3">
-              <QualityRail baseQuality={baseQuality} likes={likes} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-base font-black leading-tight text-white">{pieceName}</p>
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">{pieceTypeLabel}</p>
+                </div>
+                <span className="shrink-0 rounded-full border border-white/20 bg-white/12 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white/72">
+                  {categoryLabel}
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 bg-white/12">
+                  {brandLogoUrl ? (
+                    <Image src={brandLogoUrl} alt={`${brandName} logo`} width={24} height={24} className="h-6 w-6 object-contain" unoptimized />
+                  ) : (
+                    <span className="text-[10px] font-black uppercase text-white">{brandName.slice(0, 2)}</span>
+                  )}
+                </span>
+                <span className="min-w-0 truncate text-sm font-bold text-white/84">{brandName}</span>
+              </div>
             </div>
           </div>
         ) : null}

@@ -21,6 +21,7 @@ function DataRow({ label, value }: { label: string; value: string }) {
 
 export default function CardIndex({ data, showHero = true }: CardIndexProps) {
   const { outfitName, outfitStyleLine, heroImageUrl, creatorName, brands = [], pieces } = data;
+  const leadPiece = pieces[0];
 
   return (
     <div
@@ -45,8 +46,17 @@ export default function CardIndex({ data, showHero = true }: CardIndexProps) {
       )}
 
       {/* Title */}
-      <div className="px-5 pt-4">
-        <p className="text-[20px] font-bold leading-tight text-neutral-900">{outfitName}</p>
+      <div className="grid grid-cols-[1fr_74px] gap-3 px-5 pt-4">
+        <div>
+          <p className="text-[20px] font-bold leading-tight text-neutral-900">{outfitName}</p>
+          <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.18em] text-neutral-400">
+            Lead: {leadPiece ? leadPiece.name : '—'}
+          </p>
+        </div>
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-2 text-center">
+          <p className="font-mono text-[8px] uppercase tracking-widest text-neutral-400">Items</p>
+          <p className="text-[28px] font-black leading-none text-neutral-900">{pieces.length}</p>
+        </div>
       </div>
 
       {/* Data rows */}
@@ -57,13 +67,17 @@ export default function CardIndex({ data, showHero = true }: CardIndexProps) {
         {data.score !== undefined && <DataRow label="Score" value={`★ ${data.score} / 10`} />}
 
         <div className="mt-4 border-t border-neutral-100 pt-3">
-          <p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-neutral-400">Pieces</p>
+          <p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-neutral-400">Index sequence</p>
           {pieces.slice(0, 5).map((piece, i) => (
-            <div key={piece.id} className="flex items-center justify-between py-1 border-b border-dashed border-neutral-100">
-              <span className="font-mono text-[9px] uppercase tracking-wide text-neutral-400">
-                {String(i + 1).padStart(2, '0')} {piece.name}
-              </span>
-              <span className="text-[11px] font-semibold text-neutral-700">{piece.brand}</span>
+            <div key={piece.id} className="grid grid-cols-[18px_1fr] gap-3 border-b border-dashed border-neutral-100 py-1.5">
+              <span className="font-mono text-[9px] font-bold text-neutral-400">{String(i + 1).padStart(2, '0')}</span>
+              <div className="min-w-0">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="truncate text-[11px] font-bold text-neutral-800">{piece.name}</span>
+                  <span className="shrink-0 font-mono text-[8px] uppercase tracking-wide text-neutral-400">{piece.category ?? 'Std'}</span>
+                </div>
+                <p className="truncate text-[10px] text-neutral-500">{piece.brand} · {piece.pieceType}</p>
+              </div>
             </div>
           ))}
         </div>

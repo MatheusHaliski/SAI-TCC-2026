@@ -12,9 +12,10 @@ interface ProfileUserInfoSectionProps {
   username: string;
   email: string;
   canEdit: boolean;
+  onProfileSaved?: (profile: { name?: string; username?: string; email?: string; bio?: string; photo_url?: string }) => void;
 }
 
-export default function ProfileUserInfoSection({ userId, displayName, username, email, canEdit }: ProfileUserInfoSectionProps) {
+export default function ProfileUserInfoSection({ userId, displayName, username, email, canEdit, onProfileSaved }: ProfileUserInfoSectionProps) {
   const defaultBio = 'Fashion-tech creator focused on premium essentials and elevated streetwear.';
   const defaultForm = {
     displayName,
@@ -75,12 +76,19 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
       title="User Info"
       subtitle={canEdit ? 'Edit your profile identity and public creator metadata.' : 'Public creator profile metadata.'}
     >
-      <article className="mt-4 overflow-hidden rounded-3xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.25)]" style={{ backgroundColor: 'var(--user-surface-solid, #ea580c)' }}>
+      <article
+        className="mt-4 overflow-hidden rounded-3xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.25)]"
+        style={{
+          backgroundColor: '#0f172a',
+          backgroundImage: 'var(--sidebar-gradient)',
+          boxShadow: 'var(--drawer-surface-shadow)',
+        }}
+      >
         <div className="relative h-56 w-full border-b border-white/20 bg-black/20">
           {form.avatarUrl ? (
             <Image src={form.avatarUrl} alt={`${form.displayName || form.username} profile`} fill className="object-cover" sizes="(max-width: 768px) 100vw, 60vw" unoptimized />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.25),rgba(0,0,0,0.35))]">
+            <div className="flex h-full w-full items-center justify-center bg-black/25">
               <span className="inline-flex h-24 w-24 items-center justify-center rounded-full border border-white/40 bg-white/15 text-4xl font-semibold text-white">
                 {(form.displayName || form.username || 'U').charAt(0).toUpperCase()}
               </span>
@@ -145,6 +153,13 @@ export default function ProfileUserInfoSection({ userId, displayName, username, 
                 ...authProfile,
                 name: synced.displayName,
                 email: synced.email,
+                photo_url: synced.avatarUrl,
+              });
+              onProfileSaved?.({
+                name: synced.displayName,
+                username: synced.username,
+                email: synced.email,
+                bio: synced.bio,
                 photo_url: synced.avatarUrl,
               });
 

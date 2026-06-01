@@ -103,6 +103,8 @@ interface OutfitBackgroundStudioModalProps {
   onApply: (value: OutfitBackgroundConfig) => void;
   selectedCardSkin?: CardSkinId;
   onSelectSkin?: (skinId: CardSkinId) => void;
+  /** Render as an inline page section instead of a fixed modal overlay */
+  asPage?: boolean;
 }
 
 const COLOR_SWATCHES = ['#0a0a0a', '#ffffff', '#c0c0c0', '#2e1065', '#047857', '#ddc7a1', '#1d4ed8', '#fff8dc'];
@@ -196,52 +198,62 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const NEON_MOTION_GRID_IMAGE = '/neongrid.png';
 const CURATED_IMAGE_PICKER_OPTIONS = [
-  { fileName: 'a1.png', label: 'Psychedelic Palace' },
-  { fileName: 'a2.png', label: 'Art Nouveau Bloom' },
-  { fileName: 'a3.png', label: 'Pastel Kaleidoscope' },
-  { fileName: 'a4.png', label: 'Sacred Geometry Temple' },
-  { fileName: 'a5.png', label: 'Surreal Midnight' },
-  { fileName: 'a6.png', label: 'Solar Mandala' },
-  { fileName: 'a7.png', label: 'Tropical Rainbow' },
-  { fileName: 'a8.png', label: 'Nocturnal Totem' },
-  { fileName: 'a9.png', label: 'Urban Chaos' },
-  { fileName: 'a10.png', label: 'Blueprint Mosaic' },
-  { fileName: 'a11.png', label: 'Midnight Surrealism' },
-  { fileName: 'a12.png', label: "Lion's Gate" },
-  { fileName: 'a13.png', label: 'Temple of Doves' },
-  { fileName: 'a14.png', label: 'Eye of the Storm' },
-  { fileName: 'a15.png', label: 'Tropical Sun Shrine' },
-  { fileName: 'a16.png', label: 'Jungle Totem' },
-  { fileName: 'a17.png', label: 'Cosmic Bestiary' },
-  { fileName: 'a18.png', label: 'Neon Labyrinth' },
-  { fileName: 'a19.png', label: 'Sacred Ibis' },
-  { fileName: 'a20.png', label: 'Whimsical Garden' },
-  { fileName: 'a21.png', label: 'Pastel Dream Temple' },
-  { fileName: 'a22.png', label: 'Fantasy Cityscape' },
-  { fileName: 'a23.png', label: 'Cosmic Sun Face' },
-  { fileName: 'a24.png', label: 'Electric Arcadia' },
-  { fileName: 'a25.png', label: 'Tribal Totem Gate' },
-  { fileName: 'a26.png', label: 'Creature Carnival' },
-  { fileName: 'a27.png', label: 'Egyptian Garden' },
-  { fileName: 'a28.png', label: 'Solar Checkerboard' },
-  { fileName: 'a29.png', label: 'Folk Spirit Garden' },
-  { fileName: 'a30.png', label: 'Solar Court' },
-  { fileName: 'a31.png', label: 'Guardian Fortress' },
-  { fileName: 'a32.png', label: 'Butterfly Duality' },
-  { fileName: 'Sem título (32).png', label: 'Geometric Canvas' },
-  { fileName: 'Sem título (33).png', label: 'Botanical Bloom' },
-  { fileName: 'Fart.png', label: 'Fashion Icon Grid' },
-  { fileName: 'newbirds.jpg', label: 'Morris Birds' },
-  { fileName: 'streetvibes.jpg', label: 'Neon Graffiti' },
-  { fileName: 'flw.jpg', label: 'Paper Florals' },
-  { fileName: 'mfui.jpg', label: 'Fuji Woodblock' },
-].map(({ fileName, label }) => ({
+  // ── Coleção A — Arte & Fantasia ──────────────────────────────────────────
+  { fileName: 'a1.png',  label: 'Psychedelic Palace',      group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a2.png',  label: 'Art Nouveau Bloom',        group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a3.png',  label: 'Pastel Kaleidoscope',      group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a4.png',  label: 'Sacred Geometry Temple',   group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a5.png',  label: 'Surreal Midnight',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a6.png',  label: 'Solar Mandala',            group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a7.png',  label: 'Tropical Rainbow',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a8.png',  label: 'Nocturnal Totem',          group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a9.png',  label: 'Urban Chaos',              group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a10.png', label: 'Blueprint Mosaic',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a11.png', label: 'Midnight Surrealism',      group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a12.png', label: "Lion's Gate",              group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a13.png', label: 'Temple of Doves',          group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a14.png', label: 'Eye of the Storm',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a15.png', label: 'Tropical Sun Shrine',      group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a16.png', label: 'Jungle Totem',             group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a17.png', label: 'Cosmic Bestiary',          group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a18.png', label: 'Neon Labyrinth',           group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a19.png', label: 'Sacred Ibis',              group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a20.png', label: 'Whimsical Garden',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a21.png', label: 'Pastel Dream Temple',      group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a22.png', label: 'Fantasy Cityscape',        group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a23.png', label: 'Cosmic Sun Face',          group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a24.png', label: 'Electric Arcadia',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a25.png', label: 'Tribal Totem Gate',        group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a26.png', label: 'Creature Carnival',        group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a27.png', label: 'Egyptian Garden',          group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a28.png', label: 'Solar Checkerboard',       group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a29.png', label: 'Folk Spirit Garden',       group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a30.png', label: 'Solar Court',              group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a31.png', label: 'Guardian Fortress',        group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a32.png', label: 'Butterfly Duality',        group: 'Coleção A — Arte & Fantasia' },
+  // ── Coleção C — Paisagens, Moda & Cultura ───────────────────────────────
+  { fileName: 'c1.png',  label: 'Paisagens Geométricas',    group: 'Coleção C — Paisagens, Moda & Cultura' },
+  { fileName: 'c2.png',  label: 'Grade Pop Culture',        group: 'Coleção C — Paisagens, Moda & Cultura' },
+  { fileName: 'c3.png',  label: 'Arquitetura Tropical',     group: 'Coleção C — Paisagens, Moda & Cultura' },
+  { fileName: 'c4.png',  label: 'Colagem Moda Urbana',      group: 'Coleção C — Paisagens, Moda & Cultura' },
+  { fileName: 'c5.png',  label: 'Retrato Fashion Abstrato', group: 'Coleção C — Paisagens, Moda & Cultura' },
+  { fileName: 'c6.png',  label: 'Fuga Costeira',            group: 'Coleção C — Paisagens, Moda & Cultura' },
+  // ── Outros ──────────────────────────────────────────────────────────────
+  { fileName: 'Sem título (32).png', label: 'Geometric Canvas',   group: 'Outros' },
+  { fileName: 'Sem título (33).png', label: 'Botanical Bloom',    group: 'Outros' },
+  { fileName: 'Fart.png',            label: 'Fashion Icon Grid',  group: 'Outros' },
+  { fileName: 'newbirds.jpg',        label: 'Morris Birds',       group: 'Outros' },
+  { fileName: 'streetvibes.jpg',     label: 'Neon Graffiti',      group: 'Outros' },
+  { fileName: 'flw.jpg',             label: 'Paper Florals',      group: 'Outros' },
+  { fileName: 'mfui.jpg',            label: 'Fuji Woodblock',     group: 'Outros' },
+].map(({ fileName, label, group }) => ({
   value: `image:${fileName}`,
   label: label || fileName,
-  hint: `Applies ${label || fileName} as artwork surface`,
+  hint: `Aplica "${label || fileName}" como superfície de arte`,
+  group,
   imageUrl: `/${encodeURIComponent(fileName)}`,
 }));
-const BACKGROUND_IMAGE_OPTIONS = CURATED_IMAGE_PICKER_OPTIONS.filter((opt) => /^image:a\d+\.png$/.test(opt.value));
+const BACKGROUND_IMAGE_OPTIONS = CURATED_IMAGE_PICKER_OPTIONS.filter((opt) => /^image:[ac]\d+\.png$/.test(opt.value));
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
   'none',
   'orb',
@@ -2019,6 +2031,7 @@ export default function OutfitBackgroundStudioModal({
   onApply,
   selectedCardSkin,
   onSelectSkin,
+  asPage = false,
 }: OutfitBackgroundStudioModalProps) {
   const buildNoMaterialConfig = (baseColor: string): FabricMaterialConfig => ({
     ...buildFabricPresetConfig(baseColor),
@@ -2046,6 +2059,7 @@ export default function OutfitBackgroundStudioModal({
 
   const [activeTab, setActiveTab] = useState<StudioTab>('color');
   const [draft, setDraft] = useState<OutfitBackgroundConfig>(() => resolveOutfitBackgroundForRender(value));
+  const [dynamicBackground, setDynamicBackground] = useState<boolean>(() => Boolean(value.dynamicBackground));
   const [recentColors, setRecentColors] = useState<string[]>([]);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiStylePreset, setAiStylePreset] = useState<ArtworkStylePreset>('editorial_fashion');
@@ -2229,8 +2243,9 @@ export default function OutfitBackgroundStudioModal({
       hasReferenceImage: Boolean(getUploadedReferenceImage()),
       styleConfig: draft.studioStyleConfig ?? null,
       previewUpdated: true,
+      dynamicBackground,
     });
-    onApply(draft);
+    onApply({ ...draft, dynamicBackground });
   };
 
   const saveBackgroundConfig = () => {
@@ -2238,8 +2253,9 @@ export default function OutfitBackgroundStudioModal({
       presetId: draft.studioStyleConfig?.presetId ?? selectedRecommendedPreset ?? null,
       hasReferenceImage: Boolean(getUploadedReferenceImage()),
       styleConfig: draft.studioStyleConfig ?? null,
+      dynamicBackground,
     });
-    onApply(draft);
+    onApply({ ...draft, dynamicBackground });
   };
 
   const generateAiBackground = async () => {
@@ -2609,23 +2625,26 @@ export default function OutfitBackgroundStudioModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, aiResults.length, aiLoading]);
 
-  return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="flex h-[98vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]"
-        style={{ backgroundColor: 'var(--user-surface-solid)' }}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-white/70">Background Studio</p>
-            <h2 className="text-2xl font-semibold">Customize the visual surface of your outfit card</h2>
-          </div>
-          <button type="button" className="rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold" onClick={onClose}>Close ✕</button>
-        </header>
+  const innerContent = (
+    <div
+      className={asPage
+        ? 'flex flex-col gap-4 text-white'
+        : 'flex h-[98vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]'}
+      style={asPage ? undefined : { backgroundColor: 'var(--user-surface-solid)' }}
+      onClick={asPage ? undefined : (event) => event.stopPropagation()}
+    >
+      <header className="mb-4 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs uppercase tracking-[0.18em] text-white/70">Estúdio de Fundo</p>
+          <h2 className={asPage ? 'max-w-none text-xl font-semibold leading-tight' : 'text-2xl font-semibold'}>Personalize a superfície visual do seu card de look</h2>
+        </div>
+        {!asPage && (
+          <button type="button" className="rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold" onClick={onClose}>Fechar ✕</button>
+        )}
+      </header>
 
-        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]">
-          <section className="min-h-0 space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4">
+      <div className={asPage ? 'grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(460px,1.35fr)]' : 'grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]'}>
+        <section className={asPage ? 'space-y-4 rounded-2xl border border-white/15 bg-white/5 p-4' : 'min-h-0 space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
             <div className="inline-flex rounded-xl border border-white/20 bg-white/5 p-1">
               {([
                 ['color', 'Color'],
@@ -3317,9 +3336,13 @@ export default function OutfitBackgroundStudioModal({
             </section>
           </section>
 
-          <section className="min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-white/65">Live Preview</p>
-            <OutfitCard data={previewData} variant="default" />
+          <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4 lg:sticky lg:top-4 lg:h-fit' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
+            <p className="text-xs uppercase tracking-[0.12em] text-white/65">Pré-visualização</p>
+            <div className="mx-auto w-full max-w-[832px] overflow-visible pb-[40%]">
+              <div style={{ width: '76.923%', margin: '0 auto', transform: 'scale(1.3, 1.4)', transformOrigin: 'top center' }}>
+                <OutfitCard data={previewData} variant="default" />
+              </div>
+            </div>
             <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/85">
               <p>Contrast recommendation: <span className="font-semibold">Use {recommendTextTone} text/icons</span>.</p>
               {shouldShowContrastWarning ? <p className="mt-1 text-amber-200">Warning: high-luminance solid background may reduce metadata readability.</p> : null}
@@ -3358,13 +3381,61 @@ export default function OutfitBackgroundStudioModal({
           />
         </div>
 
-        <footer className="mt-2 flex flex-wrap justify-end gap-2 border-t border-white/15 pt-4">
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancel / Close</button>
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Reset</button>
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={saveBackgroundConfig}>Save Background</button>
-          <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={applyDraftToCard}>Apply to Card · {draft.shape || 'none'}</button>
+        <footer className="mt-2 border-t border-white/15 pt-4 space-y-3">
+          {/* Dynamic Background toggle */}
+          <label className="flex items-start gap-3 rounded-xl border border-white/12 bg-white/4 px-4 py-3 cursor-pointer hover:bg-white/8 transition-colors select-none">
+            <div className="mt-0.5 flex-shrink-0">
+              <input
+                type="checkbox"
+                checked={dynamicBackground}
+                onChange={(e) => setDynamicBackground(e.target.checked)}
+                className="sr-only"
+                id="dynamic-bg-toggle"
+              />
+              <div
+                className={`w-10 h-5 rounded-full transition-colors duration-200 relative ${dynamicBackground ? 'bg-gradient-to-r from-violet-600 to-fuchsia-500' : 'bg-white/15'}`}
+              >
+                <div
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${dynamicBackground ? 'translate-x-5' : 'translate-x-0.5'}`}
+                />
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-white leading-tight flex items-center gap-1.5">
+                Background dinâmico
+                {dynamicBackground && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/25 border border-violet-400/40 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wide text-violet-300">
+                    ✦ Aura Ativo
+                  </span>
+                )}
+              </p>
+              <p className="mt-0.5 text-[11px] text-white/50 leading-tight">
+                {dynamicBackground
+                  ? 'O background evolui automaticamente com os likes — cada marco desbloqueia uma nova Aura visual.'
+                  : 'Desativado — o background definido aqui será fixo neste card.'}
+              </p>
+            </div>
+          </label>
+
+          <div className="flex flex-wrap justify-end gap-2">
+            {!asPage && (
+              <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancelar / Fechar</button>
+            )}
+            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Redefinir</button>
+            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={saveBackgroundConfig}>Salvar Fundo</button>
+            <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={applyDraftToCard}>Aplicar ao Card · {draft.shape || 'none'}</button>
+          </div>
         </footer>
       </div>
+  );
+
+  if (asPage) {
+    return innerContent;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      {innerContent}
     </div>
   );
 }

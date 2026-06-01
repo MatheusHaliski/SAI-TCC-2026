@@ -57,8 +57,17 @@ export class SchemesRepository extends BaseRepository {
       .collection(SCHEMES_COLLECTION)
       .where('user_id', '==', userId)
       .get();
+    const legacySnapshot = await this.db
+      .collection(SCHEMES_COLLECTION)
+      .where('userId', '==', userId)
+      .get()
+      .catch(() => null);
 
-    return snapshot.docs
+    const mergedDocs = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+    for (const doc of snapshot.docs) mergedDocs.set(doc.id, doc);
+    for (const doc of legacySnapshot?.docs ?? []) mergedDocs.set(doc.id, doc);
+
+    return Array.from(mergedDocs.values())
       .map((doc) => ({
         scheme_id: doc.id,
         ...(doc.data() as Omit<Scheme, 'scheme_id'>),

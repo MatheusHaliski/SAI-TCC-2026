@@ -151,7 +151,7 @@ function DailyLookPanel() {
       <SectionBlock title="Configurar Look" subtitle="Escolha a ocasião e humor para gerar looks do seu guarda-roupa">
         <div className="mt-4 space-y-4">
           <div className="space-y-1">
-            <label className="text-xs text-white/50">Ocasião</label>
+            <label className="text-xs text-muted-foreground">Ocasião</label>
             <div className="flex flex-wrap gap-2">
               {OCCASIONS.map(({ value, label }) => (
                 <button
@@ -160,7 +160,7 @@ function DailyLookPanel() {
                   className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
                     occasion === value
                       ? 'bg-white text-black font-semibold'
-                      : 'border border-white/20 text-white/70 hover:border-white/50'
+                      : 'border border-border text-muted-foreground hover:border-white/50'
                   }`}
                 >
                   {label}
@@ -170,7 +170,7 @@ function DailyLookPanel() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-white/50">Humor</label>
+            <label className="text-xs text-muted-foreground">Humor</label>
             <div className="flex flex-wrap gap-2">
               {MOODS.map(({ value, label }) => (
                 <button
@@ -179,7 +179,7 @@ function DailyLookPanel() {
                   className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
                     mood === value
                       ? 'bg-white text-black font-semibold'
-                      : 'border border-white/20 text-white/70 hover:border-white/50'
+                      : 'border border-border text-muted-foreground hover:border-white/50'
                   }`}
                 >
                   {label}
@@ -189,13 +189,13 @@ function DailyLookPanel() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-white/50">Cidade (opcional)</label>
+            <label className="text-xs text-muted-foreground">Cidade (opcional)</label>
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="Ex: São Paulo"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+              className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
             />
           </div>
 
@@ -224,13 +224,13 @@ function DailyLookPanel() {
                 <div
                   key={suggestion.scheme_id}
                   className={`rounded-xl border p-4 space-y-3 transition-colors ${
-                    isConfirmed ? 'border-white/40 bg-white/10' : 'border-white/10 bg-white/5'
+                    isConfirmed ? 'border-white/40 bg-accent' : 'border-border bg-accent'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">{suggestion.title}</h3>
                     {isConfirmed && (
-                      <span className="text-xs rounded-full bg-white/20 px-3 py-1 text-white/80">
+                      <span className="text-xs rounded-full bg-white/20 px-3 py-1 text-foreground">
                         Look do Dia ✓
                       </span>
                     )}
@@ -239,7 +239,7 @@ function DailyLookPanel() {
                   <div className="flex gap-2 overflow-x-auto">
                     {suggestion.items.map((item) => (
                       <div key={item.wardrobe_item_id} className="flex-shrink-0 space-y-1">
-                        <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-white/5">
+                        <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-accent">
                           {item.image_url ? (
                             <Image src={item.image_url} alt={item.name} fill className="object-cover" />
                           ) : (
@@ -248,7 +248,7 @@ function DailyLookPanel() {
                             </div>
                           )}
                         </div>
-                        <p className="text-xs text-white/50 text-center w-20 truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground text-center w-20 truncate">{item.name}</p>
                       </div>
                     ))}
                   </div>
@@ -256,7 +256,7 @@ function DailyLookPanel() {
                   {!isConfirmed && (
                     <button
                       onClick={() => confirmLook(suggestion)}
-                      className="w-full rounded-lg border border-white/20 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+                      className="w-full rounded-lg border border-border py-2 text-sm text-foreground hover:bg-accent transition-colors"
                     >
                       Usar este look hoje
                     </button>
@@ -264,13 +264,13 @@ function DailyLookPanel() {
 
                   {isConfirmed && !existingFeedback && (
                     <div className="space-y-2">
-                      <p className="text-xs text-white/50">Como foi este look?</p>
+                      <p className="text-xs text-muted-foreground">Como foi este look?</p>
                       <div className="flex gap-2">
                         {(['loved', 'used', 'skipped'] as FeedbackValue[]).map((fb) => (
                           <button
                             key={fb}
                             onClick={() => sendFeedback(fb)}
-                            className="flex-1 rounded-lg border border-white/20 py-2 text-xs hover:bg-white/10 transition-colors"
+                            className="flex-1 rounded-lg border border-border py-2 text-xs hover:bg-accent transition-colors"
                           >
                             {FEEDBACK_LABELS[fb]}
                           </button>
@@ -379,28 +379,28 @@ function WeekPlanPanel() {
         <div className="mt-4 space-y-4">
           <div className="flex gap-4 flex-wrap">
             <div className="space-y-1 flex-1 min-w-[160px]">
-              <label className="text-xs text-white/50">Início da semana</label>
+              <label className="text-xs text-muted-foreground">Início da semana</label>
               <input
                 type="date"
                 value={weekStart}
                 onChange={(e) => setWeekStart(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+                className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30"
               />
             </div>
             <div className="space-y-1 flex-1 min-w-[160px]">
-              <label className="text-xs text-white/50">Cidade (opcional)</label>
+              <label className="text-xs text-muted-foreground">Cidade (opcional)</label>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="Ex: São Paulo"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+                className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs text-white/50">Ocasião por dia</p>
+            <p className="text-xs text-muted-foreground">Ocasião por dia</p>
             {days.map((day, index) => (
               <div key={day.date} className="flex items-center gap-3">
                 <span className="w-16 text-xs text-white/40 flex-shrink-0">{DAY_LABELS[index]}</span>
@@ -413,7 +413,7 @@ function WeekPlanPanel() {
                       className={`rounded-full px-2.5 py-0.5 text-xs transition-colors ${
                         day.occasion === value
                           ? 'bg-white text-black font-semibold'
-                          : 'border border-white/15 text-white/50 hover:border-white/40'
+                          : 'border border-white/15 text-muted-foreground hover:border-white/40'
                       }`}
                     >
                       {label}
@@ -447,7 +447,7 @@ function WeekPlanPanel() {
               <div
                 key={day.date}
                 className={`rounded-xl border p-4 ${
-                  day.scheme_id ? 'border-white/10 bg-white/5' : 'border-amber-500/20 bg-amber-500/5'
+                  day.scheme_id ? 'border-border bg-accent' : 'border-amber-500/20 bg-amber-500/5'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2 mb-3">
@@ -455,7 +455,7 @@ function WeekPlanPanel() {
                     <p className="text-sm font-semibold">
                       {DAY_LABELS[index]} <span className="text-white/40 font-normal">— {day.date}</span>
                     </p>
-                    <p className="text-xs text-white/50 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {OCCASIONS.find((o) => o.value === day.occasion)?.label ?? day.occasion}
                     </p>
                     {day.scheme_title && (
@@ -463,7 +463,7 @@ function WeekPlanPanel() {
                     )}
                   </div>
                   {day.scheme_id ? (
-                    <span className="text-xs rounded-full bg-white/10 px-2 py-0.5 text-white/60 flex-shrink-0">Look gerado ✓</span>
+                    <span className="text-xs rounded-full bg-accent px-2 py-0.5 text-muted-foreground flex-shrink-0">Look gerado ✓</span>
                   ) : (
                     <span className="text-xs rounded-full bg-amber-500/20 px-2 py-0.5 text-amber-400 flex-shrink-0">Lacuna</span>
                   )}
@@ -473,7 +473,7 @@ function WeekPlanPanel() {
                   <div className="flex gap-2 overflow-x-auto">
                     {day.scheme_items.map((item) => (
                       <div key={item.wardrobe_item_id} className="flex-shrink-0 space-y-1">
-                        <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-white/5">
+                        <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-accent">
                           {item.image_url ? (
                             <Image src={item.image_url} alt={item.name} fill className="object-cover" />
                           ) : (
@@ -596,7 +596,7 @@ function HistoryPanel() {
     return (
       <SectionBlock title="Histórico Vazio" subtitle="Você ainda não registrou nenhum look">
         <p className="mt-4 text-sm text-white/40">
-          Gere seu primeiro look na aba <strong className="text-white/70">Looks Diários</strong> para começar o histórico.
+          Gere seu primeiro look na aba <strong className="text-muted-foreground">Looks Diários</strong> para começar o histórico.
         </p>
       </SectionBlock>
     );
@@ -611,7 +611,7 @@ function HistoryPanel() {
           { label: '👍 Usei', value: stats.used, color: 'text-blue-400' },
           { label: '⏭️ Pulei', value: stats.skipped, color: 'text-white/40' },
         ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
+          <div key={label} className="rounded-xl border border-border bg-accent p-3 text-center">
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
             <p className="text-xs text-white/40 mt-1">{label}</p>
           </div>
@@ -624,14 +624,14 @@ function HistoryPanel() {
           <SectionBlock key={date} title={date} subtitle={`${dateLooks.length} look${dateLooks.length !== 1 ? 's' : ''} neste dia`}>
             <div className="mt-3 space-y-3">
               {dateLooks.map((look) => (
-                <div key={look.daily_look_id} className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
+                <div key={look.daily_look_id} className="rounded-xl border border-border bg-accent p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">
                         {OCCASION_LABELS[look.occasion] ?? look.occasion}
                       </span>
                       <span className="text-xs text-white/30">·</span>
-                      <span className="text-xs text-white/50">
+                      <span className="text-xs text-muted-foreground">
                         {MOOD_LABELS[look.mood] ?? look.mood}
                       </span>
                     </div>
@@ -639,7 +639,7 @@ function HistoryPanel() {
                   </div>
 
                   {look.feedback ? (
-                    <span className="inline-block text-xs rounded-full bg-white/10 px-3 py-0.5 text-white/70">
+                    <span className="inline-block text-xs rounded-full bg-accent px-3 py-0.5 text-muted-foreground">
                       {FEEDBACK_LABELS[look.feedback]}
                     </span>
                   ) : (
@@ -648,7 +648,7 @@ function HistoryPanel() {
                         <button
                           key={fb}
                           onClick={() => sendFeedback(look.daily_look_id, fb)}
-                          className="flex-1 rounded-lg border border-white/15 py-1.5 text-xs hover:bg-white/10 transition-colors"
+                          className="flex-1 rounded-lg border border-white/15 py-1.5 text-xs hover:bg-accent transition-colors"
                         >
                           {FEEDBACK_LABELS[fb]}
                         </button>

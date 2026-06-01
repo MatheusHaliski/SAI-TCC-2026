@@ -1,0 +1,62 @@
+# Dependências
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Build
+.next/
+dist/
+build/
+out/
+
+# Variáveis de ambiente — NUNCA versionar
+.env
+.env.local
+.env.production
+.env.development
+.env.staging
+.env.test
+
+# Chaves e credenciais — NUNCA versionar
+*.pem
+*.key
+*.p12
+*.pfx
+serviceAccount*.json
+firebase-adminsdk*.json
+keys/
+secrets/
+
+# Backups — armazenar fora do repositório
+database/backups/*
+!database/backups/.gitkeep
+*.sql.gz
+*.sql.bz2
+*.dump
+*.dmp
+
+# Dumps SQL reais — NUNCA versionar
+*_backup_*.sql
+migration-data-*.sql
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
+.turbo/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

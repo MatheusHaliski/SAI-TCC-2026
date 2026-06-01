@@ -68,7 +68,7 @@ export default function ProfileView() {
 
   const isOwnerView = Boolean(authUserId) && Boolean(userId) && authUserId === userId;
   const forcedPublicSection = publicUserFromPath && !isOwnerView ? 'user-info' : null;
-  const selectedSection = forcedPublicSection ?? (pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section')));
+  const selectedSection = forcedPublicSection ?? parseSectionFromQuery(searchParams.get('section') ?? (pathname.endsWith('/settings') ? 'settings' : null));
   const allowedSections: ProfileSectionKey[] = isOwnerView || !publicUserFromPath
     ? ALLOWED_SECTIONS
     : ['user-info'];
@@ -176,6 +176,8 @@ export default function ProfileView() {
           wardrobeItems={wardrobeItems}
           schemes={schemes}
           posts={posts}
+          onWardrobeItemDeleted={(removedId) => setWardrobeItems((prev) => prev.filter((item) => item.wardrobe_item_id !== removedId))}
+          onProfileSaved={(profile) => setViewedProfile((prev) => ({ ...prev, ...profile }))}
         />
       </div>
     </div>

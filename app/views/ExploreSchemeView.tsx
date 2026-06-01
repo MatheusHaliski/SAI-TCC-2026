@@ -1,290 +1,286 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import CollapsibleOutfitCard from '@/app/components/outfit-card/CollapsibleOutfitCard';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import { OutfitCardData, buildOutfitDescriptionFallback } from '@/app/lib/outfit-card';
+import { getLS, setLS } from '@/app/lib/SafeStorage';
+import OutfitDetailModal from '@/app/components/search/OutfitDetailModal';
 import { getAuthSessionProfile } from '@/app/lib/authSession';
+import { getSharedAccessData } from '@/app/lib/accessTokenShare';
 
+/* ── Types ── */
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
-type PublicUser = { user_id: string; username?: string; name?: string };
-
 type Scheme = {
-  scheme_id: string;
-  title: string;
-  description?: string | null;
-  style: string;
-  occasion: string;
-  cover_image_url: string | null;
-  user_id: string;
-  pieces?: SchemePieceSnapshot[];
+  scheme_id: string; title: string; description?: string | null;
+  style: string; occasion: string; cover_image_url: string | null;
+  user_id: string; pieces?: SchemePieceSnapshot[];
 };
 type SchemePieceSnapshot = {
-  id: string;
-  slot: SlotKey;
-  sourceType: 'wardrobe' | 'suggested';
-  sourceId: string;
-  name: string;
-  brand: string;
-  brandLogoUrl?: string;
+  id: string; slot: SlotKey; sourceType: 'wardrobe' | 'suggested';
+  sourceId: string; name: string; brand: string; brandLogoUrl?: string;
   category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
-  pieceType: string;
-  wearstyles: string[];
-  expressao?: string;
+  pieceType: string; wearstyles: string[];
 };
 type SchemeDetailItem = {
-  scheme_item_id: string;
-  wardrobe_item_id: string;
-  slot: SlotKey;
-  wardrobe_name: string;
-  image_url: string;
+  scheme_item_id: string; wardrobe_item_id: string;
+  slot: SlotKey; wardrobe_name: string; image_url: string;
 };
-type SchemeDetailsResponse = {
-  scheme: Scheme;
-  items: SchemeDetailItem[];
-};
-
+type SchemeDetailsResponse = { scheme: Scheme; items: SchemeDetailItem[] };
 type FilterTab = 'all' | 'favorites' | 'available' | 'unavailable';
 
-const SLOT_PREVIEW_DEFAULTS: Record<
-  SlotKey,
-  { pieceType: string; category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare'; wearstyles: string[] }
-> = {
-  upper: { pieceType: 'Jacket', category: 'Premium', wearstyles: ['Statement Piece', 'Visual Anchor'] },
-  lower: { pieceType: 'Pants', category: 'Standard', wearstyles: ['Base Structure', 'Balanced Fit'] },
-  shoes: { pieceType: 'Footwear', category: 'Rare', wearstyles: ['Trend Driver', 'Street Energy'] },
+const SLOT_DEFAULTS: Record<SlotKey, { pieceType: string; category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare'; wearstyles: string[] }> = {
+  upper:     { pieceType: 'Jacket',    category: 'Premium',         wearstyles: ['Statement Piece', 'Visual Anchor'] },
+  lower:     { pieceType: 'Pants',     category: 'Standard',        wearstyles: ['Base Structure', 'Balanced Fit'] },
+  shoes:     { pieceType: 'Footwear',  category: 'Rare',            wearstyles: ['Trend Driver', 'Street Energy'] },
   accessory: { pieceType: 'Accessory', category: 'Limited Edition', wearstyles: ['Style Accent', 'Attention Grabber'] },
 };
 
 const toReadableSuggestedName = (value: string) => {
-  const [, , slug = 'selected-piece'] = value.split(':');
-  return slug
-    .replaceAll('-', ' ')
-    .split(' ')
-    .filter(Boolean)
-    .map((token) => `${token[0]?.toUpperCase() ?? ''}${token.slice(1)}`)
-    .join(' ');
+  const [,, slug = 'selected-piece'] = value.split(':');
+  return slug.replaceAll('-', ' ').split(' ').filter(Boolean)
+    .map((t) => `${t[0]?.toUpperCase() ?? ''}${t.slice(1)}`).join(' ');
 };
 
 const FILTER_TABS: Array<{ key: FilterTab; label: string }> = [
-  { key: 'all', label: 'Todos' },
-  { key: 'favorites', label: 'Favoritos' },
-  { key: 'available', label: 'Disponíveis' },
-  { key: 'unavailable', label: 'Indisponíveis' },
+  { key: 'all',         label: 'Todos'        },
+  { key: 'favorites',   label: 'Favoritos'    },
+  { key: 'available',   label: 'Disponíveis'  },
+  { key: 'unavailable', label: 'Indisponíveis'},
 ];
 
+const LS_FAVORITES    = 'sai_explore_favorites';
+const LS_AVAILABILITY = 'sai_explore_availability';
+
+function resolveUserId(): string {
+  const profile = getAuthSessionProfile();
+  if (profile.user_id?.trim()) return profile.user_id.trim();
+  const shared = getSharedAccessData();
+  if (shared?.profile?.user_id?.trim()) return shared.profile.user_id.trim();
+  const keys = ['restaurantcards_auth_profile', 'stylistai_content_access_data', 'sai_auth_profile'];
+  for (const key of keys) {
+    try {
+      const raw = getLS(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const uid = (parsed.user_id ?? parsed.uid ?? (parsed.profile as Record<string,unknown>)?.user_id ?? (parsed.profile as Record<string,unknown>)?.uid) as string | undefined;
+      if (uid?.trim()) return uid.trim();
+    } catch {}
+  }
+  return '';
+}
+
 export default function ExploreSchemeView() {
-  const [schemes, setSchemes] = useState<Scheme[]>([]);
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-  const [availability, setAvailability] = useState<Record<string, 'available' | 'unavailable'>>({});
+  const [schemes,         setSchemes]         = useState<Scheme[]>([]);
+  const [favorites,       setFavorites]       = useState<Record<string, boolean>>({});
+  const [availability,    setAvailability]    = useState<Record<string, 'available' | 'unavailable'>>({});
   const [itemsBySchemeId, setItemsBySchemeId] = useState<Record<string, SchemeDetailItem[]>>({});
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-  const [users, setUsers] = useState<PublicUser[]>([]);
-  const authUserId = useMemo(() => getAuthSessionProfile().user_id?.trim() || '', []);
+  const [activeFilter,    setActiveFilter]    = useState<FilterTab>('all');
+  const [togglingId,      setTogglingId]      = useState<string | null>(null);
+  const [selectedCard,    setSelectedCard]    = useState<OutfitCardData | null>(null);
+  const [modalOpen,       setModalOpen]       = useState(false);
+
+  const resolvedUserId = useRef<string>('');
 
   useEffect(() => {
-    if (!authUserId) return;
+    const uid = resolveUserId();
+    resolvedUserId.current = uid;
+    try { const s = getLS(LS_FAVORITES);    if (s) setFavorites(JSON.parse(s));    } catch {}
+    try { const s = getLS(LS_AVAILABILITY); if (s) setAvailability(JSON.parse(s)); } catch {}
+    if (uid) {
+      fetch(`/api/outfit-favorites?userId=${encodeURIComponent(uid)}`)
+        .then((r) => r.json())
+        .then((data: unknown) => {
+          const d = data as { ok?: boolean; favorites?: Array<{ schemeId: string }> };
+          if (d.ok && Array.isArray(d.favorites)) {
+            const map: Record<string, boolean> = {};
+            d.favorites.forEach((f) => { if (f.schemeId) map[f.schemeId] = true; });
+            setFavorites(map);
+            setLS(LS_FAVORITES, JSON.stringify(map));
+          }
+        }).catch(() => {});
+    }
+  }, []);
 
-    const loadSchemesWithItems = async () => {
-      const response = await fetch(`/api/schemes/user/${authUserId}`);
-      const data = await response.json();
-      const safeSchemes = Array.isArray(data) ? (data as Scheme[]) : [];
-      setSchemes(safeSchemes);
+  useEffect(() => { setLS(LS_AVAILABILITY, JSON.stringify(availability)); }, [availability]);
 
-      fetch('/api/users/public')
-        .then((res) => res.json())
-        .then((payload) => setUsers(Array.isArray(payload?.users) ? payload.users : []))
-        .catch(() => setUsers([]));
-
-      const detailResponses = await Promise.all(
-        safeSchemes.map((scheme) =>
-          fetch(`/api/schemes/${scheme.scheme_id}`)
-            .then((res) => (res.ok ? res.json() : null))
-            .catch(() => null),
-        ),
+  useEffect(() => {
+    const load = async () => {
+      const res  = await fetch('/api/schemes/public');
+      const data = await res.json();
+      const safe = Array.isArray(data) ? (data as Scheme[]) : [];
+      setSchemes(safe);
+      const details = await Promise.all(
+        safe.map((s) => fetch(`/api/schemes/${s.scheme_id}`).then((r) => r.ok ? r.json() : null).catch(() => null))
       );
-
-      const nextItemsBySchemeId: Record<string, SchemeDetailItem[]> = {};
-
-      detailResponses.forEach((details, index) => {
-        const currentScheme = safeSchemes[index];
-        const detailPayload = details as SchemeDetailsResponse | null;
-        nextItemsBySchemeId[currentScheme.scheme_id] = detailPayload?.items ?? [];
-      });
-
-      setItemsBySchemeId(nextItemsBySchemeId);
+      const map: Record<string, SchemeDetailItem[]> = {};
+      details.forEach((d, i) => { map[safe[i].scheme_id] = (d as SchemeDetailsResponse | null)?.items ?? []; });
+      setItemsBySchemeId(map);
     };
+    load().catch(() => { setSchemes([]); setItemsBySchemeId({}); });
+  }, []);
 
-    loadSchemesWithItems().catch(() => {
-      setSchemes([]);
-      setItemsBySchemeId({});
-    });
-  }, [authUserId]);
+  const toggleFavorite = async (schemeId: string) => {
+    if (togglingId === schemeId) return;
+    setTogglingId(schemeId);
+    const uid    = resolvedUserId.current;
+    const newVal = !favorites[schemeId];
+    setFavorites((prev) => { const next = { ...prev, [schemeId]: newVal }; setLS(LS_FAVORITES, JSON.stringify(next)); return next; });
+    if (!uid) { setTogglingId(null); return; }
+    try {
+      const res = await fetch('/api/outfit-favorites', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: uid, schemeId, favorite: newVal }),
+      });
+      if (!res.ok) throw new Error('API error');
+    } catch {
+      setFavorites((prev) => { const r = { ...prev, [schemeId]: !newVal }; setLS(LS_FAVORITES, JSON.stringify(r)); return r; });
+    } finally { setTogglingId(null); }
+  };
 
-  const usersById = useMemo(() => Object.fromEntries(users.map((u) => [u.user_id, u])), [users]);
+  const setAvail = (id: string, val: 'available' | 'unavailable') =>
+    setAvailability((prev) => ({ ...prev, [id]: val }));
 
   const buildOutfitPreviewData = (scheme: Scheme): OutfitCardData => {
-    const styleLine = `${scheme.style || 'Streetwear'} • ${scheme.occasion || 'General'}`;
+    const styleLine    = `${scheme.style || 'Streetwear'} • ${scheme.occasion || 'General'}`;
     const relatedItems = itemsBySchemeId[scheme.scheme_id] ?? [];
-    const savedPieces = Array.isArray(scheme.pieces) ? scheme.pieces : [];
+    const savedPieces  = Array.isArray(scheme.pieces) ? scheme.pieces : [];
     let parsedBackground: OutfitCardData['outfitBackground'] = undefined;
+    try { const p = scheme.description ? JSON.parse(scheme.description) : null; if (p?.outfitBackground) parsedBackground = p.outfitBackground; } catch {}
 
-    try {
-      const parsedDescription = scheme.description ? JSON.parse(scheme.description) : null;
-      if (parsedDescription?.outfitBackground) {
-        parsedBackground = parsedDescription.outfitBackground;
-      }
-    } catch {
-      parsedBackground = undefined;
-    }
-
-    const normalizedPieces = savedPieces.length
-      ? savedPieces.map((piece, index) => ({
-          id: (piece as { id?: string; piece_id?: string }).id
-            || (piece as { id?: string; piece_id?: string }).piece_id
-            || `${scheme.scheme_id}-piece-${index}`,
-          name: (piece as { name?: string; piece_name?: string }).name
-            || (piece as { name?: string; piece_name?: string }).piece_name
-            || 'Selected piece',
-          brand: (piece as { brand?: string; brand_name?: string }).brand
-            || (piece as { brand?: string; brand_name?: string }).brand_name
-            || 'Selection Default Brand',
-          brandLogoUrl: (piece as { brandLogoUrl?: string; brand_logo_url?: string }).brandLogoUrl
-            || (piece as { brandLogoUrl?: string; brand_logo_url?: string }).brand_logo_url,
-          pieceType: (piece as { pieceType?: string; piece_type?: string }).pieceType
-            || (piece as { pieceType?: string; piece_type?: string }).piece_type
-            || 'Garment',
-          category: piece.category,
-          wearstyles: piece.wearstyles,
-          expressao: (piece as { expressao?: string }).expressao,
+    const pieces = savedPieces.length
+      ? savedPieces.map((piece, i) => ({
+          id: (piece as { id?: string; piece_id?: string }).id || (piece as { id?: string; piece_id?: string }).piece_id || `${scheme.scheme_id}-${i}`,
+          name: (piece as { name?: string; piece_name?: string }).name || (piece as { name?: string; piece_name?: string }).piece_name || 'Selected piece',
+          brand: (piece as { brand?: string; brand_name?: string }).brand || (piece as { brand?: string; brand_name?: string }).brand_name || 'Default Brand',
+          brandLogoUrl: (piece as { brandLogoUrl?: string; brand_logo_url?: string }).brandLogoUrl || (piece as { brandLogoUrl?: string; brand_logo_url?: string }).brand_logo_url,
+          pieceType: (piece as { pieceType?: string; piece_type?: string }).pieceType || (piece as { pieceType?: string; piece_type?: string }).piece_type || 'Garment',
+          category: piece.category, wearstyles: piece.wearstyles,
         }))
-      : relatedItems.length
-        ? relatedItems.map((item) => {
-            const derivedName = item.wardrobe_name?.trim()
-              || (item.wardrobe_item_id.startsWith('suggested:')
-                ? toReadableSuggestedName(item.wardrobe_item_id)
-                : 'Selected piece');
-            return {
-              id: item.scheme_item_id,
-              name: derivedName,
-              brand: 'Selection Default Brand',
-              pieceType: SLOT_PREVIEW_DEFAULTS[item.slot].pieceType,
-              category: SLOT_PREVIEW_DEFAULTS[item.slot].category,
-              wearstyles: SLOT_PREVIEW_DEFAULTS[item.slot].wearstyles,
-              pieceTypeIconUrl: item.image_url || undefined,
-            };
-          })
-        : [];
+      : relatedItems.map((item) => ({
+          id: item.scheme_item_id,
+          name: item.wardrobe_name?.trim() || (item.wardrobe_item_id.startsWith('suggested:') ? toReadableSuggestedName(item.wardrobe_item_id) : 'Selected piece'),
+          brand: 'Default Brand',
+          pieceType: SLOT_DEFAULTS[item.slot].pieceType,
+          category:  SLOT_DEFAULTS[item.slot].category,
+          wearstyles: SLOT_DEFAULTS[item.slot].wearstyles,
+          pieceTypeIconUrl: item.image_url || undefined,
+        }));
 
     return {
       outfitName: scheme.title || 'Untitled Outfit',
       outfitStyleLine: styleLine,
-      outfitDescription: buildOutfitDescriptionFallback({
-        pieces: normalizedPieces,
-        outfitStyleLine: `${scheme.style || 'Minimal'} ${scheme.occasion || 'General'}`,
-        outfitName: scheme.title || 'Untitled Outfit',
-      }),
+      outfitDescription: buildOutfitDescriptionFallback({ pieces, outfitStyleLine: `${scheme.style || 'Minimal'} ${scheme.occasion || 'General'}`, outfitName: scheme.title || 'Untitled Outfit' }),
       heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
-      creatorName: usersById[scheme.user_id]?.username || usersById[scheme.user_id]?.name || 'usuario',
       outfitBackground: parsedBackground,
-      pieces: normalizedPieces,
+      pieces,
     };
   };
 
   const filteredSchemes = useMemo(() => {
     switch (activeFilter) {
-      case 'favorites':
-        return schemes.filter((s) => favorites[s.scheme_id]);
-      case 'available':
-        return schemes.filter((s) => (availability[s.scheme_id] ?? 'available') === 'available');
-      case 'unavailable':
-        return schemes.filter((s) => availability[s.scheme_id] === 'unavailable');
-      default:
-        return schemes;
+      case 'favorites':   return schemes.filter((s) =>  favorites[s.scheme_id]);
+      case 'available':   return schemes.filter((s) => (availability[s.scheme_id] ?? 'available') === 'available');
+      case 'unavailable': return schemes.filter((s) =>  availability[s.scheme_id] === 'unavailable');
+      default:            return schemes;
     }
   }, [activeFilter, favorites, availability, schemes]);
 
   const grouped = useMemo(() => {
-    const byOccasion = new Map<string, Scheme[]>();
-    filteredSchemes.forEach((scheme) => {
-      const key = scheme.occasion || 'Geral';
-      byOccasion.set(key, [...(byOccasion.get(key) ?? []), scheme]);
-    });
-    return Array.from(byOccasion.entries());
+    const map = new Map<string, Scheme[]>();
+    filteredSchemes.forEach((s) => { const k = s.occasion || 'Geral'; map.set(k, [...(map.get(k) ?? []), s]); });
+    return Array.from(map.entries());
   }, [filteredSchemes]);
 
-  const emptyMessage: Record<FilterTab, string> = {
+  const favCount = Object.values(favorites).filter(Boolean).length;
+  const emptyMsg: Record<FilterTab, string> = {
     all: 'Nenhum card de look disponível.',
-    favorites: 'Nenhum card favoritado ainda.',
+    favorites: 'Nenhum look favoritado ainda. Clique em ☆ Favoritar nos cards abaixo.',
     available: 'Nenhum card disponível.',
     unavailable: 'Nenhum card indisponível.',
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <PageHeader title="Cards de Look Salvos" subtitle="Gerencie looks por ocasião, preferência, favoritos e disponibilidade." />
 
       {/* Filter pills */}
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-white/15 bg-white/5 p-3">
-        {FILTER_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveFilter(tab.key)}
-            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
-              activeFilter === tab.key
-                ? 'border-cyan-400/70 bg-cyan-500/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
-                : 'border-white/20 bg-white/5 text-white/70 hover:border-white/35 hover:bg-white/10 hover:text-white'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--accent)', padding: '0.75rem', alignItems: 'center' }}>
+        {FILTER_TABS.map((tab) => {
+          const isActive = activeFilter === tab.key;
+          return (
+            <button key={tab.key} type="button" onClick={() => setActiveFilter(tab.key)}
+              style={{ borderRadius: '9999px', border: isActive ? '1px solid rgba(124,58,237,0.6)' : '1px solid var(--border)', padding: '0.375rem 1rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', background: isActive ? 'rgba(124,58,237,0.18)' : 'transparent', color: isActive ? '#c4b5fd' : 'var(--muted-foreground)', transition: 'all 0.15s', fontFamily: 'inherit' }}>
+              {tab.label}
+              {tab.key === 'favorites' && favCount > 0 && (
+                <span style={{ marginLeft: '0.375rem', background: 'rgba(124,58,237,0.4)', borderRadius: '9999px', padding: '0.1rem 0.45rem', fontSize: '0.7rem', fontWeight: 700 }}>{favCount}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
+      {/* Content */}
       {grouped.length === 0 ? (
-        <p className="text-sm text-white/70">{emptyMessage[activeFilter]}</p>
+        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--muted-foreground)' }}>
+          <p style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{activeFilter === 'favorites' ? '★' : '🔍'}</p>
+          <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--foreground)' }}>{emptyMsg[activeFilter]}</p>
+        </div>
       ) : (
         grouped.map(([occasion, occasionSchemes]) => (
           <SectionBlock key={occasion} title={`Ocasião: ${occasion}`} subtitle="Looks agrupados por ocasião.">
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {occasionSchemes.map((scheme) => (
-                <article key={scheme.scheme_id} className="space-y-2 rounded-xl border border-white/20 p-2">
-                  <CollapsibleOutfitCard card={buildOutfitPreviewData(scheme)} defaultExpanded={false} showActions={false} />
-                  <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/80">
-                    <p>Status: {availability[scheme.scheme_id] === 'unavailable' ? 'indisponível' : 'disponível'}</p>
-                    <p>Favorito: {favorites[scheme.scheme_id] ? 'sim' : 'não'}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setFavorites((prev) => ({ ...prev, [scheme.scheme_id]: !prev[scheme.scheme_id] }))}
-                        className={`rounded-lg border px-2 py-1 text-xs transition ${favorites[scheme.scheme_id] ? 'border-amber-300/50 bg-amber-500/20 text-amber-100' : 'border-white/30 text-white hover:bg-white/10'}`}
-                      >
-                        ★ Favorito
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'available' }))}
-                        className={`rounded-lg border px-2 py-1 text-xs transition ${(availability[scheme.scheme_id] ?? 'available') === 'available' ? 'border-emerald-300/50 bg-emerald-500/20 text-emerald-100' : 'border-white/30 text-white hover:bg-white/10'}`}
-                      >
-                        Disponível
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAvailability((prev) => ({ ...prev, [scheme.scheme_id]: 'unavailable' }))}
-                        className={`rounded-lg border px-2 py-1 text-xs transition ${availability[scheme.scheme_id] === 'unavailable' ? 'border-rose-300/50 bg-rose-500/20 text-rose-100' : 'border-white/30 text-white hover:bg-white/10'}`}
-                      >
-                        Indisponível
-                      </button>
+            <div style={{ marginTop: '1rem', display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))' }}>
+              {occasionSchemes.map((scheme) => {
+                const isFav    = !!favorites[scheme.scheme_id];
+                const avail    = availability[scheme.scheme_id] ?? 'available';
+                const toggling = togglingId === scheme.scheme_id;
+                return (
+                  <article key={scheme.scheme_id}
+                    style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderRadius: '1rem', border: `1px solid ${isFav ? 'rgba(245,158,11,0.4)' : 'var(--border)'}`, background: 'var(--card)', padding: '0.75rem', boxShadow: isFav ? '0 0 0 2px rgba(245,158,11,0.12)' : 'var(--shadow-sm)', transition: 'all 0.2s' }}>
+                    <OutfitCard data={buildOutfitPreviewData(scheme)} />
+                    <div style={{ borderRadius: '0.75rem', border: '1px solid var(--border)', background: 'var(--accent)', padding: '0.75rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.625rem', flexWrap: 'wrap' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.625rem', borderRadius: '9999px', background: isFav ? 'rgba(245,158,11,0.15)' : 'var(--muted)', color: isFav ? '#fcd34d' : 'var(--muted-foreground)', border: isFav ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border)' }}>
+                          {isFav ? '★ Favoritado' : '☆ Não favoritado'}
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.625rem', borderRadius: '9999px', background: avail === 'available' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: avail === 'available' ? '#6ee7b7' : '#fca5a5', border: `1px solid ${avail === 'available' ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}` }}>
+                          {avail === 'available' ? '● Disponível' : '● Indisponível'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <button type="button" onClick={() => toggleFavorite(scheme.scheme_id)} disabled={toggling}
+                          style={{ flex: 1, borderRadius: '0.5rem', border: isFav ? '1px solid rgba(245,158,11,0.5)' : '1px solid var(--border)', padding: '0.4rem 0.5rem', fontSize: '0.8125rem', fontWeight: 700, cursor: toggling ? 'wait' : 'pointer', background: isFav ? 'rgba(245,158,11,0.15)' : 'var(--card)', color: isFav ? '#fcd34d' : 'var(--muted-foreground)', fontFamily: 'inherit', transition: 'all 0.15s', opacity: toggling ? 0.6 : 1, whiteSpace: 'nowrap' }}>
+                          {toggling ? '...' : isFav ? '★ Favoritado' : '☆ Favoritar'}
+                        </button>
+                        <button type="button" onClick={() => setAvail(scheme.scheme_id, 'available')}
+                          style={{ flex: 1, borderRadius: '0.5rem', border: avail === 'available' ? '1px solid rgba(16,185,129,0.5)' : '1px solid var(--border)', padding: '0.4rem 0.5rem', fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer', background: avail === 'available' ? 'rgba(16,185,129,0.15)' : 'var(--card)', color: avail === 'available' ? '#6ee7b7' : 'var(--muted-foreground)', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>
+                          ✓ Disponível
+                        </button>
+                        <button type="button" onClick={() => setAvail(scheme.scheme_id, 'unavailable')}
+                          style={{ flex: 1, borderRadius: '0.5rem', border: avail === 'unavailable' ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border)', padding: '0.4rem 0.5rem', fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer', background: avail === 'unavailable' ? 'rgba(239,68,68,0.15)' : 'var(--card)', color: avail === 'unavailable' ? '#fca5a5' : 'var(--muted-foreground)', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>
+                          ✕ Indisponível
+                        </button>
+                        <button type="button"
+                          onClick={() => { setSelectedCard(buildOutfitPreviewData(scheme)); setModalOpen(true); }}
+                          style={{ flex: 1, borderRadius: '0.5rem', border: '1px solid rgba(124,58,237,0.4)', padding: '0.4rem 0.5rem', fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer', background: 'rgba(124,58,237,0.12)', color: '#c4b5fd', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>
+                          🔍 Ver Card
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           </SectionBlock>
         ))
       )}
+
+      <OutfitDetailModal
+        open={modalOpen}
+        data={selectedCard}
+        onClose={() => { setModalOpen(false); setSelectedCard(null); }}
+      />
     </div>
   );
 }
