@@ -33,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
   { route: 'search-pieces',    label: 'Peças Públicas', helperText: 'Descubra peças de criadores',          icon: '⊞',  path: '/search-pieces' },
   { route: 'search-items',     label: 'Buscar',         helperText: 'Encontre usuários e looks',            icon: '⌕',  path: '/search-items' },
   { route: 'my-photos',        label: 'Minhas Fotos',   helperText: 'Galeria de peças e looks',             icon: '⬡',  path: '/my-photos' },
-  { route: 'maison',           label: 'Maison',         helperText: 'Perfil de marcas e identidade',        icon: '◆',  path: '/maison' },
+  { route: 'maison',           label: 'Marcas',         helperText: 'Perfil de marcas e identidade',        icon: '◆',  path: '/maison' },
   { route: 'future-topics',    label: 'Temas Futuros',  helperText: 'Funcionalidades planejadas',           icon: '◇',  path: '/future-topics' },
   { route: 'profile',          label: 'Perfil',         helperText: 'Gerencie sua conta',                   icon: '◉',  path: '/profile' },
   { route: 'profile-settings', label: 'Configurações',  helperText: 'Preferências e privacidade',           icon: '⚙︎', path: '/profile/settings' },
@@ -53,7 +53,7 @@ export const ROUTE_TITLES: Record<AppRoute, string> = {
   'dress-tester': 'Provador 2D',
   'my-photos': 'Minhas Fotos',
   'future-topics': 'Temas Futuros',
-  maison: 'Maison',
+  maison: 'Marcas',
 };
 
 export const PATH_TO_ROUTE: Record<string, AppRoute> = {

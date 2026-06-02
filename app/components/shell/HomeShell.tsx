@@ -100,7 +100,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { route: 'my-photos',        label: 'Minhas Fotos',   icon: <ExploreIcon /> },
   { route: 'search-items',     label: 'Explorar',       icon: <SearchIcon /> },
   { route: 'search-pieces',    label: 'Peças Públicas', icon: <HeartIcon /> },
-  { route: 'maison',           label: 'Maison',         icon: <MaisonIcon /> },
+  { route: 'maison',           label: 'Marcas',         icon: <MaisonIcon /> },
   { route: 'profile',          label: 'Perfil',         icon: <HomeIcon /> },
   { route: 'profile-settings', label: 'Configurações',  icon: <SettingsIcon /> },
 ];
@@ -115,6 +115,7 @@ export default function HomeShell() {
   const [mobileOpen,   setMobileOpen]   = useState(false);
   const [isDark,       setIsDark]       = useState(false);
   const [addPieceOpen, setAddPieceOpen] = useState(false);
+  const [isPortuguese, setIsPortuguese] = useState(true);
   const router = useRouter();
 
   useEffect(() => { setActiveRoute(currentRoute); }, [currentRoute]);
@@ -128,6 +129,10 @@ export default function HomeShell() {
     const saved = readSavedTheme();
     applyTheme(saved);
     setIsDark(saved === 'dark');
+    const refreshLang = () => setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
+    refreshLang();
+    window.addEventListener('sai-language-change', refreshLang as EventListener);
+    return () => window.removeEventListener('sai-language-change', refreshLang as EventListener);
   }, [router]);
 
   const handleRoute = (route: AppRoute) => {
@@ -195,7 +200,9 @@ export default function HomeShell() {
               }}
             >
               <span style={{ flexShrink: 0, display: 'flex' }}>{item.icon}</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: active ? 600 : 400 }}>{item.label}</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: active ? 600 : 400 }}>
+                {item.route === 'maison' ? (isPortuguese ? 'Marcas' : 'Brand') : item.label}
+              </span>
             </button>
           );
         })}
@@ -258,7 +265,7 @@ export default function HomeShell() {
                 <MenuIcon />
               </button>
               <h2 style={{ fontSize: '1.1rem', fontWeight: 700, flex: 1, margin: 0 }}>
-                {ROUTE_TITLES[activeRoute]}
+                {activeRoute === 'maison' ? (isPortuguese ? 'Marcas' : 'Brand') : ROUTE_TITLES[activeRoute]}
               </h2>
               <button
                 onClick={() => setAddPieceOpen(true)}
