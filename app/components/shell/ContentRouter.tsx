@@ -3,6 +3,7 @@ import HomeView from '@/app/views/HomeView';
 import MyWardrobeView from '@/app/views/MyWardrobeView';
 import CreateMySchemeView from '@/app/views/CreateMySchemeView';
 import ExploreSchemeView from '@/app/views/ExploreSchemeView';
+import RunwayFeedViewWrapper from '@/app/views/RunwayFeedView';
 import DressTesterView from '@/app/views/DressTesterView';
 import SearchItemsView from '@/app/views/SearchItemsView';
 import SearchPiecesView from '@/app/views/SearchPiecesView';
@@ -21,6 +22,7 @@ export default function ContentRouter({ route }: ContentRouterProps) {
     case 'my-wardrobe':      return <MyWardrobeView />;
     case 'create-my-scheme': return <CreateMySchemeView />;
     case 'explore-scheme':   return <ExploreSchemeView />;
+    case 'feed':             return <RunwayFeedViewWrapper />;
     case 'autopilot':        return <AutopilotView />;
     case 'dress-tester':     return <DressTesterView />;
     case 'search-items':     return <SearchItemsView />;
