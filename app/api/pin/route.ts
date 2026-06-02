@@ -91,18 +91,6 @@ const verifyAllowedGoogleIdentity = async (
             };
         }
 
-    if (!ALLOWED_GOOGLE_EMAILS.includes(email)) {
-    return {
-        ok: false,
-        response: json(
-            {
-                error: `Only authorized accounts are allowed.`
-            },
-            403
-        ),
-    };
-}
-
         return { ok: true, email };
     } catch (error) {
         console.error("[PIN API] Firebase token verification failed:", error);
