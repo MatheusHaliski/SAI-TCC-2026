@@ -15,6 +15,11 @@ export const COLLECTIONS = {
   PIECE_LIKES: 'saiPieceLikes',
   PIECE_RATINGS: 'saiPieceRatings',
   PIECE_STATS: 'saiPieceStats',
+  OUTFIT_LIKES: 'saiOutfitLikes',
+  OUTFIT_COMMENTS: 'saiOutfitComments',
+  FOLLOWS: 'saiFollows',
+  REMIXES: 'saiRemixes',
+  NOTIFICATIONS: 'saiNotifications',
 } as const;
 
 export const LEGACY_COLLECTIONS = [
