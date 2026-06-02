@@ -664,6 +664,7 @@ export default function MaisonView() {
   const [loading, setLoading] = useState(true);
   const [selectedBrand, setSelectedBrand] = useState<BrandData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isPortuguese, setIsPortuguese] = useState(true);
 
   useEffect(() => {
     fetch('/api/brands')
@@ -671,6 +672,13 @@ export default function MaisonView() {
       .then((data) => setBrands(Array.isArray(data) ? data : []))
       .catch(() => setBrands([]))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => setIsPortuguese(window.localStorage.getItem('sai-site-language') !== 'en');
+    refresh();
+    window.addEventListener('sai-language-change', refresh as EventListener);
+    return () => window.removeEventListener('sai-language-change', refresh as EventListener);
   }, []);
 
   const filteredBrands = useMemo(() => {
@@ -687,7 +695,7 @@ export default function MaisonView() {
   if (selectedBrand) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Maison" subtitle={`Perfil da marca: ${selectedBrand.name}`} />
+        <PageHeader title={isPortuguese ? 'Marcas' : 'Brand'} subtitle={isPortuguese ? `Perfil da marca: ${selectedBrand.name}` : `Brand profile: ${selectedBrand.name}`} />
         <div className="rounded-2xl border border-white/15 bg-white/5 p-5">
           <BrandPanel brand={selectedBrand} onClose={() => setSelectedBrand(null)} />
         </div>
@@ -698,8 +706,8 @@ export default function MaisonView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Maison"
-        subtitle="Feed dedicado às marcas — categoria, público-alvo, peças icônicas, recomendações por estação e muito mais."
+        title={isPortuguese ? 'Marcas' : 'Brand'}
+        subtitle={isPortuguese ? 'Feed dedicado às marcas — categoria, público-alvo, peças icônicas, recomendações por estação e muito mais.' : 'Dedicated brand feed — category, target audience, iconic pieces, seasonal recommendations, and more.'}
       />
 
       <SectionBlock title="Marcas Registradas" subtitle="Todas as marcas ativas na plataforma FAI.">
@@ -793,7 +801,7 @@ export default function MaisonView() {
                         background: accentColor.replace('0.85', '0.06'),
                       }}
                     >
-                      Ver Maison →
+                      {isPortuguese ? 'Ver Marca →' : 'View Brand →'}
                     </span>
                   </button>
                 );
