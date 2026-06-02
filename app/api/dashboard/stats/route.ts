@@ -1,9 +1,36 @@
-import { NextResponse } from 'next/server';
+import type { Timestamp } from 'firebase-admin/firestore';
+import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/app/lib/firebaseAdmin';
+import { readSession } from '@/app/lib/serverSession';
 
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-export async function GET() {
+function toDate(value: unknown): Date | null {
+  if (!value) return null;
+  // Firestore Timestamp (serverTimestamp() writes this type)
+  if (typeof (value as Timestamp).toDate === 'function') {
+    return (value as Timestamp).toDate();
+  }
+  // ISO string fallback
+  if (typeof value === 'string') {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+export async function GET(request: NextRequest) {
+  const session = readSession(request);
+  if (!session?.sub) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const callerSnap = await adminDb.collection('saiUsers').doc(session.sub).get();
+  const callerRole = (callerSnap.data() as { role?: string } | undefined)?.role;
+  if (callerRole !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const [usersSnap, wardrobeSnap, pipelineSnap, schemesSnap, brandsSnap] = await Promise.all([
       adminDb.collection('saiUsers').get(),
@@ -25,16 +52,24 @@ export async function GET() {
       userMap.set(doc.id, name || 'Usuário Desconhecido');
     });
 
-    // 1. Users registered per month in 2026
-    const usersPerMonth = MONTH_NAMES.map((month) => ({ month, count: 0 }));
+    // 1. Users registered per month (all time, grouped as "MMM/YYYY")
+    const usersPerMonthMap = new Map<string, number>();
     usersSnap.docs.forEach((doc) => {
-      const createdAt = doc.data().createdAt as string | undefined;
-      if (!createdAt) return;
-      const date = new Date(createdAt);
-      if (date.getFullYear() === 2026) {
-        usersPerMonth[date.getMonth()].count++;
-      }
+      const date = toDate(doc.data().createdAt);
+      if (!date || isNaN(date.getTime())) return;
+      const key = `${MONTH_NAMES[date.getMonth()]}/${date.getFullYear()}`;
+      usersPerMonthMap.set(key, (usersPerMonthMap.get(key) ?? 0) + 1);
     });
+    // Sort chronologically
+    const usersPerMonth = Array.from(usersPerMonthMap.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => {
+        const [mA, yA] = a.month.split('/');
+        const [mB, yB] = b.month.split('/');
+        const yearDiff = Number(yA) - Number(yB);
+        if (yearDiff !== 0) return yearDiff;
+        return MONTH_NAMES.indexOf(mA) - MONTH_NAMES.indexOf(mB);
+      });
 
     // 2. Clothing pieces created per brand (wardrobe items)
     const piecesByBrandMap = new Map<string, number>();
