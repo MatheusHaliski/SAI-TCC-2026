@@ -32,9 +32,11 @@ export const getAdminFirestore = () => {
         });
     }
 
-    firestoreInstance = getFirestore();
+    // Use getFirestore(app, databaseId) — the canonical Admin SDK v12 API for
+    // named databases. The previous settings({ databaseId }) approach was not
+    // the correct call path and defaulted to the (default) database.
     const databaseId = process.env.NEXT_FIREBASE_DATABASE_ID || 'newsaidb';
-    firestoreInstance.settings({ databaseId });
+    firestoreInstance = getFirestore(getApp(), databaseId);
 
     return firestoreInstance;
 };
