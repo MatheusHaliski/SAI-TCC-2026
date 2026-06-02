@@ -19,12 +19,12 @@ export async function GET(request: NextRequest) {
 
   if (type === 'followers' && userId) {
     const snap = await db.collection(COLLECTIONS.FOLLOWS).where('following_id', '==', userId).get();
-    return NextResponse.json({ count: snap.size, followers: snap.docs.map((d: { data(): { follower_id: string } }) => d.data().follower_id) });
+    return NextResponse.json({ count: snap.size, followers: snap.docs.map((d) => (d.data() as { follower_id: string }).follower_id) });
   }
 
   if (type === 'following' && userId) {
     const snap = await db.collection(COLLECTIONS.FOLLOWS).where('follower_id', '==', userId).get();
-    return NextResponse.json({ count: snap.size, following: snap.docs.map((d: { data(): { following_id: string } }) => d.data().following_id) });
+    return NextResponse.json({ count: snap.size, following: snap.docs.map((d) => (d.data() as { following_id: string }).following_id) });
   }
 
   return NextResponse.json({ error: 'Invalid query params' }, { status: 400 });
