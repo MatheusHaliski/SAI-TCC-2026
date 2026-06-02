@@ -162,6 +162,8 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetch('/api/dashboard/stats')
       .then((res) => {
+        if (res.status === 401) throw new Error('401');
+        if (res.status === 403) throw new Error('403');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<DashboardStats>;
       })
@@ -211,6 +213,7 @@ export default function AdminDashboardPage() {
   }
 
   if (error) {
+    const isAuth = error === '401' || error === '403';
     return (
       <div style={{ ...containerStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div
@@ -224,8 +227,16 @@ export default function AdminDashboardPage() {
             textAlign: 'center',
           }}
         >
-          <p style={{ fontWeight: 700, margin: '0 0 0.5rem' }}>Erro ao carregar dashboard</p>
-          <p style={{ margin: 0, fontSize: '0.875rem' }}>{error}</p>
+          <p style={{ fontWeight: 700, margin: '0 0 0.5rem' }}>
+            {isAuth ? 'Acesso negado' : 'Erro ao carregar dashboard'}
+          </p>
+          <p style={{ margin: 0, fontSize: '0.875rem' }}>
+            {error === '401'
+              ? 'Você precisa estar autenticado para acessar esta página.'
+              : error === '403'
+              ? 'Apenas administradores podem acessar este dashboard.'
+              : error}
+          </p>
         </div>
       </div>
     );
