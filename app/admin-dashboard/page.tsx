@@ -291,8 +291,8 @@ export default function AdminDashboardPage() {
       >
         {/* Chart 1: Users per month 2026 */}
         <ChartCard
-          title="Usuários Cadastrados — 2026"
-          subtitle="Novos cadastros por mês no ano de 2026"
+          title="Usuários Cadastrados — Histórico"
+          subtitle="Novos cadastros por mês (todos os anos)"
         >
           <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart data={stats.usersPerMonth} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
