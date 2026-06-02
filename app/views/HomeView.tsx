@@ -58,6 +58,7 @@ export default function HomeView({ onNavigate }: HomeViewProps) {
       'search-items': '/search-items',
       'search-pieces': '/search-pieces',
       'dress-tester': '/dress-tester',
+      'feed': '/feed',
     };
     router.push(paths[route]);
   };
