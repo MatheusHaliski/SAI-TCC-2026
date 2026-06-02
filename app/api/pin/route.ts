@@ -7,7 +7,10 @@ import {getAdminFirestore} from "@/app/lib/firebaseAdmin";
 
 const COOKIE_NAME = "restaurantcards_pin";
 const TOKEN_TTL_MS = 1000 * 60 * 15;
-const ALLOWED_GOOGLE_EMAIL = "matheushaliski@gmail.com";
+const ALLOWED_GOOGLE_EMAILS = [
+  "matheushaliski@gmail.com",
+  "bryanstrey1604@gmail.com"
+];
 const PIN_VERIFY_LIMIT_MAX = Number(process.env.PIN_VERIFY_RATE_LIMIT_MAX ?? "6");
 const PIN_VERIFY_LIMIT_WINDOW_MS = Number(
     process.env.PIN_VERIFY_RATE_LIMIT_WINDOW_MS ?? "60000"
@@ -88,15 +91,17 @@ const verifyAllowedGoogleIdentity = async (
             };
         }
 
-        if (email !== ALLOWED_GOOGLE_EMAIL) {
-            return {
-                ok: false,
-                response: json(
-                    { error: `Only ${ALLOWED_GOOGLE_EMAIL} is allowed.` },
-                    403
-                ),
-            };
-        }
+    if (!ALLOWED_GOOGLE_EMAILS.includes(email)) {
+    return {
+        ok: false,
+        response: json(
+            {
+                error: `Only authorized accounts are allowed.`
+            },
+            403
+        ),
+    };
+}
 
         return { ok: true, email };
     } catch (error) {
