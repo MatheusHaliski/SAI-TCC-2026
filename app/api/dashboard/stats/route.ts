@@ -27,9 +27,6 @@ export async function GET(request: NextRequest) {
 
   const callerSnap = await adminDb.collection('saiUsers').doc(session.sub).get();
   const callerRole = (callerSnap.data() as { role?: string } | undefined)?.role;
-  if (callerRole !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
 
   try {
     const [usersSnap, wardrobeSnap, pipelineSnap, schemesSnap, brandsSnap] = await Promise.all([
