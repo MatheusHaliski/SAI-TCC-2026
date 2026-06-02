@@ -7,7 +7,7 @@ import {getAdminFirestore} from "@/app/lib/firebaseAdmin";
 
 const COOKIE_NAME = "restaurantcards_pin";
 const TOKEN_TTL_MS = 1000 * 60 * 15;
-const ALLOWED_GOOGLE_EMAIL = ["matheushaliski@gmail.com","bryanstrey1604@gmail.com"];
+const ALLOWED_GOOGLE_EMAIL = "matheushaliski@gmail.com";
 const PIN_VERIFY_LIMIT_MAX = Number(process.env.PIN_VERIFY_RATE_LIMIT_MAX ?? "6");
 const PIN_VERIFY_LIMIT_WINDOW_MS = Number(
     process.env.PIN_VERIFY_RATE_LIMIT_WINDOW_MS ?? "60000"
