@@ -25,21 +25,27 @@ export const syncUserProfileFromAuth = async ({
     const normalizedDisplayName = (displayName ?? "").trim();
     const userRef = db.collection(USER_COLLECTION).doc(uid);
 
-    await userRef.set(
-        {
-            uid,
-            user_id: uid,
-            email: normalizedEmail,
-            displayName: normalizedDisplayName,
-            name: normalizedDisplayName,
-            provider,
-            role,
-            status,
-            createdAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-    );
+    const existing = await userRef.get();
+
+    const payload: Record<string, unknown> = {
+        uid,
+        user_id: uid,
+        email: normalizedEmail,
+        displayName: normalizedDisplayName,
+        name: normalizedDisplayName,
+        provider,
+        role,
+        status,
+        updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    // Only set createdAt on first write so the registration date is preserved
+    // across subsequent logins.
+    if (!existing.exists || !existing.data()?.createdAt) {
+        payload.createdAt = FieldValue.serverTimestamp();
+    }
+
+    await userRef.set(payload, { merge: true });
 
     const snapshot = await userRef.get();
     return snapshot.data() ?? null;
