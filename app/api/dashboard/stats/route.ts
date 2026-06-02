@@ -52,14 +52,24 @@ export async function GET(request: NextRequest) {
       userMap.set(doc.id, name || 'Usuário Desconhecido');
     });
 
-    // 1. Users registered per month in 2026
-    const usersPerMonth = MONTH_NAMES.map((month) => ({ month, count: 0 }));
+    // 1. Users registered per month (all time, grouped as "MMM/YYYY")
+    const usersPerMonthMap = new Map<string, number>();
     usersSnap.docs.forEach((doc) => {
       const date = toDate(doc.data().createdAt);
-      if (date && date.getFullYear() === 2026) {
-        usersPerMonth[date.getMonth()].count++;
-      }
+      if (!date || isNaN(date.getTime())) return;
+      const key = `${MONTH_NAMES[date.getMonth()]}/${date.getFullYear()}`;
+      usersPerMonthMap.set(key, (usersPerMonthMap.get(key) ?? 0) + 1);
     });
+    // Sort chronologically
+    const usersPerMonth = Array.from(usersPerMonthMap.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => {
+        const [mA, yA] = a.month.split('/');
+        const [mB, yB] = b.month.split('/');
+        const yearDiff = Number(yA) - Number(yB);
+        if (yearDiff !== 0) return yearDiff;
+        return MONTH_NAMES.indexOf(mA) - MONTH_NAMES.indexOf(mB);
+      });
 
     // 2. Clothing pieces created per brand (wardrobe items)
     const piecesByBrandMap = new Map<string, number>();
