@@ -289,9 +289,9 @@ export default function AuthViewClient() {
                     {/* 250px → 750px (3×) */}
                     <div style={{ width:"350px", height:"350px", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
                         <SparklesIcon />
-                         <div style={{ fontSize:"2.3rem", fontWeight:800, lineHeight:1.1 }}>Fashion AI</div>
-                        <div style={{ fontSize:"2.1rem", color:"rgba(255,255,255,0.8)" }}>Seu estilista pessoal</div>
                     </div>
+                     <div style={{ fontSize:"2.3rem", fontWeight:800, lineHeight:1.1 }}>Fashion AI</div>
+                    <div style={{ fontSize:"2.1rem", color:"rgba(255,255,255,0.8)" }}>Seu estilista pessoal</div>
                 </div>
 
                 {/* Hero text */}
