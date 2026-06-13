@@ -734,7 +734,7 @@ export default function MaisonView() {
             <p className="mt-3 text-xs text-white/40">
               {filteredBrands.length} marca{filteredBrands.length !== 1 ? 's' : ''} · {enrichedCount} com perfil completo
             </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
               {filteredBrands.map((brand) => {
                 const nameKey = brand.name.toLowerCase();
                 const profile = BRAND_PROFILES[nameKey];
