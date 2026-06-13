@@ -286,7 +286,7 @@ export default function AuthViewClient() {
             <div style={{ ...s.left, display: undefined }} className="hidden lg:flex" >
                 {/* Logo */}
                 <div style={{ display:"flex", alignItems:"center", gap:"0.875rem" }}>
-                    <div style={{ width:"9.5rem", height:"9.5rem", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+                    <div style={{ width:"250px", height:"250px", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
                         <SparklesIcon />
                     </div>
                     <div>
