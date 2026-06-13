@@ -170,7 +170,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
 
   return (
     <section
-      className={`relative overflow-hidden rounded-2xl border border-white/15 shadow-[0_8px_24px_rgba(15,23,42,0.18)] ${variant === 'compact' ? 'space-y-2 p-2.5' : 'space-y-3 p-3 sm:p-4'}`}
+      className={`relative overflow-hidden rounded-2xl border border-white/15 shadow-[0_8px_24px_rgba(15,23,42,0.18)] ${variant === 'compact' ? 'space-y-3 p-3.5 sm:p-4' : 'space-y-4 p-4 sm:p-5'}`}
       style={{ ...backgroundStyle, ...auraCardStyle }}
     >
       {/* Aura badge */}
@@ -231,7 +231,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
         />
 
         {variant !== 'compact' ? (
-          <div className="grid gap-2 rounded-2xl border border-white/14 bg-black/16 p-3 sm:grid-cols-[1.2fr_1fr_1fr]">
+          <div className="grid gap-3 rounded-2xl border border-white/14 bg-black/16 p-3.5 sm:grid-cols-[1.2fr_1fr_1fr]">
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/18 bg-white/12">
                 {leadBrand?.logoUrl ? (
@@ -245,11 +245,11 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55">marca / logo</p>
               </div>
             </div>
-            <div className="rounded-xl border border-white/12 bg-white/8 px-3 py-2">
+            <div className="min-w-0 rounded-xl border border-white/12 bg-white/8 px-3 py-2.5">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">criacao / tipo</p>
               <p className="mt-1 truncate text-sm font-black text-white">{data.occasion || data.outfitStyleLine || 'Look autoral'}</p>
             </div>
-            <div className="rounded-xl border border-white/12 bg-white/8 px-3 py-2">
+            <div className="min-w-0 rounded-xl border border-white/12 bg-white/8 px-3 py-2.5">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">pecas no esquema</p>
               <p className="mt-1 text-sm font-black text-white">{pieceCount} itens conectados</p>
             </div>

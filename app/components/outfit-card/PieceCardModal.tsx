@@ -118,7 +118,7 @@ export default function PieceCardModal({ piece, onClose }: PieceCardModalProps) 
 
         {view === '2d' ? (
           <div className="flex min-h-[420px] items-center justify-center p-5">
-            <div className="relative flex h-[64vh] max-h-[620px] w-full items-center justify-center overflow-hidden rounded-3xl border border-white/12 bg-black/18">
+            <div className="relative flex h-[64vh] max-h-[620px] w-full items-center justify-center overflow-hidden rounded-3xl bg-black/18">
               {imageUrl ? (
                 <Image
                   src={imageUrl}
@@ -137,78 +137,76 @@ export default function PieceCardModal({ piece, onClose }: PieceCardModalProps) 
           </div>
         ) : null}
 
+        {/* "Card da Peca": the modal itself IS the piece card — no nested bordered card. */}
         {view === 'card' ? (
-          <div className="max-h-[76vh] overflow-y-auto p-5">
-            <article
-              className="mx-auto flex w-full max-w-[420px] flex-col overflow-hidden rounded-[28px] border border-white/18"
-              style={{
-                backgroundColor: 'var(--user-surface-solid, #1e293b)',
-                backgroundImage: 'var(--liquid-glass-gradient)',
-                boxShadow: '0 24px 56px rgba(0,0,0,0.32)',
-              }}
-            >
-              <div className="p-4">
-                <div className="relative h-[330px] overflow-hidden rounded-[24px] bg-black/12">
-                  {imageUrl ? (
-                    <Image src={imageUrl} alt={pieceName} fill className="object-contain p-3" unoptimized />
-                  ) : null}
-                  <span className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/22 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/82">
-                    {category}
-                  </span>
+          <div
+            className="flex max-h-[76vh] flex-col overflow-y-auto"
+            style={{
+              backgroundColor: 'var(--user-surface-solid, #1e293b)',
+              backgroundImage: 'var(--liquid-glass-gradient)',
+            }}
+          >
+            <div className="p-5">
+              <div className="relative h-[330px] overflow-hidden rounded-[24px] bg-black/12">
+                {imageUrl ? (
+                  <Image src={imageUrl} alt={pieceName} fill className="object-contain p-3" unoptimized />
+                ) : null}
+                <span className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/22 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/82">
+                  {category}
+                </span>
+              </div>
+            </div>
+
+            <div className="px-5 pb-5">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white/16">
+                  {brandLogoUrl ? (
+                    <Image src={brandLogoUrl} alt={`${brandName} logo`} width={32} height={32} className="h-7 w-7 object-contain" unoptimized />
+                  ) : (
+                    <span className="text-sm font-black uppercase text-white">{brandName.slice(0, 2)}</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-xl font-black leading-tight text-white">{pieceName}</p>
+                  <p className="truncate text-xs font-bold uppercase tracking-[0.18em] text-white/58">{brandName}</p>
                 </div>
               </div>
 
-              <div className="px-5 pb-4">
-                <div className="mb-3 flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white/16">
-                    {brandLogoUrl ? (
-                      <Image src={brandLogoUrl} alt={`${brandName} logo`} width={32} height={32} className="h-7 w-7 object-contain" unoptimized />
-                    ) : (
-                      <span className="text-sm font-black uppercase text-white">{brandName.slice(0, 2)}</span>
-                    )}
+              <p className="text-sm leading-relaxed text-white/82">{description}</p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {metadataItems.map((meta) => (
+                  <div key={meta.label} className="rounded-2xl border border-white/16 bg-black/12 px-3 py-2.5">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/45">{meta.label}</p>
+                    <p className="mt-1 truncate text-xs font-black capitalize text-white/86">{meta.value}</p>
                   </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-xl font-black leading-tight text-white">{pieceName}</p>
-                    <p className="truncate text-xs font-bold uppercase tracking-[0.18em] text-white/58">{brandName}</p>
-                  </div>
-                </div>
-
-                <p className="text-sm leading-relaxed text-white/82">{description}</p>
-
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {metadataItems.map((meta) => (
-                    <div key={meta.label} className="rounded-2xl border border-white/16 bg-black/12 px-3 py-2">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/45">{meta.label}</p>
-                      <p className="mt-1 truncate text-xs font-black capitalize text-white/86">{meta.value}</p>
-                    </div>
-                  ))}
-                </div>
+                ))}
               </div>
+            </div>
 
-              <div className="mt-auto grid grid-cols-3 gap-2 border-t border-white/16 p-3">
-                <button
-                  type="button"
-                  onClick={handleToggleLike}
-                  className="rounded-2xl border border-white/18 bg-white/12 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/18"
-                >
-                  {liked ? 'Curtido' : 'Curtir'} {likes ? likes : ''}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="rounded-2xl border border-white/18 bg-white/12 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/18"
-                >
-                  {shareStatus || 'Compartilhar'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRemix}
-                  className="rounded-2xl border border-white/18 bg-white/12 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/18"
-                >
-                  Remixar
-                </button>
-              </div>
-            </article>
+            <div className="mt-auto grid grid-cols-3 gap-2 border-t border-white/10 p-4">
+              <button
+                type="button"
+                onClick={handleToggleLike}
+                className="rounded-2xl border border-white/18 bg-white/12 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/18"
+              >
+                {liked ? 'Curtido' : 'Curtir'} {likes ? likes : ''}
+              </button>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="rounded-2xl border border-white/18 bg-white/12 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/18"
+              >
+                {shareStatus || 'Compartilhar'}
+              </button>
+              <button
+                type="button"
+                onClick={handleRemix}
+                className="rounded-2xl border border-white/18 bg-white/12 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/18"
+              >
+                Remixar
+              </button>
+            </div>
           </div>
         ) : null}
       </div>
