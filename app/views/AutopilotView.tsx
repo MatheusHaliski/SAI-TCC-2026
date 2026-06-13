@@ -157,11 +157,13 @@ function DailyLookPanel() {
                 <button
                   key={value}
                   onClick={() => setOccasion(value)}
-                  className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-                    occasion === value
-                      ? 'bg-white text-black font-semibold'
-                      : 'border border-border text-muted-foreground hover:border-white/50'
-                  }`}
+                  className="rounded-full px-4 py-1.5 text-sm transition-colors"
+                  style={{
+                    background: occasion === value ? '#ffffff' : 'transparent',
+                    color: occasion === value ? '#0f172a' : 'var(--muted-foreground)',
+                    border: occasion === value ? 'none' : '1px solid var(--border)',
+                    fontWeight: occasion === value ? 600 : 400,
+                  }}
                 >
                   {label}
                 </button>
@@ -176,11 +178,13 @@ function DailyLookPanel() {
                 <button
                   key={value}
                   onClick={() => setMood(value)}
-                  className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-                    mood === value
-                      ? 'bg-white text-black font-semibold'
-                      : 'border border-border text-muted-foreground hover:border-white/50'
-                  }`}
+                  className="rounded-full px-4 py-1.5 text-sm transition-colors"
+                  style={{
+                    background: mood === value ? '#ffffff' : 'transparent',
+                    color: mood === value ? '#0f172a' : 'var(--muted-foreground)',
+                    border: mood === value ? 'none' : '1px solid var(--border)',
+                    fontWeight: mood === value ? 600 : 400,
+                  }}
                 >
                   {label}
                 </button>
@@ -195,14 +199,14 @@ function DailyLookPanel() {
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="Ex: São Paulo"
-              className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+              className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-white/30" style={{ color: "var(--foreground)" }}
             />
           </div>
 
           <button
             onClick={generateLooks}
             disabled={loading}
-            className="w-full rounded-lg bg-white py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-lg py-2.5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50" style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "#ffffff" }}
           >
             {loading ? 'Gerando looks...' : 'Gerar Looks'}
           </button>
@@ -394,7 +398,7 @@ function WeekPlanPanel() {
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="Ex: São Paulo"
-                className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+                className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-white/30" style={{ color: "var(--foreground)" }}
               />
             </div>
           </div>
@@ -427,7 +431,7 @@ function WeekPlanPanel() {
           <button
             onClick={generatePlan}
             disabled={loading}
-            className="w-full rounded-lg bg-white py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-lg py-2.5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50" style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "#ffffff" }}
           >
             {loading ? 'Gerando plano...' : 'Gerar Planejamento Semanal'}
           </button>
