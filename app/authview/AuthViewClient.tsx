@@ -60,7 +60,7 @@ const EyeClosed = () => (
     </svg>
 );
 const SparklesIcon = () => (
-    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={56} height={56} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} />
+    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={256} height={256} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} />
 );
 const MailIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
