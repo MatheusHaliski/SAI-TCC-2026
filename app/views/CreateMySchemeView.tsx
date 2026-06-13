@@ -21,6 +21,7 @@ import {
   OutfitBackgroundConfig,
   OutfitCardData,
   OutfitPiece,
+  OutfitPieceListFormat,
   CardSkinId,
   resolveOutfitBackgroundForRender,
   buildOutfitDescriptionRich,
@@ -137,6 +138,7 @@ export default function CreateMySchemeView() {
   const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [outfitBackgroundConfig, setOutfitBackgroundConfig] = useState<OutfitBackgroundConfig>(DEFAULT_BACKGROUND_CONFIG);
   const [cardSkin, setCardSkin] = useState<CardSkinId | undefined>(undefined);
+  const [pieceListFormat, setPieceListFormat] = useState<OutfitPieceListFormat>('grid-2');
   const [descriptionOverride, setDescriptionOverride] = useState('');
   const [titleFontFamily, setTitleFontFamily] = useState('Inter, Segoe UI, sans-serif');
   const [palette, setPalette] = useState('Neutral');
@@ -349,6 +351,7 @@ export default function CreateMySchemeView() {
       pieces,
       titleFontFamily,
       cardSkin,
+      pieceListFormat,
     };
   };
 
@@ -414,6 +417,7 @@ export default function CreateMySchemeView() {
             palette,
             titleFontFamily,
             cardSkin: cardSkin ?? null,
+            pieceListFormat,
             descriptionOverride: descriptionOverride.trim() || null,
           }),
           style: style.trim() || 'Minimal',
@@ -874,6 +878,8 @@ export default function CreateMySchemeView() {
       previewCardData={buildGeneratedOutfitCardData()}
       selectedCardSkin={cardSkin}
       onSelectSkin={setCardSkin}
+      pieceListFormat={pieceListFormat}
+      onSelectPieceListFormat={setPieceListFormat}
     />
   );
 
