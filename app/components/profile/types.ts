@@ -2,6 +2,7 @@ export type ProfileSectionKey =
   | 'wardrobe'
   | 'user-info'
   | 'style-dna'
+  | 'tribute'
   | 'my-schemes'
   | 'saved-schemes'
   | 'my-posts'
