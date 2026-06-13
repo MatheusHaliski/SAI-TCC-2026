@@ -247,13 +247,13 @@ export default function SearchItemsView() {
           ))}
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-2">
           {groupedSearch.outfits.map((scheme) => {
             const cardData = outfitsById[scheme.scheme_id];
             if (!cardData) return null;
 
             return (
-              <div key={scheme.scheme_id} className="space-y-2">
+              <div key={scheme.scheme_id} className="space-y-2.5">
                 <SearchOutfitCard data={cardData} onOpenDetail={() => setSelectedOutfit(cardData)} onOpenPieceInDressTester={handleOpenPieceInDressTester} />
                 <div className="flex flex-wrap gap-1.5 px-1">
                   <button
