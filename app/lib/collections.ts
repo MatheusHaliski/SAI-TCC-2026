@@ -20,6 +20,13 @@ export const COLLECTIONS = {
   FOLLOWS: 'saiFollows',
   REMIXES: 'saiRemixes',
   NOTIFICATIONS: 'saiNotifications',
+  BRAND_SEALS: 'saiBrandSeals',
+  BRAND_SEAL_APPLICATIONS: 'saiBrandSealApplications',
+  BRAND_FEED_POSTS: 'saiBrandFeedPosts',
+  BRAND_FEED_SPOTLIGHTS: 'saiBrandFeedSpotlights',
+  SUBSCRIPTIONS: 'saiSubscriptions',
+  ART_CELEBRITY_ARENA: 'saiArtCelebrityArena',
+  ART_CELEBRITY_TRIBUTES: 'saiArtCelebrityTributes',
 } as const;
 
 export const LEGACY_COLLECTIONS = [

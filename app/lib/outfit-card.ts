@@ -312,7 +312,7 @@ type DescriptionGeneratorInput = {
   outfitName?: string;
   style?: string;
   occasion?: string;
-  visibility?: 'private' | 'public';
+  visibility?: 'private' | 'followers' | 'public';
   brand?: string;
   palette?: string;
   mood?: string;
