@@ -287,7 +287,7 @@ export default function AuthViewClient() {
                 {/* Logo */}
                 <div style={{ display:"flex", alignItems:"center", gap:"0.875rem" }}>
                     {/* 250px → 750px (3×) */}
-                    <div style={{ width:"750px", height:"750px", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+                    <div style={{ width:"350px", height:"350px", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
                         <SparklesIcon />
                     </div>
                     <div>
