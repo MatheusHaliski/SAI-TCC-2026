@@ -9,7 +9,7 @@ import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
 import {
     extractOAuthErrorDetails,
-    resolveSocialSignInErrorMessage,
+    resolveOAuthUserMessage,
     signInWithFacebook,
     signInWithGoogle,
     signInWithGoogleRedirect,
@@ -60,7 +60,7 @@ const EyeClosed = () => (
     </svg>
 );
 const SparklesIcon = () => (
-    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={368} height={368} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} />
+    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={768} height={768} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} />
 );
 const MailIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -259,8 +259,7 @@ export default function AuthViewClient() {
                 try { await signInWithGoogleRedirect(); return; } catch {}
             }
             if (shouldSkipFirebaseSignIn(error)) { setSocialSubmitting(null); return; }
-            console.error("[AuthView] social sign-in failed", { provider, code: oauthError.code, message: oauthError.message });
-            const userMessage = resolveSocialSignInErrorMessage(error, provider);
+            const userMessage = resolveOAuthUserMessage(error, "Não foi possível entrar com Google.");
             setSocialErrorMessage(userMessage);
             void VSModalPaged({ title: "Falha no login social", messages: [userMessage], tone: "error" });
         } finally { setSocialSubmitting(null); }
@@ -286,13 +285,15 @@ export default function AuthViewClient() {
             {/* ── Left branding panel (desktop only) ── */}
             <div style={{ ...s.left, display: undefined }} className="hidden lg:flex" >
                 {/* Logo */}
-                <div style={{ display:"flex", alignItems:"center", gap:"0.875rem" }}>
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"1rem", textAlign:"center" }}>
                     {/* 250px → 750px (3×) */}
-                    <div style={{ width:"350px", height:"350px", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+                    <div style={{ width:"750px", height:"750px", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
                         <SparklesIcon />
                     </div>
-                     <div style={{ fontSize:"2.3rem", fontWeight:800, lineHeight:1.1 }}>Fashion AI</div>
-                    <div style={{ fontSize:"2.1rem", color:"rgba(255,255,255,0.8)" }}>Seu estilista pessoal</div>
+                    <div>
+                        <div style={{ fontSize:"1.5rem", fontWeight:800, lineHeight:1.1 }}>Fashion AI</div>
+                        <div style={{ fontSize:"0.875rem", color:"rgba(255,255,255,0.8)" }}>Seu estilista pessoal</div>
+                    </div>
                 </div>
 
                 {/* Hero text */}
