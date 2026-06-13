@@ -153,6 +153,7 @@ export class WardrobeItemsRepository extends BaseRepository {
         wardrobe_item_id: doc.id,
         name: String(item.name ?? ''),
         image_url: String(item.image_url ?? ''),
+        createdAt: this.extractCreatedAtCursor(doc),
         image_assets: {
           raw_upload_image_url: String(item.raw_upload_image_url ?? item.image_url ?? ''),
           segmented_png_url: (item.segmented_png_url as string | null) ?? null,
@@ -408,6 +409,7 @@ export class WardrobeItemsRepository extends BaseRepository {
       image_url?: string;
       description?: string;
       is_favorite?: boolean;
+      gender_pattern?: string;
     },
   ): Promise<void> {
     const payload: Record<string, unknown> = { updatedAt: new Date().toISOString() };
@@ -421,6 +423,7 @@ export class WardrobeItemsRepository extends BaseRepository {
     if (fields.image_url !== undefined) payload.image_url = fields.image_url;
     if (fields.description !== undefined) payload.description = fields.description;
     if (fields.is_favorite !== undefined) payload.is_favorite = fields.is_favorite;
+    if (fields.gender_pattern !== undefined) payload.gender_pattern = fields.gender_pattern;
     await this.db.collection(WARDROBE_ITEMS_COLLECTION).doc(wardrobeItemId).update(payload);
   }
 
