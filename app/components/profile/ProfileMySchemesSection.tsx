@@ -166,7 +166,7 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
   return (
     <>
       <SectionBlock title="Meus Esquemas" subtitle="Cards de look criados por você com visualização premium compacta.">
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="mt-4 grid gap-5 lg:grid-cols-2">
           {cards.map(({ scheme, data }) => (
             <OutfitCard
               key={scheme.scheme_id}

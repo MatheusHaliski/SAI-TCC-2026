@@ -27,6 +27,7 @@ export const COLLECTIONS = {
   SUBSCRIPTIONS: 'saiSubscriptions',
   ART_CELEBRITY_ARENA: 'saiArtCelebrityArena',
   ART_CELEBRITY_TRIBUTES: 'saiArtCelebrityTributes',
+  CELEBRITY_TRIBUTE_REQUESTS: 'saiCelebrityTributeRequests',
 } as const;
 
 export const LEGACY_COLLECTIONS = [

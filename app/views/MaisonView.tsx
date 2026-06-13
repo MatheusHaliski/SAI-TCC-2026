@@ -358,6 +358,16 @@ interface BrandData {
   is_active: boolean;
 }
 
+interface PremiumSchemeItem {
+  scheme_id: string;
+  title: string;
+  style: string;
+  occasion: string;
+  cover_image_url?: string | null;
+  author: string;
+  updatedAt?: string;
+}
+
 interface WardrobePreviewItem {
   wardrobe_item_id: string;
   name: string;
@@ -689,6 +699,8 @@ export default function MaisonView() {
   const [selectedBrand, setSelectedBrand] = useState<BrandData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isPortuguese, setIsPortuguese] = useState(true);
+  const [premiumSchemes, setPremiumSchemes] = useState<PremiumSchemeItem[]>([]);
+  const [loadingPremium, setLoadingPremium] = useState(true);
 
   useEffect(() => {
     fetch('/api/brands')
@@ -696,6 +708,14 @@ export default function MaisonView() {
       .then((data) => setBrands(Array.isArray(data) ? data : []))
       .catch(() => setBrands([]))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/schemes/premium-feed')
+      .then((res) => res.json())
+      .then((data) => setPremiumSchemes(Array.isArray(data) ? data : []))
+      .catch(() => setPremiumSchemes([]))
+      .finally(() => setLoadingPremium(false));
   }, []);
 
   useEffect(() => {
@@ -735,27 +755,33 @@ export default function MaisonView() {
       />
 
       <SectionBlock
-        title={isPortuguese ? 'Selos premium do mês' : 'Monthly premium seals'}
-        subtitle={isPortuguese ? 'Esquemas com selo premium ativos no mês vigente aparecem também no feed das marcas.' : 'Outfits with active premium seals for the current month also appear in brand feeds.'}
+        title={isPortuguese ? 'Esquemas com Selo Premium do mês' : 'Premium-sealed schemes this month'}
+        subtitle={isPortuguese ? 'Esquemas públicos de criadores com Selo Premium ativo, publicados ou atualizados neste mês.' : 'Public schemes from creators with an active Premium Seal, created or updated this month.'}
       >
-        <div className="grid gap-3 md:grid-cols-3">
-          {PREMIUM_BRAND_SEAL_SCHEMES.map((scheme) => {
-            const logoUrl = resolveBrandLogoUrlByName(scheme.brand) || undefined;
-            return (
-              <article key={scheme.id} className="rounded-2xl border border-amber-200/25 bg-amber-300/10 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <BrandBadge brandName={scheme.brand} brandLogoUrl={logoUrl} variant="compact" />
-                  <span className="rounded-full border border-amber-200/35 bg-amber-300/14 px-2 py-1 text-[10px] font-black uppercase text-amber-100">
-                    Premium
+        {loadingPremium ? (
+          <p className="mt-4 text-sm text-white/60">{isPortuguese ? 'Carregando esquemas premium...' : 'Loading premium schemes...'}</p>
+        ) : premiumSchemes.length === 0 ? (
+          <p className="mt-4 text-sm text-white/60">{isPortuguese ? 'Nenhum esquema com selo premium neste mês ainda.' : 'No premium-sealed schemes this month yet.'}</p>
+        ) : (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {premiumSchemes.map((scheme) => (
+              <article
+                key={scheme.scheme_id}
+                className="flex flex-col gap-2 rounded-2xl border border-amber-400/30 p-4"
+                style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.16) 0%, rgba(15,23,42,0.78) 60%, rgba(88,28,135,0.28) 100%)' }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="rounded-full border border-amber-400/40 bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100">
+                    ⭐ Premium
                   </span>
+                  <span className="text-[10px] text-white/45">@{scheme.author}</span>
                 </div>
-                <p className="mt-3 text-sm font-black text-white">{scheme.title}</p>
-                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/42">{scheme.creator}</p>
-                <p className="mt-3 text-sm leading-relaxed text-white/70">{scheme.note}</p>
+                <p className="break-words text-sm font-bold leading-snug text-white">{scheme.title}</p>
+                <p className="text-xs text-white/60">{scheme.style} · {scheme.occasion}</p>
               </article>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </SectionBlock>
 
       <SectionBlock title="Marcas Registradas" subtitle="Todas as marcas ativas na plataforma FAI.">

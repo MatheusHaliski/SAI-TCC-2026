@@ -76,7 +76,7 @@ export default function ProfileWardrobeSection({ items: initialItems, onItemDele
   return (
     <>
       <SectionBlock title="Meu Guarda-roupa" subtitle="Visualize e gerencie suas peças com cards premium compactos.">
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
           {items.map((item) => (
             <WardrobeCompactCard
               key={item.wardrobe_item_id}

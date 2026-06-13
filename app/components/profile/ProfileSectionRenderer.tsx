@@ -80,6 +80,7 @@ export default function ProfileSectionRenderer({
       <ProfileTributeSection
         userId={userId}
         viewerName={viewerName}
+        canEdit={canEdit}
         schemes={schemes}
         brandSealTier={brandSealTier}
         brandSealStatus={brandSealStatus}

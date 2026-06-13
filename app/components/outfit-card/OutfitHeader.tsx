@@ -34,7 +34,7 @@ export default function OutfitHeader({
 }: OutfitHeaderProps) {
   return (
     <header
-      className={`space-y-2 rounded-2xl border shadow-[0_8px_24px_rgba(15,23,42,0.22)] backdrop-blur-xl transition-all ${compact ? 'p-3' : 'p-4'}`}
+      className={`space-y-2.5 rounded-2xl border shadow-[0_8px_24px_rgba(15,23,42,0.22)] backdrop-blur-xl transition-all ${compact ? 'p-3.5' : 'p-4 sm:p-5'}`}
       style={{
         borderColor: 'rgba(255,255,255,0.18)',
         background: 'linear-gradient(135deg, rgba(124,58,237,0.55), rgba(219,39,119,0.40))',
@@ -44,15 +44,15 @@ export default function OutfitHeader({
       <div className="flex flex-wrap items-start justify-between gap-3">
         {/* Left */}
         <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h3
-              className={`truncate font-bold text-white ${compact ? 'text-base' : 'text-xl sm:text-2xl'}`}
+              className={`min-w-0 break-words font-bold leading-snug text-white ${compact ? 'text-base' : 'text-xl sm:text-2xl'}`}
               style={titleFontFamily ? { fontFamily: titleFontFamily } : undefined}
             >
               {outfitName}
             </h3>
             {creatorName ? (
-              <span className="text-xs text-white/70">por @{creatorName}</span>
+              <span className="shrink-0 text-xs text-white/70">por @{creatorName}</span>
             ) : null}
           </div>
 

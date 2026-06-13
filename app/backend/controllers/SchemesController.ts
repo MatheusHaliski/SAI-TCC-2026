@@ -16,6 +16,18 @@ export class SchemesController {
     return this.schemesService.listPublicSchemes();
   }
 
+  async listPremiumThisMonth() {
+    return this.schemesService.listPremiumSchemesThisMonth();
+  }
+
+  async listCelebrityFeed() {
+    return this.schemesService.listCelebrityFeedThisMonth();
+  }
+
+  async listCelebrityTributes() {
+    return this.schemesService.listCelebrityTributedSchemes();
+  }
+
   async listByUser(userId: string) {
     return this.schemesService.listSchemesByUser(userId);
   }

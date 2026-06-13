@@ -43,7 +43,7 @@ export default function OutfitPieceList({
   const visiblePieces = compact ? pieces.slice(0, 2) : pieces;
   const columns = format === 'grid-3' ? 3 : 2;
   return (
-    <section className={`grid w-full min-w-0 gap-3 ${compact ? 'grid-cols-1' : columns === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+    <section className={`grid w-full min-w-0 gap-3 sm:gap-4 ${compact ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
       {visiblePieces.map((piece) => (
         <OutfitPieceCard
           key={piece.id}
