@@ -285,27 +285,28 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
         {remixError ? (
           <p className="mt-3 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">{remixError}</p>
         ) : null}
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="mt-4 grid justify-items-center gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,900px),1fr))]">
           {cards === null ? (
             <p className="text-sm text-white/60">Carregando esquemas salvos…</p>
           ) : cards.length ? (
             cards.map(({ scheme, data }) => (
-              <OutfitCard
-                key={scheme.scheme_id}
-                data={data}
-                variant="compact"
-                actions={[
-                  { label: 'Abrir', onClick: () => setRemixedScheme(scheme), tone: 'accent' },
-                  { label: '🔎 Tenho peças parecidas', onClick: () => void handleSimilar(scheme), tone: 'accent' },
-                  { label: 'Exportar', onClick: () => setExportingScheme(scheme), tone: 'accent' },
-                  {
-                    label: remixingId === scheme.scheme_id ? 'Remixando…' : 'Remixar',
-                    onClick: () => handleRemix(scheme),
-                    tone: 'accent',
-                  },
-                  { label: 'Remover', tone: 'danger' },
-                ]}
-              />
+              <div key={scheme.scheme_id} className="w-full max-w-[980px]">
+                <OutfitCard
+                  data={data}
+                  variant="default"
+                  actions={[
+                    { label: 'Abrir', onClick: () => setRemixedScheme(scheme), tone: 'accent' },
+                    { label: '🔎 Tenho peças parecidas', onClick: () => void handleSimilar(scheme), tone: 'accent' },
+                    { label: 'Exportar', onClick: () => setExportingScheme(scheme), tone: 'accent' },
+                    {
+                      label: remixingId === scheme.scheme_id ? 'Remixando…' : 'Remixar',
+                      onClick: () => handleRemix(scheme),
+                      tone: 'accent',
+                    },
+                    { label: 'Remover', tone: 'danger' },
+                  ]}
+                />
+              </div>
             ))
           ) : (
             <p className="text-sm text-white/80">Nenhuma inspiração salva ainda. Favorite looks públicos da comunidade para guardá-los aqui.</p>

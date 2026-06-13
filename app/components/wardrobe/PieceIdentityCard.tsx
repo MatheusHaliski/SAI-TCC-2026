@@ -73,6 +73,7 @@ export default function PieceIdentityCard({ item, userId }: PieceIdentityCardPro
   const brandLogoUrl = resolveBrandLogoUrlByName(item.brand);
   const personalDescription = useMemo(() => buildPersonalDescription(item), [item]);
   const brandLabel = item.brand?.trim() && item.brand !== 'Default brand' ? item.brand : 'Fashion AI';
+  const categoryLabel = item.piece_type?.replaceAll('_', ' ') || 'Peca';
   const metadataItems = useMemo(() => {
     const type = item.piece_type?.replaceAll('_', ' ') || 'Peca';
     const creation = item.style_tags?.[0]?.trim() || item.occasion_tags?.[0]?.trim() || 'Autoral';
@@ -157,23 +158,26 @@ export default function PieceIdentityCard({ item, userId }: PieceIdentityCardPro
 
   return (
     <article
-      className="relative mx-auto flex w-full max-w-[360px] flex-col overflow-hidden rounded-[28px] border border-white/18"
+      className="relative mx-auto flex w-full max-w-[440px] flex-col overflow-hidden rounded-[28px] border border-white/18"
       style={{
         backgroundColor: 'var(--user-surface-solid, #1e293b)',
         backgroundImage: 'var(--liquid-glass-gradient)',
-        boxShadow: '0 22px 54px rgba(0,0,0,0.26)',
+        boxShadow: '0 24px 56px rgba(0,0,0,0.32)',
         fontFamily: 'Inter, "Segoe UI", Arial, sans-serif',
       }}
     >
       <div className="p-4">
-        <div className="relative flex h-[310px] items-center justify-center overflow-hidden rounded-[22px] bg-black/10">
+        <div className="relative flex h-[330px] items-center justify-center overflow-hidden rounded-[24px] bg-black/12">
           <Image
             src={imageUrl}
             alt={item.name}
             fill
-            className="object-contain"
+            className="object-contain p-3"
             unoptimized
           />
+          <span className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/22 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/82">
+            {categoryLabel}
+          </span>
         </div>
       </div>
 
@@ -187,8 +191,8 @@ export default function PieceIdentityCard({ item, userId }: PieceIdentityCardPro
             )}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-lg font-black leading-tight text-white">{item.name}</p>
-            <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-white/58">{brandLabel}</p>
+            <p className="truncate text-xl font-black leading-tight text-white">{item.name}</p>
+            <p className="truncate text-xs font-bold uppercase tracking-[0.18em] text-white/58">{brandLabel}</p>
           </div>
         </div>
 
