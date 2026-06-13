@@ -109,6 +109,9 @@ export type OutfitBackgroundConfig = {
 
 export type CardSkinId = 'atelier' | 'spread' | 'index' | 'trading' | 'fai_max' | 'stub' | 'specimen';
 
+/** Layout used to render the outfit's piece list on the card. */
+export type OutfitPieceListFormat = 'grid-2' | 'grid-3' | 'stack' | 'plate' | 'magazine' | 'row';
+
 export type OutfitCardData = {
   outfitName: string;
   outfitStyleLine: string;
@@ -138,6 +141,8 @@ export type OutfitCardData = {
   cardSkin?: CardSkinId;
   /** Aggregated like count used by the Aura system when dynamicBackground is enabled. */
   likes?: number;
+  /** Layout used to render the piece list. Defaults to 'grid-2'. */
+  pieceListFormat?: OutfitPieceListFormat;
 };
 
 const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {
