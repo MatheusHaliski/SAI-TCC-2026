@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { OutfitPiece, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
 import BrandBadge from '@/app/components/outfit-card/BrandBadge';
 import TierChip from '@/app/components/outfit-card/badges/TierChip';
-import LikesBadge from '@/app/components/outfit-card/badges/LikesBadge';
-import QualityBadge from '@/app/components/outfit-card/badges/QualityBadge';
 import PieceCardModal from '@/app/components/outfit-card/PieceCardModal';
 
 interface OutfitPieceCardProps {
@@ -27,9 +25,6 @@ export default function OutfitPieceCard({
   const router = useRouter();
   const [modalOpen,  setModalOpen]  = useState(false);
   const [launching,  setLaunching]  = useState(false);
-  const [liked,      setLiked]      = useState(false);
-  const [likes,      setLikes]      = useState<number>(piece.likes ?? 0);
-  const [pending,    setPending]    = useState(false);
 
   const pieceName      = piece.name?.trim()  || 'Unnamed Piece';
   const brandName      = piece.brand?.trim() || 'Brand not specified';
@@ -37,19 +32,8 @@ export default function OutfitPieceCard({
   const imageUrl       = piece.imageUrl || brandLogoUrl;
   const categoryLabel  = piece.category  ?? 'Standard';
   const pieceTypeLabel = piece.pieceType || 'Garment';
-  const baseQuality    = (piece as { baseQuality?: number }).baseQuality ?? 3.0;
-  const computed       = Math.min(5, baseQuality + likes * 0.01);
   const description    = piece.description?.trim()
     || `${pieceTypeLabel} da marca ${brandName}, escolhida para compor a identidade visual do look.`;
-
-  const handleToggleLike = async () => {
-    if (pending) return;
-    setPending(true);
-    const newLiked = !liked;
-    setLiked(newLiked);
-    setLikes((prev) => prev + (newLiked ? 1 : -1));
-    setPending(false);
-  };
 
   const handleExperiment = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -74,7 +58,7 @@ export default function OutfitPieceCard({
   return (
     <>
       <article
-        className={`group relative min-w-0 max-w-full overflow-hidden rounded-2xl transition duration-300 hover:scale-[1.02] ${compact ? 'p-3' : 'p-4'}`}
+        className={`group relative min-w-0 max-w-full overflow-hidden rounded-2xl transition duration-300 hover:scale-[1.01] ${compact ? 'p-3' : 'p-4 sm:p-5'}`}
         style={{
           border: '1px solid rgba(124,58,237,0.35)',
           background: 'linear-gradient(145deg, rgba(124,58,237,0.28) 0%, rgba(219,39,119,0.22) 52%, rgba(109,40,217,0.20) 100%)',
@@ -106,12 +90,12 @@ export default function OutfitPieceCard({
           />
         )}
 
-        <div className="relative z-[1] space-y-3">
+        <div className="relative z-[1] space-y-4">
           {/* Header — name + tier */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 space-y-0.5">
-              <p className="truncate text-sm font-semibold text-white">{pieceName}</p>
-              <p className="truncate font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <p className="break-words text-sm font-semibold leading-snug text-white">{pieceName}</p>
+              <p className="break-words font-mono text-[9px] uppercase tracking-[0.16em] text-white/55">
                 {pieceTypeLabel}
               </p>
             </div>
@@ -131,31 +115,6 @@ export default function OutfitPieceCard({
 
           {/* Brand */}
           <BrandBadge brandName={brandName} brandLogoUrl={brandLogoUrl} variant="compact" />
-
-          {/* Community signal */}
-          {!compact && (
-            <div className="space-y-2 pt-1">
-              <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-white/50">
-                Community Signal
-                <span className="ml-2 text-white/35">
-                  base {baseQuality.toFixed(1)}
-                  {computed > baseQuality
-                    ? ` · +${(computed - baseQuality).toFixed(1)} likes`
-                    : ' · no boost yet'}
-                </span>
-              </p>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <LikesBadge
-                  likes={likes}
-                  liked={liked}
-                  onToggle={handleToggleLike}
-                  disabled={pending}
-                />
-                <QualityBadge baseQuality={baseQuality} likes={likes} />
-              </div>
-            </div>
-          )}
 
           {/* Dress tester button */}
           {onOpenInDressTester && (

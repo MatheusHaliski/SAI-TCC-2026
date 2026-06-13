@@ -3,6 +3,7 @@ export type ProfileSectionKey =
   | 'user-info'
   | 'style-dna'
   | 'tribute'
+  | 'arena'
   | 'my-schemes'
   | 'saved-schemes'
   | 'my-posts'
