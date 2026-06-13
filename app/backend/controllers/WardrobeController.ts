@@ -71,6 +71,7 @@ export class WardrobeController {
       image_url: typeof fields.image_url === 'string' ? fields.image_url : undefined,
       description: typeof fields.description === 'string' ? fields.description : undefined,
       is_favorite: typeof fields.is_favorite === 'boolean' ? fields.is_favorite : undefined,
+      gender_pattern: typeof fields.gender_pattern === 'string' ? fields.gender_pattern : undefined,
     });
     return { ok: true };
   }
