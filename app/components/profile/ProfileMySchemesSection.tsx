@@ -28,9 +28,11 @@ interface Scheme {
   occasion: string;
   description?: string | null;
   cover_image_url?: string | null;
-  visibility: 'public' | 'private';
+  visibility: 'public' | 'followers' | 'private';
   creation_mode?: 'manual' | 'ai';
   updatedAt?: string;
+  user_id?: string;
+  author_name?: string;
   pieces?: SchemePieceSnapshot[];
 }
 
@@ -50,7 +52,7 @@ function parseBackground(description?: string | null): OutfitBackgroundConfig | 
   }
 }
 
-const buildData = (scheme: Scheme): OutfitCardData => {
+const buildData = (scheme: Scheme, seal?: { seal_tier?: string; status?: string; official_feed_eligible?: boolean }): OutfitCardData => {
   const pieces = Array.isArray(scheme.pieces)
     ? scheme.pieces.map((piece, index) => ({
         id: piece.id ?? piece.piece_id ?? `${scheme.scheme_id}-piece-${index}`,
@@ -63,17 +65,23 @@ const buildData = (scheme: Scheme): OutfitCardData => {
       }))
     : [];
 
+  const metaBadges = [
+    { icon: scheme.creation_mode === 'ai' ? '✨' : '✍️', label: scheme.creation_mode === 'ai' ? 'AI' : 'Manual' },
+    { icon: scheme.visibility === 'public' ? '🌐' : scheme.visibility === 'followers' ? '👥' : '🔒', label: scheme.visibility === 'public' ? 'Público' : scheme.visibility === 'followers' ? 'Seguidores' : 'Privado' },
+    { icon: '🕒', label: scheme.updatedAt ? new Date(scheme.updatedAt).toLocaleDateString('pt-BR') : 'recente' },
+  ];
+
+  if (seal?.seal_tier === 'premium') metaBadges.unshift({ icon: '🏅', label: 'Selo Premium' });
+  else if (seal?.seal_tier === 'free') metaBadges.unshift({ icon: '✦', label: 'Selo Gratuito' });
+  if (seal?.official_feed_eligible) metaBadges.unshift({ icon: '⭐', label: 'Feed oficial' });
+
   return {
     outfitName: scheme.title,
     outfitStyleLine: `${scheme.style} · ${scheme.occasion}`,
     outfitDescription: undefined, // let OutfitCard build fallback from pieces
     heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
     outfitBackground: parseBackground(scheme.description),
-    metaBadges: [
-      { icon: scheme.creation_mode === 'ai' ? '✨' : '✍️', label: scheme.creation_mode === 'ai' ? 'AI' : 'Manual' },
-      { icon: scheme.visibility === 'public' ? '🌐' : '🔒', label: scheme.visibility === 'public' ? 'Público' : 'Privado' },
-      { icon: '🕒', label: scheme.updatedAt ? new Date(scheme.updatedAt).toLocaleDateString('pt-BR') : 'recente' },
-    ],
+    metaBadges,
     pieces,
   };
 };
@@ -83,6 +91,7 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
   const [exportingScheme, setExportingScheme] = useState<Scheme | null>(null);
   const [loadedSchemes, setLoadedSchemes] = useState<Scheme[]>(schemes);
   const [loadingSchemes, setLoadingSchemes] = useState(false);
+  const [sealByUserId, setSealByUserId] = useState<Record<string, { seal_tier?: string; status?: string; official_feed_eligible?: boolean }>>({});
 
   useEffect(() => {
     setLoadedSchemes(schemes);
@@ -98,7 +107,61 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
       .finally(() => setLoadingSchemes(false));
   }, [schemes.length, userId]);
 
-  const cards = useMemo(() => loadedSchemes.map((scheme) => ({ scheme, data: buildData(scheme) })), [loadedSchemes]);
+  useEffect(() => {
+    const uniqueUserIds = Array.from(new Set(loadedSchemes.map((scheme) => scheme.user_id).filter(Boolean) as string[]));
+    if (!uniqueUserIds.length) {
+      setSealByUserId({});
+      return;
+    }
+
+    let cancelled = false;
+    Promise.all(uniqueUserIds.map((userId) => fetch(`/api/brand-seals?userId=${encodeURIComponent(userId)}`).then((res) => (res.ok ? res.json() : null)).catch(() => null)))
+      .then((responses) => {
+        if (cancelled) return;
+        const nextMap: Record<string, { seal_tier?: string; status?: string; official_feed_eligible?: boolean }> = {};
+        responses.forEach((payload, index) => {
+          const userId = uniqueUserIds[index];
+          if (userId && payload?.seal) nextMap[userId] = payload.seal;
+        });
+        setSealByUserId(nextMap);
+      })
+      .catch(() => {
+        if (!cancelled) setSealByUserId({});
+      });
+
+    return () => { cancelled = true; };
+  }, [loadedSchemes]);
+
+  const cards = useMemo(() => loadedSchemes.map((scheme) => ({ scheme, data: buildData(scheme, sealByUserId[scheme.user_id || '']) })), [loadedSchemes, sealByUserId]);
+
+  // RF28: cycle visibility público → seguidores → privado → público, persisting
+  // each change via PATCH /api/schemes/[id]. Optimistic update with revert on error.
+  const NEXT_VISIBILITY: Record<Scheme['visibility'], Scheme['visibility']> = {
+    public: 'followers',
+    followers: 'private',
+    private: 'public',
+  };
+  const VISIBILITY_ACTION_LABEL: Record<Scheme['visibility'], string> = {
+    public: '🌐 Público → restringir a Seguidores',
+    followers: '👥 Seguidores → tornar Privado',
+    private: '🔒 Privado → Publicar',
+  };
+
+  const cycleVisibility = async (scheme: Scheme) => {
+    const next = NEXT_VISIBILITY[scheme.visibility];
+    setLoadedSchemes((prev) => prev.map((s) => (s.scheme_id === scheme.scheme_id ? { ...s, visibility: next } : s)));
+    try {
+      const res = await fetch(`/api/schemes/${encodeURIComponent(scheme.scheme_id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, visibility: next }),
+      });
+      if (!res.ok) throw new Error('visibility update failed');
+    } catch (err) {
+      console.warn('[visibility] revert', err);
+      setLoadedSchemes((prev) => prev.map((s) => (s.scheme_id === scheme.scheme_id ? { ...s, visibility: scheme.visibility } : s)));
+    }
+  };
 
   return (
     <>
@@ -113,7 +176,7 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
                 { label: 'Abrir', onClick: () => setSelectedScheme(scheme), tone: 'accent' },
                 { label: 'Editar' },
                 { label: 'Exportar', onClick: () => setExportingScheme(scheme), tone: 'accent' },
-                { label: scheme.visibility === 'public' ? 'Despublicar' : 'Publicar' },
+                { label: VISIBILITY_ACTION_LABEL[scheme.visibility], onClick: () => void cycleVisibility(scheme) },
                 { label: 'Excluir', tone: 'danger' },
               ]}
             />
@@ -134,7 +197,7 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
             </div>
             <p className="mt-2 text-sm text-white/75">View creator profile • Save/Favorite • Open in Dress Tester (next phase integration).</p>
             <div className="mt-4">
-              <OutfitCard data={buildData(selectedScheme)} />
+              <OutfitCard data={buildData(selectedScheme, sealByUserId[selectedScheme.user_id || ''])} />
             </div>
           </div>
         </div>
