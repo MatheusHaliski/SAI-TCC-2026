@@ -9,7 +9,7 @@ import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
 import {
     extractOAuthErrorDetails,
-    resolveOAuthUserMessage,
+    resolveSocialSignInErrorMessage,
     signInWithFacebook,
     signInWithGoogle,
     signInWithGoogleRedirect,
@@ -259,7 +259,8 @@ export default function AuthViewClient() {
                 try { await signInWithGoogleRedirect(); return; } catch {}
             }
             if (shouldSkipFirebaseSignIn(error)) { setSocialSubmitting(null); return; }
-            const userMessage = resolveOAuthUserMessage(error, "Não foi possível entrar com Google.");
+            console.error("[AuthView] social sign-in failed", { provider, code: oauthError.code, message: oauthError.message });
+            const userMessage = resolveSocialSignInErrorMessage(error, provider);
             setSocialErrorMessage(userMessage);
             void VSModalPaged({ title: "Falha no login social", messages: [userMessage], tone: "error" });
         } finally { setSocialSubmitting(null); }
