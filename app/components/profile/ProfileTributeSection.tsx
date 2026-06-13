@@ -2,19 +2,22 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
-import FancySelect from '@/app/components/ui/fancy-select';
+import ArtCelebrityPanel from '@/app/components/social/ArtCelebrityPanel';
+import CelebrityTributeHub from '@/app/components/profile/tribute/CelebrityTributeHub';
 
-interface SchemeItem {
+interface SchemeOption {
   scheme_id: string;
   title: string;
   style: string;
   occasion: string;
+  visibility: 'public' | 'private';
 }
 
 interface ProfileTributeSectionProps {
   userId: string;
   viewerName: string;
-  schemes: SchemeItem[];
+  canEdit?: boolean;
+  schemes?: SchemeOption[];
   brandSealTier?: string;
   brandSealStatus?: string;
   officialFeedEligible?: boolean;
@@ -83,7 +86,8 @@ const formatDate = (value?: string) => {
 export default function ProfileTributeSection({
   userId,
   viewerName,
-  schemes,
+  canEdit = false,
+  schemes = [],
   brandSealTier,
   brandSealStatus,
   officialFeedEligible,
@@ -168,37 +172,28 @@ export default function ProfileTributeSection({
       title="Tributo & Consagração"
       subtitle="Solicite a revisão da equipe de uma celebridade para liberar o selo dela em um esquema específico."
     >
-      <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <form onSubmit={submitReview} className="rounded-3xl border border-cyan-200/25 bg-cyan-50/95 p-5 text-slate-950 shadow-[0_16px_42px_rgba(8,47,73,0.14)]">
-          <p className="text-[10px] font-black uppercase tracking-[0.20em] text-cyan-800">Solicitação de revisão</p>
-          <h2 className="mt-1 text-xl font-black">Pedir selo de celebridade para um esquema</h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Se a equipe aprovar a análise, o esquema selecionado ganha direito ao selo da celebridade e passa a aparecer como tributo aceito.
-          </p>
+      <ArtCelebrityPanel
+        viewerId={viewerId}
+        viewerName={viewerName}
+        targetId={userId}
+        title="Consagração do criador"
+        subtitle="Tributos, arena e status de destaque para o perfil publicamente reconhecido."
+      />
 
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            <FancySelect
-              value={celebrity}
-              onChange={setCelebrity}
-              label="Celebridade"
-              options={CELEBRITY_OPTIONS.map((name) => ({ value: name, label: name }))}
-            />
-            <FancySelect
-              value={schemeId}
-              onChange={setSchemeId}
-              label="Esquema em análise"
-              options={(schemes.length ? schemes : [{ scheme_id: 'manual', title: 'Esquema atual', style: 'Autoral', occasion: 'Tributo' }]).map((scheme) => ({
-                value: scheme.scheme_id,
-                label: scheme.title,
-                hint: `${scheme.style} · ${scheme.occasion}`,
-              }))}
-            />
-            <textarea
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="Descreva a referência visual, a intenção do tributo e por que este esquema deve receber o selo."
-              className="min-h-32 rounded-2xl border border-cyan-900/15 bg-white px-4 py-3 text-sm text-slate-950 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none md:col-span-2"
-            />
+      <CelebrityTributeHub
+        userId={userId}
+        viewerId={viewerId}
+        viewerName={viewerName}
+        canEdit={canEdit}
+        schemes={schemes}
+      />
+
+      <section className="rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(17,24,39,0.98))] p-5 shadow-[0_25px_60px_rgba(15,23,42,0.35)]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-amber-100/80">Selo de marca</p>
+            <h2 className="text-lg font-semibold text-white">Painel de selo e feed oficial</h2>
+            <p className="mt-1 text-sm text-white/65">Visibilidade, vigência e status do selo aparecem em um painel público para marcas e criadores.</p>
           </div>
 
           <button

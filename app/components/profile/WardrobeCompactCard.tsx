@@ -30,20 +30,20 @@ export default function WardrobeCompactCard({
   onDelete,
 }: WardrobeCompactCardProps) {
   return (
-    <article className="rounded-2xl border border-white/20 bg-gradient-to-br from-white/20 via-white/10 to-transparent p-3 shadow-[0_10px_35px_rgba(15,23,42,0.35)] backdrop-blur-md">
-      <div className="flex gap-3">
-        <Image src={imageUrl || '/welcome-newcomers.png'} alt={name} width={180} height={180} className="h-24 w-24 rounded-xl object-cover" unoptimized />
-        <div className="min-w-0 flex-1">
+    <article className="rounded-2xl border border-white/20 bg-gradient-to-br from-white/20 via-white/10 to-transparent p-4 shadow-[0_10px_35px_rgba(15,23,42,0.35)] backdrop-blur-md">
+      <div className="flex gap-4">
+        <Image src={imageUrl || '/welcome-newcomers.png'} alt={name} width={180} height={180} className="h-24 w-24 shrink-0 rounded-xl object-cover" unoptimized />
+        <div className="min-w-0 flex-1 space-y-1.5">
           <h4 className="truncate text-sm font-semibold text-white">{name}</h4>
-          <p className="text-xs text-cyan-100/90">{brand}</p>
-          <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
-            <span className="rounded-full border border-white/30 px-2 py-0.5 text-white/90">{pieceType}</span>
-            <span className="rounded-full border border-fuchsia-300/40 bg-fuchsia-500/20 px-2 py-0.5 text-fuchsia-100">{rarity}</span>
-            <span className="rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2 py-0.5 text-emerald-100">
+          <p className="truncate text-xs text-cyan-100/90">{brand}</p>
+          <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
+            <span className="rounded-full border border-white/30 px-2.5 py-0.5 text-white/90">{pieceType}</span>
+            <span className="rounded-full border border-fuchsia-300/40 bg-fuchsia-500/20 px-2.5 py-0.5 text-fuchsia-100">{rarity}</span>
+            <span className="rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2.5 py-0.5 text-emerald-100">
               {visibility === 'public' ? 'Público' : 'Privado'}
             </span>
           </div>
-          {wearstyles.length ? <p className="mt-2 text-xs text-white/75">Estilos: {wearstyles.join(' · ')}</p> : null}
+          {wearstyles.length ? <p className="pt-1 text-xs leading-relaxed text-white/75">Estilos: {wearstyles.join(' · ')}</p> : null}
         </div>
       </div>
       <CompactCardActionBar

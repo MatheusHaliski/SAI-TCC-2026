@@ -58,7 +58,7 @@ export default function OutfitPieceCard({
   return (
     <>
       <article
-        className={`group relative min-w-0 max-w-full overflow-hidden rounded-2xl transition duration-300 hover:scale-[1.01] ${compact ? 'p-3' : 'p-4 sm:p-5'}`}
+        className={`group relative min-w-0 max-w-full overflow-hidden rounded-2xl transition duration-300 hover:scale-[1.02] ${compact ? 'p-3.5' : 'p-4'}`}
         style={{
           border: '1px solid rgba(124,58,237,0.35)',
           background: 'linear-gradient(145deg, rgba(124,58,237,0.28) 0%, rgba(219,39,119,0.22) 52%, rgba(109,40,217,0.20) 100%)',
@@ -95,7 +95,7 @@ export default function OutfitPieceCard({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
               <p className="break-words text-sm font-semibold leading-snug text-white">{pieceName}</p>
-              <p className="break-words font-mono text-[9px] uppercase tracking-[0.16em] text-white/55">
+              <p className="truncate font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">
                 {pieceTypeLabel}
               </p>
             </div>

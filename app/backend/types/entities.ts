@@ -194,8 +194,25 @@ export interface Scheme {
   community_indexed: boolean;
   cover_image_url: string | null;
   pieces?: SchemePieceSnapshot[];
+  seal_tier?: 'none' | 'free' | 'premium';
+  celebrity_tribute?: { celebrity_name: string; awarded_at: string } | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export type TributeRequestStatus = 'pending' | 'accepted' | 'rejected';
+
+export interface CelebrityTributeRequest {
+  request_id: EntityId;
+  user_id: EntityId;
+  user_name: string;
+  celebrity_name: string;
+  scheme_id: EntityId;
+  scheme_title: string;
+  message?: string | null;
+  status: TributeRequestStatus;
+  createdAt: string;
+  decided_at?: string | null;
 }
 
 export interface SchemePieceSnapshot {
@@ -304,6 +321,7 @@ export interface CreateSchemeInput {
   community_indexed?: boolean;
   cover_image_url?: string;
   pieces?: SchemePieceSnapshot[];
+  seal_tier?: 'none' | 'free' | 'premium';
   items: Array<{
     wardrobe_item_id: EntityId;
     slot: 'upper' | 'lower' | 'shoes' | 'accessory';
