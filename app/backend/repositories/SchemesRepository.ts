@@ -34,6 +34,8 @@ export class SchemesRepository extends BaseRepository {
       community_indexed: input.community_indexed ?? false,
       cover_image_url: input.cover_image_url ?? null,
       pieces: input.pieces ?? [],
+      seal_tier: input.seal_tier ?? 'none',
+      celebrity_tribute: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -126,5 +128,76 @@ export class SchemesRepository extends BaseRepository {
 
     const author = (await this.usersRepository.getById(scheme.user_id))?.name ?? 'Unknown';
     return { scheme, items, author };
+  }
+
+  /**
+   * RF: Marcas — public schemes from users with an active premium seal,
+   * created or updated during the current calendar month.
+   */
+  async findPremiumThisMonth(): Promise<Array<Scheme & { author: string }>> {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const snapshot = await this.db
+      .collection(SCHEMES_COLLECTION)
+      .where('visibility', '==', 'public')
+      .where('seal_tier', '==', 'premium')
+      .get();
+
+    const schemes = snapshot.docs
+      .map((doc) => ({ scheme_id: doc.id, ...(doc.data() as Omit<Scheme, 'scheme_id'>) }))
+      .filter((scheme) => (scheme.updatedAt ?? scheme.createdAt ?? '') >= monthStart);
+
+    const authors = await Promise.all(schemes.map((scheme) => this.usersRepository.getById(scheme.user_id)));
+    return schemes.map((scheme, index) => ({ ...scheme, author: authors[index]?.name ?? 'Unknown' }));
+  }
+
+  /**
+   * RF: Tributos — public schemes whose celebrity tribute was accepted
+   * during the current calendar month, for the celebrity feed.
+   */
+  async findCelebrityFeedThisMonth(): Promise<Array<Scheme & { author: string }>> {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const snapshot = await this.db
+      .collection(SCHEMES_COLLECTION)
+      .where('visibility', '==', 'public')
+      .get();
+
+    const schemes = snapshot.docs
+      .map((doc) => ({ scheme_id: doc.id, ...(doc.data() as Omit<Scheme, 'scheme_id'>) }))
+      .filter((scheme) => scheme.celebrity_tribute?.awarded_at && scheme.celebrity_tribute.awarded_at >= monthStart);
+
+    const authors = await Promise.all(schemes.map((scheme) => this.usersRepository.getById(scheme.user_id)));
+    return schemes.map((scheme, index) => ({ ...scheme, author: authors[index]?.name ?? 'Unknown' }));
+  }
+
+  /**
+   * RF: Tributos — all public schemes that ever received an accepted
+   * celebrity tribute, for the "search by celebrity" tab.
+   */
+  async findCelebrityTributedSchemes(): Promise<Array<Scheme & { author: string }>> {
+    const snapshot = await this.db
+      .collection(SCHEMES_COLLECTION)
+      .where('visibility', '==', 'public')
+      .get();
+
+    const schemes = snapshot.docs
+      .map((doc) => ({ scheme_id: doc.id, ...(doc.data() as Omit<Scheme, 'scheme_id'>) }))
+      .filter((scheme) => Boolean(scheme.celebrity_tribute?.celebrity_name));
+
+    const authors = await Promise.all(schemes.map((scheme) => this.usersRepository.getById(scheme.user_id)));
+    return schemes.map((scheme, index) => ({ ...scheme, author: authors[index]?.name ?? 'Unknown' }));
+  }
+
+  async assignCelebrityTribute(schemeId: string, celebrityName: string): Promise<void> {
+    await this.db.collection(SCHEMES_COLLECTION).doc(schemeId).set(
+      {
+        celebrity_tribute: { celebrity_name: celebrityName, awarded_at: new Date().toISOString() },
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
   }
 }

@@ -80,6 +80,8 @@ export default function ProfileSectionRenderer({
         userId={userId}
         viewerId={viewerId}
         viewerName={viewerName}
+        canEdit={canEdit}
+        schemes={schemes}
         brandSealTier={brandSealTier}
         brandSealStatus={brandSealStatus}
         officialFeedEligible={officialFeedEligible}

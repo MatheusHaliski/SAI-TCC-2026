@@ -2,11 +2,22 @@
 
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import ArtCelebrityPanel from '@/app/components/social/ArtCelebrityPanel';
+import CelebrityTributeHub from '@/app/components/profile/tribute/CelebrityTributeHub';
+
+interface SchemeOption {
+  scheme_id: string;
+  title: string;
+  style: string;
+  occasion: string;
+  visibility: 'public' | 'private';
+}
 
 interface ProfileTributeSectionProps {
   userId: string;
   viewerId: string;
   viewerName: string;
+  canEdit?: boolean;
+  schemes?: SchemeOption[];
   brandSealTier?: string;
   brandSealStatus?: string;
   officialFeedEligible?: boolean;
@@ -17,6 +28,8 @@ export default function ProfileTributeSection({
   userId,
   viewerId,
   viewerName,
+  canEdit = false,
+  schemes = [],
   brandSealTier,
   brandSealStatus,
   officialFeedEligible,
@@ -49,6 +62,14 @@ export default function ProfileTributeSection({
         targetId={userId}
         title="Consagração do criador"
         subtitle="Tributos, arena e status de destaque para o perfil publicamente reconhecido."
+      />
+
+      <CelebrityTributeHub
+        userId={userId}
+        viewerId={viewerId}
+        viewerName={viewerName}
+        canEdit={canEdit}
+        schemes={schemes}
       />
 
       <section className="rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(17,24,39,0.98))] p-5 shadow-[0_25px_60px_rgba(15,23,42,0.35)]">

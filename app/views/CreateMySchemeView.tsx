@@ -162,6 +162,8 @@ export default function CreateMySchemeView() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState('');
   const [generatedCardData, setGeneratedCardData] = useState<OutfitCardData | null>(null);
+  const [sealTier, setSealTier] = useState<'none' | 'free' | 'premium'>('none');
+  const [premiumSealAvailable, setPremiumSealAvailable] = useState(false);
 
   const inputClassName =
     'w-full rounded-xl border border-border bg-accent px-3 py-2 text-sm text-white placeholder:text-muted-foreground shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
@@ -202,13 +204,15 @@ export default function CreateMySchemeView() {
 
       setUserId(resolvedUserId);
 
-      const [itemsResponse, brandsResponse] = await Promise.all([
+      const [itemsResponse, brandsResponse, sealResponse] = await Promise.all([
         fetch(`/api/wardrobe-items/user/${resolvedUserId}`),
         fetch('/api/brands'),
+        fetch(`/api/brand-seals?userId=${encodeURIComponent(resolvedUserId)}`),
       ]);
 
       const itemsData = await itemsResponse.json().catch(() => []);
       const brandsData = await brandsResponse.json().catch(() => []);
+      const sealData = await sealResponse.json().catch(() => null);
 
       const parsedItems = Array.isArray(itemsData) ? itemsData : [];
       const apiBrands = Array.isArray(brandsData) ? (brandsData as Brand[]) : [];
@@ -220,6 +224,9 @@ export default function CreateMySchemeView() {
           (fallback) => !apiBrands.some((brand) => brand.brand_id === fallback.brand_id),
         ),
       ]);
+
+      const seal = (sealData as { seal?: { seal_tier?: string; status?: string } } | null)?.seal;
+      setPremiumSealAvailable(seal?.seal_tier === 'premium' && seal?.status === 'active');
     };
 
     loadSessionAndItems().catch(() => {
@@ -423,6 +430,7 @@ export default function CreateMySchemeView() {
           creation_mode: creationMode,
           pieces: pieceSnapshots,
           items: schemeItems,
+          seal_tier: sealTier,
         }),
       });
 
@@ -768,6 +776,29 @@ export default function CreateMySchemeView() {
           <SchemeStepCard step="Style direction" icon="🎯" title="Style + mood + audience" description="Define estilo, mood, visibilidade e caso de uso." />
           <SchemeStepCard step="Visibility" icon="🌐" title="Visibility" description="Public abre descoberta; private mantém rascunho reservado." />
           <SchemeStepCard step="Impact" icon="🚀" title="Impacto no card" description="Esses dados influenciam descrição, badges e background recomendado." />
+        </div>
+
+        <div className="rounded-2xl border border-border bg-accent p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md">
+          <p className="text-sm font-semibold text-white">Selo de marca do esquema</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Aplique um selo gratuito ao seu esquema ou, se você já desbloqueou o Selo Premium, destaque-o com o selo premium.
+          </p>
+          <div className="mt-3">
+            <FancySelect
+              value={sealTier}
+              onChange={(value) => setSealTier(value as 'none' | 'free' | 'premium')}
+              options={[
+                { value: 'none', label: 'Sem selo' },
+                { value: 'free', label: '🆓 Selo Gratuito' },
+                ...(premiumSealAvailable ? [{ value: 'premium', label: '⭐ Selo Premium' }] : []),
+              ]}
+            />
+          </div>
+          {!premiumSealAvailable ? (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Selo Premium é desbloqueado automaticamente após publicar mais de 50 vezes um esquema com selo gratuito.
+            </p>
+          ) : null}
         </div>
       </div>
     </SectionBlock>

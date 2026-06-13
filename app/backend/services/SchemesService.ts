@@ -53,6 +53,18 @@ export class SchemesService {
     return this.schemesRepo.findPublic();
   }
 
+  async listPremiumSchemesThisMonth() {
+    return this.schemesRepo.findPremiumThisMonth();
+  }
+
+  async listCelebrityFeedThisMonth() {
+    return this.schemesRepo.findCelebrityFeedThisMonth();
+  }
+
+  async listCelebrityTributedSchemes() {
+    return this.schemesRepo.findCelebrityTributedSchemes();
+  }
+
   async listSchemesByUser(userId: string) {
     return this.schemesRepo.findByUser(userId);
   }
