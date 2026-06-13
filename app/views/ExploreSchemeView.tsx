@@ -246,7 +246,15 @@ export default function ExploreSchemeView() {
       ) : (
         grouped.map(([occasion, occasionSchemes]) => (
           <SectionBlock key={occasion} title={`Ocasião: ${occasion}`} subtitle="Looks agrupados por ocasião.">
-            <div style={{ marginTop: '1rem', display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))' }}>
+            <div
+              style={{
+                marginTop: '1rem',
+                display: 'grid',
+                gap: '1.5rem',
+                gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,900px),1fr))',
+                justifyItems: 'center',
+              }}
+            >
               {occasionSchemes.map((scheme) => {
                 const isFav    = !!favorites[scheme.scheme_id];
                 const avail    = availability[scheme.scheme_id] ?? 'available';
@@ -259,7 +267,7 @@ export default function ExploreSchemeView() {
                     : 'Selo sem destaque';
                 return (
                   <article key={scheme.scheme_id}
-                    style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderRadius: '1rem', border: `1px solid ${isFav ? 'rgba(245,158,11,0.4)' : 'var(--border)'}`, background: 'var(--card)', padding: '0.75rem', boxShadow: isFav ? '0 0 0 2px rgba(245,158,11,0.12)' : 'var(--shadow-sm)', transition: 'all 0.2s' }}>
+                    style={{ width: '100%', maxWidth: '980px', display: 'flex', flexDirection: 'column', gap: '1rem', borderRadius: '1.25rem', border: `1px solid ${isFav ? 'rgba(245,158,11,0.4)' : 'var(--border)'}`, background: 'var(--card)', padding: '1rem', boxShadow: isFav ? '0 0 0 2px rgba(245,158,11,0.12)' : 'var(--shadow-sm)', transition: 'all 0.2s' }}>
                     <OutfitCard data={buildOutfitPreviewData(scheme)} />
                     <div style={{ borderRadius: '0.75rem', border: '1px solid var(--border)', background: 'var(--accent)', padding: '0.75rem' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.625rem' }}>

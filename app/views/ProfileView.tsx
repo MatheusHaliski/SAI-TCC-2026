@@ -10,9 +10,9 @@ import ProfileContextMenu from '@/app/components/profile/ProfileContextMenu';
 import ProfileSectionRenderer from '@/app/components/profile/ProfileSectionRenderer';
 import { ProfileSectionKey, UserPostRecord } from '@/app/components/profile/types';
 
-const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'style-dna', 'tribute', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
+const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'style-dna', 'tribute', 'arena', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
 // Perfil-Lookbook (RF20): visitors may also see the creator's Style DNA and Tribute & Celebrity status.
-const PUBLIC_SECTIONS: ProfileSectionKey[] = ['user-info', 'style-dna', 'tribute'];
+const PUBLIC_SECTIONS: ProfileSectionKey[] = ['user-info', 'style-dna', 'tribute', 'arena'];
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -174,7 +174,6 @@ export default function ProfileView() {
           authSource="saiUsers"
           brandSealTier={viewedProfile.brandSealTier || 'none'}
           brandSealStatus={viewedProfile.brandSealStatus || 'inactive'}
-          officialFeedEligible={Boolean(viewedProfile.officialFeedEligible)}
           officialFeedUntil={viewedProfile.officialFeedUntil || null}
         />
 
