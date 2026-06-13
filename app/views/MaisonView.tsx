@@ -45,6 +45,30 @@ interface BrandProfile {
   sustainability: { rating: SustainabilityRating; note: string };
 }
 
+const PREMIUM_BRAND_SEAL_SCHEMES = [
+  {
+    id: 'premium-brand-1',
+    brand: 'Nike',
+    creator: 'Ari Studio',
+    title: 'Air Tailoring Motion',
+    note: 'Esquema com selo premium vigente: performance, alfaiataria esportiva e leitura limpa de marca.',
+  },
+  {
+    id: 'premium-brand-2',
+    brand: 'Lacoste',
+    creator: 'Maison Norte',
+    title: 'Polo Garden Capsule',
+    note: 'Curadoria mensal com selo premium aplicado ao esquema e destaque visual no feed da marca.',
+  },
+  {
+    id: 'premium-brand-3',
+    brand: 'Adidas',
+    creator: 'Three Lines Lab',
+    title: 'Terrace Club Weekend',
+    note: 'Look publicado com selo premium durante o mes atual para ampliar descoberta por marca.',
+  },
+];
+
 const BRAND_PROFILES: Record<string, BrandProfile> = {
   adidas: {
     category: 'Esportivo & Streetwear',
