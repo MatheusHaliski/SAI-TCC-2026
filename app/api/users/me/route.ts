@@ -15,7 +15,20 @@ export async function GET(request: NextRequest) {
 
     if (!snapshot.exists) return NextResponse.json({ ok: true, profile: null });
 
-    return NextResponse.json({ ok: true, profile: snapshot.data() ?? null });
+    const profile = (snapshot.data() ?? null) as Record<string, unknown> | null;
+
+    return NextResponse.json({
+      ok: true,
+      profile: profile
+        ? {
+            ...profile,
+            brandSealTier: (profile.brandSealTier as string | undefined) ?? (profile.brand_seal_tier as string | undefined) ?? 'none',
+            brandSealStatus: (profile.brandSealStatus as string | undefined) ?? (profile.brand_seal_status as string | undefined) ?? 'inactive',
+            officialFeedEligible: Boolean(profile.officialFeedEligible ?? profile.official_feed_eligible),
+            officialFeedUntil: (profile.officialFeedUntil as string | undefined) ?? (profile.official_feed_until as string | undefined) ?? null,
+          }
+        : null,
+    });
   } catch {
     return NextResponse.json({ error: 'Unable to load profile.' }, { status: 500 });
   }
@@ -35,6 +48,10 @@ export async function PATCH(request: NextRequest) {
       email: body.email?.trim() || '',
       bio: body.bio?.trim() || '',
       photo_url: body.avatarUrl || '',
+      brandSealTier: 'none',
+      brandSealStatus: 'inactive',
+      officialFeedEligible: false,
+      officialFeedUntil: null,
       updatedAt: new Date().toISOString(),
     };
 
