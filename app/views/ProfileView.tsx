@@ -9,11 +9,10 @@ import { getServerSession } from '@/app/lib/clientSession';
 import ProfileContextMenu from '@/app/components/profile/ProfileContextMenu';
 import ProfileSectionRenderer from '@/app/components/profile/ProfileSectionRenderer';
 import { ProfileSectionKey, UserPostRecord } from '@/app/components/profile/types';
-import ArtCelebrityPanel from '@/app/components/social/ArtCelebrityPanel';
 
-const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'style-dna', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
-// Perfil-Lookbook (RF20): visitors may also see the creator's Style DNA.
-const PUBLIC_SECTIONS: ProfileSectionKey[] = ['user-info', 'style-dna'];
+const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'style-dna', 'tribute', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
+// Perfil-Lookbook (RF20): visitors may also see the creator's Style DNA and Tribute & Celebrity status.
+const PUBLIC_SECTIONS: ProfileSectionKey[] = ['user-info', 'style-dna', 'tribute'];
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -152,22 +151,6 @@ export default function ProfileView() {
   const displayName = viewedProfile.name?.trim() || username;
   const bio = viewedProfile.bio?.trim() || `@${username}`;
 
-  const sealTierLabel = viewedProfile.brandSealTier === 'premium'
-    ? 'Premium'
-    : viewedProfile.brandSealTier === 'free'
-      ? 'Gratuito'
-      : 'Nenhum';
-  const sealStatusLabel = viewedProfile.brandSealStatus === 'active'
-    ? 'Ativo'
-    : viewedProfile.brandSealStatus === 'pending'
-      ? 'Aguardando validação'
-      : viewedProfile.brandSealStatus === 'expired'
-        ? 'Expirado'
-        : 'Inativo';
-  const officialFeedUntilLabel = viewedProfile.officialFeedUntil
-    ? new Date(viewedProfile.officialFeedUntil).toLocaleDateString('pt-BR')
-    : 'Sem vigência definida';
-
   const updateSection = (section: ProfileSectionKey) => {
     const normalized = allowedSections.includes(section) ? section : allowedSections[0];
     const query = new URLSearchParams(searchParams.toString());
@@ -195,55 +178,6 @@ export default function ProfileView() {
           officialFeedUntil={viewedProfile.officialFeedUntil || null}
         />
 
-        <ArtCelebrityPanel
-          viewerId={authUserId}
-          viewerName={displayName}
-          targetId={userId}
-          title="Plano 3 · Consagração do criador"
-          subtitle="Tributos, arena e status de destaque para o perfil publicamente reconhecido."
-        />
-
-        <section className="rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(17,24,39,0.98))] p-5 shadow-[0_25px_60px_rgba(15,23,42,0.35)]">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.28em] text-amber-100/80">Plano 2</p>
-              <h2 className="text-lg font-semibold text-white">Painel de selo e feed oficial</h2>
-              <p className="mt-1 text-sm text-white/65">Visibilidade, vigência e status do selo aparecem em um painel público para marcas e criadores.</p>
-            </div>
-            <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-amber-100">{sealTierLabel}</span>
-          </div>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-white/45">Status do selo</p>
-              <p className="mt-2 text-base font-semibold text-white">{sealStatusLabel}</p>
-              <p className="mt-1 text-xs text-white/60">Estado ativo, pendente ou expirado para o perfil exibido.</p>
-            </article>
-
-            <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-white/45">Tipo</p>
-              <p className="mt-2 text-base font-semibold text-white">Selo {sealTierLabel}</p>
-              <p className="mt-1 text-xs text-white/60">Diferenciação visual para visibilidade premium e marca.</p>
-            </article>
-
-            <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-white/45">Feed oficial</p>
-              <p className="mt-2 text-base font-semibold text-white">{Boolean(viewedProfile.officialFeedEligible) ? 'Habilitado' : 'Indisponível'}</p>
-              <p className="mt-1 text-xs text-white/60">Conteúdo com destaque editorial no feed oficial de 30 dias.</p>
-            </article>
-
-            <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-white/45">Vigência</p>
-              <p className="mt-2 text-base font-semibold text-white">{officialFeedUntilLabel}</p>
-              <p className="mt-1 text-xs text-white/60">Prazo de destaque e visibilidade oficial para esse perfil.</p>
-            </article>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-violet-400/20 bg-violet-400/8 p-4 text-sm text-violet-100/90">
-            Gestão do Plano 2: o status e a vigência são atualizados em tempo real, permitindo acompanhar a validação, o destaque oficial e a permanência do selo no perfil.
-          </div>
-        </section>
-
         <ProfileSectionRenderer
           section={selectedSection}
           userId={userId}
@@ -254,6 +188,12 @@ export default function ProfileView() {
           wardrobeItems={wardrobeItems}
           schemes={schemes}
           posts={posts}
+          viewerId={authUserId}
+          viewerName={authProfile.name?.trim() || displayName}
+          brandSealTier={viewedProfile.brandSealTier}
+          brandSealStatus={viewedProfile.brandSealStatus}
+          officialFeedEligible={viewedProfile.officialFeedEligible}
+          officialFeedUntil={viewedProfile.officialFeedUntil}
           onWardrobeItemDeleted={(removedId) => setWardrobeItems((prev) => prev.filter((item) => item.wardrobe_item_id !== removedId))}
           onProfileSaved={(profile) => setViewedProfile((prev) => ({ ...prev, ...profile }))}
         />
