@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuraLevel, getNextAuraLevel, getAuraProgressPercent, buildAuraCardStyle } from '@/app/lib/aura-system';
+import { REACTIONS, ReactionKey, ReactionCounts, emptyReactionCounts } from '@/app/lib/reactions';
 import type { FeedCardScheme } from './RunwayFeedCard';
+import ArtCelebrityPanel from './ArtCelebrityPanel';
 
 type Comment = {
   comment_id: string;
@@ -28,15 +30,20 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
   const [remixCount, setRemixCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [userReaction, setUserReaction] = useState<ReactionKey | null>(null);
+  const [reactionCounts, setReactionCounts] = useState<ReactionCounts>(emptyReactionCounts());
   const [saved, setSaved] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [loadingScheme, setLoadingScheme] = useState(true);
+  const [sealLabel, setSealLabel] = useState('');
+  const [sealStatusLabel, setSealStatusLabel] = useState('');
+  const [officialFeedEligible, setOfficialFeedEligible] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
 
     Promise.all([
-      fetch(`/api/schemes/${schemeId}`, { signal: controller.signal }),
+      fetch(`/api/schemes/${schemeId}?viewerId=${encodeURIComponent(viewerId || '')}`, { signal: controller.signal }),
       fetch(`/api/outfit-comments/${schemeId}`, { signal: controller.signal }),
       fetch(`/api/outfit-likes/${schemeId}?userId=${viewerId || ''}`, { signal: controller.signal }),
       fetch(`/api/remixes?originalSchemeId=${schemeId}`, { signal: controller.signal }),
@@ -45,7 +52,7 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
 
       const sData = await sRes.json() as Record<string, unknown>;
       const cData = cRes.ok ? (await cRes.json() as { comments?: Comment[] }) : { comments: [] };
-      const lData = lRes.ok ? (await lRes.json() as { like_count?: number; user_liked?: boolean }) : {};
+      const lData = lRes.ok ? (await lRes.json() as { like_count?: number; user_liked?: boolean; user_reaction?: ReactionKey | null; reactions?: ReactionCounts }) : {};
       const rData = rRes.ok ? (await rRes.json() as { count?: number }) : {};
 
       const mapped: FeedCardScheme = {
@@ -63,8 +70,35 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
         remix_of: sData.remix_of ? String(sData.remix_of) : undefined,
       };
       setScheme(mapped);
+      if (mapped.user_id) {
+        fetch(`/api/brand-seals?userId=${encodeURIComponent(mapped.user_id)}`)
+          .then((sealRes) => sealRes.ok ? sealRes.json() : null)
+          .then((sealData) => {
+            const tier = sealData?.seal?.seal_tier as string | undefined;
+            const status = (sealData?.seal?.status as string | undefined) ?? 'inactive';
+            const eligible = Boolean(sealData?.seal?.official_feed_eligible);
+
+            if (tier === 'premium') setSealLabel('Selo Premium');
+            else if (tier === 'free') setSealLabel('Selo Gratuito');
+            else setSealLabel('');
+
+            if (status === 'active') setSealStatusLabel('Ativo');
+            else if (status === 'pending') setSealStatusLabel('Validando');
+            else if (status === 'expired') setSealStatusLabel('Expirado');
+            else setSealStatusLabel('Inativo');
+
+            setOfficialFeedEligible(eligible);
+          })
+          .catch(() => {
+            setSealLabel('');
+            setSealStatusLabel('');
+            setOfficialFeedEligible(false);
+          });
+      }
       setLikeCount(lData.like_count ?? 0);
       setLiked(lData.user_liked ?? false);
+      setUserReaction(lData.user_reaction ?? null);
+      setReactionCounts(lData.reactions ?? emptyReactionCounts());
       setComments(cData.comments ?? []);
       setRemixCount(rData.count ?? 0);
     }).catch(() => null).finally(() => setLoadingScheme(false));
@@ -72,20 +106,43 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
     return () => controller.abort();
   }, [schemeId, viewerId]);
 
-  const handleLike = useCallback(async () => {
+  const handleReact = useCallback(async (reaction: ReactionKey) => {
     if (!viewerId) return;
-    const nextLiked = !liked;
-    setLiked(nextLiked);
-    setLikeCount((prev: number) => Math.max(0, prev + (nextLiked ? 1 : -1)));
-    await fetch(`/api/outfit-likes/${schemeId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: viewerId, liked: nextLiked }),
-    }).catch(() => {
-      setLiked(!nextLiked);
-      setLikeCount((prev: number) => Math.max(0, prev + (nextLiked ? -1 : 1)));
-    });
-  }, [liked, schemeId, viewerId]);
+    const prevReaction = userReaction;
+    const prevCounts = reactionCounts;
+    const prevLikeCount = likeCount;
+
+    // Clicking the active reaction removes it; otherwise switch/add.
+    const next: ReactionKey | null = prevReaction === reaction ? null : reaction;
+
+    // Optimistic update.
+    const optimistic = { ...prevCounts };
+    if (prevReaction) optimistic[prevReaction] = Math.max(0, optimistic[prevReaction] - 1);
+    if (next) optimistic[next] = optimistic[next] + 1;
+    setReactionCounts(optimistic);
+    setUserReaction(next);
+    setLiked(next !== null);
+    setLikeCount(Math.max(0, prevLikeCount + (prevReaction ? 0 : 1) - (next === null ? 1 : 0)));
+
+    try {
+      const res = await fetch(`/api/outfit-likes/${schemeId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: viewerId, reaction: next }),
+      });
+      if (!res.ok) throw new Error('reaction failed');
+      const data = await res.json() as { like_count?: number; user_reaction?: ReactionKey | null; reactions?: ReactionCounts };
+      setLikeCount(data.like_count ?? 0);
+      setUserReaction(data.user_reaction ?? null);
+      setLiked((data.user_reaction ?? null) !== null);
+      if (data.reactions) setReactionCounts(data.reactions);
+    } catch {
+      setReactionCounts(prevCounts);
+      setUserReaction(prevReaction);
+      setLiked(prevReaction !== null);
+      setLikeCount(prevLikeCount);
+    }
+  }, [userReaction, reactionCounts, likeCount, schemeId, viewerId]);
 
   const handleSendComment = useCallback(async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -158,6 +215,14 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
         </button>
       </div>
 
+      <ArtCelebrityPanel
+        viewerId={viewerId}
+        viewerName={viewerName}
+        targetId={scheme.user_id}
+        title="Plano 3 · Tributo e arena deste criador"
+        subtitle="Mostra o nível de consagração e o impacto comunitário do autor do look."
+      />
+
       {/* Cover */}
       <div
         className="relative mx-4 rounded-2xl overflow-hidden bg-[#12121A] border border-white/[0.06]"
@@ -193,7 +258,14 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
                 : <div className="w-full h-full flex items-center justify-center text-white/30 text-xs">◉</div>
               }
             </div>
-            <span className="text-xs text-white/50">{scheme.author_name || 'Usuário'}</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-white/50">{scheme.author_name || 'Usuário'}</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {sealLabel ? <span className="inline-flex w-fit rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-amber-100">{sealLabel}</span> : null}
+                {officialFeedEligible ? <span className="inline-flex w-fit rounded-full border border-violet-400/25 bg-violet-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-violet-100">Feed oficial</span> : null}
+                {sealStatusLabel ? <span className="inline-flex w-fit rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-cyan-100">{sealStatusLabel}</span> : null}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -215,14 +287,26 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
       )}
 
       {/* Action bar */}
-      <div className="flex items-center gap-4 px-4 py-4">
-        <button
-          onClick={handleLike}
-          className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${liked ? 'text-pink-400' : 'text-white/40 hover:text-white/70'}`}
-        >
-          <span className="text-base">{liked ? '♥' : '♡'}</span>
-          <span>{likeCount}</span>
-        </button>
+      <div className="flex items-center gap-3 px-4 py-4">
+        {/* Reações de moda (RF24) — "Aprovar o look" */}
+        <div className="flex items-center gap-1.5" role="group" aria-label="Reações">
+          {REACTIONS.map((r) => {
+            const active = userReaction === r.key;
+            return (
+              <button
+                key={r.key}
+                onClick={() => void handleReact(r.key)}
+                title={`${r.emoji} ${r.label}`}
+                aria-pressed={active}
+                className={`flex items-center gap-1 rounded-full border px-2 py-1 text-sm transition-colors ${active ? 'border-pink-400/60 bg-pink-500/15 text-pink-300' : 'border-white/12 text-white/45 hover:text-white/75 hover:border-white/25'}`}
+              >
+                <span className="text-base">{r.emoji}</span>
+                <span className="text-xs tabular-nums">{reactionCounts[r.key]}</span>
+              </button>
+            );
+          })}
+          <span className="ml-1 text-xs text-white/35">{likeCount} no total</span>
+        </div>
         <span className="flex items-center gap-1.5 text-sm text-white/40">
           <span className="text-base">💬</span>
           <span>{comments.length}</span>

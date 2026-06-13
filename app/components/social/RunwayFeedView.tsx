@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import RunwayFeedCard, { type FeedCardScheme } from './RunwayFeedCard';
+import ArtCelebrityPanel from './ArtCelebrityPanel';
 
 type FeedMode = 'magazine' | 'runway' | 'grid';
 type FeedFilter = 'all' | 'following' | 'trending';
@@ -32,7 +33,10 @@ export default function RunwayFeedView({ viewerId, viewerName, viewerPhotoUrl }:
   const [mode, setMode] = useState<FeedMode>('magazine');
   const [filter, setFilter] = useState<FeedFilter>('all');
   const [schemes, setSchemes] = useState<FeedCardScheme[]>([]);
+  const [officialPosts, setOfficialPosts] = useState<Array<{ id: string; title: string; body: string; image_url?: string | null; tag?: string | null; featured_until?: string | null; is_official?: boolean }>>([]);
+  const [viewerSeal, setViewerSeal] = useState<{ seal_tier?: string; status?: string; official_feed_eligible?: boolean; official_feed_until?: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingOfficial, setLoadingOfficial] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef<HTMLDivElement>(null);
@@ -53,7 +57,29 @@ export default function RunwayFeedView({ viewerId, viewerName, viewerPhotoUrl }:
       const list: FeedCardScheme[] = Array.isArray(data) ? data : (data.schemes ?? []);
       const more = Array.isArray(data) ? list.length === 12 : (data.hasMore ?? list.length === 12);
 
-      setSchemes((prev: FeedCardScheme[]) => pageIndex === 0 ? list : [...prev, ...list]);
+      const uniqueUserIds = Array.from(new Set(list.map((scheme) => scheme.user_id).filter(Boolean)));
+      const sealMap = new Map<string, { seal_tier?: string; status?: string; official_feed_eligible?: boolean }>();
+
+      if (uniqueUserIds.length > 0) {
+        const responses = await Promise.all(uniqueUserIds.map((userId) => fetch(`/api/brand-seals?userId=${encodeURIComponent(userId)}`).then((res) => res.ok ? res.json() : null)));
+        responses.forEach((payload, index) => {
+          const userId = uniqueUserIds[index];
+          if (!userId || !payload?.seal) return;
+          sealMap.set(userId, payload.seal);
+        });
+      }
+
+      const enrichedList = list.map((scheme) => {
+        const seal = sealMap.get(scheme.user_id);
+        return {
+          ...scheme,
+          brandSealTier: seal?.seal_tier ?? scheme.brandSealTier,
+          brandSealStatus: seal?.status ?? scheme.brandSealStatus,
+          officialFeedEligible: Boolean(seal?.official_feed_eligible ?? scheme.officialFeedEligible),
+        };
+      });
+
+      setSchemes((prev: FeedCardScheme[]) => pageIndex === 0 ? enrichedList : [...prev, ...enrichedList]);
       setHasMore(more);
     } catch {
       setHasMore(false);
@@ -67,6 +93,58 @@ export default function RunwayFeedView({ viewerId, viewerName, viewerPhotoUrl }:
     setSchemes([]);
     loadSchemes(0, filter);
   }, [filter, loadSchemes]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadViewerSeal = async () => {
+      if (!viewerId) {
+        if (isMounted) setViewerSeal(null);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/brand-seals?userId=${encodeURIComponent(viewerId)}`);
+        if (!res.ok) throw new Error('Failed to fetch seal status');
+        const data = await res.json() as { seal?: typeof viewerSeal };
+        if (isMounted) {
+          setViewerSeal(data.seal ?? null);
+        }
+      } catch {
+        if (isMounted) setViewerSeal(null);
+      }
+    };
+
+    loadViewerSeal();
+    return () => {
+      isMounted = false;
+    };
+  }, [viewerId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadOfficialPosts = async () => {
+      setLoadingOfficial(true);
+      try {
+        const res = await fetch('/api/brand-feed');
+        if (!res.ok) throw new Error('Failed to fetch official feed');
+        const data = await res.json() as { posts?: typeof officialPosts };
+        if (isMounted) {
+          setOfficialPosts(Array.isArray(data.posts) ? data.posts : []);
+        }
+      } catch {
+        if (isMounted) setOfficialPosts([]);
+      } finally {
+        if (isMounted) setLoadingOfficial(false);
+      }
+    };
+
+    loadOfficialPosts();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Infinite scroll
   useEffect(() => {
@@ -133,6 +211,48 @@ export default function RunwayFeedView({ viewerId, viewerName, viewerPhotoUrl }:
 
       {/* Feed */}
       <div className={`flex-1 overflow-y-auto px-4 py-4 ${mode === 'runway' ? 'px-0 py-0' : ''}`}>
+        <ArtCelebrityPanel viewerId={viewerId} viewerName={viewerName} />
+
+        {officialPosts.length > 0 && (
+          <section className="mb-4 rounded-3xl border border-amber-400/25 bg-[linear-gradient(135deg,rgba(251,191,36,0.12),rgba(124,58,237,0.12))] p-4 shadow-[0_18px_50px_rgba(15,23,42,0.35)]">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-amber-100/80">Plano 2</p>
+                <h2 className="text-sm font-semibold text-white">Feed oficial · 30 dias</h2>
+                <p className="text-xs text-white/60">Destaques curados, selos e presença premium para marcas e criadores.</p>
+              </div>
+              <span className="rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-white/70">{viewerSeal?.status === 'active' ? 'Selo ativo' : viewerSeal?.status === 'pending' ? 'Validando' : 'Em teste'}</span>
+            </div>
+
+            {viewerSeal && (
+              <div className="mb-3 rounded-2xl border border-white/10 bg-black/30 p-3 text-xs text-white/80">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.22em] text-amber-100">{viewerSeal.seal_tier ?? 'none'}</span>
+                  <span className="text-white/60">Status: {viewerSeal.status ?? 'inactive'}</span>
+                  <span className="text-white/60">Feed oficial: {viewerSeal.official_feed_eligible ? 'habilitado' : 'não habilitado'}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-2">
+              {officialPosts.slice(0, 3).map((post) => (
+                <article key={post.id} className="rounded-2xl border border-white/10 bg-black/30 p-3 text-white/85">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.22em] text-amber-100">Selo oficial</span>
+                    {post.featured_until ? <span className="text-[10px] text-white/45">até {new Date(post.featured_until).toLocaleDateString('pt-BR')}</span> : null}
+                  </div>
+                  <h3 className="text-sm font-semibold text-white">{post.title}</h3>
+                  <p className="mt-1 text-xs text-white/70">{post.body}</p>
+                  {post.tag ? <span className="mt-2 inline-flex text-[10px] uppercase tracking-[0.18em] text-violet-100/90">{post.tag}</span> : null}
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {loadingOfficial && officialPosts.length === 0 && (
+          <div className="mb-4 rounded-3xl border border-white/10 bg-white/5 p-4 text-xs text-white/45">Carregando destaques oficiais…</div>
+        )}
         {loading && page === 0 ? (
           <FeedSkeleton mode={mode} />
         ) : schemes.length === 0 ? (

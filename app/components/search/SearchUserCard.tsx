@@ -3,10 +3,13 @@ interface SearchUserCardProps {
   username: string;
   descriptor?: string;
   avatarUrl?: string;
+  brandSealTier?: string;
+  brandSealStatus?: string;
+  officialFeedEligible?: boolean;
   onOpenProfile: () => void;
 }
 
-export default function SearchUserCard({ name, username, descriptor, avatarUrl, onOpenProfile }: SearchUserCardProps) {
+export default function SearchUserCard({ name, username, descriptor, avatarUrl, brandSealTier, brandSealStatus, officialFeedEligible, onOpenProfile }: SearchUserCardProps) {
   return (
     <article
       role="button"
@@ -32,6 +35,21 @@ export default function SearchUserCard({ name, username, descriptor, avatarUrl, 
         </div>
       </div>
       {descriptor ? <p className="mt-2 text-xs text-white/70">{descriptor}</p> : null}
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {brandSealTier && brandSealTier !== 'none' ? (
+          <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-amber-100">
+            {brandSealTier === 'premium' ? 'Selo Premium' : 'Selo Gratuito'}
+          </span>
+        ) : null}
+        {officialFeedEligible ? (
+          <span className="rounded-full border border-violet-400/25 bg-violet-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-100">Feed oficial</span>
+        ) : null}
+        {brandSealStatus && brandSealStatus !== 'inactive' ? (
+          <span className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-cyan-100">
+            {brandSealStatus === 'active' ? 'Ativo' : brandSealStatus === 'pending' ? 'Validando' : 'Expirado'}
+          </span>
+        ) : null}
+      </div>
     </article>
   );
 }
