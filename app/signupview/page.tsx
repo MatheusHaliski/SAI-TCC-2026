@@ -64,23 +64,23 @@ export default function SignupViewPage() {
                         {/* 120 → 360 (3×) */}
                         <BrandLogoMark size={360} />
                         <div>
-                            <div style={{ color: "#fff", fontSize: "4.5rem", fontWeight: 600, fontFamily: ff }}>Create a new account in minutes!</div>
+                            <div style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 600, fontFamily: ff }}>Create a new account in minutes!</div>
                         </div>
                     </div>
                     <div>
-                        <div style={{ fontSize: "6.75rem", fontWeight: 600, color: "#fff", marginBottom: "1.5rem", lineHeight: 1.3, fontFamily: ff }}>Comece sua jornada<br />de estilo hoje</div>
-                        <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "3.375rem", marginBottom: "2rem", fontFamily: ff }}>Junte-se a milhares de usuários que transformaram sua forma de se vestir com a ajuda da IA.</p>
+                        <div style={{ fontSize: "2.25rem", fontWeight: 600, color: "#fff", marginBottom: "1.5rem", lineHeight: 1.3, fontFamily: ff }}>Comece sua jornada<br />de estilo hoje</div>
+                        <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1.125rem", marginBottom: "2rem", fontFamily: ff }}>Junte-se a milhares de usuários que transformaram sua forma de se vestir com a ajuda da IA.</p>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", textAlign: "center" }}>
                             {[["10k+", "Usuários"], ["50k+", "Looks Criados"], ["4.9", "Avaliação"]].map(([num, label]) => (
                                 <div key={label}>
-                                    <div style={{ fontSize: "5.625rem", fontWeight: 600, color: "#fff", fontFamily: ff }}>{num}</div>
-                                    <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "2.625rem", fontFamily: ff }}>{label}</div>
+                                    <div style={{ fontSize: "1.875rem", fontWeight: 600, color: "#fff", fontFamily: ff }}>{num}</div>
+                                    <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.875rem", fontFamily: ff }}>{label}</div>
                                 </div>
                             ))}
                         </div>
                     </div>
                 </div>
-                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "2.625rem", fontFamily: ff }}>© 2026 Fashion AI. Todos os direitos reservados.</div>
+                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem", fontFamily: ff }}>© 2026 Fashion AI. Todos os direitos reservados.</div>
             </div>
 
             {/* Right Side */}
