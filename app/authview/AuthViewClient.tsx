@@ -60,7 +60,7 @@ const EyeClosed = () => (
     </svg>
 );
 const SparklesIcon = () => (
-    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={768} height={768} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} />
+    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={368} height={368} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} />
 );
 const MailIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -287,7 +287,7 @@ export default function AuthViewClient() {
                 {/* Logo */}
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"1rem", textAlign:"center" }}>
                     {/* 250px → 750px (3×) */}
-                    <div style={{ width:"750px", height:"750px", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+                    <div style={{ width:"370px", height:"370px", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
                         <SparklesIcon />
                     </div>
                     <div>
