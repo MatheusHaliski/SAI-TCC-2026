@@ -14,6 +14,7 @@ const sectionConfig: Array<{ key: ProfileSectionKey; label: string }> = [
   { key: 'wardrobe', label: 'My Wardrobe Pieces' },
   { key: 'user-info', label: 'User Info' },
   { key: 'style-dna', label: 'Style DNA' },
+  { key: 'tribute', label: 'Tribute & Celebrity' },
   { key: 'my-schemes', label: 'My Schemes' },
   { key: 'saved-schemes', label: 'Saved Schemes' },
   { key: 'my-posts', label: 'My Posts' },
@@ -37,7 +38,7 @@ export default function ProfileContextMenu({ selectedSection, onSelectSection, a
   const localizedConfig = sectionConfig.map((item) => ({
     ...item,
     label: isPortuguese
-      ? ({ wardrobe: 'Meu Guarda-roupa', 'user-info': 'Informações do usuário', 'style-dna': 'DNA de Estilo', 'my-schemes': 'Meus esquemas', 'saved-schemes': 'Esquemas salvos', 'my-posts': 'Minhas postagens', settings: 'Configurações' }[item.key])
+      ? ({ wardrobe: 'Meu Guarda-roupa', 'user-info': 'Informações do usuário', 'style-dna': 'DNA de Estilo', tribute: 'Tributo & Consagração', 'my-schemes': 'Meus esquemas', 'saved-schemes': 'Esquemas salvos', 'my-posts': 'Minhas postagens', settings: 'Configurações' }[item.key])
       : item.label,
   }));
   const filteredConfig = allowedSections?.length

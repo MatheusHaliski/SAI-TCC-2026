@@ -6,6 +6,7 @@ import ProfileMySchemesSection from '@/app/components/profile/ProfileMySchemesSe
 import ProfileSavedSchemesSection from '@/app/components/profile/ProfileSavedSchemesSection';
 import ProfileMyPostsSection from '@/app/components/profile/ProfileMyPostsSection';
 import StyleDnaSection from '@/app/components/profile/StyleDnaSection';
+import ProfileTributeSection from '@/app/components/profile/ProfileTributeSection';
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -38,6 +39,12 @@ interface ProfileSectionRendererProps {
   wardrobeItems: WardrobeItem[];
   schemes: SchemeItem[];
   posts: UserPostRecord[];
+  viewerId: string;
+  viewerName: string;
+  brandSealTier?: string;
+  brandSealStatus?: string;
+  officialFeedEligible?: boolean;
+  officialFeedUntil?: string | null;
   onWardrobeItemDeleted?: (id: string) => void;
   onProfileSaved?: (profile: { name?: string; username?: string; email?: string; bio?: string; photo_url?: string }) => void;
 }
@@ -55,12 +62,31 @@ export default function ProfileSectionRenderer({
   wardrobeItems,
   schemes,
   posts,
+  viewerId,
+  viewerName,
+  brandSealTier,
+  brandSealStatus,
+  officialFeedEligible,
+  officialFeedUntil,
   onWardrobeItemDeleted,
   onProfileSaved,
 }: ProfileSectionRendererProps) {
   if (section === 'wardrobe') return <ProfileWardrobeSection items={wardrobeItems} onItemDeleted={onWardrobeItemDeleted} />;
   if (section === 'user-info') return <ProfileUserInfoSection userId={userId} displayName={displayName} username={username} email={email} canEdit={canEdit} onProfileSaved={onProfileSaved} />;
   if (section === 'style-dna') return <StyleDnaSection userId={userId} canEdit={canEdit} />;
+  if (section === 'tribute') {
+    return (
+      <ProfileTributeSection
+        userId={userId}
+        viewerId={viewerId}
+        viewerName={viewerName}
+        brandSealTier={brandSealTier}
+        brandSealStatus={brandSealStatus}
+        officialFeedEligible={officialFeedEligible}
+        officialFeedUntil={officialFeedUntil}
+      />
+    );
+  }
   if (section === 'my-schemes') return <ProfileMySchemesSection userId={userId} schemes={schemes} />;
   if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} />;
   if (section === 'my-posts') return <ProfileMyPostsSection posts={posts} />;
