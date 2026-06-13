@@ -125,7 +125,7 @@ export default function CreateMySchemeView() {
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
-  const [visibility, setVisibility] = useState<'private' | 'public'>('public');
+  const [visibility, setVisibility] = useState<'private' | 'followers' | 'public'>('public');
   const [selectedBrandId, setSelectedBrandId] = useState(DEFAULT_BRAND_ID);
   const [slotBrandIds, setSlotBrandIds] = useState<Record<SlotKey, string>>({
     upper: DEFAULT_BRAND_ID,
@@ -342,7 +342,7 @@ export default function CreateMySchemeView() {
       metaBadges: [
         { icon: '👕', label: style.trim() || 'Casual' },
         { icon: '📆', label: occasion.trim() || 'Daily' },
-        { icon: visibility === 'public' ? '🌐' : '🔒', label: visibility === 'public' ? 'Public' : 'Private' },
+        { icon: visibility === 'public' ? '🌐' : visibility === 'followers' ? '👥' : '🔒', label: visibility === 'public' ? 'Público' : visibility === 'followers' ? 'Seguidores' : 'Privado' },
         { icon: generationMode === 'manual' ? '✍️' : '✨', label: generationMode === 'manual' ? 'Manual' : 'AI' },
         palette.trim() ? { icon: '🎨', label: palette.trim() } : null,
       ].filter(Boolean) as NonNullable<OutfitCardData['metaBadges']>,
@@ -603,10 +603,11 @@ export default function CreateMySchemeView() {
 
         <FancySelect
           value={visibility}
-          onChange={(selectedVisibility) => setVisibility(selectedVisibility as 'private' | 'public')}
+          onChange={(selectedVisibility) => setVisibility(selectedVisibility as 'private' | 'followers' | 'public')}
           options={[
-            { value: 'public', label: 'Public' },
-            { value: 'private', label: 'Private' },
+            { value: 'public', label: '🌐 Público' },
+            { value: 'followers', label: '👥 Seguidores' },
+            { value: 'private', label: '🔒 Privado' },
           ]}
         />
 
