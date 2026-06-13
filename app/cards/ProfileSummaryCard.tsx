@@ -1,4 +1,4 @@
-import StatBadge from '../shared/StatBadge';
+import StatBadge from '@/app/components/shared/StatBadge';
 
 interface ProfileSummaryCardProps {
   username: string;
