@@ -109,6 +109,21 @@ export type OutfitBackgroundConfig = {
 
 export type CardSkinId = 'atelier' | 'spread' | 'index' | 'trading' | 'fai_max' | 'stub' | 'specimen';
 
+/** Layout used to render the outfit's piece list on the card. */
+export type OutfitPieceListFormat = 'grid-2' | 'grid-3' | 'stack' | 'plate' | 'magazine' | 'row';
+
+export type OutfitCardDisplayMode = 'complete' | 'hide-hero' | 'hide-pieces' | 'pieces-only';
+export type OutfitBrandSealTier = 'none' | 'free' | 'premium';
+
+export type OutfitCardDisplayOptions = {
+  /** Background used only behind the readable internal content, helpful over busy AI artwork. */
+  contentPanelColor?: string;
+  /** Controls which card sections stay visible in the final composition. */
+  displayMode?: OutfitCardDisplayMode;
+  /** Brand seal chosen during look creation. */
+  brandSealTier?: OutfitBrandSealTier;
+};
+
 export type OutfitCardData = {
   outfitName: string;
   outfitStyleLine: string;
@@ -138,6 +153,10 @@ export type OutfitCardData = {
   cardSkin?: CardSkinId;
   /** Aggregated like count used by the Aura system when dynamicBackground is enabled. */
   likes?: number;
+  /** Layout used to render the piece list. Defaults to 'grid-2'. */
+  pieceListFormat?: OutfitPieceListFormat;
+  /** Readability and section visibility options for the outfit card. */
+  displayOptions?: OutfitCardDisplayOptions;
 };
 
 const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {

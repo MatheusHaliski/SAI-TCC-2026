@@ -82,13 +82,17 @@ export default function PieceCardModal({ piece, onClose }: PieceCardModalProps) 
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl overflow-hidden rounded-3xl border border-white/18 bg-[#101827] shadow-[0_32px_80px_rgba(0,0,0,0.6)]"
+        className={
+          view === 'card'
+            ? 'relative w-full max-w-[460px] overflow-visible'
+            : 'w-full max-w-2xl overflow-hidden rounded-3xl border border-white/18 bg-[#101827] shadow-[0_32px_80px_rgba(0,0,0,0.6)]'
+        }
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+        <div className={view === 'card' ? 'mb-3 flex items-center justify-between rounded-2xl border border-white/15 bg-black/45 px-3 py-2 backdrop-blur-md' : 'flex items-center justify-between border-b border-white/10 px-5 py-4'}>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">Peca de roupa</p>
-            <h3 className="mt-0.5 text-lg font-black text-white">{pieceName}</h3>
+            <h3 className={`${view === 'card' ? 'text-sm' : 'text-lg'} mt-0.5 font-black text-white`}>{pieceName}</h3>
           </div>
           <button
             type="button"
@@ -99,7 +103,7 @@ export default function PieceCardModal({ piece, onClose }: PieceCardModalProps) 
           </button>
         </div>
 
-        <div className="flex border-b border-white/10">
+        <div className={view === 'card' ? 'mb-3 flex overflow-hidden rounded-2xl border border-white/15 bg-black/35 backdrop-blur-md' : 'flex border-b border-white/10'}>
           {(['2d', 'card'] as ActiveView[]).map((tab) => (
             <button
               key={tab}
@@ -111,7 +115,7 @@ export default function PieceCardModal({ piece, onClose }: PieceCardModalProps) 
                   : 'text-white/50 hover:text-white/80'
               }`}
             >
-              {tab === '2d' ? 'Visualizacao 2D' : 'Card da Peca'}
+              {tab === '2d' ? 'Default 2D' : 'Card Piece'}
             </button>
           ))}
         </div>

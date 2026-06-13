@@ -11,6 +11,7 @@ export type AppRoute =
   | 'my-photos'
   | 'future-topics'
   | 'maison'
+  | 'tributes'
   | 'profile'
   | 'profile-settings';
 
@@ -34,6 +35,7 @@ export const NAV_ITEMS: NavItem[] = [
   { route: 'search-items',     label: 'Buscar',         helperText: 'Encontre usuários e looks',            icon: '⌕',  path: '/search-items' },
   { route: 'my-photos',        label: 'Minhas Fotos',   helperText: 'Galeria de peças e looks',             icon: '⬡',  path: '/my-photos' },
   { route: 'maison',           label: 'Marcas',         helperText: 'Perfil de marcas e identidade',        icon: '◆',  path: '/maison' },
+  { route: 'tributes',         label: 'Tributos',       helperText: 'Celebridades, pedidos e feed mensal',  icon: '✧',  path: '/tributes' },
   { route: 'future-topics',    label: 'Temas Futuros',  helperText: 'Funcionalidades planejadas',           icon: '◇',  path: '/future-topics' },
   { route: 'profile',          label: 'Perfil',         helperText: 'Gerencie sua conta',                   icon: '◉',  path: '/profile' },
   { route: 'profile-settings', label: 'Configurações',  helperText: 'Preferências e privacidade',           icon: '⚙︎', path: '/profile/settings' },
@@ -54,6 +56,7 @@ export const ROUTE_TITLES: Record<AppRoute, string> = {
   'my-photos': 'Minhas Fotos',
   'future-topics': 'Temas Futuros',
   maison: 'Marcas',
+  tributes: 'Tributos',
 };
 
 export const PATH_TO_ROUTE: Record<string, AppRoute> = {
@@ -75,4 +78,5 @@ export const PATH_TO_ROUTE: Record<string, AppRoute> = {
   '/my-photos': 'my-photos',
   '/future-topics': 'future-topics',
   '/maison': 'maison',
+  '/tributes': 'tributes',
 };

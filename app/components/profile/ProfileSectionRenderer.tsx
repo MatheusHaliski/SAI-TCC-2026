@@ -7,6 +7,7 @@ import ProfileSavedSchemesSection from '@/app/components/profile/ProfileSavedSch
 import ProfileMyPostsSection from '@/app/components/profile/ProfileMyPostsSection';
 import StyleDnaSection from '@/app/components/profile/StyleDnaSection';
 import ProfileTributeSection from '@/app/components/profile/ProfileTributeSection';
+import ProfileArenaSection from '@/app/components/profile/ProfileArenaSection';
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -78,7 +79,6 @@ export default function ProfileSectionRenderer({
     return (
       <ProfileTributeSection
         userId={userId}
-        viewerId={viewerId}
         viewerName={viewerName}
         canEdit={canEdit}
         schemes={schemes}
@@ -89,6 +89,7 @@ export default function ProfileSectionRenderer({
       />
     );
   }
+  if (section === 'arena') return <ProfileArenaSection />;
   if (section === 'my-schemes') return <ProfileMySchemesSection userId={userId} schemes={schemes} />;
   if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} />;
   if (section === 'my-posts') return <ProfileMyPostsSection posts={posts} />;

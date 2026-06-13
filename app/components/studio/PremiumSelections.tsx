@@ -1,119 +1,117 @@
 'use client';
 
-import { useCallback } from 'react';
-import type { OutfitCardData, CardSkinId } from '@/app/lib/outfit-card';
-import { DEFAULT_CARD_SKIN, updateCardSkin } from '@/app/lib/outfits/cardSkin';
-import { SKIN_REGISTRY } from '@/app/components/outfit-card/skins/skinRegistry';
+import type {
+  OutfitBrandSealTier,
+  OutfitCardDisplayMode,
+  OutfitCardDisplayOptions,
+} from '@/app/lib/outfit-card';
+import FancySelect from '@/app/components/ui/fancy-select';
 
 interface PremiumSelectionsProps {
-  data: OutfitCardData;
-  selectedSkin: CardSkinId | undefined;
   language?: 'pt-BR' | 'en';
-  onSelectSkin: (skinId: CardSkinId) => void;
+  value: OutfitCardDisplayOptions;
+  premiumSealUnlocked?: boolean;
+  freeSealPublicationCount?: number;
+  onChange: (next: OutfitCardDisplayOptions) => void;
 }
 
-const THUMB_W = 120;
-const THUMB_H = 187;
-const CARD_W = 360;
-const CARD_H = 560;
-const SCALE = THUMB_W / CARD_W;
+const SUPPORT_COLORS = [
+  { value: 'rgba(2,6,23,0.72)', label: 'Preto translúcido', hint: 'Máxima leitura sobre arte AI' },
+  { value: 'rgba(15,23,42,0.56)', label: 'Grafite suave', hint: 'Mantém contraste sem esconder o fundo' },
+  { value: 'rgba(255,255,255,0.82)', label: 'Branco editorial', hint: 'Bom para fundos escuros' },
+  { value: 'rgba(120,53,15,0.62)', label: 'Caramelo profundo', hint: 'Quente e premium' },
+  { value: 'rgba(20,83,45,0.58)', label: 'Verde atelier', hint: 'Natural e elegante' },
+  { value: 'rgba(76,29,149,0.58)', label: 'Violeta noite', hint: 'Cenográfico sem ofuscar texto' },
+];
 
-const LABELS: Record<string, { title: string; subtitle: string }> = {
-  'pt-BR': {
-    title: 'Estilos premium de card',
-    subtitle: 'Escolha o estilo visual do seu card de outfit.',
-  },
-  'en': {
-    title: 'Premium card styles',
-    subtitle: 'Choose the visual style for your outfit card.',
-  },
-};
+const DISPLAY_MODES: Array<{ value: OutfitCardDisplayMode; label: string; hint: string }> = [
+  { value: 'complete', label: 'Card completo', hint: 'Foto, detalhes e lista de peças' },
+  { value: 'hide-hero', label: 'Sem foto do usuário', hint: 'Mantém texto, selo e peças' },
+  { value: 'hide-pieces', label: 'Sem lista de peças', hint: 'Mantém foto e contexto do look' },
+  { value: 'pieces-only', label: 'Só lista de peças', hint: 'Remove foto, textos e ações' },
+];
 
 export default function PremiumSelections({
-  data,
-  selectedSkin,
   language = 'pt-BR',
-  onSelectSkin,
+  value,
+  premiumSealUnlocked = false,
+  freeSealPublicationCount = 0,
+  onChange,
 }: PremiumSelectionsProps) {
-  const activeSkin = selectedSkin ?? DEFAULT_CARD_SKIN;
-  const label = LABELS[language] ?? LABELS['pt-BR']!;
+  const isPortuguese = language !== 'en';
+  const displayMode = value.displayMode ?? 'complete';
+  const sealTier = value.brandSealTier ?? 'none';
+  const remaining = Math.max(0, 50 - freeSealPublicationCount);
 
-  const handleSelect = useCallback(
-    async (skinId: CardSkinId) => {
-      onSelectSkin(skinId);
-      if (data.schemeId) {
-        try {
-          await updateCardSkin(data.schemeId, skinId);
-        } catch {
-          // Firestore update is best-effort; UI state is already updated
-        }
-      }
-    },
-    [data.schemeId, onSelectSkin],
-  );
+  const update = (next: Partial<OutfitCardDisplayOptions>) => onChange({ ...value, ...next });
+  const selectSeal = (tier: OutfitBrandSealTier) => {
+    if (tier === 'premium' && !premiumSealUnlocked) return;
+    update({ brandSealTier: tier });
+  };
 
   return (
-    <section className="rounded-xl border border-orange-500/30 bg-black/40 p-4">
-      {/* Eyebrow */}
-      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-orange-500 mb-0.5">
+    <section className="rounded-xl border border-white/20 bg-white/10 p-4">
+      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-orange-300">
         Card Style
       </p>
-      <p className="text-sm font-semibold text-white">{label.title}</p>
-      <p className="mt-0.5 text-[11px] text-white/60">{label.subtitle}</p>
+      <p className="mt-1 text-sm font-semibold text-white">
+        {isPortuguese ? 'Composição e legibilidade do card' : 'Card composition and readability'}
+      </p>
+      <p className="mt-0.5 text-[11px] text-white/60">
+        {isPortuguese
+          ? 'Ajuste a área interna, remova seções e aplique selos de marca sem trocar o fundo artístico.'
+          : 'Adjust the internal support area, remove sections, and apply brand seals without changing the artwork.'}
+      </p>
 
-      {/* 2-column grid (4 rows, last slot empty) */}
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2">
-        {SKIN_REGISTRY.map((skin) => {
-          const isSelected = activeSkin === skin.id;
-          const SkinComponent = skin.Component;
-          return (
-            <button
-              key={skin.id}
-              type="button"
-              onClick={() => void handleSelect(skin.id)}
-              className="group relative flex flex-col items-center gap-1.5 rounded-lg p-0 transition-transform hover:-translate-y-0.5"
-              style={{
-                boxShadow: isSelected
-                  ? '0 0 0 3px #f97316, 0 0 16px rgba(249,115,22,0.35)'
-                  : '0 0 0 1px rgba(255,255,255,0.12)',
-                borderRadius: 8,
-              }}
-            >
-              {/* Thumbnail */}
-              <div
-                style={{
-                  width: THUMB_W,
-                  height: THUMB_H,
-                  overflow: 'hidden',
-                  borderRadius: 6,
-                  position: 'relative',
-                  flexShrink: 0,
-                }}
-              >
-                <div
-                  style={{
-                    width: CARD_W,
-                    height: CARD_H,
-                    transform: `scale(${SCALE})`,
-                    transformOrigin: 'top left',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                  }}
+      <div className="mt-4 grid gap-3">
+        <FancySelect
+          value={value.contentPanelColor ?? SUPPORT_COLORS[0].value}
+          onChange={(selected) => update({ contentPanelColor: selected })}
+          label={isPortuguese ? 'Cor da div de suporte interna' : 'Internal support color'}
+          options={SUPPORT_COLORS}
+        />
+
+        <FancySelect
+          value={displayMode}
+          onChange={(selected) => update({ displayMode: selected as OutfitCardDisplayMode })}
+          label={isPortuguese ? 'Componentes visíveis' : 'Visible components'}
+          options={DISPLAY_MODES}
+        />
+
+        <div className="rounded-xl border border-white/15 bg-black/16 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55">
+            {isPortuguese ? 'Selo de marca' : 'Brand seal'}
+          </p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            {([
+              { tier: 'none', label: isPortuguese ? 'Sem selo' : 'No seal', hint: isPortuguese ? 'Card padrão' : 'Default card' },
+              { tier: 'free', label: isPortuguese ? 'Gratuito' : 'Free', hint: isPortuguese ? 'Disponível agora' : 'Available now' },
+              { tier: 'premium', label: 'Premium', hint: premiumSealUnlocked ? (isPortuguese ? 'Desbloqueado' : 'Unlocked') : `${remaining}/50` },
+            ] as Array<{ tier: OutfitBrandSealTier; label: string; hint: string }>).map((option) => {
+              const selected = sealTier === option.tier;
+              const disabled = option.tier === 'premium' && !premiumSealUnlocked;
+              return (
+                <button
+                  key={option.tier}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => selectSeal(option.tier)}
+                  className={`rounded-xl border p-2 text-left transition ${selected ? 'border-orange-300/70 bg-orange-400/16' : 'border-white/15 bg-white/5'} ${disabled ? 'cursor-not-allowed opacity-50' : 'hover:border-white/35 hover:bg-white/10'}`}
                 >
-                  <SkinComponent data={data} showHero={true} />
-                </div>
-              </div>
-
-              {/* Label */}
-              <span
-                className="font-mono text-[9px] uppercase tracking-[0.18em] pb-1"
-                style={{ color: isSelected ? '#f97316' : 'rgba(255,255,255,0.55)' }}
-              >
-                {language === 'pt-BR' ? skin.labelPt : skin.labelEn}
-              </span>
-            </button>
-          );
-        })}
+                  <p className="text-[11px] font-black uppercase tracking-[0.12em] text-white/90">{option.label}</p>
+                  <p className="mt-0.5 text-[10px] text-white/55">{option.hint}</p>
+                </button>
+              );
+            })}
+          </div>
+          {!premiumSealUnlocked ? (
+            <p className="mt-2 text-[11px] text-amber-100/85">
+              {isPortuguese
+                ? `Publique mais ${remaining} esquema${remaining === 1 ? '' : 's'} com selo gratuito para receber o selo premium.`
+                : `Publish ${remaining} more free-seal outfits to receive the premium seal.`}
+            </p>
+          ) : null}
+        </div>
       </div>
     </section>
   );
