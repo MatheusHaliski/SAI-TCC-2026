@@ -19,10 +19,10 @@ import { mapAiInterpretationToManualForm } from '@/app/lib/outfit-ai-mapping';
 import { OUTFIT_PIECE_OPTIONS, OutfitSlotKey, SLOT_TYPE_ALIASES } from '@/app/lib/outfit-piece-options';
 import {
   OutfitBackgroundConfig,
+  OutfitCardDisplayOptions,
   OutfitCardData,
   OutfitPiece,
   OutfitPieceListFormat,
-  CardSkinId,
   resolveOutfitBackgroundForRender,
   buildOutfitDescriptionRich,
   resolveBrandLogoUrlByName,
@@ -137,8 +137,14 @@ export default function CreateMySchemeView() {
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [outfitBackgroundConfig, setOutfitBackgroundConfig] = useState<OutfitBackgroundConfig>(DEFAULT_BACKGROUND_CONFIG);
-  const [cardSkin, setCardSkin] = useState<CardSkinId | undefined>(undefined);
   const [pieceListFormat, setPieceListFormat] = useState<OutfitPieceListFormat>('grid-2');
+  const [cardDisplayOptions, setCardDisplayOptions] = useState<OutfitCardDisplayOptions>({
+    contentPanelColor: 'rgba(2,6,23,0.72)',
+    displayMode: 'complete',
+    brandSealTier: 'free',
+  });
+  const [freeSealPublicationCount, setFreeSealPublicationCount] = useState(0);
+  const [premiumSealUnlocked, setPremiumSealUnlocked] = useState(false);
   const [descriptionOverride, setDescriptionOverride] = useState('');
   const [titleFontFamily, setTitleFontFamily] = useState('Inter, Segoe UI, sans-serif');
   const [palette, setPalette] = useState('Neutral');
@@ -203,6 +209,12 @@ export default function CreateMySchemeView() {
       }
 
       setUserId(resolvedUserId);
+      const progressKey = `sai_brand_seal_progress_${resolvedUserId}`;
+      const unlockedKey = `sai_premium_brand_seal_${resolvedUserId}`;
+      const storedProgress = Number(window.localStorage.getItem(progressKey) || '0');
+      const storedUnlocked = window.localStorage.getItem(unlockedKey) === 'true' || storedProgress >= 50;
+      setFreeSealPublicationCount(Number.isFinite(storedProgress) ? storedProgress : 0);
+      setPremiumSealUnlocked(storedUnlocked);
 
       const [itemsResponse, brandsResponse] = await Promise.all([
         fetch(`/api/wardrobe-items/user/${resolvedUserId}`),
@@ -350,8 +362,8 @@ export default function CreateMySchemeView() {
       ].filter(Boolean) as NonNullable<OutfitCardData['metaBadges']>,
       pieces,
       titleFontFamily,
-      cardSkin,
       pieceListFormat,
+      displayOptions: cardDisplayOptions,
     };
   };
 
@@ -416,8 +428,8 @@ export default function CreateMySchemeView() {
             mood,
             palette,
             titleFontFamily,
-            cardSkin: cardSkin ?? null,
             pieceListFormat,
+            cardDisplayOptions,
             descriptionOverride: descriptionOverride.trim() || null,
           }),
           style: style.trim() || 'Minimal',
@@ -438,6 +450,20 @@ export default function CreateMySchemeView() {
       }
 
       setAlertMessage('Scheme saved successfully.');
+      if (cardDisplayOptions.brandSealTier === 'free') {
+        const nextCount = freeSealPublicationCount + 1;
+        const unlocked = nextCount >= 50;
+        const progressKey = `sai_brand_seal_progress_${userId}`;
+        const unlockedKey = `sai_premium_brand_seal_${userId}`;
+        window.localStorage.setItem(progressKey, String(nextCount));
+        window.localStorage.setItem(unlockedKey, String(unlocked));
+        setFreeSealPublicationCount(nextCount);
+        if (unlocked && !premiumSealUnlocked) {
+          setPremiumSealUnlocked(true);
+          setCardDisplayOptions((prev) => ({ ...prev, brandSealTier: 'premium' }));
+          setAlertMessage('Selo premium desbloqueado: voce publicou 50 esquemas com selo gratuito.');
+        }
+      }
       return true;
     } catch {
       setAlertMessage('Unable to save scheme. Please try again.');
@@ -876,10 +902,12 @@ export default function CreateMySchemeView() {
         brands: selectedBrand?.name ? [selectedBrand.name] : undefined,
       }}
       previewCardData={buildGeneratedOutfitCardData()}
-      selectedCardSkin={cardSkin}
-      onSelectSkin={setCardSkin}
       pieceListFormat={pieceListFormat}
       onSelectPieceListFormat={setPieceListFormat}
+      cardDisplayOptions={cardDisplayOptions}
+      onChangeCardDisplayOptions={setCardDisplayOptions}
+      premiumSealUnlocked={premiumSealUnlocked}
+      freeSealPublicationCount={freeSealPublicationCount}
     />
   );
 

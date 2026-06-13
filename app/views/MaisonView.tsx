@@ -45,6 +45,30 @@ interface BrandProfile {
   sustainability: { rating: SustainabilityRating; note: string };
 }
 
+const PREMIUM_BRAND_SEAL_SCHEMES = [
+  {
+    id: 'premium-brand-1',
+    brand: 'Nike',
+    creator: 'Ari Studio',
+    title: 'Air Tailoring Motion',
+    note: 'Esquema com selo premium vigente: performance, alfaiataria esportiva e leitura limpa de marca.',
+  },
+  {
+    id: 'premium-brand-2',
+    brand: 'Lacoste',
+    creator: 'Maison Norte',
+    title: 'Polo Garden Capsule',
+    note: 'Curadoria mensal com selo premium aplicado ao esquema e destaque visual no feed da marca.',
+  },
+  {
+    id: 'premium-brand-3',
+    brand: 'Adidas',
+    creator: 'Three Lines Lab',
+    title: 'Terrace Club Weekend',
+    note: 'Look publicado com selo premium durante o mes atual para ampliar descoberta por marca.',
+  },
+];
+
 const BRAND_PROFILES: Record<string, BrandProfile> = {
   adidas: {
     category: 'Esportivo & Streetwear',
@@ -709,6 +733,30 @@ export default function MaisonView() {
         title={isPortuguese ? 'Marcas' : 'Brand'}
         subtitle={isPortuguese ? 'Feed dedicado às marcas — categoria, público-alvo, peças icônicas, recomendações por estação e muito mais.' : 'Dedicated brand feed — category, target audience, iconic pieces, seasonal recommendations, and more.'}
       />
+
+      <SectionBlock
+        title={isPortuguese ? 'Selos premium do mês' : 'Monthly premium seals'}
+        subtitle={isPortuguese ? 'Esquemas com selo premium ativos no mês vigente aparecem também no feed das marcas.' : 'Outfits with active premium seals for the current month also appear in brand feeds.'}
+      >
+        <div className="grid gap-3 md:grid-cols-3">
+          {PREMIUM_BRAND_SEAL_SCHEMES.map((scheme) => {
+            const logoUrl = resolveBrandLogoUrlByName(scheme.brand) || undefined;
+            return (
+              <article key={scheme.id} className="rounded-2xl border border-amber-200/25 bg-amber-300/10 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <BrandBadge brandName={scheme.brand} brandLogoUrl={logoUrl} variant="compact" />
+                  <span className="rounded-full border border-amber-200/35 bg-amber-300/14 px-2 py-1 text-[10px] font-black uppercase text-amber-100">
+                    Premium
+                  </span>
+                </div>
+                <p className="mt-3 text-sm font-black text-white">{scheme.title}</p>
+                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/42">{scheme.creator}</p>
+                <p className="mt-3 text-sm leading-relaxed text-white/70">{scheme.note}</p>
+              </article>
+            );
+          })}
+        </div>
+      </SectionBlock>
 
       <SectionBlock title="Marcas Registradas" subtitle="Todas as marcas ativas na plataforma FAI.">
         <label className="mt-4 flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
