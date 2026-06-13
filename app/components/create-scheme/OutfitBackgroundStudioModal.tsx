@@ -2080,7 +2080,6 @@ export default function OutfitBackgroundStudioModal({
   const [aiGradientResults, setAiGradientResults] = useState<OutfitBackgroundConfig[]>([]);
   const [selectedAiResult, setSelectedAiResult] = useState<ArtworkVariation | null>(null);
   const [selectedRecommendedPreset, setSelectedRecommendedPreset] = useState<BackgroundPresetId | null>(null);
-  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
@@ -3212,127 +3211,110 @@ export default function OutfitBackgroundStudioModal({
 
             <section className="rounded-xl border border-white/20 bg-white/10 p-3">
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Predefinições recomendadas para o look atual</p>
-              <div className="mt-2 grid gap-2 grid-cols-2">
-                {recommendedPresets.slice(0, 2).map((preset) => {
-                  const isAvailable = isPresetAvailable(preset.id, presetContext, uploadedReferenceImage);
-                  const availabilityReason = getPresetAvailabilityReason(preset.id, presetContext, uploadedReferenceImage);
+              {(() => {
+                const seen = new Set<BackgroundPresetId>();
+                const orderedPresets = [...recommendedPresets, ...TEMPLATE_PICKER_PRESETS].filter((preset) => {
+                  if (seen.has(preset.id)) return false;
+                  seen.add(preset.id);
+                  return true;
+                });
+
+                if (orderedPresets.length === 0) {
+                  return <p className="mt-2 text-[11px] text-white/55">Nenhuma predefinição disponível para este look ainda.</p>;
+                }
+
+                const [heroPreset, ...gridPresets] = orderedPresets;
+
+                const renderPreview = (preset: RecommendedPreset, height: number) => {
                   const previewConfig = applyPresetPreview({
                     presetId: preset.id,
                     context: presetContext,
                     referenceImage: uploadedReferenceImage,
                     gradient: draft.gradient,
                   });
-                  const isSelected = selectedRecommendedPreset === preset.id;
-                  const badgeLabel = !isAvailable
-                    ? `🟡 ${availabilityReason}`
-                    : isSelected
-                      ? '● Aplicado'
-                      : '🟢 Pronto';
-
                   return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      disabled={!isAvailable}
-                      className={`rounded-xl border p-2 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_10px_30px_rgba(192,132,252,0.2)] disabled:cursor-not-allowed disabled:opacity-40 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent'}`}
-                      onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
+                    <div
+                      className="overflow-hidden rounded-lg border border-white/10"
+                      style={{
+                        height,
+                        ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)),
+                        backgroundColor: '#0f172a',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
                     >
-                      <p className="text-[9px] uppercase tracking-[0.12em] text-white/50">{preset.category.replaceAll('_', ' / ')}</p>
-                      <p className="text-[11px] font-semibold leading-tight">{preset.label}</p>
-                      <p className="mt-0.5 text-[10px] text-white/60 line-clamp-2">{preset.description}</p>
-                      <div
-                        className="mt-2 rounded-md border border-white/10 overflow-hidden"
-                        style={{
-                          height: 72,
-                          ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)),
-                          backgroundColor: '#0f172a',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                        }}
-                      >
-                        <div className="h-full flex flex-col justify-between p-1.5" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.45))' }}>
-                          <div className="h-1 w-6 bg-white/25 rounded-full" />
-                          <div className="space-y-0.5">
-                            <div className="h-1.5 w-12 bg-white/40 rounded-full" />
-                            <div className="h-1 w-8 bg-white/22 rounded-full" />
-                          </div>
+                      <div className="flex h-full flex-col justify-between p-1.5" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.45))' }}>
+                        <div className="h-1 w-6 rounded-full bg-white/25" />
+                        <div className="space-y-0.5">
+                          <div className="h-1.5 w-12 rounded-full bg-white/40" />
+                          <div className="h-1 w-8 rounded-full bg-white/22" />
                         </div>
                       </div>
-                      <p className={`mt-1 text-[9px] ${isAvailable ? (isSelected ? 'text-fuchsia-300' : 'text-emerald-300') : 'text-amber-200'}`}>{badgeLabel}</p>
-                    </button>
-                  );
-                })}
-
-                {/* Template picker — full width, replaces tech_energy slot */}
-                <div className="col-span-2 rounded-xl border border-white/20 bg-gradient-to-br from-violet-900/15 via-fuchsia-900/8 to-transparent">
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between px-3 py-2.5 text-left"
-                    onClick={() => setTemplatePickerOpen((prev) => !prev)}
-                  >
-                    <div>
-                      <p className="text-[9px] uppercase tracking-[0.12em] text-violet-300/70">Templates pré-configurados</p>
-                      <p className="text-[11px] font-semibold">Escolher template pré-configurado</p>
-                      <p className="mt-0.5 text-[10px] text-white/55">Selecione um dos templates visuais disponíveis.</p>
                     </div>
-                    <svg
-                      className="ml-2 h-4 w-4 shrink-0 text-white/50 transition-transform"
-                      style={{ transform: templatePickerOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                  );
+                };
 
-                  {templatePickerOpen && (
-                    <div className="border-t border-white/10 px-3 pb-3 pt-2">
+                const heroAvailable = isPresetAvailable(heroPreset.id, presetContext, uploadedReferenceImage);
+                const heroReason = getPresetAvailabilityReason(heroPreset.id, presetContext, uploadedReferenceImage);
+                const heroSelected = selectedRecommendedPreset === heroPreset.id;
+                const heroBadge = !heroAvailable
+                  ? `🟡 ${heroReason}`
+                  : heroSelected
+                    ? '● Aplicado'
+                    : '🟢 Pronto';
+
+                return (
+                  <div className="mt-2 space-y-2">
+                    {/* Hero — recomendação principal em destaque */}
+                    <button
+                      type="button"
+                      disabled={!heroAvailable}
+                      className={`block w-full rounded-2xl border p-3 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_14px_40px_rgba(192,132,252,0.25)] disabled:cursor-not-allowed disabled:opacity-40 ${heroSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent'}`}
+                      onClick={() => void applyRecommendedPresetFromReferenceImage(heroPreset.id, uploadedReferenceImage, presetContext)}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[9px] uppercase tracking-[0.14em] text-fuchsia-300/80">★ Recomendação principal</p>
+                        <p className={`text-[9px] ${heroAvailable ? (heroSelected ? 'text-fuchsia-300' : 'text-emerald-300') : 'text-amber-200'}`}>{heroBadge}</p>
+                      </div>
+                      <div className="mt-2">{renderPreview(heroPreset, 132)}</div>
+                      <p className="mt-2 text-[9px] uppercase tracking-[0.12em] text-white/50">{heroPreset.category.replaceAll('_', ' / ')}</p>
+                      <p className="text-[13px] font-semibold leading-tight">{heroPreset.label}</p>
+                      <p className="mt-0.5 text-[10px] text-white/60">{heroPreset.description}</p>
+                    </button>
+
+                    {/* Grade — alternativas em cards compactos */}
+                    {gridPresets.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
-                        {TEMPLATE_PICKER_PRESETS.map((preset) => {
+                        {gridPresets.map((preset) => {
                           const isAvailable = isPresetAvailable(preset.id, presetContext, uploadedReferenceImage);
-                          const previewConfig = applyPresetPreview({
-                            presetId: preset.id,
-                            context: presetContext,
-                            referenceImage: uploadedReferenceImage,
-                            gradient: draft.gradient,
-                          });
+                          const availabilityReason = getPresetAvailabilityReason(preset.id, presetContext, uploadedReferenceImage);
                           const isSelected = selectedRecommendedPreset === preset.id;
+                          const badgeLabel = !isAvailable
+                            ? `🟡 ${availabilityReason}`
+                            : isSelected
+                              ? '● Aplicado'
+                              : '🟢 Pronto';
 
                           return (
                             <button
                               key={preset.id}
                               type="button"
                               disabled={!isAvailable}
-                              className={`rounded-lg border p-1.5 text-left transition enabled:hover:border-white/35 enabled:hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-35 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/15 bg-white/5'}`}
+                              className={`rounded-xl border p-1.5 text-left transition enabled:hover:border-fuchsia-300/50 enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/15 bg-white/5'}`}
                               onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
                             >
-                              <div
-                                className="rounded border border-white/10 overflow-hidden"
-                                style={{
-                                  height: 68,
-                                  ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)),
-                                  backgroundColor: '#0f172a',
-                                  backgroundSize: 'cover',
-                                  backgroundPosition: 'center',
-                                }}
-                              >
-                                <div className="h-full flex flex-col justify-between p-1" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))' }}>
-                                  <div className="h-0.5 w-4 bg-white/25 rounded-full" />
-                                  <div className="space-y-0.5">
-                                    <div className="h-1 w-8 bg-white/40 rounded-full" />
-                                    <div className="h-0.5 w-5 bg-white/22 rounded-full" />
-                                  </div>
-                                </div>
-                              </div>
-                              <p className="mt-1 text-[9px] font-semibold leading-tight text-white/90 line-clamp-2">{preset.label}</p>
-                              {isSelected && <p className="mt-0.5 text-[8px] text-fuchsia-300">● Aplicado</p>}
+                              {renderPreview(preset, 68)}
+                              <p className="mt-1 text-[8px] uppercase tracking-[0.1em] text-white/45">{preset.category.replaceAll('_', ' / ')}</p>
+                              <p className="text-[10px] font-semibold leading-tight text-white/90 line-clamp-2">{preset.label}</p>
+                              <p className={`mt-0.5 text-[8px] ${isAvailable ? (isSelected ? 'text-fuchsia-300' : 'text-emerald-300') : 'text-amber-200'}`}>{badgeLabel}</p>
                             </button>
                           );
                         })}
                       </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+                    )}
+                  </div>
+                );
+              })()}
             </section>
           </section>
 
