@@ -15,6 +15,7 @@ interface PhotoItem {
   label: string;
   sublabel: string;
   category: 'pieces' | 'outfits';
+  createdAt: string | null;
 }
 
 interface WardrobeItemRaw {
@@ -23,6 +24,7 @@ interface WardrobeItemRaw {
   image_url?: string;
   piece_type?: string;
   brand?: string;
+  createdAt?: string | null;
   image_assets?: {
     approved_catalog_2d_url?: string | null;
     normalized_2d_preview_url?: string | null;
@@ -35,6 +37,8 @@ interface SchemeRaw {
   cover_image_url?: string | null;
   style?: string;
   occasion?: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 const CATEGORY_TABS: Array<{ key: PhotoCategory; label: string }> = [
@@ -115,6 +119,7 @@ export default function MyPhotosView() {
   const [activeCategory, setActiveCategory] = useState<PhotoCategory>('all');
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
 
   useEffect(() => {
     const load = async () => {
@@ -144,6 +149,7 @@ export default function MyPhotosView() {
             label: item.name || 'Peça sem nome',
             sublabel: [item.piece_type, item.brand].filter(Boolean).join(' · ') || 'Peça de roupa',
             category: 'pieces' as const,
+            createdAt: item.createdAt ?? null,
           }));
 
         const outfitPhotos: PhotoItem[] = (Array.isArray(schemesData) ? schemesData : [])
@@ -154,6 +160,7 @@ export default function MyPhotosView() {
             label: scheme.title || 'Look sem nome',
             sublabel: [scheme.style, scheme.occasion].filter(Boolean).join(' · ') || 'Look',
             category: 'outfits' as const,
+            createdAt: scheme.createdAt ?? scheme.updatedAt ?? null,
           }));
 
         setPhotos([...piecePhotos, ...outfitPhotos]);
@@ -184,8 +191,46 @@ export default function MyPhotosView() {
     return result;
   }, [photos, activeCategory, searchQuery]);
 
+  // Memória Visual do Estilo — chronological timeline grouped by month.
+  const timelineGroups = useMemo(() => {
+    const groups = new Map<string, { key: string; label: string; sortKey: number; items: PhotoItem[] }>();
+    const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' });
+
+    for (const photo of filtered) {
+      const date = photo.createdAt ? new Date(photo.createdAt) : null;
+      const valid = date && Number.isFinite(date.getTime());
+      const key = valid ? `${date!.getFullYear()}-${String(date!.getMonth() + 1).padStart(2, '0')}` : 'sem-data';
+      const label = valid ? monthFormatter.format(date!) : 'Sem data';
+      const sortKey = valid ? date!.getFullYear() * 100 + date!.getMonth() : -1;
+      if (!groups.has(key)) groups.set(key, { key, label, sortKey, items: [] });
+      groups.get(key)!.items.push(photo);
+    }
+
+    return Array.from(groups.values()).sort((a, b) => b.sortKey - a.sortKey);
+  }, [filtered]);
+
   const pieceCount = photos.filter((p) => p.category === 'pieces').length;
   const outfitCount = photos.filter((p) => p.category === 'outfits').length;
+
+  const renderPhotoButton = (photo: PhotoItem) => (
+    <button
+      key={photo.id}
+      type="button"
+      onClick={() => setSelectedPhoto(photo)}
+      className="group relative aspect-square overflow-hidden rounded-2xl border border-border bg-accent transition hover:border-violet-400/40 hover:shadow-[0_0_16px_rgba(139,92,246,0.15)]"
+    >
+      <Image src={photo.url} alt={photo.label} fill className="object-cover transition group-hover:scale-105" unoptimized />
+      <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-transparent to-transparent p-2 opacity-0 transition group-hover:opacity-100">
+        <p className="truncate text-[11px] font-medium text-white leading-tight">{photo.label}</p>
+        <p className="truncate text-[10px] text-muted-foreground leading-tight">{photo.sublabel}</p>
+      </div>
+      <div className="absolute right-1.5 top-1.5">
+        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${photo.category === 'pieces' ? 'bg-violet-600/80 text-white' : 'bg-fuchsia-600/80 text-white'}`}>
+          {photo.category === 'pieces' ? 'Peça' : 'Look'}
+        </span>
+      </div>
+    </button>
+  );
 
   return (
     <div className="space-y-6">
@@ -225,7 +270,7 @@ export default function MyPhotosView() {
             />
           </label>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {CATEGORY_TABS.map((tab) => (
               <button
                 key={tab.key}
@@ -238,6 +283,23 @@ export default function MyPhotosView() {
                 }`}
               >
                 {tab.label}
+              </button>
+            ))}
+
+            <span className="mx-1 h-4 w-px bg-border" />
+
+            {([['grid', '▦ Grade'], ['timeline', '🕒 Linha do tempo']] as const).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  viewMode === mode
+                    ? 'border-fuchsia-400/70 bg-fuchsia-500/20 text-fuchsia-100 shadow-[0_0_12px_rgba(217,70,239,0.2)]'
+                    : 'border-border bg-accent text-muted-foreground hover:border-white/35 hover:text-white'
+                }`}
+              >
+                {label}
               </button>
             ))}
           </div>
@@ -255,45 +317,40 @@ export default function MyPhotosView() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="mt-6 rounded-2xl border border-border bg-accent py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              {photos.length === 0
-                ? 'Nenhuma foto encontrada. Adicione peças ou crie looks para ver sua galeria.'
-                : 'Nenhuma foto corresponde aos filtros selecionados.'}
-            </p>
+            {photos.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 px-6">
+                <span className="text-3xl">📸</span>
+                <p className="text-sm text-white/85">Sua memória visual de estilo começa aqui.</p>
+                <p className="max-w-sm text-xs text-muted-foreground">Fotografe sua primeira peça e o SAI começa a montar sua linha do tempo de estilo automaticamente.</p>
+                <a
+                  href="/add-wardrobe-item"
+                  className="mt-1 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+                >
+                  Fotografar primeira peça
+                </a>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nenhuma foto corresponde aos filtros selecionados.</p>
+            )}
+          </div>
+        ) : viewMode === 'timeline' ? (
+          <div className="mt-4 space-y-6">
+            {timelineGroups.map((group) => (
+              <div key={group.key}>
+                <div className="mb-2 flex items-center gap-3">
+                  <h4 className="text-sm font-semibold capitalize text-white">{group.label}</h4>
+                  <span className="h-px flex-1 bg-border" />
+                  <span className="text-xs text-muted-foreground">{group.items.length} foto{group.items.length !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+                  {group.items.map(renderPhotoButton)}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-            {filtered.map((photo) => (
-              <button
-                key={photo.id}
-                type="button"
-                onClick={() => setSelectedPhoto(photo)}
-                className="group relative aspect-square overflow-hidden rounded-2xl border border-border bg-accent transition hover:border-violet-400/40 hover:shadow-[0_0_16px_rgba(139,92,246,0.15)]"
-              >
-                <Image
-                  src={photo.url}
-                  alt={photo.label}
-                  fill
-                  className="object-cover transition group-hover:scale-105"
-                  unoptimized
-                />
-                <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-transparent to-transparent p-2 opacity-0 transition group-hover:opacity-100">
-                  <p className="truncate text-[11px] font-medium text-white leading-tight">{photo.label}</p>
-                  <p className="truncate text-[10px] text-muted-foreground leading-tight">{photo.sublabel}</p>
-                </div>
-                <div className="absolute right-1.5 top-1.5">
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${
-                      photo.category === 'pieces'
-                        ? 'bg-violet-600/80 text-white'
-                        : 'bg-fuchsia-600/80 text-white'
-                    }`}
-                  >
-                    {photo.category === 'pieces' ? 'Peça' : 'Look'}
-                  </span>
-                </div>
-              </button>
-            ))}
+            {filtered.map(renderPhotoButton)}
           </div>
         )}
       </SectionBlock>
