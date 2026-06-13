@@ -9,7 +9,7 @@ import { setDevSessionToken } from "@/app/lib/devSession";
 import { clearSharedAccessToken, ensureSharedAccessToken, setSharedAccessData } from "@/app/lib/accessTokenShare";
 import {
     extractOAuthErrorDetails,
-    resolveOAuthUserMessage,
+    resolveSocialSignInErrorMessage,
     signInWithFacebook,
     signInWithGoogle,
     signInWithGoogleRedirect,
@@ -60,7 +60,7 @@ const EyeClosed = () => (
     </svg>
 );
 const SparklesIcon = () => (
-    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={56} height={56} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} />
+    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={368} height={368} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} />
 );
 const MailIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -259,7 +259,8 @@ export default function AuthViewClient() {
                 try { await signInWithGoogleRedirect(); return; } catch {}
             }
             if (shouldSkipFirebaseSignIn(error)) { setSocialSubmitting(null); return; }
-            const userMessage = resolveOAuthUserMessage(error, "Não foi possível entrar com Google.");
+            console.error("[AuthView] social sign-in failed", { provider, code: oauthError.code, message: oauthError.message });
+            const userMessage = resolveSocialSignInErrorMessage(error, provider);
             setSocialErrorMessage(userMessage);
             void VSModalPaged({ title: "Falha no login social", messages: [userMessage], tone: "error" });
         } finally { setSocialSubmitting(null); }
@@ -286,13 +287,12 @@ export default function AuthViewClient() {
             <div style={{ ...s.left, display: undefined }} className="hidden lg:flex" >
                 {/* Logo */}
                 <div style={{ display:"flex", alignItems:"center", gap:"0.875rem" }}>
-                    <div style={{ width:"4.5rem", height:"4.5rem", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+                    {/* 250px → 750px (3×) */}
+                    <div style={{ width:"350px", height:"350px", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
                         <SparklesIcon />
                     </div>
-                    <div>
-                        <div style={{ fontSize:"1.5rem", fontWeight:800, lineHeight:1.1 }}>Fashion AI</div>
-                        <div style={{ fontSize:"0.875rem", color:"rgba(255,255,255,0.8)" }}>Seu estilista pessoal</div>
-                    </div>
+                     <div style={{ fontSize:"2.3rem", fontWeight:800, lineHeight:1.1 }}>Fashion AI</div>
+                    <div style={{ fontSize:"2.1rem", color:"rgba(255,255,255,0.8)" }}>Seu estilista pessoal</div>
                 </div>
 
                 {/* Hero text */}
@@ -325,8 +325,9 @@ export default function AuthViewClient() {
                 <div style={s.card}>
                     {/* Brand header */}
                     <div style={{ display:"flex", alignItems:"center", gap:"0.875rem", marginBottom:"1.5rem" }}>
-                        <div style={{ width:"3.5rem", height:"3.5rem", borderRadius:"1rem", background:"linear-gradient(135deg,#7c3aed,#db2777)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
-                            <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={56} height={56} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"1rem" }} />
+                        {/* 3.5rem → 10.5rem (3×) */}
+                        <div style={{ width:"10.5rem", height:"10.5rem", borderRadius:"1rem", background:"linear-gradient(135deg,#7c3aed,#db2777)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+                            <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={168} height={168} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"1rem" }} />
                         </div>
                         <div>
                             <div style={{ fontSize:"1.25rem", fontWeight:800, lineHeight:1.1, color:"var(--foreground)" }}>Fashion AI</div>
