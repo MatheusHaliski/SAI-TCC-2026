@@ -8,6 +8,7 @@ export const COLLECTIONS = {
   USERS: 'saiUsers',
   USER_SAVED_SCHEMES: 'saiUserSavedSchemes',
   WARDROBE_ITEMS: 'saiWardrobeItems',
+  BRAND_SEALS: "saiBrandSeals",
   OUTFIT_SELECTIONS: 'outfitSelections',
   DAILY_LOOKS: 'saiDailyLooks',
   OUTFIT_PREFERENCES: 'saiOutfitPreferences',
