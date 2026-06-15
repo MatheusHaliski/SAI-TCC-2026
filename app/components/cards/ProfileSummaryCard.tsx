@@ -7,10 +7,6 @@ interface ProfileSummaryCardProps {
   loginEmail: string;
   loginStatus: string;
   authSource: string;
-  brandSealTier?: string;
-  brandSealStatus?: string;
-  officialFeedEligible?: boolean;
-  officialFeedUntil?: string | null;
 }
 
 export default function ProfileSummaryCard({
@@ -20,10 +16,6 @@ export default function ProfileSummaryCard({
   loginEmail,
   loginStatus,
   authSource,
-  brandSealTier = 'none',
-  brandSealStatus = 'inactive',
-  officialFeedEligible = false,
-  officialFeedUntil = null,
 }: ProfileSummaryCardProps) {
   return (
     <article
@@ -56,35 +48,6 @@ export default function ProfileSummaryCard({
         <StatBadge label="Login" value={loginEmail} />
         <StatBadge label="Status" value={loginStatus} />
         <StatBadge label="Source" value={authSource} />
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <span
-          className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]"
-          style={{ color: '#fde68a' }}
-        >
-          {brandSealTier === 'premium' ? 'Selo Premium' : brandSealTier === 'free' ? 'Selo Gratuito' : 'Sem selo'}
-        </span>
-        <span
-          className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]"
-          style={{ color: '#a5f3fc' }}
-        >
-          {brandSealStatus === 'active' ? 'Selo ativo' : brandSealStatus === 'pending' ? 'Aguardando validação' : brandSealStatus === 'expired' ? 'Selo expirado' : 'Selo inativo'}
-        </span>
-        <span
-          className="rounded-full border border-violet-400/30 bg-violet-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]"
-          style={{ color: '#ddd6fe' }}
-        >
-          {officialFeedEligible ? 'Feed oficial habilitado' : 'Feed oficial indisponível'}
-        </span>
-        {officialFeedUntil ? (
-          <span
-            className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs"
-            style={{ color: '#6ee7b7' }}
-          >
-            Destaque até {new Date(officialFeedUntil).toLocaleDateString('pt-BR')}
-          </span>
-        ) : null}
       </div>
     </article>
   );

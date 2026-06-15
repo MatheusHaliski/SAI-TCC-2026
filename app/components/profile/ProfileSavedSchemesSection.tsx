@@ -71,7 +71,7 @@ const slugify = (value: string) =>
   value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'selected-piece';
 
 // flagReplacement marks every piece as "needs swap" — used when previewing a fresh remix.
-const toData = (scheme: SavedScheme, seal?: { seal_tier?: string; status?: string; official_feed_eligible?: boolean }, flagReplacement = false): OutfitCardData => {
+const toData = (scheme: SavedScheme, flagReplacement = false): OutfitCardData => {
   const pieces = Array.isArray(scheme.pieces)
     ? scheme.pieces.map((piece, index) => ({
         id: piece.id ?? piece.piece_id ?? `${scheme.scheme_id}-piece-${index}`,
@@ -89,10 +89,6 @@ const toData = (scheme: SavedScheme, seal?: { seal_tier?: string; status?: strin
     { icon: '💡', label: 'Inspiração' },
     { icon: scheme.visibility === 'public' ? '🌐' : scheme.visibility === 'followers' ? '👥' : '🔒', label: scheme.visibility === 'public' ? 'Público' : scheme.visibility === 'followers' ? 'Seguidores' : 'Privado' },
   ];
-
-  if (seal?.seal_tier === 'premium') metaBadges.unshift({ icon: '🏅', label: 'Selo Premium' });
-  else if (seal?.seal_tier === 'free') metaBadges.unshift({ icon: '✦', label: 'Selo Gratuito' });
-  if (seal?.official_feed_eligible) metaBadges.unshift({ icon: '⭐', label: 'Feed oficial' });
 
   return {
     outfitName: scheme.title,
@@ -158,7 +154,6 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
   const [remixedScheme, setRemixedScheme] = useState<SavedScheme | null>(null);
   const [remixingId, setRemixingId] = useState<string | null>(null);
   const [remixError, setRemixError] = useState<string | null>(null);
-  const [sealByUserId, setSealByUserId] = useState<Record<string, { seal_tier?: string; status?: string; official_feed_eligible?: boolean }>>({});
   // "Tenho peças parecidas" — maps a saved look to the viewer's own closet items.
   const [similarScheme, setSimilarScheme] = useState<SavedScheme | null>(null);
   const [similarLoading, setSimilarLoading] = useState(false);
@@ -190,36 +185,6 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
 
     loadFavorites().catch(() => setFavoriteSchemes([]));
   }, [userId]);
-
-  useEffect(() => {
-    if (!favoriteSchemes?.length) {
-      setSealByUserId({});
-      return;
-    }
-
-    const uniqueUserIds = Array.from(new Set(favoriteSchemes.map((scheme) => scheme.user_id).filter(Boolean) as string[]));
-    if (!uniqueUserIds.length) {
-      setSealByUserId({});
-      return;
-    }
-
-    let cancelled = false;
-    Promise.all(uniqueUserIds.map((userId) => fetch(`/api/brand-seals?userId=${encodeURIComponent(userId)}`).then((res) => (res.ok ? res.json() : null)).catch(() => null)))
-      .then((responses) => {
-        if (cancelled) return;
-        const nextMap: Record<string, { seal_tier?: string; status?: string; official_feed_eligible?: boolean }> = {};
-        responses.forEach((payload, index) => {
-          const userId = uniqueUserIds[index];
-          if (userId && payload?.seal) nextMap[userId] = payload.seal;
-        });
-        setSealByUserId(nextMap);
-      })
-      .catch(() => {
-        if (!cancelled) setSealByUserId({});
-      });
-
-    return () => { cancelled = true; };
-  }, [favoriteSchemes]);
 
   // Forks a saved scheme into the current user's account, then opens the preview modal.
   const handleRemix = async (scheme: SavedScheme) => {
@@ -276,8 +241,8 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
   // Show loading state until favorites are resolved; then show only actual saved (favorited) cards
   const cards = useMemo(() => {
     if (favoriteSchemes === null) return null; // still loading
-    return favoriteSchemes.map((scheme) => ({ scheme, data: toData(scheme, sealByUserId[scheme.user_id || '']) }));
-  }, [favoriteSchemes, sealByUserId]);
+    return favoriteSchemes.map((scheme) => ({ scheme, data: toData(scheme) }));
+  }, [favoriteSchemes]);
 
   return (
     <>
@@ -338,7 +303,7 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
                 Fechar
               </button>
             </div>
-            <OutfitCard data={toData(remixedScheme, sealByUserId[remixedScheme.user_id || ''], true)} variant="default" />
+            <OutfitCard data={toData(remixedScheme, true)} variant="default" />
           </div>
         </div>
       ) : null}
