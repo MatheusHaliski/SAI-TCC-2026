@@ -10,9 +10,9 @@ import ProfileContextMenu from '@/app/components/profile/ProfileContextMenu';
 import ProfileSectionRenderer from '@/app/components/profile/ProfileSectionRenderer';
 import { ProfileSectionKey, UserPostRecord } from '@/app/components/profile/types';
 
-const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'style-dna', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
-// Perfil-Lookbook (RF20): visitors may also see the creator's Style DNA.
-const PUBLIC_SECTIONS: ProfileSectionKey[] = ['user-info', 'style-dna'];
+const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
+// Perfil-Lookbook (RF20): visitors may see the creator's public profile info.
+const PUBLIC_SECTIONS: ProfileSectionKey[] = ['user-info'];
 
 interface WardrobeItem {
   wardrobe_item_id: string;

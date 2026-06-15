@@ -13,7 +13,6 @@ interface ProfileContextMenuProps {
 const sectionConfig: Array<{ key: ProfileSectionKey; label: string }> = [
   { key: 'wardrobe', label: 'My Wardrobe Pieces' },
   { key: 'user-info', label: 'User Info' },
-  { key: 'style-dna', label: 'Style DNA' },
   { key: 'my-schemes', label: 'My Schemes' },
   { key: 'saved-schemes', label: 'Saved Schemes' },
   { key: 'my-posts', label: 'My Posts' },
