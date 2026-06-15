@@ -13,6 +13,7 @@ export interface PieceCardItem {
   piece_type: string;
   color?: string;
   material?: string;
+  size?: string;
   style_tags?: string[];
   occasion_tags?: string[];
   is_favorite?: boolean;
@@ -81,14 +82,16 @@ export default function PieceIdentityCard({ item, userId }: PieceIdentityCardPro
       .filter((value) => value && value !== 'unspecified')
       .join(' / ') || 'Essencial';
     const ability = item.occasion_tags?.[0]?.trim() || item.style_tags?.[1]?.trim() || 'Identidade';
+    const size = item.size && item.size !== 'unspecified' ? item.size : 'Não informado';
 
     return [
       { label: 'Tipo', value: type },
       { label: 'Criacao', value: creation },
       { label: 'Atributos', value: attributes },
+      { label: 'Tamanho', value: size },
       { label: 'Expressao', value: ability },
     ];
-  }, [item.color, item.material, item.occasion_tags, item.piece_type, item.style_tags]);
+  }, [item.color, item.material, item.size, item.occasion_tags, item.piece_type, item.style_tags]);
 
   useEffect(() => {
     const qs = userId ? `?userId=${encodeURIComponent(userId)}` : '';

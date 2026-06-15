@@ -92,6 +92,7 @@ export interface PieceItem {
   piece_type: string;
   color: string;
   material: string;
+  size?: string;
   store_url: string | null;
   price_range: string | null;
   is_active: boolean;
@@ -160,6 +161,7 @@ export interface WardrobeItem {
   gender: string;
   color: string;
   material: string;
+  size?: string;
   style_tags: string[];
   occasion_tags: string[];
   is_favorite: boolean;
@@ -254,6 +256,7 @@ export interface WardrobeViewItem {
   piece_type: string;
   color?: string;
   material?: string;
+  size?: string;
   style_tags?: string[];
   occasion_tags?: string[];
   is_favorite?: boolean;
