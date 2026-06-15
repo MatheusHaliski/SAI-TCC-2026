@@ -160,7 +160,6 @@ export default function RunwayFeedView({ viewerId, viewerName, viewerPhotoUrl }:
 
       {/* Feed */}
       <div className={`flex-1 overflow-y-auto px-4 py-4 ${mode === 'runway' ? 'px-0 py-0' : ''}`}>
-        <ArtCelebrityPanel viewerId={viewerId} viewerName={viewerName} />
 
         {officialPosts.length > 0 && (
           <section className="mb-4 rounded-3xl border border-amber-400/25 bg-[linear-gradient(135deg,rgba(251,191,36,0.12),rgba(124,58,237,0.12))] p-4 shadow-[0_18px_50px_rgba(15,23,42,0.35)]">
