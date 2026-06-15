@@ -91,7 +91,6 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
   const showPieces = displayMode !== 'hide-pieces';
   const showContext = displayMode !== 'pieces-only';
   const contentPanelColor = data.displayOptions?.contentPanelColor || 'rgba(2,6,23,0.58)';
-  const sealTier = data.displayOptions?.brandSealTier ?? 'none';
 
   const handleToggleLike = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -248,21 +247,15 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
           />
         ) : null}
 
-        {showContext && sealTier !== 'none' ? (
+        {showContext ? (
           <div
-            className={`flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 ${sealTier === 'premium' ? 'border-amber-200/35 bg-amber-400/12' : 'border-emerald-200/30 bg-emerald-400/10'}`}
+            className={`flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 }`}
           >
             <div className="min-w-0">
-              <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${sealTier === 'premium' ? 'text-amber-100' : 'text-emerald-100'}`}>
-                {sealTier === 'premium' ? 'Selo premium de marca' : 'Selo gratuito de marca'}
-              </p>
               <p className="mt-0.5 truncate text-xs font-semibold text-white/75">
                 {leadBrand?.name || 'Fashion AI'} validado no esquema
               </p>
             </div>
-            <span className={`shrink-0 rounded-full border px-3 py-1 text-[10px] font-black uppercase ${sealTier === 'premium' ? 'border-amber-200/45 text-amber-100' : 'border-emerald-200/45 text-emerald-100'}`}>
-              {sealTier}
-            </span>
           </div>
         ) : null}
 
