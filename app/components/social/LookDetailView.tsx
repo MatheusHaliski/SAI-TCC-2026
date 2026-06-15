@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { getAuraLevel, getNextAuraLevel, getAuraProgressPercent, buildAuraCardStyle } from '@/app/lib/aura-system';
 import { REACTIONS, ReactionKey, ReactionCounts, emptyReactionCounts } from '@/app/lib/reactions';
 import type { FeedCardScheme } from './RunwayFeedCard';
-import ArtCelebrityPanel from './ArtCelebrityPanel';
 
 type Comment = {
   comment_id: string;
@@ -35,9 +34,6 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
   const [saved, setSaved] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [loadingScheme, setLoadingScheme] = useState(true);
-  const [sealLabel, setSealLabel] = useState('');
-  const [sealStatusLabel, setSealStatusLabel] = useState('');
-  const [officialFeedEligible, setOfficialFeedEligible] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -70,31 +66,6 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
         remix_of: sData.remix_of ? String(sData.remix_of) : undefined,
       };
       setScheme(mapped);
-      if (mapped.user_id) {
-        fetch(`/api/brand-seals?userId=${encodeURIComponent(mapped.user_id)}`)
-          .then((sealRes) => sealRes.ok ? sealRes.json() : null)
-          .then((sealData) => {
-            const tier = sealData?.seal?.seal_tier as string | undefined;
-            const status = (sealData?.seal?.status as string | undefined) ?? 'inactive';
-            const eligible = Boolean(sealData?.seal?.official_feed_eligible);
-
-            if (tier === 'premium') setSealLabel('Selo Premium');
-            else if (tier === 'free') setSealLabel('Selo Gratuito');
-            else setSealLabel('');
-
-            if (status === 'active') setSealStatusLabel('Ativo');
-            else if (status === 'pending') setSealStatusLabel('Validando');
-            else if (status === 'expired') setSealStatusLabel('Expirado');
-            else setSealStatusLabel('Inativo');
-
-            setOfficialFeedEligible(eligible);
-          })
-          .catch(() => {
-            setSealLabel('');
-            setSealStatusLabel('');
-            setOfficialFeedEligible(false);
-          });
-      }
       setLikeCount(lData.like_count ?? 0);
       setLiked(lData.user_liked ?? false);
       setUserReaction(lData.user_reaction ?? null);
@@ -215,13 +186,6 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
         </button>
       </div>
 
-      <ArtCelebrityPanel
-        viewerId={viewerId}
-        viewerName={viewerName}
-        targetId={scheme.user_id}
-        title="Plano 3 · Tributo e arena deste criador"
-        subtitle="Mostra o nível de consagração e o impacto comunitário do autor do look."
-      />
 
       {/* Cover */}
       <div
@@ -260,11 +224,11 @@ export default function LookDetailView({ schemeId, viewerId, viewerName, viewerP
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-xs text-white/50">{scheme.author_name || 'Usuário'}</span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {sealLabel ? <span className="inline-flex w-fit rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-amber-100">{sealLabel}</span> : null}
-                {officialFeedEligible ? <span className="inline-flex w-fit rounded-full border border-violet-400/25 bg-violet-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-violet-100">Feed oficial</span> : null}
-                {sealStatusLabel ? <span className="inline-flex w-fit rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-cyan-100">{sealStatusLabel}</span> : null}
-              </div>
+         <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-white/30">
+            Look compartilhado
+          </span>
+        </div>
             </div>
           </div>
         </div>
