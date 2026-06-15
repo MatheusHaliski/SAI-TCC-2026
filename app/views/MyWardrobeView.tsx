@@ -50,6 +50,11 @@ interface WardrobeItem {
   season: string;
   gender: string;
   piece_type: string;
+  color?: string;
+  material?: string;
+  size?: string;
+  style_tags?: string[];
+  occasion_tags?: string[];
   for_sale?: boolean;
   listing_price?: number;
 }

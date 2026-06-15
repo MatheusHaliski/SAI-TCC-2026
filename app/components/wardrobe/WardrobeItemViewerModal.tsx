@@ -24,6 +24,7 @@ interface WardrobeViewerItem {
   piece_type?: string;
   color?: string;
   material?: string;
+  size?: string;
   style_tags?: string[];
   occasion_tags?: string[];
   is_favorite?: boolean;
@@ -55,6 +56,7 @@ export default function WardrobeItemViewerModal({ open, item, onClose, userId }:
     piece_type: item.piece_type ?? '',
     color: item.color,
     material: item.material,
+    size: item.size,
     style_tags: item.style_tags,
     occasion_tags: item.occasion_tags,
     is_favorite: item.is_favorite,
