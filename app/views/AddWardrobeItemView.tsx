@@ -59,6 +59,10 @@ const MATERIAL_OPTIONS = [
   'Cashmere', 'Modal', 'Rayon', 'Tweed',
 ];
 
+const SIZE_OPTIONS = [
+  'PP', 'P', 'M', 'G', 'GG', 'XG', 'Único',
+];
+
 const STYLE_TAG_OPTIONS = [
   'Casual', 'Formal', 'Business', 'Smart Casual',
   'Urban', 'Streetwear', 'Sport', 'Athletic',
@@ -118,6 +122,16 @@ const COLOR_LABELS_PT: Record<string, string> = {
   Brown: 'Marrom', Camel: 'Camelo', Tan: 'Bege-escuro', Beige: 'Bege', Cream: 'Creme', Ivory: 'Marfim',
   Purple: 'Roxo', Lavender: 'Lavanda', Violet: 'Violeta', Lilac: 'Lilás', Plum: 'Ameixa',
   Multicolor: 'Multicolorido',
+};
+const SIZE_LABELS_PT: Record<string, string> = {
+  PP: 'PP (Extra pequeno)', P: 'P (Pequeno)', M: 'M (Médio)',
+  G: 'G (Grande)', GG: 'GG (Extra grande)', XG: 'XG (Extra extra grande)',
+  'Único': 'Tamanho único',
+};
+const SIZE_LABELS_EN: Record<string, string> = {
+  PP: 'XS (Extra small)', P: 'S (Small)', M: 'M (Medium)',
+  G: 'L (Large)', GG: 'XL (Extra large)', XG: 'XXL (Double extra large)',
+  'Único': 'One size',
 };
 const MATERIAL_LABELS_PT: Record<string, string> = {
   Cotton: 'Algodão', Polyester: 'Poliéster', Wool: 'Lã', Linen: 'Linho',
@@ -269,6 +283,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     piece_type: 'upper_piece',
     color: '',
     material: '',
+    size: '',
     style_tags: '',
     occasion_tags: '',
     market_id: '',
@@ -345,6 +360,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     isPt ? ptMap[value] ?? value : value;
   const localizeColor = (value: string) => localizeOptionLabel(value, COLOR_LABELS_PT);
   const localizeMaterial = (value: string) => localizeOptionLabel(value, MATERIAL_LABELS_PT);
+  const localizeSize = (value: string) => (isPt ? SIZE_LABELS_PT[value] ?? value : SIZE_LABELS_EN[value] ?? value);
   const localizeStyle = (value: string) => localizeOptionLabel(value, STYLE_LABELS_PT);
   const localizeOccasion = (value: string) => localizeOptionLabel(value, OCCASION_LABELS_PT);
   const localizePieceType = (value: string) =>
@@ -534,6 +550,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         image_url: '',
         color: '',
         material: '',
+        size: '',
         style_tags: '',
         occasion_tags: '',
       }));
@@ -994,6 +1011,17 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
                   group: pick('Material', 'Material'),
                 };
               })}
+            />
+
+            <FancySelect
+              value={form.size}
+              onChange={(size) => setForm((prev) => ({ ...prev, size }))}
+              placeholder={pick('Tamanho', 'Size')}
+              options={SIZE_OPTIONS.map((size) => ({
+                value: size,
+                label: localizeSize(size),
+                group: pick('Tamanho', 'Size'),
+              }))}
             />
 
             <FancySelect
