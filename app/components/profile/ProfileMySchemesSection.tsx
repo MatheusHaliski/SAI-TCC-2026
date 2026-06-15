@@ -52,7 +52,7 @@ function parseBackground(description?: string | null): OutfitBackgroundConfig | 
   }
 }
 
-const buildData = (scheme: Scheme, seal?: { seal_tier?: string; status?: string; official_feed_eligible?: boolean }): OutfitCardData => {
+const buildData = (scheme: Scheme): OutfitCardData => {
   const pieces = Array.isArray(scheme.pieces)
     ? scheme.pieces.map((piece, index) => ({
         id: piece.id ?? piece.piece_id ?? `${scheme.scheme_id}-piece-${index}`,
@@ -71,10 +71,6 @@ const buildData = (scheme: Scheme, seal?: { seal_tier?: string; status?: string;
     { icon: '🕒', label: scheme.updatedAt ? new Date(scheme.updatedAt).toLocaleDateString('pt-BR') : 'recente' },
   ];
 
-  if (seal?.seal_tier === 'premium') metaBadges.unshift({ icon: '🏅', label: 'Selo Premium' });
-  else if (seal?.seal_tier === 'free') metaBadges.unshift({ icon: '✦', label: 'Selo Gratuito' });
-  if (seal?.official_feed_eligible) metaBadges.unshift({ icon: '⭐', label: 'Feed oficial' });
-
   return {
     outfitName: scheme.title,
     outfitStyleLine: `${scheme.style} · ${scheme.occasion}`,
@@ -91,7 +87,6 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
   const [exportingScheme, setExportingScheme] = useState<Scheme | null>(null);
   const [loadedSchemes, setLoadedSchemes] = useState<Scheme[]>(schemes);
   const [loadingSchemes, setLoadingSchemes] = useState(false);
-  const [sealByUserId, setSealByUserId] = useState<Record<string, { seal_tier?: string; status?: string; official_feed_eligible?: boolean }>>({});
 
   useEffect(() => {
     setLoadedSchemes(schemes);
@@ -107,32 +102,7 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
       .finally(() => setLoadingSchemes(false));
   }, [schemes.length, userId]);
 
-  useEffect(() => {
-    const uniqueUserIds = Array.from(new Set(loadedSchemes.map((scheme) => scheme.user_id).filter(Boolean) as string[]));
-    if (!uniqueUserIds.length) {
-      setSealByUserId({});
-      return;
-    }
-
-    let cancelled = false;
-    Promise.all(uniqueUserIds.map((userId) => fetch(`/api/brand-seals?userId=${encodeURIComponent(userId)}`).then((res) => (res.ok ? res.json() : null)).catch(() => null)))
-      .then((responses) => {
-        if (cancelled) return;
-        const nextMap: Record<string, { seal_tier?: string; status?: string; official_feed_eligible?: boolean }> = {};
-        responses.forEach((payload, index) => {
-          const userId = uniqueUserIds[index];
-          if (userId && payload?.seal) nextMap[userId] = payload.seal;
-        });
-        setSealByUserId(nextMap);
-      })
-      .catch(() => {
-        if (!cancelled) setSealByUserId({});
-      });
-
-    return () => { cancelled = true; };
-  }, [loadedSchemes]);
-
-  const cards = useMemo(() => loadedSchemes.map((scheme) => ({ scheme, data: buildData(scheme, sealByUserId[scheme.user_id || '']) })), [loadedSchemes, sealByUserId]);
+  const cards = useMemo(() => loadedSchemes.map((scheme) => ({ scheme, data: buildData(scheme) })), [loadedSchemes]);
 
   // RF28: cycle visibility público → seguidores → privado → público, persisting
   // each change via PATCH /api/schemes/[id]. Optimistic update with revert on error.
@@ -197,7 +167,7 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
             </div>
             <p className="mt-2 text-sm text-white/75">View creator profile • Save/Favorite • Open in Dress Tester (next phase integration).</p>
             <div className="mt-4">
-              <OutfitCard data={buildData(selectedScheme, sealByUserId[selectedScheme.user_id || ''])} />
+              <OutfitCard data={buildData(selectedScheme)} />
             </div>
           </div>
         </div>
