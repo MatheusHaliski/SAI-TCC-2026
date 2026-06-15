@@ -41,6 +41,16 @@ const OCCASION_TAG_OPTIONS = [
   'Business', 'Everyday', 'Travel', 'Wedding', 'Outdoors',
 ];
 
+const SIZE_OPTIONS = [
+  { value: 'PP', label: 'PP (Extra pequeno)' },
+  { value: 'P', label: 'P (Pequeno)' },
+  { value: 'M', label: 'M (Médio)' },
+  { value: 'G', label: 'G (Grande)' },
+  { value: 'GG', label: 'GG (Extra grande)' },
+  { value: 'XG', label: 'XG (Extra extra grande)' },
+  { value: 'Único', label: 'Tamanho único' },
+];
+
 const PIECE_TYPE_OPTIONS = [
   { value: 'upper_piece', label: 'Parte de Cima' },
   { value: 'lower_piece', label: 'Parte de Baixo' },
@@ -74,6 +84,7 @@ interface FormState {
   piece_type: string;
   color: string;
   material: string;
+  size: string;
   style_tags: string;
   occasion_tags: string;
   brand_id: string;
@@ -98,6 +109,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
     piece_type: 'upper_piece',
     color: '',
     material: '',
+    size: '',
     style_tags: '',
     occasion_tags: '',
     brand_id: 'default',
@@ -140,6 +152,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
           piece_type: String(item.piece_type ?? 'upper_piece'),
           color: String(item.color ?? ''),
           material: String(item.material ?? ''),
+          size: String(item.size ?? ''),
           style_tags: Array.isArray(item.style_tags) ? item.style_tags.join(', ') : '',
           occasion_tags: Array.isArray(item.occasion_tags) ? item.occasion_tags.join(', ') : '',
           brand_id: String(item.brand_id ?? 'default'),
@@ -242,6 +255,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         piece_type: form.piece_type,
         color: form.color,
         material: form.material,
+        size: form.size,
         style_tags: parseTags(form.style_tags),
         occasion_tags: parseTags(form.occasion_tags),
         brand_id: form.brand_id,
@@ -418,6 +432,16 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
                 value={form.material}
                 onChange={(value) => setForm((prev) => ({ ...prev, material: value }))}
                 placeholder="Selecione o material"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-sm text-muted-foreground">Tamanho</label>
+              <FancySelect
+                options={SIZE_OPTIONS}
+                value={form.size}
+                onChange={(value) => setForm((prev) => ({ ...prev, size: value }))}
+                placeholder="Selecione o tamanho"
               />
             </div>
 
