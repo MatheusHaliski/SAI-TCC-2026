@@ -53,18 +53,6 @@ export class SchemesService {
     return this.schemesRepo.findPublic();
   }
 
-  async listPremiumSchemesThisMonth() {
-    return this.schemesRepo.findPremiumThisMonth();
-  }
-
-  async listCelebrityFeedThisMonth() {
-    return this.schemesRepo.findCelebrityFeedThisMonth();
-  }
-
-  async listCelebrityTributedSchemes() {
-    return this.schemesRepo.findCelebrityTributedSchemes();
-  }
-
   async listSchemesByUser(userId: string) {
     return this.schemesRepo.findByUser(userId);
   }
@@ -73,11 +61,6 @@ export class SchemesService {
     return this.schemesRepo.findByIdWithItems(schemeId);
   }
 
-  /**
-   * RF28: returns scheme details only if the viewer is allowed to see it.
-   * Returns null both when the scheme does not exist and when access is denied,
-   * so callers cannot distinguish a private scheme from a missing one.
-   */
   async getSchemeDetailsForViewer(schemeId: string, viewerId?: string | null) {
     const details = await this.schemesRepo.findByIdWithItems(schemeId);
     if (!details) return null;
