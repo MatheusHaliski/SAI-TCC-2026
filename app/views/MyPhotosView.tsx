@@ -242,15 +242,18 @@ export default function MyPhotosView() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total', value: photos.length, color: 'text-white' },
-          { label: 'Peças', value: pieceCount, color: 'text-violet-300' },
-          { label: 'Looks', value: outfitCount, color: 'text-fuchsia-300' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-2xl border border-border bg-accent p-4 text-center">
-            <p className={`text-2xl font-bold ${color}`}>{value}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-          </div>
-        ))}
+          { label: 'Total', value: photos.length, lightColor: '#0f172a', darkColor: '#ffffff' },
+          { label: 'Peças', value: pieceCount, lightColor: '#7c3aed', darkColor: '#a78bfa' },
+          { label: 'Looks', value: outfitCount, lightColor: '#db2777', darkColor: '#f0abfc' },
+        ].map(({ label, value, lightColor, darkColor }) => {
+          const isDarkTheme = typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') !== 'light';
+          return (
+            <div key={label} className="rounded-2xl border border-border bg-accent p-4 text-center">
+              <p className="text-2xl font-bold" style={{ color: isDarkTheme ? darkColor : lightColor }}>{value}</p>
+              <p className="mt-1 text-xs" style={{ color: 'var(--muted-foreground)' }}>{label}</p>
+            </div>
+          );
+        })}
       </div>
 
       {/* Search + Filter */}

@@ -202,14 +202,12 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Generated Outfit Card': 'Card de Look Gerado',
   'Rendered after the final save & generate action.': 'Renderizado após a ação final de salvar e gerar.',
 
-  // Filter pills (new)
+  // Filter pills
   Disponíveis: 'Disponíveis',
   Indisponíveis: 'Indisponíveis',
   Favoritos: 'Favoritos',
 
-  // ── Background Studio — select list option names ─────────────────────────
-
-  // Gradient preset names
+  // Background Studio — gradient preset names
   'Deep Violet Gradient': 'Gradiente Violeta Profundo',
   'Emerald Glow': 'Brilho Esmeralda',
   'Silver Mist': 'Névoa Prateada',
@@ -219,8 +217,6 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Night Runway': 'Passarela Noturna',
   'Graphite Pulse': 'Pulso Grafite',
   'Applies gradient + geometry recipe': 'Aplica gradiente + receita de geometria',
-
-  // Gradient picker curated images
   'Urban Texture Grid': 'Grade de Textura Urbana',
   'Neon Pattern Overlay': 'Sobreposição Neon',
   'Editorial Surface III': 'Superfície Editorial III',
@@ -239,25 +235,21 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Flower': 'Flores',
   'Applies flower motif artwork surface': 'Aplica superfície artística com motivo floral',
 
-  // Composition types
+  // Composition / style / palette
   'background': 'fundo',
   'shape pack': 'pacote de formas',
   'overlay': 'sobreposição',
   'frame': 'moldura',
-
-  // Style presets
   'editorial fashion': 'moda editorial',
   'luxury minimal': 'luxo minimalista',
   'futuristic sport': 'esporte futurista',
   'streetwear': 'streetwear',
   'monochrome premium': 'monocromático premium',
-
-  // Palette modes
   'cool luxury': 'luxo frio',
   'warm neutral': 'neutro quente',
   'custom': 'personalizado',
 
-  // Geometry family
+  // Geometry
   'arrows': 'setas',
   'waves': 'ondas',
   'diamond': 'diamantes',
@@ -269,8 +261,6 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'beams': 'feixes',
   'panels': 'painéis',
   'mixed': 'misto',
-
-  // Shape segment
   'Orb': 'Orbe',
   'Diamond': 'Diamante',
   'Mesh': 'Malha',
@@ -282,16 +272,14 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Flowers': 'Flores',
   'Arrows': 'Setas',
 
-  // Generation modes
+  // Generation modes / contrast
   'Prompt driven': 'Baseado no Prompt',
   'Preset guided': 'Guiado por Preset',
-
-  // Contrast levels
   'Soft contrast with subtle transitions': 'Contraste suave com transições sutis',
   'Balanced contrast for readability and depth': 'Contraste equilibrado para legibilidade e profundidade',
   'Strong contrast for bold visual impact': 'Contraste forte para impacto visual marcante',
 
-  // Material type labels
+  // Material types
   'Embroidered Fabric / Textile Material': 'Tecido Bordado / Material Têxtil',
   'Lego Material': 'Material Lego',
   'Glass Material': 'Material Vidro',
@@ -302,34 +290,24 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Chunkier block-like structure with bold thread highlights.': 'Estrutura de blocos com destaques de fio marcantes.',
   'Translucent textile sheen with satin-like highlights.': 'Brilho têxtil translúcido com realces tipo cetim.',
   'Fluid directional streaks with deeper tonal movement.': 'Listras direcionais fluidas com movimento tonal profundo.',
-
-  // Preset description texts
   'Uses the uploaded logo as a hero element in a clean campaign-style composition.': 'Usa o logo enviado como elemento principal em uma composição estilo campanha.',
   'Fuses uploaded logo with high-energy amber/orange AI-tech visual treatment.': 'Combina o logo enviado com tratamento visual amber/laranja de alta energia.',
   'Turns the uploaded logo into a repeated premium motif surface.': 'Transforma o logo enviado em uma superfície de motivo premium repetido.',
   'Upload reference image': 'Enviar imagem de referência',
 
-  // ── Background Studio modal ───────────────────────────────────────────────
+  // Background Studio modal
   'Customize the visual surface of your outfit card': 'Personalize a superfície visual do seu card de look',
   'Close ✕': 'Fechar ✕',
-
-  // Tabs
   Color: 'Cor',
   Gradient: 'Gradiente',
   'AI Artwork': 'Arte com IA',
-
-  // Color tab
   'Recent colors': 'Cores recentes',
   'Subtle texture overlay': 'Textura sutil sobreposta',
-
-  // Gradient tab
   Reverse: 'Inverter',
   Randomize: 'Aleatorizar',
   Stop: 'Parada',
   'Angle (': 'Ângulo (',
   'Intensity (': 'Intensidade (',
-
-  // AI Artwork tab — section headers
   'Visual Direction': 'Direção Visual',
   'Define composition and style behavior before generating.': 'Defina a composição e o estilo antes de gerar.',
   'Use brand and mood details. Geometry control below has priority for structure.': 'Use detalhes de marca e mood. A geometria abaixo tem prioridade na estrutura.',
@@ -363,8 +341,6 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Save asset': 'Salvar ativo',
   'Saved assets in this session:': 'Ativos salvos nesta sessão:',
   'Apply to Card ·': 'Aplicar ao Card ·',
-
-  // Material Layer section
   'Material Layer (Premium)': 'Camada de Material (Premium)',
   'Separate layer for textile rendering on top of color/gradient and below decorative overlays.':
     'Camada separada para renderização têxtil acima da cor/gradiente e abaixo das sobreposições.',
@@ -396,20 +372,14 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Surface Contrast:': 'Contraste de Superfície:',
   'Stitch Border On/Off': 'Borda de Costura',
   'Stitch Color': 'Cor do Ponto',
-
-  // Preset recommendation section
   'Recommended presets based on current outfit': 'Predefinições recomendadas para o look atual',
   '🔵 AI enhanced': '🔵 Aprimorado com IA',
   '🟢 Ready': '🟢 Pronto',
-
-  // Live preview panel
   'Live Preview': 'Pré-visualização ao Vivo',
   'Contrast recommendation:': 'Recomendação de contraste:',
   'text/icons': 'texto/ícones',
   'Warning: high-luminance solid background may reduce metadata readability.':
     'Aviso: fundo sólido de alta luminância pode reduzir a legibilidade dos metadados.',
-
-  // Bottom bar
   'Selected shape': 'Forma selecionada',
   'None (no overlay)': 'Nenhum (sem sobreposição)',
   'Updates geometry in preview': 'Atualiza a geometria no preview',
@@ -417,6 +387,61 @@ const PT_TRANSLATIONS: Record<string, string> = {
   'Cancel / Close': 'Cancelar / Fechar',
   Reset: 'Redefinir',
   'Save Background': 'Salvar Fundo',
+
+  // ── Strings adicionadas ────────────────────────────────────────────────────
+
+  // ThreeDGenerationProgressModal
+  'Preparing 3D Viewer': 'Preparando Visualizador 3D',
+  'Waiting to start': 'Aguardando início',
+  'Submitting generation request': 'Enviando solicitação de geração',
+  'Generating 3D Asset': 'Gerando Ativo 3D',
+  'Processing mesh pipeline': 'Processando pipeline de malha',
+  'Ready': 'Pronto',
+  'Failed': 'Falhou',
+  'Timed out': 'Tempo esgotado',
+  'Cancelled': 'Cancelado',
+  'Progress (estimated while processing)': 'Progresso (estimado durante o processamento)',
+  'Ready for 2D try-on': 'Pronto para o provador 2D',
+  'Retry': 'Tentar novamente',
+
+  // OutfitActionBar
+  'Remove Favorite': 'Remover Favorito',
+  'Save to Favorites': 'Salvar nos Favoritos',
+
+  // OutfitExportModal
+  'Exporting...': 'Exportando...',
+  'Confirm export': 'Confirmar exportação',
+  'Square': 'Quadrado',
+  'Portrait': 'Retrato',
+  'Story-ready': 'Pronto para Story',
+  'Card image only': 'Somente imagem do card',
+  'Card image + caption': 'Imagem do card + legenda',
+
+  // CollapsibleOutfitCard
+  'Minimize': 'Minimizar',
+  'Expand': 'Expandir',
+  'View': 'Ver',
+
+  // DangerZoneCard
+  'Deleting...': 'Excluindo...',
+
+  // Wardrobe status labels
+  'Ready for 2D try-on · 3D generation failed: cleaned garment too dark/low contrast':
+    'Pronto para provador 2D · Geração 3D falhou: peça muito escura/baixo contraste',
+  'Not started': 'Não iniciado',
+
+  // General
+  'My Photos': 'Minhas Fotos',
+  'No photos yet.': 'Nenhuma foto ainda.',
+  'Autopilot': 'Autopiloto',
+  'Users': 'Usuários',
+  'Outfits': 'Looks',
+  'All': 'Todos',
+  'Filter': 'Filtrar',
+  'Brand:': 'Marca:',
+  'Type:': 'Tipo:',
+  'For Sale': 'Para Venda',
+  'Page': 'Página',
 };
 
 const reverseTranslations = Object.entries(PT_TRANSLATIONS).reduce<Record<string, string>>((acc, [en, pt]) => {
@@ -432,13 +457,10 @@ const translateTextNodes = (root: ParentNode, toPt: boolean): void => {
     const node = walker.currentNode as Text;
     const raw = node.nodeValue;
     if (!raw) continue;
-
     const normalized = raw.trim();
     if (!normalized) continue;
-
     const translated = dict[normalized];
     if (!translated) continue;
-
     node.nodeValue = raw.replace(normalized, translated);
   }
 };
@@ -451,10 +473,8 @@ const translateAttributes = (root: ParentNode, toPt: boolean): void => {
   elements.forEach((el) => {
     const placeholder = el.getAttribute('placeholder');
     if (placeholder && dict[placeholder]) el.setAttribute('placeholder', dict[placeholder]);
-
     const ariaLabel = el.getAttribute('aria-label');
     if (ariaLabel && dict[ariaLabel]) el.setAttribute('aria-label', dict[ariaLabel]);
-
     if (el instanceof HTMLOptionElement) {
       const content = el.textContent?.trim();
       if (content && dict[content]) el.textContent = dict[content];
@@ -476,7 +496,6 @@ export default function SiteLanguageBridge() {
     applyLanguage();
 
     const observerOptions: MutationObserverInit = { childList: true, subtree: true };
-
     const observer = new MutationObserver(() => {
       observer.disconnect();
       applyLanguage();
