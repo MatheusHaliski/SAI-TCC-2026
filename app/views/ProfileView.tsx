@@ -10,9 +10,9 @@ import ProfileContextMenu from '@/app/components/profile/ProfileContextMenu';
 import ProfileSectionRenderer from '@/app/components/profile/ProfileSectionRenderer';
 import { ProfileSectionKey, UserPostRecord } from '@/app/components/profile/types';
 
-const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'style-dna', 'tribute', 'arena', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
-// Perfil-Lookbook (RF20): visitors may also see the creator's Style DNA and Tribute & Celebrity status.
-const PUBLIC_SECTIONS: ProfileSectionKey[] = ['user-info', 'style-dna', 'tribute', 'arena'];
+const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'style-dna', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
+// Perfil-Lookbook (RF20): visitors may also see the creator's Style DNA.
+const PUBLIC_SECTIONS: ProfileSectionKey[] = ['user-info', 'style-dna'];
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -41,10 +41,6 @@ interface PublicProfile {
   email?: string;
   bio?: string;
   photo_url?: string;
-  brandSealTier?: string;
-  brandSealStatus?: string;
-  officialFeedEligible?: boolean;
-  officialFeedUntil?: string | null;
 }
 
 const parseSectionFromQuery = (value: string | null): ProfileSectionKey => {
@@ -172,9 +168,6 @@ export default function ProfileView() {
           loginEmail={email}
           loginStatus={isOwnerView ? 'Authenticated' : 'Public Profile'}
           authSource="saiUsers"
-          brandSealTier={viewedProfile.brandSealTier || 'none'}
-          brandSealStatus={viewedProfile.brandSealStatus || 'inactive'}
-          officialFeedUntil={viewedProfile.officialFeedUntil || null}
         />
 
         <ProfileSectionRenderer
@@ -189,10 +182,6 @@ export default function ProfileView() {
           posts={posts}
           viewerId={authUserId}
           viewerName={authProfile.name?.trim() || displayName}
-          brandSealTier={viewedProfile.brandSealTier}
-          brandSealStatus={viewedProfile.brandSealStatus}
-          officialFeedEligible={viewedProfile.officialFeedEligible}
-          officialFeedUntil={viewedProfile.officialFeedUntil}
           onWardrobeItemDeleted={(removedId) => setWardrobeItems((prev) => prev.filter((item) => item.wardrobe_item_id !== removedId))}
           onProfileSaved={(profile) => setViewedProfile((prev) => ({ ...prev, ...profile }))}
         />
