@@ -11,7 +11,6 @@ import ProfileView from '@/app/views/ProfileView';
 import AutopilotView from '@/app/views/AutopilotView';
 import MyPhotosView from '@/app/views/MyPhotosView';
 import MaisonView from '@/app/views/MaisonView';
-import TributesView from '@/app/views/TributesView';
 
 interface ContentRouterProps {
   route: AppRoute;
@@ -30,7 +29,6 @@ export default function ContentRouter({ route }: ContentRouterProps) {
     case 'search-pieces':    return <SearchPiecesView />;
     case 'my-photos':        return <MyPhotosView />;
     case 'maison':           return <MaisonView />;
-    case 'tributes':         return <TributesView />;
     case 'profile':
     case 'profile-settings': return <ProfileView />;
     default:                 return <MyWardrobeView />;

@@ -80,7 +80,6 @@ export default function ExploreSchemeView() {
   const [togglingId,      setTogglingId]      = useState<string | null>(null);
   const [selectedCard,    setSelectedCard]    = useState<OutfitCardData | null>(null);
   const [modalOpen,       setModalOpen]       = useState(false);
-  const [sealByUserId,    setSealByUserId]    = useState<Record<string, { seal_tier?: string; status?: string; official_feed_eligible?: boolean }>>({});
 
   const resolvedUserId = useRef<string>('');
 
@@ -118,23 +117,8 @@ export default function ExploreSchemeView() {
       const map: Record<string, SchemeDetailItem[]> = {};
       details.forEach((d, i) => { map[safe[i].scheme_id] = (d as SchemeDetailsResponse | null)?.items ?? []; });
       setItemsBySchemeId(map);
-
-      const uniqueUserIds = Array.from(new Set(safe.map((scheme) => scheme.user_id).filter(Boolean)));
-      if (uniqueUserIds.length > 0) {
-        const responses = await Promise.all(
-          uniqueUserIds.map((userId) => fetch(`/api/brand-seals?userId=${encodeURIComponent(userId)}`).then((res) => (res.ok ? res.json() : null)).catch(() => null))
-        );
-        const nextSealMap: Record<string, { seal_tier?: string; status?: string; official_feed_eligible?: boolean }> = {};
-        responses.forEach((payload, index) => {
-          const userId = uniqueUserIds[index];
-          if (userId && payload?.seal) nextSealMap[userId] = payload.seal;
-        });
-        setSealByUserId(nextSealMap);
-      } else {
-        setSealByUserId({});
-      }
     };
-    load().catch(() => { setSchemes([]); setItemsBySchemeId({}); setSealByUserId({}); });
+    load().catch(() => { setSchemes([]); setItemsBySchemeId({}); });
   }, []);
 
   const toggleFavorite = async (schemeId: string) => {
@@ -259,27 +243,11 @@ export default function ExploreSchemeView() {
                 const isFav    = !!favorites[scheme.scheme_id];
                 const avail    = availability[scheme.scheme_id] ?? 'available';
                 const toggling = togglingId === scheme.scheme_id;
-                const seal     = sealByUserId[scheme.user_id];
-                const sealLabel = seal?.seal_tier === 'premium'
-                  ? 'Selo Premium'
-                  : seal?.seal_tier === 'free'
-                    ? 'Selo Gratuito'
-                    : 'Selo sem destaque';
                 return (
                   <article key={scheme.scheme_id}
                     style={{ width: '100%', maxWidth: '980px', display: 'flex', flexDirection: 'column', gap: '1rem', borderRadius: '1.25rem', border: `1px solid ${isFav ? 'rgba(245,158,11,0.4)' : 'var(--border)'}`, background: 'var(--card)', padding: '1rem', boxShadow: isFav ? '0 0 0 2px rgba(245,158,11,0.12)' : 'var(--shadow-sm)', transition: 'all 0.2s' }}>
                     <OutfitCard data={buildOutfitPreviewData(scheme)} />
                     <div style={{ borderRadius: '0.75rem', border: '1px solid var(--border)', background: 'var(--accent)', padding: '0.75rem' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.625rem' }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.625rem', borderRadius: '9999px', background: 'rgba(251,191,36,0.10)', color: '#fde68a', border: '1px solid rgba(251,191,36,0.35)' }}>
-                          {sealLabel}
-                        </span>
-                        {seal?.official_feed_eligible ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.625rem', borderRadius: '9999px', background: 'rgba(124,58,237,0.14)', color: '#ddd6fe', border: '1px solid rgba(124,58,237,0.35)' }}>
-                            Feed oficial
-                          </span>
-                        ) : null}
-                      </div>
                       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.625rem', flexWrap: 'wrap' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.625rem', borderRadius: '9999px', background: isFav ? 'rgba(245,158,11,0.15)' : 'var(--muted)', color: isFav ? '#fcd34d' : 'var(--muted-foreground)', border: isFav ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border)' }}>
                           {isFav ? '★ Favoritado' : '☆ Não favoritado'}

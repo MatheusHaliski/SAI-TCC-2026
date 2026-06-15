@@ -84,12 +84,6 @@ const MaisonIcon = () => (
     <rect x="3" y="11" width="18" height="10" rx="1"/><path d="M12 2l9 9H3z"/>
   </svg>
 );
-const TributeIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <path d="M12 3l2.1 5.2 5.6.4-4.3 3.6 1.4 5.5L12 14.8 7.2 17.7l1.4-5.5-4.3-3.6 5.6-.4z"/>
-    <path d="M5 21h14"/>
-  </svg>
-);
 
 interface SidebarItem {
   route: AppRoute;
@@ -107,7 +101,6 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { route: 'search-items',     label: 'Explorar',       icon: <SearchIcon /> },
   { route: 'search-pieces',    label: 'Peças Públicas', icon: <HeartIcon /> },
   { route: 'maison',           label: 'Marcas',         icon: <MaisonIcon /> },
-  { route: 'tributes',         label: 'Tributos',       icon: <TributeIcon /> },
   { route: 'profile',          label: 'Perfil',         icon: <HomeIcon /> },
   { route: 'profile-settings', label: 'Configurações',  icon: <SettingsIcon /> },
 ];

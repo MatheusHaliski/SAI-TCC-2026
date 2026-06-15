@@ -3,7 +3,6 @@
 import BackgroundStudioPanel from '@/app/components/profile/BackgroundStudioPanel';
 
 import { useEffect, useState } from 'react';
-import { getAuthSessionProfile } from '@/app/lib/authSession';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import DangerZoneCard from '@/app/components/profile/DangerZoneCard';
 import { applyTheme, readSavedTheme, type SaiTheme } from '@/app/lib/theme';
@@ -164,10 +163,6 @@ export default function ProfileSettingsSection() {
   const [activeBgId, setActiveBgId] = useState(() => (typeof window === 'undefined' ? 'default-purple' : window.localStorage.getItem('sai_active_bg_preset') || 'default-purple'));
   const [bgSaveStatus, setBgSaveStatus] = useState('');
   const [activeTab, setActiveTab] = useState<'geral' | 'aparencia' | 'privacidade' | 'conta'>('geral');
-  const [sealTier, setSealTier] = useState<'none' | 'free' | 'premium'>('none');
-  const [sealStatus, setSealStatus] = useState<'inactive' | 'pending' | 'active' | 'expired' | 'rejected'>('inactive');
-  const [sealMessage, setSealMessage] = useState('');
-  const [savingSeal, setSavingSeal] = useState(false);
 
   const darkMode = theme === 'dark';
 
@@ -177,33 +172,6 @@ export default function ProfileSettingsSection() {
     if (legacyDark) applyTheme('dark');
     document.documentElement.classList.remove('dark-mode');
     window.localStorage.removeItem(LEGACY_DARK_MODE_STORAGE_KEY);
-  }, []);
-
-  useEffect(() => {
-    const profile = getAuthSessionProfile();
-    const userId = profile.user_id?.trim();
-
-    if (!userId) return;
-
-    const loadSeal = async () => {
-      try {
-        const response = await fetch(`/api/brand-seals?userId=${encodeURIComponent(userId)}`);
-        if (!response.ok) return;
-        const data = await response.json() as { seal?: { seal_tier?: string; status?: string; official_feed_eligible?: boolean } };
-        const nextTier = (data.seal?.seal_tier as 'none' | 'free' | 'premium' | undefined) ?? 'none';
-        const nextStatus = (data.seal?.status as 'inactive' | 'pending' | 'active' | 'expired' | 'rejected' | undefined) ?? 'inactive';
-
-        setSealTier(nextTier);
-        setSealStatus(nextStatus);
-        if (nextStatus === 'pending') setSealMessage('Sua solicitação de selo está em análise.');
-        if (nextStatus === 'active') setSealMessage(nextTier === 'premium' ? 'Selo premium aceito e ativo no perfil.' : 'Selo gratuito ativo no perfil.');
-        if (nextStatus === 'rejected') setSealMessage('Solicitação rejeitada. Revise seus dados e envie novamente quando quiser.');
-      } catch {
-        // ignore and keep defaults
-      }
-    };
-
-    void loadSeal();
   }, []);
 
   const toggleDarkMode = () => {
@@ -238,146 +206,6 @@ export default function ProfileSettingsSection() {
     setBgSaveStatus('✓ Fundo salvo com sucesso!');
     setTimeout(() => setBgSaveStatus(''), 3000);
   };
-
-  const saveBrandSeal = async () => {
-    const profile = getAuthSessionProfile();
-    const userId = profile.user_id?.trim();
-
-    if (!userId) {
-      setSealMessage('Faça login para ativar o selo de marca.');
-      return;
-    }
-
-    setSavingSeal(true);
-    setSealMessage('');
-
-    const nextTier = sealTier;
-    const nextStatus = nextTier === 'none'
-      ? 'inactive'
-      : nextTier === 'premium'
-        ? 'pending'
-        : 'active';
-
-    try {
-      const response = await fetch('/api/brand-seals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          tier: nextTier,
-          status: nextStatus,
-          officialFeedEligible: nextStatus === 'active',
-          officialFeedUntil: nextStatus === 'active' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
-          label: nextTier === 'premium' ? 'Selo Premium' : nextTier === 'free' ? 'Selo Gratuito' : 'Sem selo',
-          notes: nextTier === 'premium' ? 'Solicitação de selo premium enviada para análise.' : nextTier === 'free' ? 'Selo gratuito ativado.' : 'Selo desativado.',
-        }),
-      });
-
-      const data = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
-      if (!response.ok || !data?.ok) {
-        throw new Error(data?.error || 'Não foi possível salvar o selo.');
-      }
-
-      setSealStatus(nextStatus as 'inactive' | 'pending' | 'active' | 'expired' | 'rejected');
-      setSealMessage(
-        nextTier === 'none'
-          ? 'Selo removido.'
-          : nextTier === 'premium'
-            ? 'Solicitação enviada. Seu selo premium está em análise.'
-            : 'Selo gratuito aceito e ativo no perfil.',
-      );
-    } catch (error) {
-      setSealMessage(error instanceof Error ? error.message : 'Não foi possível salvar o selo.');
-    } finally {
-      setSavingSeal(false);
-    }
-  };
-
-  const updateSealReview = async (nextStatus: 'active' | 'rejected') => {
-    const profile = getAuthSessionProfile();
-    const userId = profile.user_id?.trim();
-
-    if (!userId) {
-      setSealMessage('Faça login para atualizar a análise do selo.');
-      return;
-    }
-
-    setSavingSeal(true);
-    const nextOfficialFeedUntil = nextStatus === 'active' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null;
-
-    try {
-      const response = await fetch('/api/brand-seals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          tier: sealTier === 'none' ? 'premium' : sealTier,
-          status: nextStatus,
-          officialFeedEligible: nextStatus === 'active',
-          officialFeedUntil: nextOfficialFeedUntil,
-          label: sealTier === 'free' ? 'Selo Gratuito' : 'Selo Premium',
-          notes: nextStatus === 'active' ? 'Solicitação aceita pela equipe.' : 'Solicitação rejeitada pela equipe.',
-        }),
-      });
-
-      const data = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
-      if (!response.ok || !data?.ok) throw new Error(data?.error || 'Não foi possível atualizar o selo.');
-
-      setSealStatus(nextStatus);
-      setSealTier((prev) => prev === 'none' ? 'premium' : prev);
-      setSealMessage(nextStatus === 'active' ? 'Solicitação aceita. O selo premium está ativo.' : 'Solicitação rejeitada. O selo premium não foi ativado.');
-    } catch (error) {
-      setSealMessage(error instanceof Error ? error.message : 'Não foi possível atualizar o selo.');
-    } finally {
-      setSavingSeal(false);
-    }
-  };
-
-  const sealStatusInfo = (() => {
-    if (sealStatus === 'pending') {
-      return {
-        label: 'Em análise',
-        detail: 'O usuário solicitou um selo no formulário. A equipe ainda precisa aceitar ou rejeitar.',
-        color: '#92400e',
-        bg: '#fef3c7',
-        border: '#f59e0b',
-      };
-    }
-    if (sealStatus === 'active') {
-      return {
-        label: sealTier === 'premium' ? 'Selo premium ativo' : 'Selo ativo',
-        detail: sealTier === 'premium' ? 'O usuário possui selo premium ativo.' : 'O usuário possui selo gratuito ativo.',
-        color: '#065f46',
-        bg: '#d1fae5',
-        border: '#10b981',
-      };
-    }
-    if (sealStatus === 'rejected') {
-      return {
-        label: 'Solicitação rejeitada',
-        detail: 'A equipe rejeitou a solicitação. O usuário pode revisar os dados e enviar novamente.',
-        color: '#991b1b',
-        bg: '#fee2e2',
-        border: '#ef4444',
-      };
-    }
-    if (sealStatus === 'expired') {
-      return {
-        label: 'Selo expirado',
-        detail: 'O selo já existiu, mas não está mais ativo.',
-        color: '#334155',
-        bg: '#e2e8f0',
-        border: '#94a3b8',
-      };
-    }
-    return {
-      label: 'Sem selo premium ativo',
-      detail: 'O usuário ainda não possui selo premium ativo.',
-      color: '#334155',
-      bg: '#f8fafc',
-      border: '#cbd5e1',
-    };
-  })();
 
   const tabs: Array<{ id: typeof activeTab; label: string; emoji: string }> = [
     { id: 'geral',       label: 'Geral',       emoji: '⚙️' },
@@ -421,68 +249,6 @@ export default function ProfileSettingsSection() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <SettingRow label="Modo escuro" hint="Alterna entre o tema claro e escuro">
             <Toggle checked={darkMode} onChange={toggleDarkMode} />
-          </SettingRow>
-
-          <SettingRow label="Painel de selo" hint="Mostra se o selo premium está ativo, em análise, aceito ou rejeitado.">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', alignItems: 'stretch' }}>
-              <div style={{ border: `1px solid ${sealStatusInfo.border}`, background: sealStatusInfo.bg, borderRadius: '1rem', padding: '1rem' }}>
-                <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: sealStatusInfo.color }}>
-                  {sealStatusInfo.label}
-                </p>
-                <p style={{ margin: '0.35rem 0 0', fontSize: '0.875rem', lineHeight: 1.5, color: '#334155' }}>
-                  {sealMessage || sealStatusInfo.detail}
-                </p>
-              </div>
-
-              <div style={{ display: 'grid', gap: '0.75rem' }}>
-                <div style={{ display: 'grid', gap: '0.35rem' }}>
-                  <label style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)' }}>Solicitação de selo</label>
-                  <FancySelect
-                    value={sealTier}
-                    onChange={(value) => {
-                      setSealTier(value as 'none' | 'free' | 'premium');
-                      setSealMessage('');
-                    }}
-                    options={[
-                      { value: 'none', label: 'Sem selo premium', hint: 'Remove solicitação ou selo atual', icon: { type: 'emoji', value: '✦' } },
-                      { value: 'free', label: 'Selo gratuito', hint: 'Ativação simples', icon: { type: 'emoji', value: '🪪' } },
-                      { value: 'premium', label: 'Solicitar premium', hint: 'Entra em análise', icon: { type: 'emoji', value: '💎' } },
-                    ]}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                  {sealStatus === 'pending' ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => void updateSealReview('rejected')}
-                        disabled={savingSeal}
-                        style={{ borderRadius: '0.625rem', border: '1px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.1)', color: '#fecaca', padding: '0.625rem 1rem', fontWeight: 700, fontSize: '0.875rem', cursor: savingSeal ? 'wait' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit', opacity: savingSeal ? 0.8 : 1 }}
-                      >
-                        Registrar rejeição
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void updateSealReview('active')}
-                        disabled={savingSeal}
-                        style={{ borderRadius: '0.625rem', border: '1px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.18)', color: '#a7f3d0', padding: '0.625rem 1rem', fontWeight: 700, fontSize: '0.875rem', cursor: savingSeal ? 'wait' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit', opacity: savingSeal ? 0.8 : 1 }}
-                      >
-                        Registrar aceite
-                      </button>
-                    </>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => void saveBrandSeal()}
-                    disabled={savingSeal}
-                    style={{ borderRadius: '0.625rem', border: 'none', background: 'linear-gradient(135deg,#7c3aed,#db2777)', color: '#fff', padding: '0.625rem 1rem', fontWeight: 700, fontSize: '0.875rem', cursor: savingSeal ? 'wait' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit', opacity: savingSeal ? 0.8 : 1 }}
-                  >
-                    {savingSeal ? 'Salvando…' : sealTier === 'premium' ? 'Solicitar selo' : 'Atualizar status'}
-                  </button>
-                </div>
-              </div>
-            </div>
           </SettingRow>
 
           <SettingRow label="Idioma da interface" hint={`Atual: ${savedLanguage === 'pt-BR' ? 'Português (Brasil)' : 'English'}`}>

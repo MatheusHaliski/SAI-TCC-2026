@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import RunwayFeedCard, { type FeedCardScheme } from './RunwayFeedCard';
-import ArtCelebrityPanel from './ArtCelebrityPanel';
 
 type FeedMode = 'magazine' | 'runway' | 'grid';
 type FeedFilter = 'all' | 'following' | 'trending';
@@ -34,7 +33,6 @@ export default function RunwayFeedView({ viewerId, viewerName, viewerPhotoUrl }:
   const [filter, setFilter] = useState<FeedFilter>('all');
   const [schemes, setSchemes] = useState<FeedCardScheme[]>([]);
   const [officialPosts, setOfficialPosts] = useState<Array<{ id: string; title: string; body: string; image_url?: string | null; tag?: string | null; featured_until?: string | null; is_official?: boolean }>>([]);
-  const [viewerSeal, setViewerSeal] = useState<{ seal_tier?: string; status?: string; official_feed_eligible?: boolean; official_feed_until?: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingOfficial, setLoadingOfficial] = useState(true);
   const [page, setPage] = useState(0);
@@ -57,29 +55,7 @@ export default function RunwayFeedView({ viewerId, viewerName, viewerPhotoUrl }:
       const list: FeedCardScheme[] = Array.isArray(data) ? data : (data.schemes ?? []);
       const more = Array.isArray(data) ? list.length === 12 : (data.hasMore ?? list.length === 12);
 
-      const uniqueUserIds = Array.from(new Set(list.map((scheme) => scheme.user_id).filter(Boolean)));
-      const sealMap = new Map<string, { seal_tier?: string; status?: string; official_feed_eligible?: boolean }>();
-
-      if (uniqueUserIds.length > 0) {
-        const responses = await Promise.all(uniqueUserIds.map((userId) => fetch(`/api/brand-seals?userId=${encodeURIComponent(userId)}`).then((res) => res.ok ? res.json() : null)));
-        responses.forEach((payload, index) => {
-          const userId = uniqueUserIds[index];
-          if (!userId || !payload?.seal) return;
-          sealMap.set(userId, payload.seal);
-        });
-      }
-
-      const enrichedList = list.map((scheme) => {
-        const seal = sealMap.get(scheme.user_id);
-        return {
-          ...scheme,
-          brandSealTier: seal?.seal_tier ?? scheme.brandSealTier,
-          brandSealStatus: seal?.status ?? scheme.brandSealStatus,
-          officialFeedEligible: Boolean(seal?.official_feed_eligible ?? scheme.officialFeedEligible),
-        };
-      });
-
-      setSchemes((prev: FeedCardScheme[]) => pageIndex === 0 ? enrichedList : [...prev, ...enrichedList]);
+      setSchemes((prev: FeedCardScheme[]) => pageIndex === 0 ? list : [...prev, ...list]);
       setHasMore(more);
     } catch {
       setHasMore(false);
@@ -93,33 +69,6 @@ export default function RunwayFeedView({ viewerId, viewerName, viewerPhotoUrl }:
     setSchemes([]);
     loadSchemes(0, filter);
   }, [filter, loadSchemes]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadViewerSeal = async () => {
-      if (!viewerId) {
-        if (isMounted) setViewerSeal(null);
-        return;
-      }
-
-      try {
-        const res = await fetch(`/api/brand-seals?userId=${encodeURIComponent(viewerId)}`);
-        if (!res.ok) throw new Error('Failed to fetch seal status');
-        const data = await res.json() as { seal?: typeof viewerSeal };
-        if (isMounted) {
-          setViewerSeal(data.seal ?? null);
-        }
-      } catch {
-        if (isMounted) setViewerSeal(null);
-      }
-    };
-
-    loadViewerSeal();
-    return () => {
-      isMounted = false;
-    };
-  }, [viewerId]);
 
   useEffect(() => {
     let isMounted = true;
