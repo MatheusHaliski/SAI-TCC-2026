@@ -109,8 +109,6 @@ interface OutfitBackgroundStudioModalProps {
   onSelectPieceListFormat?: (format: OutfitPieceListFormat) => void;
   cardDisplayOptions?: OutfitCardDisplayOptions;
   onChangeCardDisplayOptions?: (options: OutfitCardDisplayOptions) => void;
-  premiumSealUnlocked?: boolean;
-  freeSealPublicationCount?: number;
   /** Render as an inline page section instead of a fixed modal overlay */
   asPage?: boolean;
 }
@@ -2052,8 +2050,6 @@ export default function OutfitBackgroundStudioModal({
   onSelectPieceListFormat,
   cardDisplayOptions,
   onChangeCardDisplayOptions,
-  premiumSealUnlocked,
-  freeSealPublicationCount,
   asPage = false,
 }: OutfitBackgroundStudioModalProps) {
   const buildNoMaterialConfig = (baseColor: string): FabricMaterialConfig => ({
@@ -3346,8 +3342,6 @@ export default function OutfitBackgroundStudioModal({
               <PremiumSelections
                 value={cardDisplayOptions ?? previewCardData.displayOptions ?? {}}
                 onChange={onChangeCardDisplayOptions}
-                premiumSealUnlocked={premiumSealUnlocked}
-                freeSealPublicationCount={freeSealPublicationCount}
               />
             ) : null}
 

@@ -141,10 +141,7 @@ export default function CreateMySchemeView() {
   const [cardDisplayOptions, setCardDisplayOptions] = useState<OutfitCardDisplayOptions>({
     contentPanelColor: 'rgba(2,6,23,0.72)',
     displayMode: 'complete',
-    brandSealTier: 'free',
   });
-  const [freeSealPublicationCount, setFreeSealPublicationCount] = useState(0);
-  const [premiumSealUnlocked, setPremiumSealUnlocked] = useState(false);
   const [descriptionOverride, setDescriptionOverride] = useState('');
   const [titleFontFamily, setTitleFontFamily] = useState('Inter, Segoe UI, sans-serif');
   const [palette, setPalette] = useState('Neutral');
@@ -170,8 +167,6 @@ export default function CreateMySchemeView() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState('');
   const [generatedCardData, setGeneratedCardData] = useState<OutfitCardData | null>(null);
-  const [sealTier, setSealTier] = useState<'none' | 'free' | 'premium'>('none');
-  const [premiumSealAvailable, setPremiumSealAvailable] = useState(false);
 
   const inputClassName =
     'w-full rounded-xl border border-border bg-accent px-3 py-2 text-sm text-white placeholder:text-muted-foreground shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
@@ -211,22 +206,14 @@ export default function CreateMySchemeView() {
       }
 
       setUserId(resolvedUserId);
-      const progressKey = `sai_brand_seal_progress_${resolvedUserId}`;
-      const unlockedKey = `sai_premium_brand_seal_${resolvedUserId}`;
-      const storedProgress = Number(window.localStorage.getItem(progressKey) || '0');
-      const storedUnlocked = window.localStorage.getItem(unlockedKey) === 'true' || storedProgress >= 50;
-      setFreeSealPublicationCount(Number.isFinite(storedProgress) ? storedProgress : 0);
-      setPremiumSealUnlocked(storedUnlocked);
 
-      const [itemsResponse, brandsResponse, sealResponse] = await Promise.all([
+      const [itemsResponse, brandsResponse] = await Promise.all([
         fetch(`/api/wardrobe-items/user/${resolvedUserId}`),
         fetch('/api/brands'),
-        fetch(`/api/brand-seals?userId=${encodeURIComponent(resolvedUserId)}`),
       ]);
 
       const itemsData = await itemsResponse.json().catch(() => []);
       const brandsData = await brandsResponse.json().catch(() => []);
-      const sealData = await sealResponse.json().catch(() => null);
 
       const parsedItems = Array.isArray(itemsData) ? itemsData : [];
       const apiBrands = Array.isArray(brandsData) ? (brandsData as Brand[]) : [];
@@ -238,9 +225,6 @@ export default function CreateMySchemeView() {
           (fallback) => !apiBrands.some((brand) => brand.brand_id === fallback.brand_id),
         ),
       ]);
-
-      const seal = (sealData as { seal?: { seal_tier?: string; status?: string } } | null)?.seal;
-      setPremiumSealAvailable(seal?.seal_tier === 'premium' && seal?.status === 'active');
     };
 
     loadSessionAndItems().catch(() => {
@@ -446,7 +430,6 @@ export default function CreateMySchemeView() {
           creation_mode: creationMode,
           pieces: pieceSnapshots,
           items: schemeItems,
-          seal_tier: sealTier,
         }),
       });
 
@@ -458,20 +441,6 @@ export default function CreateMySchemeView() {
       }
 
       setAlertMessage('Scheme saved successfully.');
-      if (cardDisplayOptions.brandSealTier === 'free') {
-        const nextCount = freeSealPublicationCount + 1;
-        const unlocked = nextCount >= 50;
-        const progressKey = `sai_brand_seal_progress_${userId}`;
-        const unlockedKey = `sai_premium_brand_seal_${userId}`;
-        window.localStorage.setItem(progressKey, String(nextCount));
-        window.localStorage.setItem(unlockedKey, String(unlocked));
-        setFreeSealPublicationCount(nextCount);
-        if (unlocked && !premiumSealUnlocked) {
-          setPremiumSealUnlocked(true);
-          setCardDisplayOptions((prev) => ({ ...prev, brandSealTier: 'premium' }));
-          setAlertMessage('Selo premium desbloqueado: voce publicou 50 esquemas com selo gratuito.');
-        }
-      }
       return true;
     } catch {
       setAlertMessage('Unable to save scheme. Please try again.');
@@ -807,29 +776,6 @@ export default function CreateMySchemeView() {
           <SchemeStepCard step="Visibility" icon="🌐" title="Visibility" description="Public abre descoberta; private mantém rascunho reservado." />
           <SchemeStepCard step="Impact" icon="🚀" title="Impacto no card" description="Esses dados influenciam descrição, badges e background recomendado." />
         </div>
-
-        <div className="rounded-2xl border border-border bg-accent p-4 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md">
-          <p className="text-sm font-semibold text-white">Selo de marca do esquema</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Aplique um selo gratuito ao seu esquema ou, se você já desbloqueou o Selo Premium, destaque-o com o selo premium.
-          </p>
-          <div className="mt-3">
-            <FancySelect
-              value={sealTier}
-              onChange={(value) => setSealTier(value as 'none' | 'free' | 'premium')}
-              options={[
-                { value: 'none', label: 'Sem selo' },
-                { value: 'free', label: '🆓 Selo Gratuito' },
-                ...(premiumSealAvailable ? [{ value: 'premium', label: '⭐ Selo Premium' }] : []),
-              ]}
-            />
-          </div>
-          {!premiumSealAvailable ? (
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Selo Premium é desbloqueado automaticamente após publicar mais de 50 vezes um esquema com selo gratuito.
-            </p>
-          ) : null}
-        </div>
       </div>
     </SectionBlock>
   );
@@ -937,8 +883,6 @@ export default function CreateMySchemeView() {
       onSelectPieceListFormat={setPieceListFormat}
       cardDisplayOptions={cardDisplayOptions}
       onChangeCardDisplayOptions={setCardDisplayOptions}
-      premiumSealUnlocked={premiumSealUnlocked}
-      freeSealPublicationCount={freeSealPublicationCount}
     />
   );
 

@@ -2,7 +2,6 @@
 
 import type {
   CardSkinId,
-  OutfitBrandSealTier,
   OutfitCardData,
   OutfitCardDisplayMode,
   OutfitCardDisplayOptions,
@@ -12,8 +11,6 @@ import FancySelect from '@/app/components/ui/fancy-select';
 interface ModernPremiumSelectionsProps {
   language?: 'pt-BR' | 'en';
   value: OutfitCardDisplayOptions;
-  premiumSealUnlocked?: boolean;
-  freeSealPublicationCount?: number;
   onChange: (next: OutfitCardDisplayOptions) => void;
 
   data?: never;
@@ -29,8 +26,6 @@ interface LegacyPremiumSelectionsProps {
 
   value?: never;
   onChange?: never;
-  premiumSealUnlocked?: boolean;
-  freeSealPublicationCount?: number;
 }
 
 type PremiumSelectionsProps =
@@ -83,7 +78,7 @@ const DISPLAY_MODES: Array<{
   {
     value: 'hide-hero',
     label: 'Sem foto do usuário',
-    hint: 'Mantém texto, selo e peças',
+    hint: 'Mantém texto e peças',
   },
   {
     value: 'hide-pieces',
@@ -205,14 +200,10 @@ function LegacySkinSelections({
 function ModernDisplaySelections({
   language = 'pt-BR',
   value,
-  premiumSealUnlocked = false,
-  freeSealPublicationCount = 0,
   onChange,
 }: ModernPremiumSelectionsProps) {
   const isPortuguese = language !== 'en';
   const displayMode = value.displayMode ?? 'complete';
-  const sealTier = value.brandSealTier ?? 'none';
-  const remaining = Math.max(0, 50 - freeSealPublicationCount);
 
   const update = (
     next: Partial<OutfitCardDisplayOptions>,
@@ -220,16 +211,6 @@ function ModernDisplaySelections({
     onChange({
       ...value,
       ...next,
-    });
-  };
-
-  const selectSeal = (tier: OutfitBrandSealTier) => {
-    if (tier === 'premium' && !premiumSealUnlocked) {
-      return;
-    }
-
-    update({
-      brandSealTier: tier,
     });
   };
 
@@ -247,8 +228,8 @@ function ModernDisplaySelections({
 
       <p className="mt-0.5 text-[11px] text-white/60">
         {isPortuguese
-          ? 'Ajuste a área interna, remova seções e aplique selos de marca sem trocar o fundo artístico.'
-          : 'Adjust the internal support area, remove sections, and apply brand seals without changing the artwork.'}
+          ? 'Ajuste a área interna e remova seções sem trocar o fundo artístico.'
+          : 'Adjust the internal support area and remove sections without changing the artwork.'}
       </p>
 
       <div className="mt-4 grid gap-3">
@@ -285,97 +266,6 @@ function ModernDisplaySelections({
           }
           options={DISPLAY_MODES}
         />
-
-        <div className="rounded-xl border border-white/15 bg-black/16 p-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55">
-            {isPortuguese
-              ? 'Selo de marca'
-              : 'Brand seal'}
-          </p>
-
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
-            {(
-              [
-                {
-                  tier: 'none',
-                  label: isPortuguese
-                    ? 'Sem selo'
-                    : 'No seal',
-                  hint: isPortuguese
-                    ? 'Card padrão'
-                    : 'Default card',
-                },
-                {
-                  tier: 'free',
-                  label: isPortuguese
-                    ? 'Gratuito'
-                    : 'Free',
-                  hint: isPortuguese
-                    ? 'Disponível agora'
-                    : 'Available now',
-                },
-                {
-                  tier: 'premium',
-                  label: 'Premium',
-                  hint: premiumSealUnlocked
-                    ? isPortuguese
-                      ? 'Desbloqueado'
-                      : 'Unlocked'
-                    : `${remaining}/50`,
-                },
-              ] as Array<{
-                tier: OutfitBrandSealTier;
-                label: string;
-                hint: string;
-              }>
-            ).map((option) => {
-              const selected =
-                sealTier === option.tier;
-
-              const disabled =
-                option.tier === 'premium' &&
-                !premiumSealUnlocked;
-
-              return (
-                <button
-                  key={option.tier}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() =>
-                    selectSeal(option.tier)
-                  }
-                  className={`rounded-xl border p-2 text-left transition ${
-                    selected
-                      ? 'border-orange-300/70 bg-orange-400/16'
-                      : 'border-white/15 bg-white/5'
-                  } ${
-                    disabled
-                      ? 'cursor-not-allowed opacity-50'
-                      : 'hover:border-white/35 hover:bg-white/10'
-                  }`}
-                >
-                  <p className="text-[11px] font-black uppercase tracking-[0.12em] text-white/90">
-                    {option.label}
-                  </p>
-
-                  <p className="mt-0.5 text-[10px] text-white/55">
-                    {option.hint}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-
-          {!premiumSealUnlocked ? (
-            <p className="mt-2 text-[11px] text-amber-100/85">
-              {isPortuguese
-                ? `Publique mais ${remaining} esquema${
-                    remaining === 1 ? '' : 's'
-                  } com selo gratuito para receber o selo premium.`
-                : `Publish ${remaining} more free-seal outfits to receive the premium seal.`}
-            </p>
-          ) : null}
-        </div>
       </div>
     </section>
   );
