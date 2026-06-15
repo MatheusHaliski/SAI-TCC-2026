@@ -160,34 +160,20 @@ export default function RunwayFeedView({ viewerId, viewerName, viewerPhotoUrl }:
 
       {/* Feed */}
       <div className={`flex-1 overflow-y-auto px-4 py-4 ${mode === 'runway' ? 'px-0 py-0' : ''}`}>
-        <ArtCelebrityPanel viewerId={viewerId} viewerName={viewerName} />
-
         {officialPosts.length > 0 && (
-          <section className="mb-4 rounded-3xl border border-amber-400/25 bg-[linear-gradient(135deg,rgba(251,191,36,0.12),rgba(124,58,237,0.12))] p-4 shadow-[0_18px_50px_rgba(15,23,42,0.35)]">
+          <section className="mb-4 rounded-3xl border border-violet-400/25 bg-[linear-gradient(135deg,rgba(124,58,237,0.12),rgba(56,189,248,0.12))] p-4 shadow-[0_18px_50px_rgba(15,23,42,0.35)]">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.28em] text-amber-100/80">Plano 2</p>
-                <h2 className="text-sm font-semibold text-white">Feed oficial · 30 dias</h2>
-                <p className="text-xs text-white/60">Destaques curados, selos e presença premium para marcas e criadores.</p>
+                <h2 className="text-sm font-semibold text-white">Destaques oficiais</h2>
+                <p className="text-xs text-white/60">Conteúdo curado de marcas e criadores.</p>
               </div>
-              <span className="rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-white/70">{viewerSeal?.status === 'active' ? 'Selo ativo' : viewerSeal?.status === 'pending' ? 'Validando' : 'Em teste'}</span>
             </div>
-
-            {viewerSeal && (
-              <div className="mb-3 rounded-2xl border border-white/10 bg-black/30 p-3 text-xs text-white/80">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.22em] text-amber-100">{viewerSeal.seal_tier ?? 'none'}</span>
-                  <span className="text-white/60">Status: {viewerSeal.status ?? 'inactive'}</span>
-                  <span className="text-white/60">Feed oficial: {viewerSeal.official_feed_eligible ? 'habilitado' : 'não habilitado'}</span>
-                </div>
-              </div>
-            )}
 
             <div className="grid gap-2">
               {officialPosts.slice(0, 3).map((post) => (
                 <article key={post.id} className="rounded-2xl border border-white/10 bg-black/30 p-3 text-white/85">
                   <div className="mb-1 flex items-center justify-between gap-2">
-                    <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.22em] text-amber-100">Selo oficial</span>
+                    <span className="rounded-full border border-violet-400/25 bg-violet-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.22em] text-violet-100">Oficial</span>
                     {post.featured_until ? <span className="text-[10px] text-white/45">até {new Date(post.featured_until).toLocaleDateString('pt-BR')}</span> : null}
                   </div>
                   <h3 className="text-sm font-semibold text-white">{post.title}</h3>

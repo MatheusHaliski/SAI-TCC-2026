@@ -22,10 +22,6 @@ export async function GET(request: NextRequest) {
       profile: profile
         ? {
             ...profile,
-            brandSealTier: (profile.brandSealTier as string | undefined) ?? (profile.brand_seal_tier as string | undefined) ?? 'none',
-            brandSealStatus: (profile.brandSealStatus as string | undefined) ?? (profile.brand_seal_status as string | undefined) ?? 'inactive',
-            officialFeedEligible: Boolean(profile.officialFeedEligible ?? profile.official_feed_eligible),
-            officialFeedUntil: (profile.officialFeedUntil as string | undefined) ?? (profile.official_feed_until as string | undefined) ?? null,
           }
         : null,
     });
@@ -48,10 +44,6 @@ export async function PATCH(request: NextRequest) {
       email: body.email?.trim() || '',
       bio: body.bio?.trim() || '',
       photo_url: body.avatarUrl || '',
-      brandSealTier: 'none',
-      brandSealStatus: 'inactive',
-      officialFeedEligible: false,
-      officialFeedUntil: null,
       updatedAt: new Date().toISOString(),
     };
 

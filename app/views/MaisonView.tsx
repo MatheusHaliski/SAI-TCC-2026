@@ -45,30 +45,6 @@ interface BrandProfile {
   sustainability: { rating: SustainabilityRating; note: string };
 }
 
-const PREMIUM_BRAND_SEAL_SCHEMES = [
-  {
-    id: 'premium-brand-1',
-    brand: 'Nike',
-    creator: 'Ari Studio',
-    title: 'Air Tailoring Motion',
-    note: 'Esquema com selo premium vigente: performance, alfaiataria esportiva e leitura limpa de marca.',
-  },
-  {
-    id: 'premium-brand-2',
-    brand: 'Lacoste',
-    creator: 'Maison Norte',
-    title: 'Polo Garden Capsule',
-    note: 'Curadoria mensal com selo premium aplicado ao esquema e destaque visual no feed da marca.',
-  },
-  {
-    id: 'premium-brand-3',
-    brand: 'Adidas',
-    creator: 'Three Lines Lab',
-    title: 'Terrace Club Weekend',
-    note: 'Look publicado com selo premium durante o mes atual para ampliar descoberta por marca.',
-  },
-];
-
 const BRAND_PROFILES: Record<string, BrandProfile> = {
   adidas: {
     category: 'Esportivo & Streetwear',
@@ -358,15 +334,6 @@ interface BrandData {
   is_active: boolean;
 }
 
-interface PremiumSchemeItem {
-  scheme_id: string;
-  title: string;
-  style: string;
-  occasion: string;
-  cover_image_url?: string | null;
-  author: string;
-  updatedAt?: string;
-}
 
 interface WardrobePreviewItem {
   wardrobe_item_id: string;
@@ -699,8 +666,6 @@ export default function MaisonView() {
   const [selectedBrand, setSelectedBrand] = useState<BrandData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isPortuguese, setIsPortuguese] = useState(true);
-  const [premiumSchemes, setPremiumSchemes] = useState<PremiumSchemeItem[]>([]);
-  const [loadingPremium, setLoadingPremium] = useState(true);
 
   useEffect(() => {
     fetch('/api/brands')
@@ -708,14 +673,6 @@ export default function MaisonView() {
       .then((data) => setBrands(Array.isArray(data) ? data : []))
       .catch(() => setBrands([]))
       .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/schemes/premium-feed')
-      .then((res) => res.json())
-      .then((data) => setPremiumSchemes(Array.isArray(data) ? data : []))
-      .catch(() => setPremiumSchemes([]))
-      .finally(() => setLoadingPremium(false));
   }, []);
 
   useEffect(() => {
@@ -753,36 +710,6 @@ export default function MaisonView() {
         title={isPortuguese ? 'Marcas' : 'Brand'}
         subtitle={isPortuguese ? 'Feed dedicado às marcas — categoria, público-alvo, peças icônicas, recomendações por estação e muito mais.' : 'Dedicated brand feed — category, target audience, iconic pieces, seasonal recommendations, and more.'}
       />
-
-      <SectionBlock
-        title={isPortuguese ? 'Esquemas com Selo Premium do mês' : 'Premium-sealed schemes this month'}
-        subtitle={isPortuguese ? 'Esquemas públicos de criadores com Selo Premium ativo, publicados ou atualizados neste mês.' : 'Public schemes from creators with an active Premium Seal, created or updated this month.'}
-      >
-        {loadingPremium ? (
-          <p className="mt-4 text-sm text-white/60">{isPortuguese ? 'Carregando esquemas premium...' : 'Loading premium schemes...'}</p>
-        ) : premiumSchemes.length === 0 ? (
-          <p className="mt-4 text-sm text-white/60">{isPortuguese ? 'Nenhum esquema com selo premium neste mês ainda.' : 'No premium-sealed schemes this month yet.'}</p>
-        ) : (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {premiumSchemes.map((scheme) => (
-              <article
-                key={scheme.scheme_id}
-                className="flex flex-col gap-2 rounded-2xl border border-amber-400/30 p-4"
-                style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.16) 0%, rgba(15,23,42,0.78) 60%, rgba(88,28,135,0.28) 100%)' }}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-full border border-amber-400/40 bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100">
-                    ⭐ Premium
-                  </span>
-                  <span className="text-[10px] text-white/45">@{scheme.author}</span>
-                </div>
-                <p className="break-words text-sm font-bold leading-snug text-white">{scheme.title}</p>
-                <p className="text-xs text-white/60">{scheme.style} · {scheme.occasion}</p>
-              </article>
-            ))}
-          </div>
-        )}
-      </SectionBlock>
 
       <SectionBlock title="Marcas Registradas" subtitle="Todas as marcas ativas na plataforma FAI.">
         <label className="mt-4 flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
