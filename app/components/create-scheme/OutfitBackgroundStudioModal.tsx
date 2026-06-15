@@ -7,6 +7,7 @@ import {
   BackgroundStudioStyleConfig,
   OutfitBackgroundConfig,
   OutfitCardData,
+  OutfitCardDisplayOptions,
   OutfitPieceListFormat,
   buildBackgroundCssStyle,
   resolveBrandLogoUrlByName,
@@ -106,6 +107,10 @@ interface OutfitBackgroundStudioModalProps {
   onSelectSkin?: (skinId: CardSkinId) => void;
   pieceListFormat?: OutfitPieceListFormat;
   onSelectPieceListFormat?: (format: OutfitPieceListFormat) => void;
+  cardDisplayOptions?: OutfitCardDisplayOptions;
+  onChangeCardDisplayOptions?: (options: OutfitCardDisplayOptions) => void;
+  premiumSealUnlocked?: boolean;
+  freeSealPublicationCount?: number;
   /** Render as an inline page section instead of a fixed modal overlay */
   asPage?: boolean;
 }
@@ -2045,6 +2050,10 @@ export default function OutfitBackgroundStudioModal({
   onSelectSkin,
   pieceListFormat,
   onSelectPieceListFormat,
+  cardDisplayOptions,
+  onChangeCardDisplayOptions,
+  premiumSealUnlocked,
+  freeSealPublicationCount,
   asPage = false,
 }: OutfitBackgroundStudioModalProps) {
   const buildNoMaterialConfig = (baseColor: string): FabricMaterialConfig => ({
@@ -2193,6 +2202,7 @@ export default function OutfitBackgroundStudioModal({
     ...previewCardData,
     outfitBackground: draft,
     pieceListFormat: pieceListFormat ?? previewCardData.pieceListFormat,
+    displayOptions: cardDisplayOptions ?? previewCardData.displayOptions,
   };
 
   const dominantColor =
@@ -3329,6 +3339,15 @@ export default function OutfitBackgroundStudioModal({
                 data={previewData}
                 selectedSkin={selectedCardSkin}
                 onSelectSkin={onSelectSkin}
+              />
+            ) : null}
+
+            {onChangeCardDisplayOptions ? (
+              <PremiumSelections
+                value={cardDisplayOptions ?? previewCardData.displayOptions ?? {}}
+                onChange={onChangeCardDisplayOptions}
+                premiumSealUnlocked={premiumSealUnlocked}
+                freeSealPublicationCount={freeSealPublicationCount}
               />
             ) : null}
 
