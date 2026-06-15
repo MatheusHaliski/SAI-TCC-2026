@@ -42,10 +42,6 @@ type UserPreview = {
   username: string;
   descriptor: string;
   avatarUrl?: string;
-  brandSealTier?: string;
-  brandSealStatus?: string;
-  officialFeedEligible?: boolean;
-  officialFeedUntil?: string | null;
 };
 
 const SLOT_PREVIEW_DEFAULTS: Record<
@@ -113,13 +109,6 @@ export default function SearchItemsView() {
 
       const brands = [...new Set(pieces.map((piece) => piece.brand).filter(Boolean))].slice(0, 4);
 
-      const userSeal = usersById[scheme.user_id];
-      const sealBadges = [
-        userSeal?.brandSealTier === 'premium' ? { label: 'Selo Premium', icon: '🏅' as const } : null,
-        userSeal?.brandSealTier === 'free' ? { label: 'Selo Gratuito', icon: '✦' as const } : null,
-        userSeal?.officialFeedEligible ? { label: 'Feed oficial', icon: '⭐' as const } : null,
-      ].filter(Boolean) as { label: string; icon: string }[];
-
       map[scheme.scheme_id] = {
         outfitName: scheme.title || 'Untitled Outfit',
         outfitStyleLine: `${scheme.style || 'Streetwear'} • ${scheme.occasion || 'General'}`,
@@ -153,7 +142,6 @@ export default function SearchItemsView() {
           { label: scheme.style || 'Style', icon: '🎯' },
           { label: scheme.occasion || 'Occasion', icon: '📍' },
           { label: `${pieces.length} pieces`, icon: '🧩' },
-          ...sealBadges,
         ],
       };
     });
@@ -218,9 +206,6 @@ export default function SearchItemsView() {
               username={user.username}
               descriptor={user.descriptor}
               avatarUrl={user.avatarUrl}
-              brandSealTier={user.brandSealTier}
-              brandSealStatus={user.brandSealStatus}
-              officialFeedEligible={user.officialFeedEligible}
               onOpenProfile={() => router.push(`/profile/${user.user_id}?section=user-info`)}
             />
           ))}
