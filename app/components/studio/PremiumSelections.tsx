@@ -384,9 +384,9 @@ function ModernDisplaySelections({
 export default function PremiumSelections(
   props: PremiumSelectionsProps,
 ) {
-  if ('data' in props) {
-    return <LegacySkinSelections {...props} />;
+  if ('data' in props && props.data !== undefined) {
+    return <LegacySkinSelections {...(props as LegacyPremiumSelectionsProps)} />;
   }
 
-  return <ModernDisplaySelections {...props} />;
+  return <ModernDisplaySelections {...(props as ModernPremiumSelectionsProps)} />;
 }
