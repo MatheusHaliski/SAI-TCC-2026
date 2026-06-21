@@ -57,11 +57,31 @@ export default function OutfitPieceList({
   );
 }
 
+/** Builds inline cell styling from a piece's optional per-piece style override. */
+function buildCellStyle(piece: OutfitPiece): { container?: React.CSSProperties; text?: React.CSSProperties } {
+  const style = piece.style;
+  if (!style) return {};
+  const container: React.CSSProperties = {};
+  if (style.cellBackgroundImage) {
+    container.backgroundImage = `url(${style.cellBackgroundImage})`;
+    container.backgroundSize = 'cover';
+    container.backgroundPosition = 'center';
+  } else if (style.cellBackground) {
+    container.background = style.cellBackground;
+  }
+  if (style.borderColor) container.borderColor = style.borderColor;
+  if (style.highlight) container.boxShadow = `0 0 0 2px ${style.accentColor || '#f0abfc'}`;
+  const text = style.textColor ? { color: style.textColor } : undefined;
+  return { container, text };
+}
+
 function PieceTile({ piece, onClick, height }: { piece: OutfitPiece; onClick?: () => void; height: number }) {
+  const cell = buildCellStyle(piece);
   return (
     <button
       type="button"
       onClick={onClick}
+      style={cell.container}
       className="w-full overflow-hidden rounded-xl border border-white/12 bg-white/8 text-left text-white transition hover:border-white/25"
     >
       <div style={{ height }} className="flex items-center justify-center overflow-hidden bg-black/25">
@@ -69,13 +89,13 @@ function PieceTile({ piece, onClick, height }: { piece: OutfitPiece; onClick?: (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={piece.imageUrl} alt={piece.name} className="h-full w-full object-cover" />
         ) : (
-          <span className="text-[10px] uppercase tracking-[0.12em] text-white/50">{piece.pieceType || 'vazio'}</span>
+          <span className="text-[10px] uppercase tracking-[0.12em] text-white/50" style={cell.text}>{piece.pieceType || 'vazio'}</span>
         )}
       </div>
       <div className="space-y-0.5 p-2">
-        <p className="truncate text-[9px] uppercase tracking-[0.12em] text-white/55">{piece.pieceType || 'Peça'}</p>
-        <p className="truncate text-sm font-bold">{piece.name || '—'}</p>
-        {piece.brand ? <p className="truncate text-[10px] text-white/65">🏷️ {piece.brand}</p> : null}
+        <p className="truncate text-[9px] uppercase tracking-[0.12em] text-white/55" style={cell.text}>{piece.pieceType || 'Peça'}</p>
+        <p className="truncate text-sm font-bold" style={cell.text}>{piece.name || '—'}</p>
+        {piece.brand ? <p className="truncate text-[10px] text-white/65" style={cell.text}>🏷️ {piece.brand}</p> : null}
       </div>
     </button>
   );
@@ -84,11 +104,14 @@ function PieceTile({ piece, onClick, height }: { piece: OutfitPiece; onClick?: (
 function StackLayout({ pieces, onTileClick, compact }: LayoutProps) {
   return (
     <div className="flex w-full min-w-0 flex-col gap-2">
-      {pieces.map((piece, idx) => (
+      {pieces.map((piece, idx) => {
+        const cell = buildCellStyle(piece);
+        return (
         <button
           key={piece.id}
           type="button"
           onClick={() => onTileClick?.(piece)}
+          style={cell.container}
           className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-left text-white transition hover:border-white/25"
         >
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/35 text-[11px] font-extrabold">{idx + 1}</span>
@@ -99,12 +122,13 @@ function StackLayout({ pieces, onTileClick, compact }: LayoutProps) {
             ) : null}
           </span>
           <span className="min-w-0 flex-1">
-            <p className="truncate text-[10px] uppercase tracking-[0.1em] text-white/55">{piece.pieceType || 'Peça'}</p>
-            <p className="truncate text-sm font-bold">{piece.name || '—'}</p>
-            {piece.brand ? <p className="truncate text-[10px] text-white/65">🏷️ {piece.brand}</p> : null}
+            <p className="truncate text-[10px] uppercase tracking-[0.1em] text-white/55" style={cell.text}>{piece.pieceType || 'Peça'}</p>
+            <p className="truncate text-sm font-bold" style={cell.text}>{piece.name || '—'}</p>
+            {piece.brand ? <p className="truncate text-[10px] text-white/65" style={cell.text}>🏷️ {piece.brand}</p> : null}
           </span>
         </button>
-      ))}
+        );
+      })}
     </div>
   );
 }
