@@ -29,7 +29,8 @@ import { applyArtworkToOutfitCard } from '@/app/lib/artwork-studio';
 import FancySelect from '@/app/components/ui/fancy-select';
 import { MATERIAL_PRESETS, applyFabricMaterialToCard, buildFabricPresetConfig, type FabricMaterialConfig } from '@/app/lib/materialPresets';
 import PremiumSelections from '@/app/components/studio/PremiumSelections';
-import type { CardSkinId } from '@/app/lib/outfit-card';
+import PieceStyleEditorPanel from '@/app/components/create-scheme/PieceStyleEditorPanel';
+import type { CardSkinId, OutfitPiece } from '@/app/lib/outfit-card';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
 type GeometryFamily = 'arrows' | 'waves' | 'diamond' | 'mesh' | 'circles' | 'triangles' | 'stars' | 'flowers' | 'beams' | 'panels' | 'mixed';
@@ -109,6 +110,8 @@ interface OutfitBackgroundStudioModalProps {
   onSelectPieceListFormat?: (format: OutfitPieceListFormat) => void;
   cardDisplayOptions?: OutfitCardDisplayOptions;
   onChangeCardDisplayOptions?: (options: OutfitCardDisplayOptions) => void;
+  /** Called when per-piece styling changes in the inline piece editor. */
+  onChangePieces?: (pieces: OutfitPiece[]) => void;
   /** Render as an inline page section instead of a fixed modal overlay */
   asPage?: boolean;
 }
@@ -2050,6 +2053,7 @@ export default function OutfitBackgroundStudioModal({
   onSelectPieceListFormat,
   cardDisplayOptions,
   onChangeCardDisplayOptions,
+  onChangePieces,
   asPage = false,
 }: OutfitBackgroundStudioModalProps) {
   const buildNoMaterialConfig = (baseColor: string): FabricMaterialConfig => ({
@@ -3366,6 +3370,14 @@ export default function OutfitBackgroundStudioModal({
                 })}
               </div>
             </section>
+
+            {onChangePieces ? (
+              <PieceStyleEditorPanel
+                pieces={previewCardData.pieces}
+                format={pieceListFormat ?? previewCardData.pieceListFormat}
+                onChangePieces={onChangePieces}
+              />
+            ) : null}
           </section>
 
           <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4 lg:sticky lg:top-4 lg:h-fit' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
