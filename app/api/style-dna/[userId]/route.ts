@@ -6,6 +6,7 @@ import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItem
 import {
   buildIdentityPhrase,
   computeCamada1,
+  computeDnaMarkers,
   DNA_MIN_LOOKS,
   DNA_MIN_PIECES,
   emptyLife,
@@ -64,12 +65,14 @@ export async function GET(_: Request, { params }: { params: Promise<{ userId: st
     color: i.color,
     style_tags: i.style_tags ?? [],
     image_url: i.image_url,
+    brand: i.brand,
   }));
 
   const usage = await schemeItemsRepository.getUsageByWardrobeItemIds(wardrobe.map((w) => w.wardrobe_item_id));
   const life = await loadLife(userId);
   const camada1 = computeCamada1(wardrobe, schemes, usage);
   const identityPhrase = buildIdentityPhrase(camada1, life);
+  const markers = computeDnaMarkers(wardrobe, usage);
 
   const pieces = wardrobe.length;
   const looks = schemes.length;
@@ -85,7 +88,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ userId: st
       minPieces: DNA_MIN_PIECES,
       minLooks: DNA_MIN_LOOKS,
     },
-    dna: { camada1, life, identityPhrase },
+    dna: { camada1, life, identityPhrase, markers },
   });
 }
 

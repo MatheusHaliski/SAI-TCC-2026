@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import SectionBlock from '@/app/components/shared/SectionBlock';
-import type { StyleDna, StyleDnaLife } from '@/app/lib/style-dna';
+import type { StyleDna, StyleDnaLife, StyleDnaMarker } from '@/app/lib/style-dna';
 
 interface StyleDnaResponse {
   ok: boolean;
@@ -19,6 +19,12 @@ interface StyleDnaSectionProps {
 
 type LifeCategory = 'lugares' | 'pessoas' | 'animais' | 'objetos';
 
+const MARKER_TIER_META: Record<StyleDnaMarker['tier'], { size: string; opacity: string; ring: string }> = {
+  dominante: { size: 'h-12 w-12', opacity: 'opacity-100', ring: 'ring-2 ring-fuchsia-400/70' },
+  recorrente: { size: 'h-9 w-9', opacity: 'opacity-90', ring: 'ring-1 ring-violet-400/50' },
+  recessivo: { size: 'h-6 w-6', opacity: 'opacity-60', ring: 'ring-1 ring-white/20' },
+};
+
 const CATEGORY_META: Array<{ key: LifeCategory; label: string; limit: number; placeholder: string }> = [
   { key: 'lugares', label: 'Lugares', limit: 3, placeholder: 'cidade natal, destino dos sonhos…' },
   { key: 'pessoas', label: 'Pessoas', limit: 3, placeholder: 'quem importa (apelidos)…' },
@@ -32,6 +38,7 @@ export default function StyleDnaSection({ userId, canEdit }: StyleDnaSectionProp
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Record<LifeCategory, string>>({ lugares: '', pessoas: '', animais: '', objetos: '' });
   const [hidden, setHidden] = useState<Set<LifeCategory>>(new Set());
+  const [activeMarkerId, setActiveMarkerId] = useState<string | null>(null);
 
   const hydrateForm = useCallback((life: StyleDnaLife) => {
     setForm({
@@ -171,6 +178,64 @@ export default function StyleDnaSection({ userId, canEdit }: StyleDnaSectionProp
           </div>
         ) : null}
       </div>
+
+      {/* Marcadores de DNA — hélice de marcas/peças recorrentes */}
+      {data.dna.markers.length ? (
+        <div className="mt-4 rounded-2xl border border-white/15 bg-white/5 p-4">
+          <p className="text-sm font-semibold text-white">Marcadores de DNA</p>
+          <p className="mt-0.5 text-xs text-white/55">Marcas e peças que se repetem na sua história — genes dominantes aparecem maiores.</p>
+
+          <div className="mt-4 flex flex-col items-stretch gap-2">
+            {data.dna.markers.map((marker, idx) => {
+              const meta = MARKER_TIER_META[marker.tier];
+              const isActive = activeMarkerId === marker.id;
+              const align = idx % 2 === 0 ? 'self-start' : 'self-end';
+              return (
+                <div key={marker.id} className={`flex max-w-[85%] items-center gap-3 ${align}`}>
+                  {idx % 2 !== 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setActiveMarkerId(isActive ? null : marker.id)}
+                      className="text-right text-xs text-white/70"
+                    >
+                      <span className="block font-medium text-white">{marker.label}</span>
+                      <span className="text-white/40">{marker.tier}</span>
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setActiveMarkerId(isActive ? null : marker.id)}
+                    className={`relative shrink-0 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 ${meta.size} ${meta.opacity} ${meta.ring}`}
+                    title={`${marker.label} — ${marker.tier}`}
+                  />
+                  {idx % 2 === 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setActiveMarkerId(isActive ? null : marker.id)}
+                      className="text-left text-xs text-white/70"
+                    >
+                      <span className="block font-medium text-white">{marker.label}</span>
+                      <span className="text-white/40">{marker.tier}</span>
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+
+          {activeMarkerId ? (() => {
+            const marker = data.dna.markers.find((m) => m.id === activeMarkerId);
+            if (!marker) return null;
+            return (
+              <div className="mt-4 rounded-xl border border-white/12 bg-black/25 p-3 text-xs text-white/70">
+                <p className="font-semibold text-white">{marker.label}</p>
+                <p className="mt-1">{marker.pieceCount} peça{marker.pieceCount > 1 ? 's' : ''} no guarda-roupa · usada{marker.usageCount === 1 ? '' : 's'} em {marker.usageCount} look{marker.usageCount === 1 ? '' : 's'}</p>
+                {marker.lastUsedAt ? <p className="mt-1 text-white/45">Último uso: {new Date(marker.lastUsedAt).toLocaleDateString('pt-BR')}</p> : null}
+              </div>
+            );
+          })() : null}
+        </div>
+      ) : null}
 
       {/* Camada 2 — Identidade de Vida */}
       <div className="mt-4 rounded-2xl border border-white/15 bg-white/5 p-4">

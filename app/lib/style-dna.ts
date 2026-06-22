@@ -26,10 +26,21 @@ export interface StyleDnaCamada1 {
   iconPiece: { name: string; pieceType: string; imageUrl: string } | null;
 }
 
+export interface StyleDnaMarker {
+  id: string;
+  label: string;
+  tier: 'dominante' | 'recorrente' | 'recessivo';
+  pieceCount: number;
+  usageCount: number;
+  lastUsedAt: string | null;
+  sampleImageUrl: string;
+}
+
 export interface StyleDna {
   camada1: StyleDnaCamada1;
   life: StyleDnaLife;
   identityPhrase: string;
+  markers: StyleDnaMarker[];
 }
 
 export interface DnaWardrobeItem {
@@ -39,6 +50,7 @@ export interface DnaWardrobeItem {
   color: string;
   style_tags: string[];
   image_url?: string;
+  brand?: string;
 }
 
 export interface DnaScheme {
@@ -158,6 +170,66 @@ export function computeCamada1(
   }
 
   return { archetype, palette, silhouette, boldnessIndex, iconPiece };
+}
+
+const MAX_MARKERS = 8;
+
+/**
+ * "Marcadores de DNA": groups pieces by brand (falling back to piece type when
+ * no brand is on record) and ranks them by recurrence. Mirrors a DNA-helix
+ * metaphor — frequent brands/types are "dominant genes", rare ones "recessive".
+ */
+export function computeDnaMarkers(
+  items: DnaWardrobeItem[],
+  usage: Record<string, { count: number; lastUsedAt: string | null }>,
+): StyleDnaMarker[] {
+  interface Group { label: string; pieceCount: number; usageCount: number; lastUsedAt: string | null; sampleImageUrl: string }
+  const groups = new Map<string, Group>();
+
+  for (const item of items) {
+    const brand = (item.brand ?? '').trim();
+    const key = brand ? `brand:${brand.toLowerCase()}` : `type:${(item.piece_type ?? '').toLowerCase()}`;
+    const label = brand || (item.piece_type ? item.piece_type.charAt(0).toUpperCase() + item.piece_type.slice(1) : 'Peça');
+    const itemUsage = usage[item.wardrobe_item_id] ?? { count: 0, lastUsedAt: null };
+
+    const existing = groups.get(key);
+    if (!existing) {
+      groups.set(key, {
+        label,
+        pieceCount: 1,
+        usageCount: itemUsage.count,
+        lastUsedAt: itemUsage.lastUsedAt,
+        sampleImageUrl: item.image_url ?? '',
+      });
+      continue;
+    }
+    existing.pieceCount += 1;
+    existing.usageCount += itemUsage.count;
+    if (itemUsage.lastUsedAt && (!existing.lastUsedAt || itemUsage.lastUsedAt > existing.lastUsedAt)) {
+      existing.lastUsedAt = itemUsage.lastUsedAt;
+    }
+  }
+
+  const ranked = Array.from(groups.entries())
+    .map(([id, g]) => ({ id, ...g, score: g.pieceCount * 2 + g.usageCount }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_MARKERS);
+
+  const maxScore = ranked[0]?.score ?? 0;
+
+  return ranked.map((g) => {
+    const ratio = maxScore > 0 ? g.score / maxScore : 0;
+    const tier: StyleDnaMarker['tier'] = ratio >= 0.66 ? 'dominante' : ratio >= 0.33 ? 'recorrente' : 'recessivo';
+    return {
+      id: g.id,
+      label: g.label,
+      tier,
+      pieceCount: g.pieceCount,
+      usageCount: g.usageCount,
+      lastUsedAt: g.lastUsedAt,
+      sampleImageUrl: g.sampleImageUrl,
+    };
+  });
 }
 
 function joinNatural(values: string[]): string {
