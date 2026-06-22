@@ -435,6 +435,8 @@ export interface AutopilotWardrobeItem {
   image_url: string;
   name: string;
   color: string;
+  /** Resolved brand name; empty when the piece has no brand on record. */
+  brand?: string;
 }
 
 export interface SchemeSuggestion {
