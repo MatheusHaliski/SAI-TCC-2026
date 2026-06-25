@@ -524,14 +524,18 @@ export class WardrobeItemsRepository extends BaseRepository {
     for (const doc of snapshot.docs) merged.set(doc.id, doc);
     for (const doc of legacySnapshot.docs) merged.set(doc.id, doc);
 
+    const brandMap = await this.brandsRepository.getNameMap();
+
     return Array.from(merged.values()).map((doc) => {
       const item = doc.data() as Record<string, unknown>;
+      const brandId = String(item.brand_id ?? '');
       return {
         wardrobe_item_id: doc.id,
         piece_type: String(item.piece_type ?? ''),
         occasion_tags: Array.isArray(item.occasion_tags) ? item.occasion_tags.map(String) : [],
         style_tags: Array.isArray(item.style_tags) ? item.style_tags.map(String) : [],
         image_url: String(item.image_url ?? ''),
+        brand: brandId ? (brandMap.get(brandId) ?? '') : '',
         name: String(item.name ?? ''),
         color: String(item.color ?? ''),
       };
