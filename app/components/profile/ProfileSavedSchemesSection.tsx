@@ -1,10 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import SectionBlock from '@/app/components/shared/SectionBlock';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import OutfitExportModal from '@/app/components/profile/OutfitExportModal';
 import { OutfitCardData, OutfitBackgroundConfig } from '@/app/lib/outfit-card';
+
+type SimilarMatch = { wardrobe_item_id: string; name: string; piece_type: string; color: string; image_url: string; score: number };
+type SimilarResult = { look_piece: { name: string; pieceType: string; slot: string }; matches: SimilarMatch[] };
 
 type SchemeSlot = 'upper' | 'lower' | 'shoes' | 'accessory';
 
@@ -32,7 +36,9 @@ interface SavedScheme {
   occasion: string;
   description?: string | null;
   cover_image_url?: string | null;
-  visibility: 'public' | 'private';
+  visibility: 'public' | 'followers' | 'private';
+  user_id?: string;
+  author_name?: string;
   pieces?: SchemePieceSnapshot[];
 }
 
@@ -79,16 +85,18 @@ const toData = (scheme: SavedScheme, flagReplacement = false): OutfitCardData =>
       }))
     : [];
 
+  const metaBadges = [
+    { icon: '💡', label: 'Inspiração' },
+    { icon: scheme.visibility === 'public' ? '🌐' : scheme.visibility === 'followers' ? '👥' : '🔒', label: scheme.visibility === 'public' ? 'Público' : scheme.visibility === 'followers' ? 'Seguidores' : 'Privado' },
+  ];
+
   return {
     outfitName: scheme.title,
     outfitStyleLine: `${scheme.style} · ${scheme.occasion}`,
     outfitDescription: undefined, // let OutfitCard build fallback from pieces
     heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
     outfitBackground: parseBackground(scheme.description),
-    metaBadges: [
-      { icon: '💾', label: 'Salvo' },
-      { icon: scheme.visibility === 'public' ? '🌐' : '🔒', label: scheme.visibility === 'public' ? 'Público' : 'Privado' },
-    ],
+    metaBadges,
     pieces,
   };
 };
@@ -146,6 +154,10 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
   const [remixedScheme, setRemixedScheme] = useState<SavedScheme | null>(null);
   const [remixingId, setRemixingId] = useState<string | null>(null);
   const [remixError, setRemixError] = useState<string | null>(null);
+  // "Tenho peças parecidas" — maps a saved look to the viewer's own closet items.
+  const [similarScheme, setSimilarScheme] = useState<SavedScheme | null>(null);
+  const [similarLoading, setSimilarLoading] = useState(false);
+  const [similarResults, setSimilarResults] = useState<SimilarResult[] | null>(null);
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -205,6 +217,27 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
     }
   };
 
+  // Maps the saved look to pieces the viewer already owns (no piece is copied).
+  const handleSimilar = async (scheme: SavedScheme) => {
+    if (!userId) return;
+    setSimilarScheme(scheme);
+    setSimilarLoading(true);
+    setSimilarResults(null);
+    try {
+      const res = await fetch('/api/inspirations/similar-pieces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, schemeId: scheme.scheme_id }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      setSimilarResults(res.ok && Array.isArray(payload?.results) ? (payload.results as SimilarResult[]) : []);
+    } catch {
+      setSimilarResults([]);
+    } finally {
+      setSimilarLoading(false);
+    }
+  };
+
   // Show loading state until favorites are resolved; then show only actual saved (favorited) cards
   const cards = useMemo(() => {
     if (favoriteSchemes === null) return null; // still loading
@@ -213,34 +246,35 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
 
   return (
     <>
-      <SectionBlock title="Esquemas Salvos" subtitle="Cards de look salvos dos outros criadores da comunidade.">
+      <SectionBlock title="Inspirações" subtitle="Looks de outros criadores que você salvou. As peças NÃO são copiadas para o seu guarda-roupa — use “Tenho peças parecidas” para encontrar itens equivalentes no seu closet.">
         {remixError ? (
           <p className="mt-3 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">{remixError}</p>
         ) : null}
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="mt-4 grid justify-items-center gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,900px),1fr))]">
           {cards === null ? (
             <p className="text-sm text-white/60">Carregando esquemas salvos…</p>
           ) : cards.length ? (
             cards.map(({ scheme, data }) => (
-              <OutfitCard
-                key={scheme.scheme_id}
-                data={data}
-                variant="compact"
-                actions={[
-                  { label: 'Abrir', onClick: () => setRemixedScheme(scheme), tone: 'accent' },
-                  { label: 'Editar', onClick: () => setRemixedScheme(scheme) },
-                  { label: 'Exportar', onClick: () => setExportingScheme(scheme), tone: 'accent' },
-                  {
-                    label: remixingId === scheme.scheme_id ? 'Remixando…' : 'Remixar',
-                    onClick: () => handleRemix(scheme),
-                    tone: 'accent',
-                  },
-                  { label: 'Remover', tone: 'danger' },
-                ]}
-              />
+              <div key={scheme.scheme_id} className="w-full max-w-[980px]">
+                <OutfitCard
+                  data={data}
+                  variant="default"
+                  actions={[
+                    { label: 'Abrir', onClick: () => setRemixedScheme(scheme), tone: 'accent' },
+                    { label: '🔎 Tenho peças parecidas', onClick: () => void handleSimilar(scheme), tone: 'accent' },
+                    { label: 'Exportar', onClick: () => setExportingScheme(scheme), tone: 'accent' },
+                    {
+                      label: remixingId === scheme.scheme_id ? 'Remixando…' : 'Remixar',
+                      onClick: () => handleRemix(scheme),
+                      tone: 'accent',
+                    },
+                    { label: 'Remover', tone: 'danger' },
+                  ]}
+                />
+              </div>
             ))
           ) : (
-            <p className="text-sm text-white/80">Nenhum esquema salvo ainda. Favorite cards públicos para vê-los aqui.</p>
+            <p className="text-sm text-white/80">Nenhuma inspiração salva ainda. Favorite looks públicos da comunidade para guardá-los aqui.</p>
           )}
         </div>
       </SectionBlock>
@@ -270,6 +304,64 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
               </button>
             </div>
             <OutfitCard data={toData(remixedScheme, true)} variant="default" />
+          </div>
+        </div>
+      ) : null}
+
+      {similarScheme ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setSimilarScheme(null)}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-white/15 bg-slate-950/95 p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="truncate text-base font-semibold text-white">Peças parecidas no seu closet</h3>
+                <p className="text-xs text-white/55">Mapeamento de “{similarScheme.title}” para itens que você já possui.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSimilarScheme(null)}
+                className="shrink-0 rounded-lg border border-white/30 px-2.5 py-1 text-xs font-semibold text-white"
+              >
+                Fechar
+              </button>
+            </div>
+
+            {similarLoading ? (
+              <p className="py-6 text-center text-sm text-white/60">Procurando peças parecidas…</p>
+            ) : !similarResults || !similarResults.length ? (
+              <p className="py-6 text-center text-sm text-white/60">Não encontramos peças correspondentes no seu guarda-roupa.</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {similarResults.map((result, idx) => (
+                  <div key={`${result.look_piece.name}-${idx}`} className="rounded-2xl border border-white/12 bg-white/5 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-white/45">{result.look_piece.slot}</p>
+                    <p className="text-sm font-semibold text-white">{result.look_piece.name}</p>
+                    {result.matches.length ? (
+                      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {result.matches.map((match) => (
+                          <div key={match.wardrobe_item_id} className="rounded-xl border border-white/12 bg-black/20 p-1.5">
+                            <div className="relative h-16 w-full overflow-hidden rounded-lg bg-black/30">
+                              {match.image_url ? (
+                                <Image src={match.image_url} alt={match.name} width={120} height={64} className="h-full w-full object-cover" unoptimized />
+                              ) : null}
+                            </div>
+                            <p className="mt-1 truncate text-[11px] font-medium text-white/90">{match.name}</p>
+                            <p className="truncate text-[10px] text-white/45">{match.piece_type}{match.color ? ` · ${match.color}` : ''}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-xs text-amber-200/80">Nenhuma peça parecida — talvez uma oportunidade para adicionar ao closet.</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ) : null}

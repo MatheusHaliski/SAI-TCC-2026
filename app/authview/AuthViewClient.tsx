@@ -60,7 +60,7 @@ const EyeClosed = () => (
     </svg>
 );
 const SparklesIcon = () => (
-    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={28} height={28} style={{ objectFit: 'cover', borderRadius: '6px' }} />
+    <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={368} height={368} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} />
 );
 const MailIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -285,8 +285,9 @@ export default function AuthViewClient() {
             {/* ── Left branding panel (desktop only) ── */}
             <div style={{ ...s.left, display: undefined }} className="hidden lg:flex" >
                 {/* Logo */}
-                <div style={{ display:"flex", alignItems:"center", gap:"0.875rem" }}>
-                    <div style={{ width:"3rem", height:"3rem", borderRadius:"0.875rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"1rem", textAlign:"center" }}>
+                    {/* 250px → 750px (3×) */}
+                    <div style={{ width:"370px", height:"370px", borderRadius:"1rem", background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
                         <SparklesIcon />
                     </div>
                     <div>
@@ -323,6 +324,17 @@ export default function AuthViewClient() {
             {/* ── Right form panel ── */}
             <div style={s.right}>
                 <div style={s.card}>
+                    {/* Brand header */}
+                    <div style={{ display:"flex", alignItems:"center", gap:"0.875rem", marginBottom:"1.5rem" }}>
+                        {/* 3.5rem → 10.5rem (3×) */}
+                        <div style={{ width:"10.5rem", height:"10.5rem", borderRadius:"1rem", background:"linear-gradient(135deg,#7c3aed,#db2777)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+                            <Image src={BRAND_LOGO_SRC} alt="Fashion AI" width={168} height={168} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"1rem" }} />
+                        </div>
+                        <div>
+                            <div style={{ fontSize:"1.25rem", fontWeight:800, lineHeight:1.1, color:"var(--foreground)" }}>Fashion AI</div>
+                            <div style={{ fontSize:"0.8125rem", color:"var(--muted-foreground)" }}>Seu estilista pessoal</div>
+                        </div>
+                    </div>
                     <div style={{ marginBottom:"2rem" }}>
                         <h2 style={{ fontSize:"1.75rem", fontWeight:800, marginBottom:"0.5rem" }}>Bem-vindo de volta</h2>
                         <p style={{ color:"var(--muted-foreground)", fontSize:"0.9375rem" }}>Entre com suas credenciais para acessar sua conta</p>

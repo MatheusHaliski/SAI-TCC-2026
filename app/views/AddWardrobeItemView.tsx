@@ -59,6 +59,10 @@ const MATERIAL_OPTIONS = [
   'Cashmere', 'Modal', 'Rayon', 'Tweed',
 ];
 
+const SIZE_OPTIONS = [
+  'PP', 'P', 'M', 'G', 'GG', 'XG', 'Único',
+];
+
 const STYLE_TAG_OPTIONS = [
   'Casual', 'Formal', 'Business', 'Smart Casual',
   'Urban', 'Streetwear', 'Sport', 'Athletic',
@@ -82,12 +86,80 @@ const SEASON_LABEL_PT: Record<string, string> = {
   autumn: 'Outono',
   'all-season': 'Todas as Estações',
 };
+const SEASON_LABEL_EN: Record<string, string> = {
+  summer: 'Summer',
+  winter: 'Winter',
+  spring: 'Spring',
+  autumn: 'Autumn',
+  'all-season': 'All Seasons',
+};
 const GENDER_LABEL_PT: Record<string, string> = {
   male: 'Masculino',
   female: 'Feminino',
   unisex: 'Unissex',
   masculino: 'Masculino',
   feminino: 'Feminino',
+};
+const GENDER_LABEL_EN: Record<string, string> = {
+  male: 'Male',
+  female: 'Female',
+  unisex: 'Unisex',
+  masculino: 'Male',
+  feminino: 'Female',
+};
+
+// ── Select option label translations (PT) ───────────────────────────────────
+// Values stored in the form stay in English (used for matching/persistence);
+// only the visible label is localized based on the active site language.
+const COLOR_LABELS_PT: Record<string, string> = {
+  Black: 'Preto', White: 'Branco', Gray: 'Cinza', Charcoal: 'Grafite', Silver: 'Prata',
+  Navy: 'Azul-marinho', Blue: 'Azul', 'Light Blue': 'Azul-claro', 'Sky Blue': 'Azul-céu', Cobalt: 'Cobalto',
+  Red: 'Vermelho', Burgundy: 'Bordô', Crimson: 'Carmesim', Maroon: 'Vinho',
+  Pink: 'Rosa', Rose: 'Rosé', Coral: 'Coral',
+  Green: 'Verde', Olive: 'Verde-oliva', 'Forest Green': 'Verde-floresta', Mint: 'Verde-menta', Teal: 'Azul-petróleo', Sage: 'Verde-sálvia',
+  Yellow: 'Amarelo', Gold: 'Dourado', Mustard: 'Mostarda', Amber: 'Âmbar',
+  Orange: 'Laranja', Rust: 'Ferrugem', Terracotta: 'Terracota',
+  Brown: 'Marrom', Camel: 'Camelo', Tan: 'Bege-escuro', Beige: 'Bege', Cream: 'Creme', Ivory: 'Marfim',
+  Purple: 'Roxo', Lavender: 'Lavanda', Violet: 'Violeta', Lilac: 'Lilás', Plum: 'Ameixa',
+  Multicolor: 'Multicolorido',
+};
+const SIZE_LABELS_PT: Record<string, string> = {
+  PP: 'PP (Extra pequeno)', P: 'P (Pequeno)', M: 'M (Médio)',
+  G: 'G (Grande)', GG: 'GG (Extra grande)', XG: 'XG (Extra extra grande)',
+  'Único': 'Tamanho único',
+};
+const SIZE_LABELS_EN: Record<string, string> = {
+  PP: 'XS (Extra small)', P: 'S (Small)', M: 'M (Medium)',
+  G: 'L (Large)', GG: 'XL (Extra large)', XG: 'XXL (Double extra large)',
+  'Único': 'One size',
+};
+const MATERIAL_LABELS_PT: Record<string, string> = {
+  Cotton: 'Algodão', Polyester: 'Poliéster', Wool: 'Lã', Linen: 'Linho',
+  Denim: 'Jeans', Leather: 'Couro', Suede: 'Camurça', Velvet: 'Veludo',
+  Silk: 'Seda', Satin: 'Cetim', Nylon: 'Náilon', Spandex: 'Elastano',
+  Fleece: 'Fleece', Knit: 'Tricô', Jersey: 'Malha', Canvas: 'Lona',
+  Cashmere: 'Cashmere', Modal: 'Modal', Rayon: 'Viscose', Tweed: 'Tweed',
+};
+const STYLE_LABELS_PT: Record<string, string> = {
+  Casual: 'Casual', Formal: 'Formal', Business: 'Executivo', 'Smart Casual': 'Casual Elegante',
+  Urban: 'Urbano', Streetwear: 'Streetwear', Sport: 'Esportivo', Athletic: 'Atlético',
+  Luxury: 'Luxo', Classic: 'Clássico', Vintage: 'Vintage', Minimal: 'Minimalista',
+  Bohemian: 'Boêmio', Preppy: 'Preppy', Evening: 'Festa à Noite', Beach: 'Praia',
+};
+const OCCASION_LABELS_PT: Record<string, string> = {
+  Casual: 'Casual', Formal: 'Formal', Work: 'Trabalho', Party: 'Festa',
+  Sport: 'Esporte', Beach: 'Praia', 'Night Out': 'Balada', Date: 'Encontro',
+  Business: 'Negócios', Everyday: 'Dia a dia', Travel: 'Viagem', Wedding: 'Casamento', Outdoors: 'Ao ar livre',
+};
+const PIECE_TYPE_LABELS: Record<string, { pt: string; en: string }> = {
+  upper_piece: { pt: 'Parte de cima', en: 'Top' },
+  lower_piece: { pt: 'Parte de baixo', en: 'Bottom' },
+  shoes_piece: { pt: 'Calçados', en: 'Shoes' },
+  accessory_piece: { pt: 'Acessório', en: 'Accessory' },
+};
+const GENDER_OPTION_LABELS: Record<string, { pt: string; en: string }> = {
+  masculino: { pt: 'Masculino', en: 'Male' },
+  feminino: { pt: 'Feminino', en: 'Female' },
 };
 
 interface TryOnPrewarmContext {
@@ -134,6 +206,8 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiDetectedBrandId, setAiDetectedBrandId] = useState<string | null>(null);
+  const [isPt, setIsPt] = useState(true);
+  const [aiDetectedFields, setAiDetectedFields] = useState<Record<string, boolean>>({});
   const pending3dPieceNameRef = useRef<string>('');
   const brandsRef = useRef<Brand[]>([]);
   const lastAutoDetectedBrandRef = useRef<string>(DEFAULT_BRAND_ID);
@@ -209,6 +283,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     piece_type: 'upper_piece',
     color: '',
     material: '',
+    size: '',
     style_tags: '',
     occasion_tags: '',
     market_id: '',
@@ -262,6 +337,46 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const syncLanguage = () => {
+      setIsPt(window.localStorage.getItem('sai-site-language') !== 'en');
+    };
+    syncLanguage();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === 'sai-site-language') syncLanguage();
+    };
+    window.addEventListener('sai-language-change', syncLanguage);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('sai-language-change', syncLanguage);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+
+  const pick = (pt: string, en: string) => (isPt ? pt : en);
+  const aiHint = pick('Preenchido pela análise do Google IA', 'Filled by Google AI analysis');
+  const detectedSuffix = pick(' (detectado)', ' (detected)');
+  const localizeOptionLabel = (value: string, ptMap: Record<string, string>) =>
+    isPt ? ptMap[value] ?? value : value;
+  const localizeColor = (value: string) => localizeOptionLabel(value, COLOR_LABELS_PT);
+  const localizeMaterial = (value: string) => localizeOptionLabel(value, MATERIAL_LABELS_PT);
+  const localizeSize = (value: string) => (isPt ? SIZE_LABELS_PT[value] ?? value : SIZE_LABELS_EN[value] ?? value);
+  const localizeStyle = (value: string) => localizeOptionLabel(value, STYLE_LABELS_PT);
+  const localizeOccasion = (value: string) => localizeOptionLabel(value, OCCASION_LABELS_PT);
+  const localizePieceType = (value: string) =>
+    PIECE_TYPE_LABELS[value] ? pick(PIECE_TYPE_LABELS[value].pt, PIECE_TYPE_LABELS[value].en) : value;
+  const localizeGender = (value: string) =>
+    GENDER_OPTION_LABELS[value] ? pick(GENDER_OPTION_LABELS[value].pt, GENDER_OPTION_LABELS[value].en) : value;
+
+  const clearAiDetectedField = (field: string) =>
+    setAiDetectedFields((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+
+  useEffect(() => {
     return () => {
       if (imagePreview.startsWith('blob:')) {
         URL.revokeObjectURL(imagePreview);
@@ -293,12 +408,14 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     () =>
       new Map(
         markets.map((market) => {
-          const season = SEASON_LABEL_PT[market.season?.toLowerCase()] ?? market.season;
-          const gender = GENDER_LABEL_PT[market.gender?.toLowerCase()] ?? market.gender;
+          const seasonKey = market.season?.toLowerCase();
+          const genderKey = market.gender?.toLowerCase();
+          const season = (isPt ? SEASON_LABEL_PT[seasonKey] : SEASON_LABEL_EN[seasonKey]) ?? market.season;
+          const gender = (isPt ? GENDER_LABEL_PT[genderKey] : GENDER_LABEL_EN[genderKey]) ?? market.gender;
           return [market.market_id, `${season} • ${gender}`];
         }),
       ),
-    [markets],
+    [markets, isPt],
   );
 
   useEffect(() => {
@@ -433,6 +550,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         image_url: '',
         color: '',
         material: '',
+        size: '',
         style_tags: '',
         occasion_tags: '',
       }));
@@ -587,7 +705,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
   const handleAnalyzeWithAI = async () => {
     if (!selectedFile && !form.image_url) {
-      setAlertMessage('Please select an image first.');
+      setAlertMessage(pick('Selecione uma imagem primeiro.', 'Please select an image first.'));
       return;
     }
     setIsAnalyzing(true);
@@ -613,7 +731,7 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
       const payload = await response.json();
       if (!response.ok || !payload.ok) {
-        setAlertMessage(payload.message || 'Error analyzing image');
+        setAlertMessage(payload.message || pick('Erro ao analisar a imagem', 'Error analyzing image'));
         return;
       }
 
@@ -639,59 +757,49 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         data.gender === 'female' ? 'feminino' :
         form.gender;
 
-      const resolvedColor = (() => {
-        const primary = data.primaryColor || '';
-        if (!primary || isGenericToken(primary)) return '';
-        const direct = resolveOptionValue(primary, COLOR_OPTIONS);
-        if (direct) return direct;
-        for (const word of primary.split(/[\s-]+/).reverse()) {
-          const wordMatch = resolveOptionValue(word, COLOR_OPTIONS);
-          if (wordMatch) return wordMatch;
+      // Scan a prioritized list of candidate strings (whole value first, then
+      // individual words) against the available option list. Broadening the
+      // candidate sources lets every form field — not just the brand — resolve
+      // on the first analysis click.
+      const matchFromCandidates = (candidates: Array<string | undefined | null>, options: string[]): string => {
+        const list = candidates.filter((c): c is string => typeof c === 'string' && !isGenericToken(c));
+        for (const candidate of list) {
+          const direct = resolveOptionValue(candidate, options);
+          if (direct) return direct;
+        }
+        for (const candidate of list) {
+          for (const word of candidate.split(/[\s,/&-]+/)) {
+            const match = resolveOptionValue(word, options);
+            if (match) return match;
+          }
         }
         return '';
-      })();
+      };
 
-      const resolvedMaterial = (() => {
-        const candidates: string[] = Array.isArray(data.materials) ? data.materials : [];
-        for (const mat of candidates) {
-          const match = resolveOptionValue(mat, MATERIAL_OPTIONS);
-          if (match) return match;
-        }
-        return '';
-      })();
+      const secondaryColors: string[] = Array.isArray(data.secondaryColors) ? data.secondaryColors : [];
+      const materials: string[] = Array.isArray(data.materials) ? data.materials : [];
+      const styles: string[] = Array.isArray(data.styles) ? data.styles : [];
+      const semanticTags: string[] = Array.isArray(data.semanticTags) ? data.semanticTags : [];
 
-      const resolvedStyleTag = (() => {
-        const candidates: string[] = Array.isArray(data.styles) ? data.styles : [];
-        for (const style of candidates) {
-          const match = resolveOptionValue(style, STYLE_TAG_OPTIONS);
-          if (match) return match;
-        }
-        return '';
-      })();
-
-      const resolvedOccasion = (() => {
-        const candidates: string[] = [
-          ...(Array.isArray(data.styles) ? data.styles : []),
-          ...(Array.isArray(data.semanticTags) ? data.semanticTags : []),
-        ];
-        for (const candidate of candidates) {
-          const match = resolveOptionValue(candidate, OCCASION_TAG_OPTIONS);
-          if (match) return match;
-        }
-        return '';
-      })();
+      const resolvedColor = matchFromCandidates([data.primaryColor, ...secondaryColors], COLOR_OPTIONS);
+      const resolvedMaterial = matchFromCandidates([...materials, ...semanticTags], MATERIAL_OPTIONS);
+      const resolvedStyleTag = matchFromCandidates([...styles, ...semanticTags, data.category], STYLE_TAG_OPTIONS);
+      const resolvedOccasion = matchFromCandidates([...styles, ...semanticTags, data.category, data.shortDescription], OCCASION_TAG_OPTIONS);
 
       const resolvedBrandId = resolveBrandIdFromAI(data.brand, brandsRef.current, [
         data.pieceName || '',
         data.shortDescription || '',
-        ...(Array.isArray(data.semanticTags) ? data.semanticTags : []),
+        ...semanticTags,
       ]);
 
       const resolvedMarketId = resolveMarketIdFromAI(data.season, data.gender, markets);
 
       const resolvedName = !isGenericToken(data.pieceName) ? data.pieceName : '';
 
+      const pieceTypeWasDetected = Boolean(bodyRegionMap[data.bodyRegion]);
+      const genderWasDetected = data.gender === 'male' || data.gender === 'female';
       const brandWasDetected = resolvedBrandId !== DEFAULT_BRAND_ID;
+
       setAiDetectedBrandId(brandWasDetected ? resolvedBrandId : null);
       lastAutoDetectedBrandRef.current = brandWasDetected ? resolvedBrandId : DEFAULT_BRAND_ID;
       setForm((prev) => ({
@@ -707,13 +815,49 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         market_id: resolvedMarketId || prev.market_id,
       }));
 
-      const detectedBrandLabel = brandWasDetected
+      // Flag every field actually filled by the AI so each select shows a
+      // "(detected)" hint the first time the user opens it.
+      setAiDetectedFields({
+        ...(resolvedName ? { name: true } : {}),
+        ...(resolvedColor ? { color: true } : {}),
+        ...(resolvedMaterial ? { material: true } : {}),
+        ...(resolvedStyleTag ? { style_tags: true } : {}),
+        ...(resolvedOccasion ? { occasion_tags: true } : {}),
+        ...(genderWasDetected ? { gender: true } : {}),
+        ...(pieceTypeWasDetected ? { piece_type: true } : {}),
+        ...(resolvedMarketId ? { market_id: true } : {}),
+        ...(brandWasDetected ? { brand_id: true } : {}),
+      });
+
+      // Build a complete, localized summary of every detected field so the user
+      // sees on the first click exactly what was filled in — not just the brand.
+      const detectedBrandName = brandWasDetected
         ? (brandsRef.current.find((b) => b.brand_id === resolvedBrandId)?.name ?? resolvedBrandId)
-        : (data.brand && !isGenericToken(data.brand) ? `"${data.brand}" (não cadastrada)` : null);
-      const brandNote = detectedBrandLabel ? ` Marca: ${detectedBrandLabel}.` : ' Marca definida como padrão.';
-      setAlertMessage(`Análise concluída! Campos preenchidos automaticamente.${brandNote}`);
+        : null;
+      const detectedParts: string[] = [];
+      if (resolvedName) detectedParts.push(`${pick('Nome', 'Name')}: ${resolvedName}`);
+      if (pieceTypeWasDetected) detectedParts.push(`${pick('Tipo', 'Type')}: ${localizePieceType(mappedPieceType)}`);
+      if (genderWasDetected) detectedParts.push(`${pick('Gênero', 'Gender')}: ${localizeGender(mappedGender)}`);
+      if (resolvedColor) detectedParts.push(`${pick('Cor', 'Color')}: ${localizeColor(resolvedColor)}`);
+      if (resolvedMaterial) detectedParts.push(`${pick('Material', 'Material')}: ${localizeMaterial(resolvedMaterial)}`);
+      if (resolvedStyleTag) detectedParts.push(`${pick('Estilo', 'Style')}: ${localizeStyle(resolvedStyleTag)}`);
+      if (resolvedOccasion) detectedParts.push(`${pick('Ocasião', 'Occasion')}: ${localizeOccasion(resolvedOccasion)}`);
+      if (resolvedMarketId) detectedParts.push(`${pick('Mercado', 'Market')}: ${marketLabel.get(resolvedMarketId) ?? resolvedMarketId}`);
+      if (detectedBrandName) {
+        detectedParts.push(`${pick('Marca', 'Brand')}: ${detectedBrandName}`);
+      } else if (data.brand && !isGenericToken(data.brand)) {
+        detectedParts.push(`${pick('Marca', 'Brand')}: "${data.brand}" (${pick('não cadastrada', 'not registered')})`);
+      }
+
+      const summaryMessage = detectedParts.length
+        ? `${pick('Análise concluída! Campos detectados', 'Analysis complete! Detected fields')}: ${detectedParts.join(' • ')}.`
+        : pick(
+            'Análise concluída, mas nenhum campo pôde ser preenchido automaticamente.',
+            'Analysis complete, but no field could be filled automatically.',
+          );
+      setAlertMessage(summaryMessage);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error during AI analysis.';
+      const message = err instanceof Error ? err.message : pick('Erro durante a análise por IA.', 'Error during AI analysis.');
       setAlertMessage(message);
     } finally {
       setIsAnalyzing(false);
@@ -725,20 +869,26 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {mode === 'page' ? (
           <PageHeader
-            title="Adicionar peça"
-            subtitle="Adicione novas peças ao seu guarda-roupa. A marca pode ser mantida como padrão."
+            title={pick('Adicionar peça', 'Add piece')}
+            subtitle={pick(
+              'Adicione novas peças ao seu guarda-roupa. A marca pode ser mantida como padrão.',
+              'Add new pieces to your wardrobe. The brand can be kept as default.',
+            )}
           />
         ) : null}
 
         <SectionBlock
-          title="Formulário de peça de guarda-roupa"
-          subtitle="Cadastre uma peça e classifique com tags e metadados."
+          title={pick('Formulário de peça de guarda-roupa', 'Wardrobe piece form')}
+          subtitle={pick('Cadastre uma peça e classifique com tags e metadados.', 'Register a piece and classify it with tags and metadata.')}
         >
           <form className="fai-form-grid" style={{ marginTop: '1rem' }} onSubmit={handleSubmit}>
             <input
               value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Nome da peça"
+              onChange={(e) => {
+                clearAiDetectedField('name');
+                setForm((prev) => ({ ...prev, name: e.target.value }));
+              }}
+              placeholder={pick('Nome da peça', 'Piece name')}
               className="fai-input"
             />
 
@@ -753,51 +903,79 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
             <FancySelect
               value={form.gender}
-              onChange={(gender) => setForm((prev) => ({ ...prev, gender }))}
-              placeholder="Gênero"
-              options={GENDER_OPTIONS.map((gender) => ({
-                value: gender.value,
-                label: gender.label,
-                group: 'Gênero da peça',
-              }))}
+              onChange={(gender) => {
+                clearAiDetectedField('gender');
+                setForm((prev) => ({ ...prev, gender }));
+              }}
+              placeholder={pick('Gênero', 'Gender')}
+              options={GENDER_OPTIONS.map((gender) => {
+                const detected = Boolean(aiDetectedFields.gender) && form.gender === gender.value;
+                return {
+                  value: gender.value,
+                  label: localizeGender(gender.value) + (detected ? detectedSuffix : ''),
+                  hint: detected ? aiHint : undefined,
+                  group: pick('Gênero da peça', 'Garment gender'),
+                };
+              })}
             />
 
             <FancySelect
               value={form.piece_type}
-              onChange={(pieceType) => setForm((prev) => ({ ...prev, piece_type: pieceType }))}
+              onChange={(pieceType) => {
+                clearAiDetectedField('piece_type');
+                setForm((prev) => ({ ...prev, piece_type: pieceType }));
+              }}
               options={[
-                { value: 'upper_piece', label: 'Parte de cima', icon: { type: 'emoji', value: '👕', alt: 'Camiseta' } },
-                { value: 'lower_piece', label: 'Parte de baixo', icon: { type: 'emoji', value: '👖', alt: 'Calça' } },
-                { value: 'shoes_piece', label: 'Calçados', icon: { type: 'emoji', value: '👟', alt: 'Calçados' } },
-                { value: 'accessory_piece', label: 'Acessório', icon: { type: 'emoji', value: '🧢', alt: 'Acessório' } },
-              ]}
+                { value: 'upper_piece', icon: { type: 'emoji' as const, value: '👕', alt: pick('Camiseta', 'T-shirt') } },
+                { value: 'lower_piece', icon: { type: 'emoji' as const, value: '👖', alt: pick('Calça', 'Trousers') } },
+                { value: 'shoes_piece', icon: { type: 'emoji' as const, value: '👟', alt: pick('Calçados', 'Shoes') } },
+                { value: 'accessory_piece', icon: { type: 'emoji' as const, value: '🧢', alt: pick('Acessório', 'Accessory') } },
+              ].map((option) => {
+                const detected = Boolean(aiDetectedFields.piece_type) && form.piece_type === option.value;
+                return {
+                  value: option.value,
+                  label: localizePieceType(option.value) + (detected ? detectedSuffix : ''),
+                  hint: detected ? aiHint : undefined,
+                  icon: option.icon,
+                };
+              })}
             />
 
             <FancySelect
               value={form.market_id}
-              onChange={(marketId) => setForm((prev) => ({ ...prev, market_id: marketId }))}
-              placeholder="Selecionar mercado"
-              options={markets.map((market) => ({
-                value: market.market_id,
-                label: marketLabel.get(market.market_id) ?? market.market_id,
-              }))}
+              onChange={(marketId) => {
+                clearAiDetectedField('market_id');
+                setForm((prev) => ({ ...prev, market_id: marketId }));
+              }}
+              placeholder={pick('Selecionar mercado', 'Select market')}
+              options={markets.map((market) => {
+                const detected = Boolean(aiDetectedFields.market_id) && form.market_id === market.market_id;
+                const base = marketLabel.get(market.market_id) ?? market.market_id;
+                return {
+                  value: market.market_id,
+                  label: base + (detected ? detectedSuffix : ''),
+                  hint: detected ? aiHint : undefined,
+                };
+              })}
             />
 
             <FancySelect
               value={form.brand_id}
               onChange={(brandId) => {
                 setAiDetectedBrandId(null);
+                clearAiDetectedField('brand_id');
                 setForm((prev) => ({ ...prev, brand_id: brandId }));
               }}
+              placeholder={pick('Marca', 'Brand')}
               options={[
-                { value: DEFAULT_BRAND_ID, label: 'Marca padrão', icon: { type: 'emoji', value: '🏷️', alt: 'Marca padrão' } },
+                { value: DEFAULT_BRAND_ID, label: pick('Marca padrão', 'Default brand'), icon: { type: 'emoji' as const, value: '🏷️', alt: pick('Marca padrão', 'Default brand') } },
                 ...brands.map((brand) => {
                   const logoUrl = resolveBrandLogoUrl(brand);
                   const wasDetectedByAi = aiDetectedBrandId === brand.brand_id && form.brand_id === brand.brand_id;
                   return {
                     value: brand.brand_id,
-                    label: wasDetectedByAi ? `${brand.name} (detectada)` : brand.name,
-                    hint: wasDetectedByAi ? 'Marca preenchida pela análise do Google IA' : undefined,
+                    label: wasDetectedByAi ? `${brand.name}${detectedSuffix}` : brand.name,
+                    hint: wasDetectedByAi ? aiHint : undefined,
                     icon: logoUrl
                       ? { type: 'image' as const, value: logoUrl, alt: `${brand.name} logo` }
                       : { type: 'emoji' as const, value: '🏷️', alt: `${brand.name} brand` },
@@ -808,56 +986,99 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
             <FancySelect
               value={form.color}
-              onChange={(color) => setForm((prev) => ({ ...prev, color }))}
-              placeholder="Cor"
-              options={COLOR_OPTIONS.map((color) => ({ value: color, label: color, group: 'Cor' }))}
+              onChange={(color) => {
+                clearAiDetectedField('color');
+                setForm((prev) => ({ ...prev, color }));
+              }}
+              placeholder={pick('Cor', 'Color')}
+              options={COLOR_OPTIONS.map((color) => {
+                const detected = Boolean(aiDetectedFields.color) && form.color === color;
+                return {
+                  value: color,
+                  label: localizeColor(color) + (detected ? detectedSuffix : ''),
+                  hint: detected ? aiHint : undefined,
+                  group: pick('Cor', 'Color'),
+                };
+              })}
             />
 
             <FancySelect
               value={form.material}
-              onChange={(material) => setForm((prev) => ({ ...prev, material }))}
-              placeholder="Material"
-              options={MATERIAL_OPTIONS.map((material) => ({
-                value: material,
-                label: material,
-                group: 'Material',
+              onChange={(material) => {
+                clearAiDetectedField('material');
+                setForm((prev) => ({ ...prev, material }));
+              }}
+              placeholder={pick('Material', 'Material')}
+              options={MATERIAL_OPTIONS.map((material) => {
+                const detected = Boolean(aiDetectedFields.material) && form.material === material;
+                return {
+                  value: material,
+                  label: localizeMaterial(material) + (detected ? detectedSuffix : ''),
+                  hint: detected ? aiHint : undefined,
+                  group: pick('Material', 'Material'),
+                };
+              })}
+            />
+
+            <FancySelect
+              value={form.size}
+              onChange={(size) => setForm((prev) => ({ ...prev, size }))}
+              placeholder={pick('Tamanho', 'Size')}
+              options={SIZE_OPTIONS.map((size) => ({
+                value: size,
+                label: localizeSize(size),
+                group: pick('Tamanho', 'Size'),
               }))}
             />
 
             <FancySelect
               value={form.style_tags}
-              onChange={(styleTag) => setForm((prev) => ({ ...prev, style_tags: styleTag }))}
-              placeholder="Tag de estilo"
-              options={STYLE_TAG_OPTIONS.map((styleTag) => ({
-                value: styleTag,
-                label: styleTag,
-                group: 'Tags de estilo',
-              }))}
+              onChange={(styleTag) => {
+                clearAiDetectedField('style_tags');
+                setForm((prev) => ({ ...prev, style_tags: styleTag }));
+              }}
+              placeholder={pick('Tag de estilo', 'Style tag')}
+              options={STYLE_TAG_OPTIONS.map((styleTag) => {
+                const detected = Boolean(aiDetectedFields.style_tags) && form.style_tags === styleTag;
+                return {
+                  value: styleTag,
+                  label: localizeStyle(styleTag) + (detected ? detectedSuffix : ''),
+                  hint: detected ? aiHint : undefined,
+                  group: pick('Tags de estilo', 'Style tags'),
+                };
+              })}
             />
 
             <FancySelect
               value={form.occasion_tags}
-              onChange={(occasionTag) => setForm((prev) => ({ ...prev, occasion_tags: occasionTag }))}
-              placeholder="Tag de ocasião"
-              options={OCCASION_TAG_OPTIONS.map((occasionTag) => ({
-                value: occasionTag,
-                label: occasionTag,
-                group: 'Tags de ocasião',
-              }))}
+              onChange={(occasionTag) => {
+                clearAiDetectedField('occasion_tags');
+                setForm((prev) => ({ ...prev, occasion_tags: occasionTag }));
+              }}
+              placeholder={pick('Tag de ocasião', 'Occasion tag')}
+              options={OCCASION_TAG_OPTIONS.map((occasionTag) => {
+                const detected = Boolean(aiDetectedFields.occasion_tags) && form.occasion_tags === occasionTag;
+                return {
+                  value: occasionTag,
+                  label: localizeOccasion(occasionTag) + (detected ? detectedSuffix : ''),
+                  hint: detected ? aiHint : undefined,
+                  group: pick('Tags de ocasião', 'Occasion tags'),
+                };
+              })}
             />
 
             <div className="fai-info-box" style={{ gridColumn: '1 / -1' }}>
               <p style={{ fontSize: '0.875rem', color: 'var(--foreground)' }}>
                 {selectedImageName
-                  ? `Arquivo selecionado: ${selectedImageName}`
-                  : 'Selecione um arquivo de imagem para continuar.'}
+                  ? `${pick('Arquivo selecionado', 'Selected file')}: ${selectedImageName}`
+                  : pick('Selecione um arquivo de imagem para continuar.', 'Select an image file to continue.')}
               </p>
 
               {imagePreview ? (
                 <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.75rem' }}>
                   <Image
                     src={imagePreview}
-                    alt="Pré-visualização da peça selecionada"
+                    alt={pick('Pré-visualização da peça selecionada', 'Selected piece preview')}
                     width={512}
                     height={320}
                     style={{ height: '10rem', width: 'auto', borderRadius: '0.75rem', border: '1px solid var(--border)', objectFit: 'cover' }}
@@ -870,7 +1091,9 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
                     className="fai-analyze-btn"
                   >
                     <span>✨</span>
-                    {isAnalyzing ? 'Analisando com Google IA...' : 'Analisar com Google IA'}
+                    {isAnalyzing
+                      ? pick('Analisando com Google IA...', 'Analyzing with Google AI...')
+                      : pick('Analisar com Google IA', 'Analyze with Google AI')}
                   </button>
                 </div>
               ) : null}
@@ -882,7 +1105,11 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
               className="fai-submit-btn"
               style={{ gridColumn: '1 / -1' }}
             >
-              {uploadingImage ? 'Enviando imagem...' : submitting ? 'Salvando...' : 'Adicionar peça'}
+              {uploadingImage
+                ? pick('Enviando imagem...', 'Uploading image...')
+                : submitting
+                  ? pick('Salvando...', 'Saving...')
+                  : pick('Adicionar peça', 'Add piece')}
             </button>
 
             {submitting ? (
@@ -898,13 +1125,13 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
                     }}
                   />
                 </div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Adicionando peça... {submitProgress}%</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{pick('Adicionando peça...', 'Adding piece...')} {submitProgress}%</p>
               </div>
             ) : null}
 
             {uvJobId ? (
               <p style={{ gridColumn: '1 / -1', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
-                Processo UV <span className="font-mono">{uvJobId}</span> status: {uvJobStatus ?? 'pendente'}
+                {pick('Processo UV', 'UV process')} <span className="font-mono">{uvJobId}</span> status: {uvJobStatus ?? pick('pendente', 'pending')}
               </p>
             ) : null}
           </form>

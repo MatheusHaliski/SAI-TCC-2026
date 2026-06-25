@@ -19,9 +19,10 @@ import { mapAiInterpretationToManualForm } from '@/app/lib/outfit-ai-mapping';
 import { OUTFIT_PIECE_OPTIONS, OutfitSlotKey, SLOT_TYPE_ALIASES } from '@/app/lib/outfit-piece-options';
 import {
   OutfitBackgroundConfig,
+  OutfitCardDisplayOptions,
   OutfitCardData,
   OutfitPiece,
-  CardSkinId,
+  OutfitPieceListFormat,
   resolveOutfitBackgroundForRender,
   buildOutfitDescriptionRich,
   resolveBrandLogoUrlByName,
@@ -39,6 +40,7 @@ type SchemePieceSnapshot = {
   pieceType: string;
   category: NonNullable<OutfitPiece['category']>;
   wearstyles: string[];
+  style?: OutfitPiece['style'];
 };
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
@@ -125,7 +127,7 @@ export default function CreateMySchemeView() {
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('Minimal');
   const [occasion, setOccasion] = useState('Daily');
-  const [visibility, setVisibility] = useState<'private' | 'public'>('public');
+  const [visibility, setVisibility] = useState<'private' | 'followers' | 'public'>('public');
   const [selectedBrandId, setSelectedBrandId] = useState(DEFAULT_BRAND_ID);
   const [slotBrandIds, setSlotBrandIds] = useState<Record<SlotKey, string>>({
     upper: DEFAULT_BRAND_ID,
@@ -136,7 +138,11 @@ export default function CreateMySchemeView() {
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [outfitBackgroundConfig, setOutfitBackgroundConfig] = useState<OutfitBackgroundConfig>(DEFAULT_BACKGROUND_CONFIG);
-  const [cardSkin, setCardSkin] = useState<CardSkinId | undefined>(undefined);
+  const [pieceListFormat, setPieceListFormat] = useState<OutfitPieceListFormat>('grid-2');
+  const [cardDisplayOptions, setCardDisplayOptions] = useState<OutfitCardDisplayOptions>({
+    contentPanelColor: 'rgba(2,6,23,0.72)',
+    displayMode: 'complete',
+  });
   const [descriptionOverride, setDescriptionOverride] = useState('');
   const [titleFontFamily, setTitleFontFamily] = useState('Inter, Segoe UI, sans-serif');
   const [palette, setPalette] = useState('Neutral');
@@ -162,6 +168,7 @@ export default function CreateMySchemeView() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState('');
   const [generatedCardData, setGeneratedCardData] = useState<OutfitCardData | null>(null);
+  const [pieceStyles, setPieceStyles] = useState<Record<string, NonNullable<OutfitPiece['style']>>>({});
 
   const inputClassName =
     'w-full rounded-xl border border-border bg-accent px-3 py-2 text-sm text-white placeholder:text-muted-foreground shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
@@ -314,6 +321,7 @@ export default function CreateMySchemeView() {
           pieceType,
           category: SLOT_DEFAULT_CATEGORIES[slot],
           wearstyles: SLOT_AUTO_WEARSTYLE[slot],
+          style: pieceStyles[selectedValue],
         } as OutfitPiece;
       })
       .filter(Boolean) as OutfitPiece[];
@@ -342,13 +350,14 @@ export default function CreateMySchemeView() {
       metaBadges: [
         { icon: '👕', label: style.trim() || 'Casual' },
         { icon: '📆', label: occasion.trim() || 'Daily' },
-        { icon: visibility === 'public' ? '🌐' : '🔒', label: visibility === 'public' ? 'Public' : 'Private' },
+        { icon: visibility === 'public' ? '🌐' : visibility === 'followers' ? '👥' : '🔒', label: visibility === 'public' ? 'Público' : visibility === 'followers' ? 'Seguidores' : 'Privado' },
         { icon: generationMode === 'manual' ? '✍️' : '✨', label: generationMode === 'manual' ? 'Manual' : 'AI' },
         palette.trim() ? { icon: '🎨', label: palette.trim() } : null,
       ].filter(Boolean) as NonNullable<OutfitCardData['metaBadges']>,
       pieces,
       titleFontFamily,
-      cardSkin,
+      pieceListFormat,
+      displayOptions: cardDisplayOptions,
     };
   };
 
@@ -367,6 +376,7 @@ export default function CreateMySchemeView() {
         pieceType: piece.pieceType,
         category: piece.category || 'Standard',
         wearstyles: piece.wearstyles || [],
+        style: piece.style,
       };
     });
 
@@ -413,7 +423,8 @@ export default function CreateMySchemeView() {
             mood,
             palette,
             titleFontFamily,
-            cardSkin: cardSkin ?? null,
+            pieceListFormat,
+            cardDisplayOptions,
             descriptionOverride: descriptionOverride.trim() || null,
           }),
           style: style.trim() || 'Minimal',
@@ -603,10 +614,11 @@ export default function CreateMySchemeView() {
 
         <FancySelect
           value={visibility}
-          onChange={(selectedVisibility) => setVisibility(selectedVisibility as 'private' | 'public')}
+          onChange={(selectedVisibility) => setVisibility(selectedVisibility as 'private' | 'followers' | 'public')}
           options={[
-            { value: 'public', label: 'Public' },
-            { value: 'private', label: 'Private' },
+            { value: 'public', label: '🌐 Público' },
+            { value: 'followers', label: '👥 Seguidores' },
+            { value: 'private', label: '🔒 Privado' },
           ]}
         />
 
@@ -871,8 +883,23 @@ export default function CreateMySchemeView() {
         brands: selectedBrand?.name ? [selectedBrand.name] : undefined,
       }}
       previewCardData={buildGeneratedOutfitCardData()}
-      selectedCardSkin={cardSkin}
-      onSelectSkin={setCardSkin}
+      pieceListFormat={pieceListFormat}
+      onSelectPieceListFormat={setPieceListFormat}
+      cardDisplayOptions={cardDisplayOptions}
+      onChangeCardDisplayOptions={setCardDisplayOptions}
+      onChangePieces={(nextPieces) => {
+        setPieceStyles((prev) => {
+          const next = { ...prev };
+          nextPieces.forEach((piece) => {
+            if (piece.style && Object.keys(piece.style).length > 0) {
+              next[piece.id] = piece.style;
+            } else {
+              delete next[piece.id];
+            }
+          });
+          return next;
+        });
+      }}
     />
   );
 

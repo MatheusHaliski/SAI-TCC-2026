@@ -5,6 +5,7 @@ import ProfileSettingsSection from '@/app/components/profile/ProfileSettingsSect
 import ProfileMySchemesSection from '@/app/components/profile/ProfileMySchemesSection';
 import ProfileSavedSchemesSection from '@/app/components/profile/ProfileSavedSchemesSection';
 import ProfileMyPostsSection from '@/app/components/profile/ProfileMyPostsSection';
+import StyleDnaSection from '@/app/components/profile/StyleDnaSection';
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -37,6 +38,8 @@ interface ProfileSectionRendererProps {
   wardrobeItems: WardrobeItem[];
   schemes: SchemeItem[];
   posts: UserPostRecord[];
+  viewerId: string;
+  viewerName: string;
   onWardrobeItemDeleted?: (id: string) => void;
   onProfileSaved?: (profile: { name?: string; username?: string; email?: string; bio?: string; photo_url?: string }) => void;
 }
@@ -54,11 +57,14 @@ export default function ProfileSectionRenderer({
   wardrobeItems,
   schemes,
   posts,
+  viewerId,
+  viewerName,
   onWardrobeItemDeleted,
   onProfileSaved,
 }: ProfileSectionRendererProps) {
   if (section === 'wardrobe') return <ProfileWardrobeSection items={wardrobeItems} onItemDeleted={onWardrobeItemDeleted} />;
   if (section === 'user-info') return <ProfileUserInfoSection userId={userId} displayName={displayName} username={username} email={email} canEdit={canEdit} onProfileSaved={onProfileSaved} />;
+  if (section === 'style-dna') return <StyleDnaSection userId={userId} canEdit={canEdit} />;
   if (section === 'my-schemes') return <ProfileMySchemesSection userId={userId} schemes={schemes} />;
   if (section === 'saved-schemes') return <ProfileSavedSchemesSection userId={userId} />;
   if (section === 'my-posts') return <ProfileMyPostsSection posts={posts} />;

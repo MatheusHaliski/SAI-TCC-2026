@@ -86,6 +86,11 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
   const leadBrand = brandBadges[0];
   const pieceCount = data.pieces.length;
   const scoreLabel = typeof data.ratingStars === 'number' ? data.ratingStars.toFixed(1) : null;
+  const displayMode = data.displayOptions?.displayMode ?? 'complete';
+  const showHero = displayMode !== 'hide-hero' && displayMode !== 'pieces-only';
+  const showPieces = displayMode !== 'hide-pieces';
+  const showContext = displayMode !== 'pieces-only';
+  const contentPanelColor = data.displayOptions?.contentPanelColor || 'rgba(2,6,23,0.58)';
 
   const handleToggleLike = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -170,7 +175,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
 
   return (
     <section
-      className={`relative overflow-hidden rounded-2xl border border-white/15 shadow-[0_8px_24px_rgba(15,23,42,0.18)] ${variant === 'compact' ? 'space-y-2 p-2.5' : 'space-y-3 p-3 sm:p-4'}`}
+      className={`relative overflow-hidden rounded-2xl border border-white/15 shadow-[0_8px_24px_rgba(15,23,42,0.18)] ${variant === 'compact' ? 'space-y-3 p-3.5 sm:p-4' : 'space-y-4 p-4 sm:p-5'}`}
       style={{ ...backgroundStyle, ...auraCardStyle }}
     >
       {/* Aura badge */}
@@ -209,29 +214,41 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
       ) : null}
 
       {/* Content */}
-      <div className={`relative z-[1] ${variant === 'compact' ? 'space-y-3' : 'space-y-4'}`}>
-        <OutfitHeroImage
-          src={data.heroImageUrl}
-          alt={`${data.outfitName} hero preview`}
-          className={variant === 'compact' ? 'h-24 rounded-xl' : 'h-44 rounded-xl'}
-        />
-        <OutfitHeader
-          outfitName={data.outfitName}
-          outfitStyleLine={data.outfitStyleLine}
-          description={description}
-          badges={data.metaBadges}
-          compact={variant === 'compact'}
-          brandBadges={brandBadges}
-          titleFontFamily={data.titleFontFamily}
-          creatorName={data.creatorName}
-          ratingStars={data.ratingStars}
-          ownersCount={data.ownersCount}
-          outfitLikes={data.outfitLikes}
-          occasion={data.occasion}
-        />
+      <div
+        className={`relative z-[1] rounded-2xl border border-white/14 ${variant === 'compact' ? 'space-y-3 p-2.5' : 'space-y-4 p-3 sm:p-4'}`}
+        style={{
+          background: contentPanelColor,
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 16px 42px rgba(2,6,23,0.20)',
+          backdropFilter: 'blur(10px)',
+        }}
+      >
+        {showHero ? (
+          <OutfitHeroImage
+            src={data.heroImageUrl}
+            alt={`${data.outfitName} hero preview`}
+            className={variant === 'compact' ? 'h-24 rounded-xl' : 'h-44 rounded-xl'}
+          />
+        ) : null}
+
+        {showContext ? (
+          <OutfitHeader
+            outfitName={data.outfitName}
+            outfitStyleLine={data.outfitStyleLine}
+            description={description}
+            badges={data.metaBadges}
+            compact={variant === 'compact'}
+            brandBadges={brandBadges}
+            titleFontFamily={data.titleFontFamily}
+            creatorName={data.creatorName}
+            ratingStars={data.ratingStars}
+            ownersCount={data.ownersCount}
+            outfitLikes={data.outfitLikes}
+            occasion={data.occasion}
+          />
+        ) : null}
 
         {variant !== 'compact' ? (
-          <div className="grid gap-2 rounded-2xl border border-white/14 bg-black/16 p-3 sm:grid-cols-[1.2fr_1fr_1fr]">
+          <div className="grid gap-3 rounded-2xl border border-white/14 bg-black/16 p-3.5 sm:grid-cols-[1.2fr_1fr_1fr]">
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/18 bg-white/12">
                 {leadBrand?.logoUrl ? (
@@ -245,26 +262,28 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55">marca / logo</p>
               </div>
             </div>
-            <div className="rounded-xl border border-white/12 bg-white/8 px-3 py-2">
+            <div className="min-w-0 rounded-xl border border-white/12 bg-white/8 px-3 py-2.5">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">criacao / tipo</p>
               <p className="mt-1 truncate text-sm font-black text-white">{data.occasion || data.outfitStyleLine || 'Look autoral'}</p>
             </div>
-            <div className="rounded-xl border border-white/12 bg-white/8 px-3 py-2">
+            <div className="min-w-0 rounded-xl border border-white/12 bg-white/8 px-3 py-2.5">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">pecas no esquema</p>
               <p className="mt-1 text-sm font-black text-white">{pieceCount} itens conectados</p>
             </div>
           </div>
         ) : null}
 
-        {/* ── OutfitPieceList — single instance, no onViewPieceCard ── */}
-        <OutfitPieceList
-          pieces={data.pieces}
-          compact={variant === 'compact'}
-          schemeId={data.schemeId}
-          onOpenInDressTester={onOpenInDressTester}
-        />
+        {showPieces ? (
+          <OutfitPieceList
+            pieces={data.pieces}
+            compact={variant === 'compact'}
+            schemeId={data.schemeId}
+            format={data.pieceListFormat}
+            onOpenInDressTester={onOpenInDressTester}
+          />
+        ) : null}
 
-        {onOpenOutfitInDressTester && variant !== 'compact' ? (
+        {showContext && onOpenOutfitInDressTester && variant !== 'compact' ? (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onOpenOutfitInDressTester(); }}
@@ -275,7 +294,7 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
           </button>
         ) : null}
 
-        {variant !== 'compact' ? (
+        {showContext && variant !== 'compact' ? (
           <div className="flex flex-col gap-3 rounded-2xl border border-white/14 bg-black/18 p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-white/16 bg-white/10 px-3 py-1.5 text-xs font-black text-white">

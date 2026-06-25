@@ -65,12 +65,14 @@ export class WardrobeController {
       piece_type: typeof fields.piece_type === 'string' ? fields.piece_type : undefined,
       color: typeof fields.color === 'string' ? fields.color : undefined,
       material: typeof fields.material === 'string' ? fields.material : undefined,
+      size: typeof fields.size === 'string' ? fields.size : undefined,
       style_tags: Array.isArray(fields.style_tags) ? fields.style_tags.map(String) : undefined,
       occasion_tags: Array.isArray(fields.occasion_tags) ? fields.occasion_tags.map(String) : undefined,
       brand_id: typeof fields.brand_id === 'string' ? fields.brand_id : undefined,
       image_url: typeof fields.image_url === 'string' ? fields.image_url : undefined,
       description: typeof fields.description === 'string' ? fields.description : undefined,
       is_favorite: typeof fields.is_favorite === 'boolean' ? fields.is_favorite : undefined,
+      gender_pattern: typeof fields.gender_pattern === 'string' ? fields.gender_pattern : undefined,
     });
     return { ok: true };
   }

@@ -15,7 +15,12 @@ export async function GET(request: NextRequest) {
 
     if (!snapshot.exists) return NextResponse.json({ ok: true, profile: null });
 
-    return NextResponse.json({ ok: true, profile: snapshot.data() ?? null });
+    const profile = (snapshot.data() ?? null) as Record<string, unknown> | null;
+
+    return NextResponse.json({
+      ok: true,
+      profile,
+    });
   } catch {
     return NextResponse.json({ error: 'Unable to load profile.' }, { status: 500 });
   }

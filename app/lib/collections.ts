@@ -20,6 +20,9 @@ export const COLLECTIONS = {
   FOLLOWS: 'saiFollows',
   REMIXES: 'saiRemixes',
   NOTIFICATIONS: 'saiNotifications',
+  BRAND_FEED_POSTS: 'saiBrandFeedPosts',
+  BRAND_FEED_SPOTLIGHTS: 'saiBrandFeedSpotlights',
+  SUBSCRIPTIONS: 'saiSubscriptions',
 } as const;
 
 export const LEGACY_COLLECTIONS = [

@@ -29,11 +29,12 @@ export default function ProfileSummaryCard({
 }: ProfileSummaryCardProps) {
   return (
     <article
-      className="rounded-2xl border border-white/20 p-5 shadow-lg"
+      className="profile-summary-card rounded-2xl border border-white/20 p-5 shadow-lg"
       style={{
         backgroundColor: '#0f172a',
         backgroundImage: 'var(--sidebar-gradient)',
         boxShadow: 'var(--drawer-surface-shadow)',
+        color: '#ffffff',
       }}
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
@@ -55,6 +56,7 @@ export default function ProfileSummaryCard({
           />
         ) : null}
       </div>
+
       <div className="grid grid-cols-3 gap-3">
         <StatBadge label="Login" value={loginEmail} />
         <StatBadge label="Status" value={loginStatus} />

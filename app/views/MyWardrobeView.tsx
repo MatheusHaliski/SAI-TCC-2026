@@ -54,7 +54,12 @@ interface WardrobeItem {
   listing_price?: number;
 }
 
-const sections = ['Disponíveis', 'Indisponíveis', 'Favoritos', 'Para vender'];
+const sections = ['Disponíveis', 'Indisponíveis', 'Favoritos', 'Para vender', 'Esquecidas', 'Mais combinadas'];
+
+// Closet Inteligente: a piece is "forgotten" if it was never used in a scheme,
+// or if its most recent use is older than this many days.
+const FORGOTTEN_DAYS = 60;
+const FORGOTTEN_MS = FORGOTTEN_DAYS * 24 * 60 * 60 * 1000;
 
 const READY_STATUSES    = new Set(['done', 'ready', 'completed', 'asset_available']);
 const FAILED_STATUSES   = new Set(['failed', 'failed_geometry_scope']);
@@ -93,6 +98,7 @@ export default function MyWardrobeView() {
   const [selectedSection,  setSelectedSection]  = useState(sections[0]?.toLowerCase() ?? 'disponíveis');
   const [availability,     setAvailability]     = useState<Record<string, 'available' | 'unavailable'>>({});
   const [favorites,        setFavorites]        = useState<Record<string, boolean>>({});
+  const [usage,            setUsage]            = useState<Record<string, { count: number; lastUsedAt: string | null }>>({});
   const [viewerItem,       setViewerItem]       = useState<WardrobeItem | null>(null);
   const [modalItem,        setModalItem]        = useState<WardrobeItem | null>(null);
   const [viewerUrl,        setViewerUrl]        = useState<string | null>(null);
@@ -153,24 +159,60 @@ export default function MyWardrobeView() {
     completionNotifiedRef.current = key;
   }, [assetJob.jobId, assetJob.status, progressItem]);
 
+  // Closet Inteligente: load usage stats (how many schemes use each piece) for
+  // the currently loaded items, refreshing as more pages are appended.
+  useEffect(() => {
+    const ids = items.map((i) => i.wardrobe_item_id).filter(Boolean);
+    if (!ids.length) { setUsage({}); return; }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res     = await fetch('/api/scheme-items/usage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wardrobeItemIds: ids }),
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!cancelled && res.ok && payload?.usage) setUsage(payload.usage);
+      } catch (err) { console.warn('[closet-usage] fetch failed', err); }
+    })();
+    return () => { cancelled = true; };
+  }, [items]);
+
+  const isForgotten = useMemo(() => (id: string) => {
+    const u = usage[id];
+    if (!u) return false;
+    if (u.count === 0) return true;
+    if (!u.lastUsedAt) return true;
+    const last = new Date(u.lastUsedAt).getTime();
+    return Number.isFinite(last) && Date.now() - last > FORGOTTEN_MS;
+  }, [usage]);
+
   const grouped = useMemo(() => ({
     available:   items.filter((i) => (availability[i.wardrobe_item_id] ?? 'available') === 'available'),
     unavailable: items.filter((i) => (availability[i.wardrobe_item_id] ?? 'available') === 'unavailable'),
     favorite:    items.filter((i) => favorites[i.wardrobe_item_id]),
     forsale:     items.filter((i) => i.for_sale),
-  }), [availability, favorites, items]);
+    forgotten:   items.filter((i) => isForgotten(i.wardrobe_item_id)),
+    mostused:    items
+      .filter((i) => (usage[i.wardrobe_item_id]?.count ?? 0) > 0)
+      .sort((a, b) => (usage[b.wardrobe_item_id]?.count ?? 0) - (usage[a.wardrobe_item_id]?.count ?? 0)),
+  }), [availability, favorites, items, usage, isForgotten]);
 
   const activeGroups = useMemo(() => {
     const groups = [
-      { key: 'available',   title: 'Peças Disponíveis',  data: grouped.available   },
-      { key: 'unavailable', title: 'Peças Indisponíveis', data: grouped.unavailable },
-      { key: 'favorite',    title: 'Peças Favoritas',     data: grouped.favorite    },
-      { key: 'forsale',     title: 'Peças Para Vender',   data: grouped.forsale     },
+      { key: 'available',   title: 'Peças Disponíveis',    data: grouped.available   },
+      { key: 'unavailable', title: 'Peças Indisponíveis',  data: grouped.unavailable },
+      { key: 'favorite',    title: 'Peças Favoritas',      data: grouped.favorite    },
+      { key: 'forsale',     title: 'Peças Para Vender',    data: grouped.forsale     },
+      { key: 'forgotten',   title: 'Peças Esquecidas',     data: grouped.forgotten   },
+      { key: 'mostused',    title: 'Peças Mais Combinadas', data: grouped.mostused   },
     ] as const;
 
     const sectionToKey: Record<string, (typeof groups)[number]['key']> = {
-      'disponíveis': 'available', 'indisponíveis': 'unavailable',
-      'favoritos': 'favorite',    'para vender': 'forsale',
+      'disponíveis': 'available',  'indisponíveis': 'unavailable',
+      'favoritos': 'favorite',     'para vender': 'forsale',
+      'esquecidas': 'forgotten',   'mais combinadas': 'mostused',
     };
 
     let data = groups.find((g) => g.key === (sectionToKey[selectedSection] ?? 'available'))?.data ?? [];
@@ -262,7 +304,7 @@ export default function MyWardrobeView() {
         />
 
         <div className="space-y-6">
-          <PageHeader title="Guarda-Roupa Virtual" subtitle="Classifique peças como disponíveis, indisponíveis e favoritas." />
+          <PageHeader title="Guarda-Roupa Virtual" subtitle="Classifique peças e veja insights de uso: quantos looks usam cada peça, quais estão esquecidas e quais são as mais combinadas." />
 
           <div style={{ borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--accent)', padding: '1rem' }}>
             <form onSubmit={handleSearch} className="flex flex-col gap-2 md:flex-row">
@@ -309,6 +351,8 @@ export default function MyWardrobeView() {
                       statusLabel={stateLabel(cardState, item.model_status, item)}
                       forSale={item.for_sale}
                       listingPrice={item.listing_price}
+                      usageCount={usage[item.wardrobe_item_id]?.count}
+                      forgotten={isForgotten(item.wardrobe_item_id)}
                       onClick={() => setModalItem(item)}
                       onAvailable={() => setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'available' }))}
                       onUnavailable={() => setAvailability((prev) => ({ ...prev, [item.wardrobe_item_id]: 'unavailable' }))}
@@ -319,7 +363,13 @@ export default function MyWardrobeView() {
                 })}
                 {!isInitialLoading && !group.data.length && (
                   <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
-                    {group.key === 'forsale' ? 'Nenhuma peça para venda no momento.' : 'Nenhuma peça nesta lista.'}
+                    {group.key === 'forsale'
+                      ? 'Nenhuma peça para venda no momento.'
+                      : group.key === 'forgotten'
+                        ? 'Nenhuma peça esquecida — seu closet está bem aproveitado! 🎉'
+                        : group.key === 'mostused'
+                          ? 'Nenhuma peça usada em looks ainda. Monte um esquema para começar.'
+                          : 'Nenhuma peça nesta lista.'}
                   </p>
                 )}
               </div>

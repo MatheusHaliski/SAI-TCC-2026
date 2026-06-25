@@ -237,7 +237,7 @@ export default function ExploreSchemeView() {
                 const toggling = togglingId === scheme.scheme_id;
                 return (
                   <article key={scheme.scheme_id}
-                    style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderRadius: '1rem', border: `1px solid ${isFav ? 'rgba(245,158,11,0.4)' : 'var(--border)'}`, background: 'var(--card)', padding: '0.75rem', boxShadow: isFav ? '0 0 0 2px rgba(245,158,11,0.12)' : 'var(--shadow-sm)', transition: 'all 0.2s' }}>
+                    style={{ width: '100%', maxWidth: '980px', display: 'flex', flexDirection: 'column', gap: '1rem', borderRadius: '1.25rem', border: `1px solid ${isFav ? 'rgba(245,158,11,0.4)' : 'var(--border)'}`, background: 'var(--card)', padding: '1rem', boxShadow: isFav ? '0 0 0 2px rgba(245,158,11,0.12)' : 'var(--shadow-sm)', transition: 'all 0.2s' }}>
                     <OutfitCard data={buildOutfitPreviewData(scheme)} />
                     <div style={{ borderRadius: '0.75rem', border: '1px solid var(--border)', background: 'var(--accent)', padding: '0.75rem' }}>
                       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.625rem', flexWrap: 'wrap' }}>

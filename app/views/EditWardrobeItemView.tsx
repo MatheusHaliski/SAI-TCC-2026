@@ -41,6 +41,16 @@ const OCCASION_TAG_OPTIONS = [
   'Business', 'Everyday', 'Travel', 'Wedding', 'Outdoors',
 ];
 
+const SIZE_OPTIONS = [
+  { value: 'PP', label: 'PP (Extra pequeno)' },
+  { value: 'P', label: 'P (Pequeno)' },
+  { value: 'M', label: 'M (Médio)' },
+  { value: 'G', label: 'G (Grande)' },
+  { value: 'GG', label: 'GG (Extra grande)' },
+  { value: 'XG', label: 'XG (Extra extra grande)' },
+  { value: 'Único', label: 'Tamanho único' },
+];
+
 const PIECE_TYPE_OPTIONS = [
   { value: 'upper_piece', label: 'Parte de Cima' },
   { value: 'lower_piece', label: 'Parte de Baixo' },
@@ -74,12 +84,14 @@ interface FormState {
   piece_type: string;
   color: string;
   material: string;
+  size: string;
   style_tags: string;
   occasion_tags: string;
   brand_id: string;
   description: string;
   is_favorite: boolean;
   image_url: string;
+  gender_pattern: string;
 }
 
 export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, onDeleted }: EditWardrobeItemViewProps) {
@@ -97,13 +109,17 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
     piece_type: 'upper_piece',
     color: '',
     material: '',
+    size: '',
     style_tags: '',
     occasion_tags: '',
     brand_id: 'default',
     description: '',
     is_favorite: false,
     image_url: '',
+    gender_pattern: '',
   });
+  const [classifyingGender, setClassifyingGender] = useState(false);
+  const [genderSource, setGenderSource] = useState<string | null>(null);
 
   const inputClassName =
     'w-full rounded-xl border border-border bg-accent px-3 py-2 text-sm text-white placeholder:text-muted-foreground shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
@@ -136,12 +152,14 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
           piece_type: String(item.piece_type ?? 'upper_piece'),
           color: String(item.color ?? ''),
           material: String(item.material ?? ''),
+          size: String(item.size ?? ''),
           style_tags: Array.isArray(item.style_tags) ? item.style_tags.join(', ') : '',
           occasion_tags: Array.isArray(item.occasion_tags) ? item.occasion_tags.join(', ') : '',
           brand_id: String(item.brand_id ?? 'default'),
           description: String(item.description ?? ''),
           is_favorite: Boolean(item.is_favorite),
           image_url: String(item.image_url ?? ''),
+          gender_pattern: String(item.gender_pattern ?? ''),
         });
         setImagePreview(String(item.image_url ?? ''));
       } catch {
@@ -203,6 +221,26 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
       .map((tag) => tag.trim())
       .filter(Boolean);
 
+  // RF21 — ask the AI to suggest the gender pattern; the user can always override.
+  const handleClassifyGender = async () => {
+    if (classifyingGender) return;
+    setClassifyingGender(true);
+    setGenderSource(null);
+    try {
+      const res = await fetch('/api/ai/classify-gender', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: form.name, pieceType: form.piece_type, styleTags: parseTags(form.style_tags) }),
+      });
+      const data = await res.json().catch(() => null) as { gender?: string; confidence?: number; source?: string } | null;
+      if (res.ok && data?.gender) {
+        setForm((prev) => ({ ...prev, gender_pattern: data.gender as string }));
+        setGenderSource(`${data.source === 'ai' ? 'IA' : 'heurística'} · ${Math.round((data.confidence ?? 0) * 100)}% de confiança · você pode ajustar`);
+      }
+    } catch { /* ignore */ }
+    finally { setClassifyingGender(false); }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.name.trim()) {
@@ -217,12 +255,14 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         piece_type: form.piece_type,
         color: form.color,
         material: form.material,
+        size: form.size,
         style_tags: parseTags(form.style_tags),
         occasion_tags: parseTags(form.occasion_tags),
         brand_id: form.brand_id,
         description: form.description.trim(),
         is_favorite: form.is_favorite,
         image_url: form.image_url,
+        gender_pattern: form.gender_pattern,
       };
 
       const response = await fetch(`/api/wardrobe-items/${encodeURIComponent(itemId)}`, {
@@ -396,6 +436,16 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
+              <label className="block text-sm text-muted-foreground">Tamanho</label>
+              <FancySelect
+                options={SIZE_OPTIONS}
+                value={form.size}
+                onChange={(value) => setForm((prev) => ({ ...prev, size: value }))}
+                placeholder="Selecione o tamanho"
+              />
+            </div>
+
+            <div className="space-y-1.5">
               <label className="block text-sm text-muted-foreground">Tags de Estilo</label>
               <input
                 type="text"
@@ -419,6 +469,34 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               <p className="text-xs text-white/40">Separe por vírgula. Ex: Work, Party</p>
             </div>
           </div>
+        </SectionBlock>
+
+        {/* Gender pattern (RF21) — AI suggests, user decides */}
+        <SectionBlock title="Padrão de Gênero" subtitle="A IA sugere a classificação (masculino / feminino / unissex); você sempre pode ajustar.">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1.5">
+              <label className="block text-sm text-muted-foreground">Classificação</label>
+              <FancySelect
+                options={[
+                  { value: 'masculino', label: 'Masculino' },
+                  { value: 'feminino', label: 'Feminino' },
+                  { value: 'unissex', label: 'Unissex' },
+                ]}
+                value={form.gender_pattern}
+                onChange={(value) => { setForm((prev) => ({ ...prev, gender_pattern: value })); setGenderSource(null); }}
+                placeholder="Não classificado"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleClassifyGender()}
+              disabled={classifyingGender}
+              className="rounded-xl border border-violet-400/50 bg-violet-500/15 px-4 py-2 text-sm font-semibold text-violet-100 transition hover:brightness-110 disabled:opacity-60"
+            >
+              {classifyingGender ? 'Classificando…' : '🤖 Classificar com IA'}
+            </button>
+          </div>
+          {genderSource && <p className="mt-2 text-xs text-emerald-300/80">Sugestão da {genderSource}.</p>}
         </SectionBlock>
 
         {/* Tags quick-fill */}
