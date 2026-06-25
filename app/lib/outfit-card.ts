@@ -1,10 +1,32 @@
 export type PieceCategory = 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
 
+/**
+ * Per-piece visual styling applied to a single piece tile/cell in the outfit
+ * card. Every field is optional and falls back to the card's global theme,
+ * so pieces without a `style` render exactly as before.
+ */
+export type OutfitPieceStyle = {
+  /** Solid background color of the piece cell. */
+  cellBackground?: string;
+  /** Image used as the cell background (data URI or curated URL). */
+  cellBackgroundImage?: string;
+  /** Main text color inside the cell. */
+  textColor?: string;
+  /** Border color of the cell. */
+  borderColor?: string;
+  /** Accent color used for highlights/badges within the cell. */
+  accentColor?: string;
+  /** Visually promotes the cell (e.g. the look's hero piece). */
+  highlight?: boolean;
+};
+
 export type OutfitPiece = {
   id: string;
   wardrobeItemId?: string;
   name: string;
   brand: string;
+  /** Optional per-piece visual styling (cell color, image, text, border). */
+  style?: OutfitPieceStyle;
   brandLogoUrl?: string;
   /** Direct 2D image URL for piece card modal visualization. */
   imageUrl?: string;

@@ -42,6 +42,31 @@ export default function OutfitPieceCard({
     setTimeout(() => { setLaunching(false); onOpenInDressTester(); }, 400);
   };
 
+  const style = piece.style;
+  const hasCustomStyle = Boolean(
+    style && (style.cellBackground || style.cellBackgroundImage || style.textColor || style.borderColor || style.accentColor || style.highlight),
+  );
+  const articleStyle: React.CSSProperties = hasCustomStyle
+    ? {
+        border: `1px solid ${style?.borderColor || 'rgba(124,58,237,0.35)'}`,
+        background: style?.cellBackground || 'linear-gradient(145deg, rgba(124,58,237,0.28) 0%, rgba(219,39,119,0.22) 52%, rgba(109,40,217,0.20) 100%)',
+        backgroundImage: style?.cellBackgroundImage ? `url(${style.cellBackgroundImage})` : undefined,
+        backgroundSize: style?.cellBackgroundImage ? 'cover' : undefined,
+        backgroundPosition: style?.cellBackgroundImage ? 'center' : undefined,
+        color: style?.textColor || undefined,
+        backdropFilter: 'blur(14px)',
+        boxShadow: style?.highlight
+          ? `0 0 0 2px ${style?.accentColor || '#f0abfc'}, 0 14px 38px rgba(2,6,23,0.46)`
+          : '0 10px 30px rgba(2,6,23,0.36)',
+      }
+    : {
+        border: '1px solid rgba(124,58,237,0.35)',
+        background: 'linear-gradient(145deg, rgba(124,58,237,0.28) 0%, rgba(219,39,119,0.22) 52%, rgba(109,40,217,0.20) 100%)',
+        backdropFilter: 'blur(14px)',
+        boxShadow: '0 10px 30px rgba(2,6,23,0.36)',
+      };
+  const textColorStyle = style?.textColor ? { color: style.textColor } : undefined;
+
   const handleRemix = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     window.sessionStorage.setItem('fai-remix-piece', JSON.stringify({
@@ -59,12 +84,7 @@ export default function OutfitPieceCard({
     <>
       <article
         className={`group relative min-w-0 max-w-full overflow-hidden rounded-2xl transition duration-300 hover:scale-[1.02] ${compact ? 'p-3.5' : 'p-4'}`}
-        style={{
-          border: '1px solid rgba(124,58,237,0.35)',
-          background: 'linear-gradient(145deg, rgba(124,58,237,0.28) 0%, rgba(219,39,119,0.22) 52%, rgba(109,40,217,0.20) 100%)',
-          backdropFilter: 'blur(14px)',
-          boxShadow: '0 10px 30px rgba(2,6,23,0.36)',
-        }}
+        style={articleStyle}
       >
         {/* Inner glow */}
         <div
@@ -94,8 +114,8 @@ export default function OutfitPieceCard({
           {/* Header — name + tier */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
-              <p className="break-words text-sm font-semibold leading-snug text-white">{pieceName}</p>
-              <p className="truncate font-mono text-[9px] uppercase tracking-[0.20em] text-white/55">
+              <p className="break-words text-sm font-semibold leading-snug text-white" style={textColorStyle}>{pieceName}</p>
+              <p className="truncate font-mono text-[9px] uppercase tracking-[0.20em] text-white/55" style={textColorStyle}>
                 {pieceTypeLabel}
               </p>
             </div>
