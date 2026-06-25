@@ -735,6 +735,13 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
         return;
       }
 
+      if (payload.fallbackUsed) {
+        setAlertMessage(
+          'Análise em modo demonstração: nenhuma chave de IA está configurada no servidor, então valores genéricos foram preenchidos. Para análise real com o Google (Gemini), defina GOOGLE_AI_API_KEY no ambiente.',
+        );
+        return;
+      }
+
       const data = payload.data;
 
       const bodyRegionMap: Record<string, string> = {

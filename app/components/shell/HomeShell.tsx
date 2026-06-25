@@ -85,6 +85,12 @@ const MaisonIcon = () => (
   </svg>
 );
 
+const CelebrityIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <path d="M12 2l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 18l-5.9 2.8 1.2-6.6L2.5 9l6.6-.9z" strokeLinejoin="round"/>
+  </svg>
+);
+
 interface SidebarItem {
   route: AppRoute;
   label: string;
@@ -101,6 +107,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { route: 'search-items',     label: 'Explorar',       icon: <SearchIcon /> },
   { route: 'search-pieces',    label: 'Peças Públicas', icon: <HeartIcon /> },
   { route: 'maison',           label: 'Marcas',         icon: <MaisonIcon /> },
+  { route: 'art-celebrity',    label: 'Art Celebrity',  icon: <CelebrityIcon /> },
   { route: 'profile',          label: 'Perfil',         icon: <HomeIcon /> },
   { route: 'profile-settings', label: 'Configurações',  icon: <SettingsIcon /> },
 ];

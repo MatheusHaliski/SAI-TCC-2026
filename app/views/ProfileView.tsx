@@ -168,6 +168,9 @@ export default function ProfileView() {
           loginEmail={email}
           loginStatus={isOwnerView ? 'Authenticated' : 'Public Profile'}
           authSource="saiUsers"
+          targetUserId={userId}
+          viewerId={authUserId}
+          isOwnerView={isOwnerView}
         />
 
         <ProfileSectionRenderer

@@ -489,6 +489,17 @@ html.dark-mode body input::placeholder, html.dark-mode body textarea::placeholde
 @keyframes aura-particle-float { 0% { transform: translateY(0px); opacity: 0.6; } 50% { transform: translateY(-12px); opacity: 1.0; } 100% { transform: translateY(-24px); opacity: 0; } }
 @keyframes aura-level-up { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.04); opacity: 0.9; } 100% { transform: scale(1); opacity: 1; } }
 
+/* ── GIF-like animated gradient presets (Criar Look › Predefinições) ── */
+@keyframes sai-gif-pan {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes sai-gif-aura {
+  0%   { filter: hue-rotate(0deg)   saturate(1.1); }
+  100% { filter: hue-rotate(360deg) saturate(1.25); }
+}
+
 /* ── Runway Feed ── */
 @keyframes runway-slide-up { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes runway-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
