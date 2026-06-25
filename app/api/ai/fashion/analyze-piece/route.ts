@@ -46,11 +46,17 @@ export async function POST(req: NextRequest) {
       brandLogos,
     });
 
-    return NextResponse.json({ ok: true, data: result });
-  } catch (error: any) {
+    return NextResponse.json({
+      ok: true,
+      data: result,
+      provider: googleFashionAI.providerName,
+      fallbackUsed: googleFashionAI.isFallback,
+    });
+  } catch (error: unknown) {
     console.error('[POST /api/ai/fashion/analyze-piece] Error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { ok: false, provider: 'google', failedStage: 'analyze_piece', message: error.message || 'Unknown error', fallbackUsed: true },
+      { ok: false, provider: 'google', failedStage: 'analyze_piece', message, fallbackUsed: true },
       { status: 500 }
     );
   }

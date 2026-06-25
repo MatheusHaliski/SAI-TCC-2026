@@ -53,6 +53,7 @@ export default function HomeView({ onNavigate }: HomeViewProps) {
       'my-photos': '/my-photos',
       'future-topics': '/future-topics',
       'maison': '/maison',
+      'art-celebrity': '/art-celebrity',
       'profile': '/profile',
       'profile-settings': '/profile/settings',
       'search-items': '/search-items',

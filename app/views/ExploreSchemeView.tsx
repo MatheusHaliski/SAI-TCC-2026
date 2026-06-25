@@ -230,15 +230,7 @@ export default function ExploreSchemeView() {
       ) : (
         grouped.map(([occasion, occasionSchemes]) => (
           <SectionBlock key={occasion} title={`Ocasião: ${occasion}`} subtitle="Looks agrupados por ocasião.">
-            <div
-              style={{
-                marginTop: '1rem',
-                display: 'grid',
-                gap: '1.5rem',
-                gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,900px),1fr))',
-                justifyItems: 'center',
-              }}
-            >
+            <div style={{ marginTop: '1rem', display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill,minmax(360px,1fr))' }}>
               {occasionSchemes.map((scheme) => {
                 const isFav    = !!favorites[scheme.scheme_id];
                 const avail    = availability[scheme.scheme_id] ?? 'available';

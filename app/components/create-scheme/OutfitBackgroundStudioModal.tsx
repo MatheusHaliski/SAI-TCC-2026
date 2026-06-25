@@ -1964,6 +1964,39 @@ function getRecommendedPresets(outfitMetadata: OutfitMetadata | undefined, runti
   ].filter(Boolean).slice(0, 3) as RecommendedPreset[];
 }
 
+// ── GIF-like animated gradient presets ──
+// Replace the static "recommended presets" list. Each preset is a dynamic gradient
+// (or image) that animates like a GIF when the Aura (dynamic background) toggle is on,
+// changing color/gradient continuously; static when Aura is off.
+type GifGradientPreset = {
+  id: string;
+  label: string;
+  description: string;
+  category: string;
+  type: 'linear' | 'radial' | 'conic';
+  angle: number;
+  stops: Array<{ color: string; position: number }>;
+  /** Optional image — applied as a dynamic background image instead of a gradient. */
+  image?: string;
+};
+
+const GIF_GRADIENT_PRESETS: GifGradientPreset[] = [
+  { id: 'gif_heat',      label: 'Heat Pulse',        description: 'Laranja incandescente que pulsa com a Aura.',     category: 'aura / heat',        type: 'linear', angle: 135, stops: [{ color: '#431407', position: 0 }, { color: '#9a3412', position: 40 }, { color: '#f97316', position: 75 }, { color: '#fbbf24', position: 100 }] },
+  { id: 'gif_vibrant',   label: 'Vibrant Spin',      description: 'Violeta e magenta em rotação contínua.',          category: 'aura / vibrant',     type: 'conic',  angle: 0,   stops: [{ color: '#7c3aed', position: 0 }, { color: '#ec4899', position: 50 }, { color: '#f59e0b', position: 100 }] },
+  { id: 'gif_iconic',    label: 'Iconic Gold',       description: 'Dourado radiante com brilho cíclico.',            category: 'aura / iconic',      type: 'radial', angle: 0,   stops: [{ color: '#451a03', position: 0 }, { color: '#d97706', position: 60 }, { color: '#fbbf24', position: 100 }] },
+  { id: 'gif_legendary', label: 'Legendary Holo',    description: 'Holográfico que muda de matiz como um GIF.',       category: 'aura / legendary',   type: 'linear', angle: 135, stops: [{ color: '#1c1400', position: 0 }, { color: '#3d2e00', position: 35 }, { color: '#d4af37', position: 70 }, { color: '#fef3c7', position: 100 }] },
+  { id: 'gif_neon',      label: 'Neon Drift',        description: 'Ciano e azul elétrico deslizando.',               category: 'dinâmico / neon',    type: 'linear', angle: 115, stops: [{ color: '#082f49', position: 0 }, { color: '#0ea5e9', position: 55 }, { color: '#22d3ee', position: 100 }] },
+  { id: 'gif_aurora',    label: 'Aurora Mist',       description: 'Verde-aurora em movimento suave.',                category: 'dinâmico / aurora',  type: 'linear', angle: 160, stops: [{ color: '#022c22', position: 0 }, { color: '#059669', position: 55 }, { color: '#34d399', position: 100 }] },
+  { id: 'gif_image_neon', label: 'Neon Grid (imagem)', description: 'Fundo de imagem dinâmica em grade neon.',        category: 'imagem / dinâmica',  type: 'linear', angle: 135, stops: [{ color: '#0f172a', position: 0 }, { color: '#1e293b', position: 100 }], image: '/neongrid.png' },
+];
+
+function buildGifGradientCss(preset: GifGradientPreset): string {
+  const stops = preset.stops.map((s) => `${s.color} ${s.position}%`).join(', ');
+  if (preset.type === 'radial') return `radial-gradient(circle at 50% 50%, ${stops})`;
+  if (preset.type === 'conic') return `conic-gradient(from ${preset.angle}deg at 50% 50%, ${stops})`;
+  return `linear-gradient(${preset.angle}deg, ${stops})`;
+}
+
 const TEMPLATE_PICKER_PRESETS: RecommendedPreset[] = [
   { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Monograma de tecido', description: 'Superfície de moda com textura de monograma da marca.' },
   { id: 'selection_tonal_geometry', category: 'pattern_surface', label: 'Geometria tonal', description: 'Paleta tonal com painéis geométricos sutis.' },
@@ -2103,6 +2136,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiGradientResults, setAiGradientResults] = useState<OutfitBackgroundConfig[]>([]);
   const [selectedAiResult, setSelectedAiResult] = useState<ArtworkVariation | null>(null);
   const [selectedRecommendedPreset, setSelectedRecommendedPreset] = useState<BackgroundPresetId | null>(null);
+  const [selectedGifPreset, setSelectedGifPreset] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
@@ -3342,12 +3376,22 @@ export default function OutfitBackgroundStudioModal({
               />
             ) : null}
 
-            {onChangeCardDisplayOptions ? (
-              <PremiumSelections
-                value={cardDisplayOptions ?? previewCardData.displayOptions ?? {}}
-                onChange={onChangeCardDisplayOptions}
-              />
-            ) : null}
+            <section className="rounded-xl border border-white/20 bg-white/10 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs uppercase tracking-[0.12em] text-white/65">Predefinições recomendadas para o look atual</p>
+                <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wide ${dynamicBackground ? 'border-violet-400/40 bg-violet-500/25 text-violet-200' : 'border-white/15 bg-white/5 text-white/45'}`}>
+                  ✦ Aura {dynamicBackground ? 'Ativo' : 'Off'}
+                </span>
+              </div>
+              <p className="mt-1 text-[10px] text-white/50">
+                {dynamicBackground
+                  ? 'Com a Aura ativa, as predefinições animam como GIF — a cor e o gradiente evoluem continuamente.'
+                  : 'Predefinições estáticas. Ative a Aura (no rodapé) para animar os gradientes como GIF.'}
+              </p>
+              <div className="mt-2 grid gap-2 grid-cols-2 sm:grid-cols-3">
+                {GIF_GRADIENT_PRESETS.map((preset) => {
+                  const isSelected = selectedGifPreset === preset.id;
+                  const gradientCss = buildGifGradientCss(preset);
 
             <section className="rounded-xl border border-white/20 bg-white/10 p-3">
               <p className="text-xs uppercase tracking-[0.12em] text-white/65">Layout das peças no card</p>
@@ -3359,12 +3403,46 @@ export default function OutfitBackgroundStudioModal({
                     <button
                       key={option.value}
                       type="button"
-                      className={`rounded-xl border p-2 text-left transition hover:border-fuchsia-300/50 hover:bg-white/10 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/15 bg-white/5'}`}
-                      onClick={() => onSelectPieceListFormat?.(option.value)}
+                      aria-pressed={isSelected}
+                      className={`rounded-xl border p-2 text-left transition hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.2)] ${isSelected ? 'border-fuchsia-400/70 bg-fuchsia-900/20' : 'border-white/20 bg-white/5'}`}
+                      onClick={() => {
+                        setSelectedGifPreset(preset.id);
+                        if (preset.image) {
+                          setDraft((prev) => ({
+                            ...prev,
+                            background_mode: 'ai_artwork',
+                            ai_artwork: { prompt: `${preset.label} dynamic background`, image_url: preset.image as string, generation_status: 'done' },
+                          }));
+                        } else {
+                          setDraft((prev) => ({
+                            ...prev,
+                            background_mode: 'gradient',
+                            gradient: { type: preset.type, angle: preset.angle, intensity: 110, stops: preset.stops },
+                          }));
+                        }
+                      }}
                     >
-                      <p className="text-[11px] font-semibold leading-tight text-white/90">{option.label}</p>
-                      <p className="mt-0.5 text-[10px] text-white/55">{option.hint}</p>
-                      {isSelected ? <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-fuchsia-300">● Selecionado</p> : null}
+                      <div
+                        className="rounded-md border border-white/10 overflow-hidden"
+                        style={{
+                          height: 70,
+                          backgroundImage: preset.image ? `url(${preset.image})` : gradientCss,
+                          backgroundColor: '#0f172a',
+                          backgroundSize: preset.image ? 'cover' : '220% 220%',
+                          backgroundPosition: 'center',
+                          animation: dynamicBackground ? 'sai-gif-pan 6s ease-in-out infinite, sai-gif-aura 12s linear infinite' : undefined,
+                        }}
+                      >
+                        <div className="h-full w-full" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.05), rgba(0,0,0,0.35))' }} />
+                      </div>
+                      <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/45">{preset.category}</p>
+                      <p className="text-[11px] font-semibold leading-tight text-white/90">{preset.label}</p>
+                      <p className="mt-0.5 text-[10px] text-white/55 line-clamp-2">{preset.description}</p>
+                      <p className={`mt-1 text-[9px] ${isSelected ? 'text-fuchsia-300' : 'text-emerald-300'}`}>
+                        {isSelected
+                          ? (dynamicBackground ? '● Aplicado · GIF' : '● Aplicado')
+                          : (dynamicBackground ? '▶ GIF pronto' : '○ Estático')}
+                      </p>
                     </button>
                   );
                 })}
