@@ -40,6 +40,7 @@ type SchemePieceSnapshot = {
   pieceType: string;
   category: NonNullable<OutfitPiece['category']>;
   wearstyles: string[];
+  style?: OutfitPiece['style'];
 };
 
 type SlotKey = 'upper' | 'lower' | 'shoes' | 'accessory';
@@ -167,6 +168,7 @@ export default function CreateMySchemeView() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [userId, setUserId] = useState('');
   const [generatedCardData, setGeneratedCardData] = useState<OutfitCardData | null>(null);
+  const [pieceStyles, setPieceStyles] = useState<Record<string, NonNullable<OutfitPiece['style']>>>({});
 
   const inputClassName =
     'w-full rounded-xl border border-border bg-accent px-3 py-2 text-sm text-white placeholder:text-muted-foreground shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
@@ -319,6 +321,7 @@ export default function CreateMySchemeView() {
           pieceType,
           category: SLOT_DEFAULT_CATEGORIES[slot],
           wearstyles: SLOT_AUTO_WEARSTYLE[slot],
+          style: pieceStyles[selectedValue],
         } as OutfitPiece;
       })
       .filter(Boolean) as OutfitPiece[];
@@ -373,6 +376,7 @@ export default function CreateMySchemeView() {
         pieceType: piece.pieceType,
         category: piece.category || 'Standard',
         wearstyles: piece.wearstyles || [],
+        style: piece.style,
       };
     });
 
@@ -883,6 +887,19 @@ export default function CreateMySchemeView() {
       onSelectPieceListFormat={setPieceListFormat}
       cardDisplayOptions={cardDisplayOptions}
       onChangeCardDisplayOptions={setCardDisplayOptions}
+      onChangePieces={(nextPieces) => {
+        setPieceStyles((prev) => {
+          const next = { ...prev };
+          nextPieces.forEach((piece) => {
+            if (piece.style && Object.keys(piece.style).length > 0) {
+              next[piece.id] = piece.style;
+            } else {
+              delete next[piece.id];
+            }
+          });
+          return next;
+        });
+      }}
     />
   );
 
