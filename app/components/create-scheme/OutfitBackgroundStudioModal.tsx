@@ -7,6 +7,8 @@ import {
   BackgroundStudioStyleConfig,
   OutfitBackgroundConfig,
   OutfitCardData,
+  OutfitCardDisplayOptions,
+  OutfitPieceListFormat,
   buildBackgroundCssStyle,
   resolveBrandLogoUrlByName,
   resolveOutfitBackgroundForRender,
@@ -27,7 +29,8 @@ import { applyArtworkToOutfitCard } from '@/app/lib/artwork-studio';
 import FancySelect from '@/app/components/ui/fancy-select';
 import { MATERIAL_PRESETS, applyFabricMaterialToCard, buildFabricPresetConfig, type FabricMaterialConfig } from '@/app/lib/materialPresets';
 import PremiumSelections from '@/app/components/studio/PremiumSelections';
-import type { CardSkinId } from '@/app/lib/outfit-card';
+import PieceStyleEditorPanel from '@/app/components/create-scheme/PieceStyleEditorPanel';
+import type { CardSkinId, OutfitPiece } from '@/app/lib/outfit-card';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
 type GeometryFamily = 'arrows' | 'waves' | 'diamond' | 'mesh' | 'circles' | 'triangles' | 'stars' | 'flowers' | 'beams' | 'panels' | 'mixed';
@@ -103,9 +106,24 @@ interface OutfitBackgroundStudioModalProps {
   onApply: (value: OutfitBackgroundConfig) => void;
   selectedCardSkin?: CardSkinId;
   onSelectSkin?: (skinId: CardSkinId) => void;
+  pieceListFormat?: OutfitPieceListFormat;
+  onSelectPieceListFormat?: (format: OutfitPieceListFormat) => void;
+  cardDisplayOptions?: OutfitCardDisplayOptions;
+  onChangeCardDisplayOptions?: (options: OutfitCardDisplayOptions) => void;
+  /** Called when per-piece styling changes in the inline piece editor. */
+  onChangePieces?: (pieces: OutfitPiece[]) => void;
   /** Render as an inline page section instead of a fixed modal overlay */
   asPage?: boolean;
 }
+
+const PIECE_LIST_FORMAT_OPTIONS: Array<{ value: OutfitPieceListFormat; label: string; hint: string }> = [
+  { value: 'grid-2', label: 'Grid 2 colunas', hint: 'Cards completos lado a lado' },
+  { value: 'grid-3', label: 'Grid 3 colunas', hint: 'Cards completos em três colunas' },
+  { value: 'stack', label: 'Lista', hint: 'Peças empilhadas em linhas' },
+  { value: 'row', label: 'Carrossel', hint: 'Peças em uma faixa horizontal' },
+  { value: 'magazine', label: 'Revista', hint: 'Peça em destaque + miniaturas' },
+  { value: 'plate', label: 'Prato', hint: 'Peças dispostas em círculo' },
+];
 
 const COLOR_SWATCHES = ['#0a0a0a', '#ffffff', '#c0c0c0', '#2e1065', '#047857', '#ddc7a1', '#1d4ed8', '#fff8dc'];
 
@@ -2064,6 +2082,11 @@ export default function OutfitBackgroundStudioModal({
   onApply,
   selectedCardSkin,
   onSelectSkin,
+  pieceListFormat,
+  onSelectPieceListFormat,
+  cardDisplayOptions,
+  onChangeCardDisplayOptions,
+  onChangePieces,
   asPage = false,
 }: OutfitBackgroundStudioModalProps) {
   const buildNoMaterialConfig = (baseColor: string): FabricMaterialConfig => ({
@@ -2212,6 +2235,8 @@ export default function OutfitBackgroundStudioModal({
   const previewData: OutfitCardData = {
     ...previewCardData,
     outfitBackground: draft,
+    pieceListFormat: pieceListFormat ?? previewCardData.pieceListFormat,
+    displayOptions: cardDisplayOptions ?? previewCardData.displayOptions,
   };
 
   const dominantColor =
@@ -3013,6 +3038,114 @@ export default function OutfitBackgroundStudioModal({
                   </div>
                 </div>
 
+                <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                  <p className="text-xs uppercase tracking-[0.12em] text-white/65">Predefinições recomendadas para o look atual</p>
+                  {(() => {
+                    const seen = new Set<BackgroundPresetId>();
+                    const orderedPresets = [...recommendedPresets, ...TEMPLATE_PICKER_PRESETS].filter((preset) => {
+                      if (seen.has(preset.id)) return false;
+                      seen.add(preset.id);
+                      return true;
+                    });
+
+                    if (orderedPresets.length === 0) {
+                      return <p className="mt-2 text-[11px] text-white/55">Nenhuma predefinição disponível para este look ainda.</p>;
+                    }
+
+                    const [heroPreset, ...gridPresets] = orderedPresets;
+
+                    const renderPreview = (preset: RecommendedPreset, height: number) => {
+                      const previewConfig = applyPresetPreview({
+                        presetId: preset.id,
+                        context: presetContext,
+                        referenceImage: uploadedReferenceImage,
+                        gradient: draft.gradient,
+                      });
+                      return (
+                        <div
+                          className="overflow-hidden rounded-lg border border-white/10"
+                          style={{
+                            height,
+                            ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)),
+                            backgroundColor: '#0f172a',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                          }}
+                        >
+                          <div className="flex h-full flex-col justify-between p-1.5" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.45))' }}>
+                            <div className="h-1 w-6 rounded-full bg-white/25" />
+                            <div className="space-y-0.5">
+                              <div className="h-1.5 w-12 rounded-full bg-white/40" />
+                              <div className="h-1 w-8 rounded-full bg-white/22" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    };
+
+                    const heroAvailable = isPresetAvailable(heroPreset.id, presetContext, uploadedReferenceImage);
+                    const heroReason = getPresetAvailabilityReason(heroPreset.id, presetContext, uploadedReferenceImage);
+                    const heroSelected = selectedRecommendedPreset === heroPreset.id;
+                    const heroBadge = !heroAvailable
+                      ? `🟡 ${heroReason}`
+                      : heroSelected
+                        ? '● Aplicado'
+                        : '🟢 Pronto';
+
+                    return (
+                      <div className="mt-2 space-y-2">
+                        {/* Hero — recomendação principal em destaque */}
+                        <button
+                          type="button"
+                          disabled={!heroAvailable}
+                          className={`block w-full rounded-2xl border p-3 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_14px_40px_rgba(192,132,252,0.25)] disabled:cursor-not-allowed disabled:opacity-40 ${heroSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent'}`}
+                          onClick={() => void applyRecommendedPresetFromReferenceImage(heroPreset.id, uploadedReferenceImage, presetContext)}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[9px] uppercase tracking-[0.14em] text-fuchsia-300/80">★ Recomendação principal</p>
+                            <p className={`text-[9px] ${heroAvailable ? (heroSelected ? 'text-fuchsia-300' : 'text-emerald-300') : 'text-amber-200'}`}>{heroBadge}</p>
+                          </div>
+                          <div className="mt-2">{renderPreview(heroPreset, 132)}</div>
+                          <p className="mt-2 text-[9px] uppercase tracking-[0.12em] text-white/50">{heroPreset.category.replaceAll('_', ' / ')}</p>
+                          <p className="text-[13px] font-semibold leading-tight">{heroPreset.label}</p>
+                          <p className="mt-0.5 text-[10px] text-white/60">{heroPreset.description}</p>
+                        </button>
+
+                        {/* Grade — alternativas em cards compactos */}
+                        {gridPresets.length > 0 && (
+                          <div className="grid grid-cols-3 gap-2">
+                            {gridPresets.map((preset) => {
+                              const isAvailable = isPresetAvailable(preset.id, presetContext, uploadedReferenceImage);
+                              const availabilityReason = getPresetAvailabilityReason(preset.id, presetContext, uploadedReferenceImage);
+                              const isSelected = selectedRecommendedPreset === preset.id;
+                              const badgeLabel = !isAvailable
+                                ? `🟡 ${availabilityReason}`
+                                : isSelected
+                                  ? '● Aplicado'
+                                  : '🟢 Pronto';
+
+                              return (
+                                <button
+                                  key={preset.id}
+                                  type="button"
+                                  disabled={!isAvailable}
+                                  className={`rounded-xl border p-1.5 text-left transition enabled:hover:border-fuchsia-300/50 enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/15 bg-white/5'}`}
+                                  onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
+                                >
+                                  {renderPreview(preset, 68)}
+                                  <p className="mt-1 text-[8px] uppercase tracking-[0.1em] text-white/45">{preset.category.replaceAll('_', ' / ')}</p>
+                                  <p className="text-[10px] font-semibold leading-tight text-white/90 line-clamp-2">{preset.label}</p>
+                                  <p className={`mt-0.5 text-[8px] ${isAvailable ? (isSelected ? 'text-fuchsia-300' : 'text-emerald-300') : 'text-amber-200'}`}>{badgeLabel}</p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+
                 <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.1em] text-white/80">Generation Mode</p>
                   <p className="mt-1 text-[11px] text-white/65">{AI_GENERATION_MODE_DESCRIPTIONS[aiGenerationMode]}</p>
@@ -3260,9 +3393,15 @@ export default function OutfitBackgroundStudioModal({
                   const isSelected = selectedGifPreset === preset.id;
                   const gradientCss = buildGifGradientCss(preset);
 
+            <section className="rounded-xl border border-white/20 bg-white/10 p-3">
+              <p className="text-xs uppercase tracking-[0.12em] text-white/65">Layout das peças no card</p>
+              <p className="mt-1 text-[11px] text-white/55">Escolha como as peças do look serão exibidas no card final.</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {PIECE_LIST_FORMAT_OPTIONS.map((option) => {
+                  const isSelected = (pieceListFormat ?? 'grid-2') === option.value;
                   return (
                     <button
-                      key={preset.id}
+                      key={option.value}
                       type="button"
                       aria-pressed={isSelected}
                       className={`rounded-xl border p-2 text-left transition hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.2)] ${isSelected ? 'border-fuchsia-400/70 bg-fuchsia-900/20' : 'border-white/20 bg-white/5'}`}
@@ -3309,6 +3448,14 @@ export default function OutfitBackgroundStudioModal({
                 })}
               </div>
             </section>
+
+            {onChangePieces ? (
+              <PieceStyleEditorPanel
+                pieces={previewCardData.pieces}
+                format={pieceListFormat ?? previewCardData.pieceListFormat}
+                onChangePieces={onChangePieces}
+              />
+            ) : null}
           </section>
 
           <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4 lg:sticky lg:top-4 lg:h-fit' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>

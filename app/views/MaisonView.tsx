@@ -45,6 +45,7 @@ interface BrandProfile {
   sustainability: { rating: SustainabilityRating; note: string };
 }
 
+
 const BRAND_PROFILES: Record<string, BrandProfile> = {
   adidas: {
     category: 'Esportivo & Streetwear',

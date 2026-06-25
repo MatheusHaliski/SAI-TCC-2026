@@ -8,10 +8,10 @@ import { clearSharedAccessToken, ensureSharedAccessToken } from "@/app/lib/acces
 import { clearAuthSessionToken } from "@/app/lib/authSession";
 
 const ff = "'Inter', 'Segoe UI', Arial, sans-serif";
-const metallicGradient = "linear-gradient(135deg, #f7e7b2 0%, #d4af37 28%, #f4f4f5 52%, #a3a3a3 74%, #fff5cf 100%)";
+const metallicGradient = "#0f172a";
 const brandLogoSrc = "/80A950EF-F93D-4C1B-89B8-17490D321F97_1_105_c.jpeg";
 
-function BrandLogoMark({ size = 48 }: { size?: number }) {
+function BrandLogoMark({ size = 248 }: { size?: number }) {
     return (
         <div
             style={{
@@ -30,9 +30,9 @@ function BrandLogoMark({ size = 48 }: { size?: number }) {
             <Image
                 src={brandLogoSrc}
                 alt="Fashion AI"
-                width={Math.round(size * 0.58)}
-                height={Math.round(size * 0.58)}
-                style={{ width: "58%", height: "58%", objectFit: "cover", borderRadius: 6 }}
+                width={Math.round(size * 0.8)}
+                height={Math.round(size * 0.8)}
+                style={{ width: "80%", height: "80%", objectFit: "cover", borderRadius: 8 }}
             />
         </div>
     );
@@ -61,7 +61,8 @@ export default function SignupViewPage() {
             <div style={{ background: metallicGradient, padding: "3rem", width: "50%", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:flex">
                 <div style={{ border: "2px solid rgba(255,255,255,0.92)", borderRadius: 24, background: "rgba(255,255,255,0.06)", padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1rem", textAlign: "center" }}>
-                        <BrandLogoMark size={88} />
+                        {/* 120 → 360 (3×) */}
+                        <BrandLogoMark size={360} />
                         <div>
                             <div style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 600, fontFamily: ff }}>Create a new account in minutes!</div>
                         </div>
@@ -111,8 +112,9 @@ export default function SignupViewPage() {
                         </button>
                         <div style={{ background: "#fff", border: "2px solid #000", borderRadius: 24, padding: "2rem" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.875rem", marginBottom: "1.5rem" }}>
-                                <div style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", borderRadius: "0.875rem" }}>
-                                    <BrandLogoMark size={48} />
+                                <div style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", borderRadius: "1rem" }}>
+                                    {/* 72 → 216 (3×) */}
+                                    <BrandLogoMark size={216} />
                                 </div>
                                 <div>
                                     <div style={{ fontSize: "1.25rem", fontWeight: 800, lineHeight: 1.1, color: "#111827", fontFamily: ff }}>Fashion AI</div>

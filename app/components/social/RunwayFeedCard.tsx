@@ -155,17 +155,21 @@ export default function RunwayFeedCard({ scheme, viewerId, viewerName, viewerPho
       <div className={`p-3 ${isGrid ? 'p-2' : 'p-4'}`}>
 
         {/* Author row */}
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-7 h-7 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
-            {scheme.author_photo_url ? (
-              <img src={scheme.author_photo_url} alt={scheme.author_name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white/40 text-xs">◉</div>
-            )}
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
+              {scheme.author_photo_url ? (
+                <img src={scheme.author_photo_url} alt={scheme.author_name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/40 text-xs">◉</div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <span className="block truncate text-xs text-white/70">
+                {scheme.author_name || 'Usuário'}
+              </span>
+            </div>
           </div>
-          <span className="text-xs text-white/60 truncate">
-            {scheme.author_name || 'Usuário'}
-          </span>
         </div>
 
         {/* Title */}

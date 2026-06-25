@@ -23,6 +23,8 @@ interface Props {
   state: CardState;
   forSale?: boolean;
   listingPrice?: number;
+  usageCount?: number;
+  forgotten?: boolean;
   onClick: () => void;
   onAvailable: () => void;
   onUnavailable: () => void;
@@ -100,13 +102,39 @@ export default function WardrobeItemCard(props: Props) {
         </div>
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-white/76">{personalDescription}</p>
 
-        {/* Status badge */}
-        <span
-          className="mt-3 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
-          style={{ background: colors.badge, borderColor: colors.border, color: colors.text }}
-        >
-          {props.statusLabel}
-        </span>
+        {/* Status + usage badges */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span
+            className="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
+            style={{ background: colors.badge, borderColor: colors.border, color: colors.text }}
+          >
+            {props.statusLabel}
+          </span>
+
+          {props.usageCount !== undefined && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold"
+              style={
+                props.usageCount === 0
+                  ? { background: 'rgba(148,163,184,0.12)', borderColor: 'rgba(148,163,184,0.5)', color: '#cbd5e1' }
+                  : { background: 'rgba(124,58,237,0.14)', borderColor: 'rgba(124,58,237,0.5)', color: '#c4b5fd' }
+              }
+            >
+              {props.usageCount === 0
+                ? 'Nunca usada'
+                : `Usada em ${props.usageCount} look${props.usageCount > 1 ? 's' : ''}`}
+            </span>
+          )}
+
+          {props.forgotten && props.usageCount !== 0 && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold"
+              style={{ background: 'rgba(245,158,11,0.12)', borderColor: 'rgba(245,158,11,0.5)', color: '#fbbf24' }}
+            >
+              💤 Esquecida
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Actions */}

@@ -28,9 +28,11 @@ interface Scheme {
   occasion: string;
   description?: string | null;
   cover_image_url?: string | null;
-  visibility: 'public' | 'private';
+  visibility: 'public' | 'followers' | 'private';
   creation_mode?: 'manual' | 'ai';
   updatedAt?: string;
+  user_id?: string;
+  author_name?: string;
   pieces?: SchemePieceSnapshot[];
 }
 
@@ -63,17 +65,19 @@ const buildData = (scheme: Scheme): OutfitCardData => {
       }))
     : [];
 
+  const metaBadges = [
+    { icon: scheme.creation_mode === 'ai' ? '✨' : '✍️', label: scheme.creation_mode === 'ai' ? 'AI' : 'Manual' },
+    { icon: scheme.visibility === 'public' ? '🌐' : scheme.visibility === 'followers' ? '👥' : '🔒', label: scheme.visibility === 'public' ? 'Público' : scheme.visibility === 'followers' ? 'Seguidores' : 'Privado' },
+    { icon: '🕒', label: scheme.updatedAt ? new Date(scheme.updatedAt).toLocaleDateString('pt-BR') : 'recente' },
+  ];
+
   return {
     outfitName: scheme.title,
     outfitStyleLine: `${scheme.style} · ${scheme.occasion}`,
     outfitDescription: undefined, // let OutfitCard build fallback from pieces
     heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
     outfitBackground: parseBackground(scheme.description),
-    metaBadges: [
-      { icon: scheme.creation_mode === 'ai' ? '✨' : '✍️', label: scheme.creation_mode === 'ai' ? 'AI' : 'Manual' },
-      { icon: scheme.visibility === 'public' ? '🌐' : '🔒', label: scheme.visibility === 'public' ? 'Público' : 'Privado' },
-      { icon: '🕒', label: scheme.updatedAt ? new Date(scheme.updatedAt).toLocaleDateString('pt-BR') : 'recente' },
-    ],
+    metaBadges,
     pieces,
   };
 };
@@ -100,10 +104,39 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
 
   const cards = useMemo(() => loadedSchemes.map((scheme) => ({ scheme, data: buildData(scheme) })), [loadedSchemes]);
 
+  // RF28: cycle visibility público → seguidores → privado → público, persisting
+  // each change via PATCH /api/schemes/[id]. Optimistic update with revert on error.
+  const NEXT_VISIBILITY: Record<Scheme['visibility'], Scheme['visibility']> = {
+    public: 'followers',
+    followers: 'private',
+    private: 'public',
+  };
+  const VISIBILITY_ACTION_LABEL: Record<Scheme['visibility'], string> = {
+    public: '🌐 Público → restringir a Seguidores',
+    followers: '👥 Seguidores → tornar Privado',
+    private: '🔒 Privado → Publicar',
+  };
+
+  const cycleVisibility = async (scheme: Scheme) => {
+    const next = NEXT_VISIBILITY[scheme.visibility];
+    setLoadedSchemes((prev) => prev.map((s) => (s.scheme_id === scheme.scheme_id ? { ...s, visibility: next } : s)));
+    try {
+      const res = await fetch(`/api/schemes/${encodeURIComponent(scheme.scheme_id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, visibility: next }),
+      });
+      if (!res.ok) throw new Error('visibility update failed');
+    } catch (err) {
+      console.warn('[visibility] revert', err);
+      setLoadedSchemes((prev) => prev.map((s) => (s.scheme_id === scheme.scheme_id ? { ...s, visibility: scheme.visibility } : s)));
+    }
+  };
+
   return (
     <>
       <SectionBlock title="Meus Esquemas" subtitle="Cards de look criados por você com visualização premium compacta.">
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="mt-4 grid gap-5 lg:grid-cols-2">
           {cards.map(({ scheme, data }) => (
             <OutfitCard
               key={scheme.scheme_id}
@@ -113,7 +146,7 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
                 { label: 'Abrir', onClick: () => setSelectedScheme(scheme), tone: 'accent' },
                 { label: 'Editar' },
                 { label: 'Exportar', onClick: () => setExportingScheme(scheme), tone: 'accent' },
-                { label: scheme.visibility === 'public' ? 'Despublicar' : 'Publicar' },
+                { label: VISIBILITY_ACTION_LABEL[scheme.visibility], onClick: () => void cycleVisibility(scheme) },
                 { label: 'Excluir', tone: 'danger' },
               ]}
             />
