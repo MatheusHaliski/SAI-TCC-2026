@@ -23,7 +23,7 @@ export default function ContextSectionMenu({ title, sections, selectedSection, o
     }, [activeSection, sections]);
 
     return (
-        <aside style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:"1rem", padding:"1rem", boxShadow:"var(--shadow-sm)" }} className="lg:sticky lg:top-0 lg:h-fit">
+        <aside style={{ background:"var(--element-surface, var(--card))", border:"1px solid var(--element-surface-border, var(--border))", borderRadius:"1rem", padding:"1rem", boxShadow:"var(--shadow-sm)" }} className="lg:sticky lg:top-0 lg:h-fit">
             <p style={{ marginBottom:"1rem", fontSize:"0.8125rem", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.12em", color:"var(--muted-foreground)" }}>
                 {title}
             </p>

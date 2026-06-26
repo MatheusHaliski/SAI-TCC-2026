@@ -146,8 +146,8 @@ export default function PieceCardModal({ piece, onClose }: PieceCardModalProps) 
           <div
             className="flex max-h-[76vh] flex-col overflow-y-auto"
             style={{
-              backgroundColor: 'var(--user-surface-solid, #1e293b)',
-              backgroundImage: 'var(--liquid-glass-gradient)',
+              backgroundColor: 'var(--piece-scheme-surface, #1e293b)',
+              backgroundImage: 'var(--piece-scheme-gradient)',
             }}
           >
             <div className="p-5">

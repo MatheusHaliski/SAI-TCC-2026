@@ -163,8 +163,8 @@ export default function PieceIdentityCard({ item, userId }: PieceIdentityCardPro
     <article
       className="relative mx-auto flex w-full max-w-[440px] flex-col overflow-hidden rounded-[28px] border border-white/18"
       style={{
-        backgroundColor: 'var(--user-surface-solid, #1e293b)',
-        backgroundImage: 'var(--liquid-glass-gradient)',
+        backgroundColor: 'var(--piece-scheme-surface, #1e293b)',
+        backgroundImage: 'var(--piece-scheme-gradient)',
         boxShadow: '0 24px 56px rgba(0,0,0,0.32)',
         fontFamily: 'Inter, "Segoe UI", Arial, sans-serif',
       }}
