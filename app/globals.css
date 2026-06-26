@@ -22,6 +22,15 @@
   --liquid-glass-shadow:
     0 8px 30px rgba(120,80,180,0.12), 0 16px 44px rgba(120,80,180,0.1), inset 0 1px 0 rgba(255,255,255,0.35);
   --liquid-glass-blur: blur(22px) saturate(140%);
+  /* Stable surface for clothing-piece SCHEME cards. Never altered by the
+     "Cor dos Elementos" setting — piece schemes must keep a consistent look. */
+  --piece-scheme-surface: #1e293b;
+  --piece-scheme-gradient:
+    linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(214,201,255,0.18) 32%, rgba(255,209,220,0.16) 64%, rgba(255,236,214,0.14) 100%);
+  /* Structural page surfaces (contextual menus, section containers). These ARE
+     what the "Cor dos Elementos" setting recolors. Default to the card token. */
+  --element-surface: var(--card);
+  --element-surface-border: var(--border);
   --card: #ffffff;
   --card-foreground: #0f0d1a;
   --border: rgba(0,0,0,0.08);

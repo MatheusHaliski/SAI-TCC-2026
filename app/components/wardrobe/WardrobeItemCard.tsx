@@ -56,8 +56,8 @@ export default function WardrobeItemCard(props: Props) {
       onClick={props.onClick}
       className="cursor-pointer rounded-2xl border border-white/18 p-3 transition-all duration-200 shadow-sm hover:shadow-md"
       style={{
-        backgroundColor: 'var(--user-surface-solid, #1e293b)',
-        backgroundImage: 'var(--liquid-glass-gradient)',
+        backgroundColor: 'var(--piece-scheme-surface, #1e293b)',
+        backgroundImage: 'var(--piece-scheme-gradient)',
       }}
     >
       {/* Image */}

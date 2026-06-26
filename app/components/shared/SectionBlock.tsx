@@ -13,8 +13,8 @@ export default function SectionBlock({ title, subtitle, action, children, classN
     <section
       className={className ?? ''}
       style={{
-        background: "var(--card)",
-        border: "1px solid var(--border)",
+        background: "var(--element-surface, var(--card))",
+        border: "1px solid var(--element-surface-border, var(--border))",
         borderRadius: "1rem",
         padding: "1.5rem",
         boxShadow: "var(--shadow-sm)",

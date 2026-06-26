@@ -69,8 +69,8 @@ export default function WardrobeItemViewerModal({ open, item, onClose, userId }:
       <div
         className="max-h-[86vh] w-[94vw] overflow-y-auto overflow-x-hidden rounded-[28px] border border-white/18 p-4 shadow-[0_28px_70px_rgba(0,0,0,0.28)] backdrop-blur-[18px] backdrop-saturate-[160%] sm:max-h-[82vh] sm:w-[min(92vw,720px)] sm:p-5"
         style={{
-          backgroundColor: 'var(--user-surface-solid, #1e293b)',
-          backgroundImage: 'var(--liquid-glass-gradient)',
+          backgroundColor: 'var(--piece-scheme-surface, #1e293b)',
+          backgroundImage: 'var(--piece-scheme-gradient)',
         }}
         onClick={(event) => event.stopPropagation()}
       >
