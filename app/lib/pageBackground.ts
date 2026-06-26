@@ -116,9 +116,15 @@ export const applySurfaceColorConfig = (config: SurfaceColorConfig): void => {
   if (typeof document === 'undefined') return;
   const [r, g, b] = hexToRgb(config.color || DEFAULT_SURFACE_COLOR_CONFIG.color);
   const gradient = `linear-gradient(135deg, rgba(${r}, ${g}, ${b}, 0.72) 0%, rgba(${r}, ${g}, ${b}, 0.62) 46%, rgba(${r}, ${g}, ${b}, 0.55) 100%)`;
+  const lighterBorder = `rgba(${Math.min(r + 40, 255)}, ${Math.min(g + 40, 255)}, ${Math.min(b + 40, 255)}, 0.34)`;
+  // Structural page surfaces (sidebar, drawers, contextual menus, section
+  // containers). The "Cor dos Elementos" setting recolors ONLY these — it must
+  // never touch the clothing-piece scheme cards, which use --piece-scheme-*.
   document.documentElement.style.setProperty('--liquid-glass-gradient', gradient);
-  document.documentElement.style.setProperty('--liquid-glass-border', `rgba(${Math.min(r + 40, 255)}, ${Math.min(g + 40, 255)}, ${Math.min(b + 40, 255)}, 0.34)`);
+  document.documentElement.style.setProperty('--liquid-glass-border', lighterBorder);
   document.documentElement.style.setProperty('--user-surface-solid', `rgb(${r}, ${g}, ${b})`);
+  document.documentElement.style.setProperty('--element-surface', `rgb(${r}, ${g}, ${b})`);
+  document.documentElement.style.setProperty('--element-surface-border', lighterBorder);
 };
 
 export const readSurfaceColorConfig = (): SurfaceColorConfig => {
