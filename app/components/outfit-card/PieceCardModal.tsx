@@ -11,15 +11,12 @@ interface PieceCardModalProps {
   onClose: () => void;
 }
 
-type ActiveView = '2d' | 'card';
-
 function normalizeLabel(value?: string, fallback = 'Peca'): string {
   return (value?.trim() || fallback).replaceAll('_', ' ');
 }
 
 export default function PieceCardModal({ piece, onClose }: PieceCardModalProps) {
   const router = useRouter();
-  const [view, setView] = useState<ActiveView>('2d');
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(piece.likes ?? 0);
   const [shareStatus, setShareStatus] = useState('');
@@ -82,17 +79,13 @@ export default function PieceCardModal({ piece, onClose }: PieceCardModalProps) 
       onClick={onClose}
     >
       <div
-        className={
-          view === 'card'
-            ? 'relative w-full max-w-[460px] overflow-visible'
-            : 'w-full max-w-2xl overflow-hidden rounded-3xl border border-white/18 bg-[#101827] shadow-[0_32px_80px_rgba(0,0,0,0.6)]'
-        }
+        className="relative w-full max-w-[460px] overflow-visible"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className={view === 'card' ? 'mb-3 flex items-center justify-between rounded-2xl border border-white/15 bg-black/45 px-3 py-2 backdrop-blur-md' : 'flex items-center justify-between border-b border-white/10 px-5 py-4'}>
+        <div className="mb-3 flex items-center justify-between rounded-2xl border border-white/15 bg-black/45 px-3 py-2 backdrop-blur-md">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">Peca de roupa</p>
-            <h3 className={`${view === 'card' ? 'text-sm' : 'text-lg'} mt-0.5 font-black text-white`}>{pieceName}</h3>
+            <h3 className="mt-0.5 text-sm font-black text-white">{pieceName}</h3>
           </div>
           <button
             type="button"
@@ -103,53 +96,18 @@ export default function PieceCardModal({ piece, onClose }: PieceCardModalProps) 
           </button>
         </div>
 
-        <div className={view === 'card' ? 'mb-3 flex overflow-hidden rounded-2xl border border-white/15 bg-black/35 backdrop-blur-md' : 'flex border-b border-white/10'}>
-          {(['2d', 'card'] as ActiveView[]).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setView(tab)}
-              className={`flex-1 py-3 text-xs font-black uppercase tracking-[0.16em] transition ${
-                view === tab
-                  ? 'border-b-2 border-violet-300 text-violet-200'
-                  : 'text-white/50 hover:text-white/80'
-              }`}
-            >
-              {tab === '2d' ? 'Default 2D' : 'Card Piece'}
-            </button>
-          ))}
-        </div>
-
-        {view === '2d' ? (
-          <div className="flex min-h-[420px] items-center justify-center p-5">
-            <div className="relative flex h-[64vh] max-h-[620px] w-full items-center justify-center overflow-hidden rounded-3xl bg-black/18">
-              {imageUrl ? (
-                <Image
-                  src={imageUrl}
-                  alt={`${pieceName} visualizacao 2D`}
-                  fill
-                  className="object-contain p-4"
-                  unoptimized
-                />
-              ) : (
-                <div className="text-center">
-                  <p className="text-3xl font-black uppercase text-white/28">{pieceType}</p>
-                  <p className="mt-2 text-sm text-white/45">Previa 2D indisponivel</p>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : null}
-
-        {/* "Card da Peca": the modal itself IS the piece card — no nested bordered card. */}
-        {view === 'card' ? (
-          <div
-            className="flex max-h-[76vh] flex-col overflow-y-auto"
-            style={{
-              backgroundColor: 'var(--piece-scheme-surface, #1e293b)',
-              backgroundImage: 'var(--piece-scheme-gradient)',
-            }}
-          >
+        {/*
+          RF7 — Critério de Aceitação 7 (e RF6 CA4): o esquema de peça de roupa é
+          exibido como MODAL ÚNICO E PADRONIZADO. O modal É o card da peça — não
+          há aba "foto 2D" e o esquema nunca é exibido como fotografia.
+        */}
+        <div
+          className="flex max-h-[80vh] flex-col overflow-y-auto rounded-[28px] border border-white/18 shadow-[0_28px_70px_rgba(0,0,0,0.4)]"
+          style={{
+            backgroundColor: 'var(--piece-scheme-surface, #1e293b)',
+            backgroundImage: 'var(--piece-scheme-gradient)',
+          }}
+        >
             <div className="p-5">
               <div className="relative h-[330px] overflow-hidden rounded-[24px] bg-black/12">
                 {imageUrl ? (
@@ -211,8 +169,7 @@ export default function PieceCardModal({ piece, onClose }: PieceCardModalProps) 
                 Remixar
               </button>
             </div>
-          </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );
