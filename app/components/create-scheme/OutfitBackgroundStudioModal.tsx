@@ -3393,15 +3393,9 @@ export default function OutfitBackgroundStudioModal({
                   const isSelected = selectedGifPreset === preset.id;
                   const gradientCss = buildGifGradientCss(preset);
 
-            <section className="rounded-xl border border-white/20 bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-white/65">Layout das peças no card</p>
-              <p className="mt-1 text-[11px] text-white/55">Escolha como as peças do look serão exibidas no card final.</p>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {PIECE_LIST_FORMAT_OPTIONS.map((option) => {
-                  const isSelected = (pieceListFormat ?? 'grid-2') === option.value;
                   return (
                     <button
-                      key={option.value}
+                      key={preset.id}
                       type="button"
                       aria-pressed={isSelected}
                       className={`rounded-xl border p-2 text-left transition hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.2)] ${isSelected ? 'border-fuchsia-400/70 bg-fuchsia-900/20' : 'border-white/20 bg-white/5'}`}
@@ -3443,6 +3437,28 @@ export default function OutfitBackgroundStudioModal({
                           ? (dynamicBackground ? '● Aplicado · GIF' : '● Aplicado')
                           : (dynamicBackground ? '▶ GIF pronto' : '○ Estático')}
                       </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-white/20 bg-white/10 p-3">
+              <p className="text-xs uppercase tracking-[0.12em] text-white/65">Layout das peças no card</p>
+              <p className="mt-1 text-[11px] text-white/55">Escolha como as peças do look serão exibidas no card final.</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {PIECE_LIST_FORMAT_OPTIONS.map((option) => {
+                  const isSelected = (pieceListFormat ?? 'grid-2') === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`rounded-xl border p-2 text-left transition hover:border-fuchsia-300/50 hover:bg-white/10 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/15 bg-white/5'}`}
+                      onClick={() => onSelectPieceListFormat?.(option.value)}
+                    >
+                      <p className="text-[11px] font-semibold leading-tight text-white/90">{option.label}</p>
+                      <p className="mt-0.5 text-[10px] text-white/55">{option.hint}</p>
+                      {isSelected ? <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-fuchsia-300">● Selecionado</p> : null}
                     </button>
                   );
                 })}
