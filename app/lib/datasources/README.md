@@ -76,6 +76,31 @@ class PieceStatsService {
 Em produção, injeta-se `RedisCounterStore`; num teste, um `InMemoryCounterStore`
 que também implementa `CounterStorePort`. O Service é o mesmo.
 
+## Credenciais AWS nos adaptadores (DynamoDB / S3)
+
+`config.ts` deixa `accessKeyId`/`secretAccessKey` **indefinidos** quando as
+variáveis não existem. Passe credenciais estáticas ao cliente **somente quando
+ambas estiverem presentes** — caso contrário deixe o SDK usar a cadeia padrão
+(IAM role em produção). Isto evita quebrar o acesso à AWS em produção:
+
+```ts
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { loadDatasourceConfig } from '../config';
+
+const { dynamo } = loadDatasourceConfig();
+const client = new DynamoDBClient({
+  region: dynamo.region,
+  endpoint: dynamo.endpoint, // definido só em dev (DynamoDB Local)
+  ...(dynamo.accessKeyId && dynamo.secretAccessKey
+    ? { credentials: { accessKeyId: dynamo.accessKeyId, secretAccessKey: dynamo.secretAccessKey } }
+    : {}), // ausentes em prod → cadeia IAM
+});
+```
+
+> Em **dev**, `.env.example` já define `AWS_ACCESS_KEY_ID=local` e a tabela
+> `sai_timeline` é criada automaticamente pelo serviço `dynamodb-setup` do
+> `docker-compose.dev.yml` (partition key `ownerUserId`, sort key `createdAt`).
+
 ## Fan-out on write (publicar um look)
 
 1. `SchemesRepository` (MySQL) grava o look **em transação** — fonte da verdade.

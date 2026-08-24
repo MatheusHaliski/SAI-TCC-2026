@@ -29,8 +29,13 @@ export interface DynamoConfig {
   /** Vazio em produção (usa o endpoint padrão da AWS); preenchido em dev (Local). */
   endpoint?: string;
   region: string;
-  accessKeyId: string;
-  secretAccessKey: string;
+  /**
+   * Credenciais estáticas. Deixe AMBAS indefinidas em produção para que o
+   * SDK use a cadeia padrão de credenciais (IAM role). Só são preenchidas
+   * quando as variáveis existem (ex.: dev com DynamoDB Local → `local`).
+   */
+  accessKeyId?: string;
+  secretAccessKey?: string;
   timelineTable: string;
 }
 
@@ -44,8 +49,12 @@ export interface ObjectStoreConfig {
   /** Vazio quando se usa Vercel Blob; preenchido para S3 / MinIO. */
   endpoint?: string;
   bucket: string;
-  accessKeyId: string;
-  secretAccessKey: string;
+  /**
+   * Credenciais estáticas. Deixe AMBAS indefinidas em produção com S3 para
+   * usar a cadeia padrão de credenciais (IAM role). Preenchidas em dev (MinIO).
+   */
+  accessKeyId?: string;
+  secretAccessKey?: string;
   region: string;
   forcePathStyle: boolean;
 }
@@ -87,8 +96,9 @@ export function loadDatasourceConfig(): DatasourceConfig {
     dynamo: {
       endpoint: process.env.DYNAMODB_ENDPOINT || undefined,
       region: optional('AWS_REGION', 'us-east-1'),
-      accessKeyId: optional('AWS_ACCESS_KEY_ID', 'local'),
-      secretAccessKey: optional('AWS_SECRET_ACCESS_KEY', 'local'),
+      // Indefinidas em produção → SDK usa a cadeia IAM. Não injetar fallback.
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || undefined,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || undefined,
       timelineTable: optional('DYNAMODB_TABLE_TIMELINE', 'sai_timeline'),
     },
     search: {
@@ -99,8 +109,9 @@ export function loadDatasourceConfig(): DatasourceConfig {
     objectStore: {
       endpoint: process.env.S3_ENDPOINT || undefined,
       bucket: optional('S3_BUCKET', 'sai-assets'),
-      accessKeyId: optional('S3_ACCESS_KEY_ID', 'minioadmin'),
-      secretAccessKey: optional('S3_SECRET_ACCESS_KEY', 'minioadmin'),
+      // Indefinidas em produção com S3 → SDK usa a cadeia IAM. Sem fallback.
+      accessKeyId: process.env.S3_ACCESS_KEY_ID || undefined,
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || undefined,
       region: optional('AWS_REGION', 'us-east-1'),
       forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
     },
