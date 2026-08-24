@@ -1,0 +1,161 @@
+# =============================================================================
+# docker-compose.dev.yml — SAI / Fashion AI (TCC 2026)
+# -----------------------------------------------------------------------------
+# Ambiente de DESENVOLVIMENTO da arquitetura de persistência poliglota.
+#
+# Sobe APENAS os data stores em containers. A aplicação Next.js roda no host
+# (`npm run dev`) e se conecta a estes serviços via variáveis de ambiente —
+# exatamente os mesmos nomes usados em produção (ver .env.example). Trocar
+# dev <-> prod é trocar host/credencial no .env, nunca código.
+#
+# Papéis (um store por padrão de acesso):
+#   mysql       -> fonte da verdade (relacional, FKs, transações)
+#   redis       -> contadores atômicos, cache, rate-limit, filas leves
+#   dynamodb    -> feed / timeline (wide-column, fan-out on write)   [DynamoDB Local]
+#   opensearch  -> busca full-text de peças, usuários e looks
+#   minio       -> object storage compatível com S3 (imagens, GLB)
+#
+# Uso:
+#   docker compose -f docker-compose.dev.yml up -d
+#   npm run dev            # app no host, aponta para 127.0.0.1
+#   docker compose -f docker-compose.dev.yml down          # para (mantém dados)
+#   docker compose -f docker-compose.dev.yml down -v       # zera os volumes
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # MySQL — fonte da verdade. Carrega db/schema.sql + db/seed.sql na 1ª subida.
+  # A imagem cria automaticamente o usuário de aplicação (NUNCA usamos root
+  # na aplicação — o root fica só para administração local do container).
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.4
+    container_name: sai-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev_only}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-fai_tcc_2026}
+      MYSQL_USER: ${MYSQL_USER:-fai_app_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-app_dev_only}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # Scripts em /docker-entrypoint-initdb.d rodam em ordem alfabética,
+      # somente quando o volume de dados está vazio (primeira subida).
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-root_dev_only}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # Redis — contadores, cache, sessão efêmera, rate-limit e filas (Streams).
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: sai-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # DynamoDB Local — mesma API do DynamoDB da AWS. Feed / timeline dos
+  # seguidores (wide-column). Em produção troca-se o endpoint pela AWS.
+  # ---------------------------------------------------------------------------
+  dynamodb:
+    image: amazon/dynamodb-local:2.5.2
+    container_name: sai-dynamodb
+    restart: unless-stopped
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/data"]
+    ports:
+      - "${DYNAMODB_PORT:-8000}:8000"
+    volumes:
+      - dynamodb-data:/data
+    working_dir: /home/dynamodblocal
+
+  # ---------------------------------------------------------------------------
+  # OpenSearch — busca full-text (peças, usuários, looks públicos).
+  # Segurança desabilitada APENAS em dev; em produção usa o serviço gerenciado.
+  # ---------------------------------------------------------------------------
+  opensearch:
+    image: opensearchproject/opensearch:2.15.0
+    container_name: sai-opensearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_SECURITY_PLUGIN=true
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    ports:
+      - "${OPENSEARCH_PORT:-9200}:9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # MinIO — object storage S3-compatível (imagens, PNGs segmentados, GLB).
+  # Em produção o papel é Vercel Blob / Amazon S3.
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+    container_name: sai-minio
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
+    ports:
+      - "${S3_PORT:-9000}:9000"     # API S3
+      - "${S3_CONSOLE_PORT:-9001}:9001" # console web
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: cria o bucket padrão no MinIO e encerra.
+  minio-setup:
+    image: minio/mc:RELEASE.2025-04-08T15-39-49Z
+    container_name: sai-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${S3_ACCESS_KEY_ID:-minioadmin} ${S3_SECRET_ACCESS_KEY:-minioadmin} &&
+      mc mb --ignore-existing local/${S3_BUCKET:-sai-assets} &&
+      mc anonymous set download local/${S3_BUCKET:-sai-assets} &&
+      echo 'MinIO bucket pronto.';
+      "
+    restart: "no"
+
+volumes:
+  mysql-data:
+  redis-data:
+  dynamodb-data:
+  opensearch-data:
+  minio-data:
