@@ -64,15 +64,21 @@ const SIZE_OPTIONS = [
 ];
 
 const STYLE_TAG_OPTIONS = [
-  'Casual', 'Formal', 'Business', 'Smart Casual',
-  'Urban', 'Streetwear', 'Sport', 'Athletic',
-  'Luxury', 'Classic', 'Vintage', 'Minimal',
-  'Bohemian', 'Preppy', 'Evening', 'Beach',
+  'Casual',
+  'Formal',
+  'Streetwear',
+  'Sport',
+  'Luxury',
+  'Classic',
+  'Vintage',
+  'Minimal',
 ];
 const OCCASION_TAG_OPTIONS = [
-  'Casual', 'Formal', 'Work', 'Party',
-  'Sport', 'Beach', 'Night Out', 'Date',
-  'Business', 'Everyday', 'Travel', 'Wedding', 'Outdoors',
+  'Trabalho',
+  'Casual',
+  'Festa',
+  'Academia',
+  'Evento',
 ];
 const GENDER_OPTIONS = [
   { value: 'masculino', label: 'Masculino' },
@@ -141,15 +147,21 @@ const MATERIAL_LABELS_PT: Record<string, string> = {
   Cashmere: 'Cashmere', Modal: 'Modal', Rayon: 'Viscose', Tweed: 'Tweed',
 };
 const STYLE_LABELS_PT: Record<string, string> = {
-  Casual: 'Casual', Formal: 'Formal', Business: 'Executivo', 'Smart Casual': 'Casual Elegante',
-  Urban: 'Urbano', Streetwear: 'Streetwear', Sport: 'Esportivo', Athletic: 'Atlético',
-  Luxury: 'Luxo', Classic: 'Clássico', Vintage: 'Vintage', Minimal: 'Minimalista',
-  Bohemian: 'Boêmio', Preppy: 'Preppy', Evening: 'Festa à Noite', Beach: 'Praia',
+  Casual: 'Casual',
+  Formal: 'Formal',
+  Streetwear: 'Streetwear',
+  Sport: 'Esportivo',
+  Luxury: 'Luxo',
+  Classic: 'Clássico',
+  Vintage: 'Vintage',
+  Minimal: 'Minimalista',
 };
 const OCCASION_LABELS_PT: Record<string, string> = {
-  Casual: 'Casual', Formal: 'Formal', Work: 'Trabalho', Party: 'Festa',
-  Sport: 'Esporte', Beach: 'Praia', 'Night Out': 'Balada', Date: 'Encontro',
-  Business: 'Negócios', Everyday: 'Dia a dia', Travel: 'Viagem', Wedding: 'Casamento', Outdoors: 'Ao ar livre',
+  Trabalho: 'Trabalho',
+  Casual: 'Casual',
+  Festa: 'Festa',
+  Academia: 'Academia',
+  Evento: 'Evento',
 };
 const PIECE_TYPE_LABELS: Record<string, { pt: string; en: string }> = {
   upper_piece: { pt: 'Parte de cima', en: 'Top' },

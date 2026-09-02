@@ -8,6 +8,7 @@ import { OutfitRankingService } from './OutfitRankingService';
 import { WeatherService } from './WeatherService';
 import { PreferenceLearningService } from './PreferenceLearningService';
 import { ServiceError } from './errors';
+import { ClaudeAutopilotService } from './ClaudeAutopilotService';
 
 const MIN_PIECES = Number(process.env.AUTOPILOT_MIN_WARDROBE_PIECES ?? 3);
 const ENABLE_AUTOPILOT = String(process.env.ENABLE_AUTOPILOT ?? 'true').toLowerCase() !== 'false';
@@ -29,6 +30,8 @@ function pieceTypeToSlot(pieceType: string): 'upper' | 'lower' | 'shoes' | 'acce
 }
 
 export class AutopilotService {
+  private readonly claudeService = new ClaudeAutopilotService();
+
   constructor(
     private readonly wardrobeRepo = new WardrobeItemsRepository(),
     private readonly prefsRepo = new OutfitPreferencesRepository(),
@@ -63,28 +66,54 @@ export class AutopilotService {
       weather = { temp_c: 20, condition: 'partly_cloudy', city: request.city };
     }
 
-    const suggestions = this.rankingService.generateTop3(
-      wardrobe,
-      { occasion: request.occasion, mood: request.mood, weather, preferences: prefs },
-      request.exclude_scheme_ids ?? [],
-    );
+    // Tenta usar Claude IA primeiro
+    let suggestions = null;
+
+    if (this.claudeService.isAvailable) {
+      try {
+        suggestions = await this.claudeService.generateCombinations(
+          wardrobe,
+          request.occasion,
+          request.mood,
+          weather,
+          Number(process.env.AUTOPILOT_TOP_N ?? 3),
+        );
+        console.log('[AutopilotService] Claude gerou', suggestions?.length ?? 0, 'combinações');
+      } catch (e) {
+        console.warn('[AutopilotService] Claude falhou, usando ranking local:', e);
+      }
+    } else {
+      console.log('[AutopilotService] Claude não disponível, usando ranking local');
+    }
+
+    // Fallback: ranking local se Claude não disponível ou falhou
+    if (!suggestions || suggestions.length === 0) {
+      suggestions = this.rankingService.generateTop3(
+        wardrobe,
+        { occasion: request.occasion, mood: request.mood, weather, preferences: prefs },
+        request.exclude_scheme_ids ?? [],
+      );
+      console.log('[AutopilotService] Ranking local gerou', suggestions.length, 'combinações');
+    }
 
     return { suggestions, weather };
   }
 
   async confirmDailyLook(
     userId: string,
-    input: { scheme_id: string; occasion: Occasion; mood: Mood; weather: WeatherInfo },
+    input: { scheme_id: string; title?: string; occasion: Occasion; mood: Mood; weather: WeatherInfo; items?: Array<{ wardrobe_item_id: string; name: string; image_url?: string; piece_type?: string }> },
   ) {
     const today = new Date().toISOString().slice(0, 10);
     const dailyLook = await this.dailyLooksRepo.create({
       user_id: userId,
       date: today,
       scheme_id: input.scheme_id,
+      title: input.title ?? '',
       occasion: input.occasion,
       mood: input.mood,
       weather_c: input.weather?.temp_c ?? null,
       city: input.weather?.city ?? '',
+      scheme_items: input.items ?? [],
     });
     return dailyLook;
   }
