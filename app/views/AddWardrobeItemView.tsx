@@ -14,6 +14,7 @@ import {
   submitBlenderWorkerJob,
 } from '@/app/services/blenderWorkerClient';
 import { pushSystemInboxMessage } from '@/app/lib/systemInboxNotifications';
+import MultiPieceReviewModal from '@/app/components/pieces/MultiPieceReviewModal';
 
 type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type Market = { market_id: string; season: string; gender: string };
@@ -220,6 +221,11 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
   const [aiDetectedBrandId, setAiDetectedBrandId] = useState<string | null>(null);
   const [isPt, setIsPt] = useState(true);
   const [aiDetectedFields, setAiDetectedFields] = useState<Record<string, boolean>>({});
+  const [multiPieces, setMultiPieces] = useState<Array<{
+    name: string; piece_type: string; color: string; material: string;
+    occasion_tags: string[]; style_tags: string[]; brand: string; description: string; selected: boolean;
+  }> | null>(null);
+  const [isAnalyzingMulti, setIsAnalyzingMulti] = useState(false);
   const pending3dPieceNameRef = useRef<string>('');
   const brandsRef = useRef<Brand[]>([]);
   const lastAutoDetectedBrandRef = useRef<string>(DEFAULT_BRAND_ID);
@@ -643,6 +649,79 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
     });
     pending3dPieceNameRef.current = '';
   }, [uvJobStatus]);
+
+  const handleAnalyzeMultiPieces = async () => {
+    if (!selectedFile && !form.image_url) {
+      setAlertMessage('Selecione uma imagem primeiro.');
+      return;
+    }
+    setIsAnalyzingMulti(true);
+    try {
+      let base64Image: string | undefined;
+      let mimeType: string | undefined;
+      if (selectedFile) {
+        base64Image = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedFile);
+        });
+        mimeType = selectedFile.type;
+      }
+      const response = await fetch('/api/ai/fashion/analyze-pieces-multi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64Image, mimeType }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        setAlertMessage(payload.message || 'Erro ao analisar múltiplas peças');
+        return;
+      }
+      if (!payload.pieces?.length) {
+        setAlertMessage('Nenhuma peça foi detectada na imagem.');
+        return;
+      }
+      setMultiPieces(payload.pieces);
+    } catch (err) {
+      setAlertMessage(err instanceof Error ? err.message : 'Erro durante a análise.');
+    } finally {
+      setIsAnalyzingMulti(false);
+    }
+  };
+
+  const handleSaveMultiPieces = async (pieces: Array<{
+    name: string; piece_type: string; color: string; material: string;
+    occasion_tags: string[]; style_tags: string[]; brand: string; description: string;
+  }>) => {
+    if (!userId) return;
+    let saved = 0;
+    for (const piece of pieces) {
+      try {
+        const response = await fetch('/api/add-piece', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            name: piece.name,
+            image_url: form.image_url,
+            gender: form.gender,
+            piece_type: piece.piece_type,
+            color: piece.color,
+            material: piece.material,
+            style_tags: piece.style_tags,
+            occasion_tags: piece.occasion_tags,
+            brand_id: DEFAULT_BRAND_ID,
+            market_id: form.market_id || '',
+          }),
+        });
+        if (response.ok) saved++;
+      } catch { /* continua para próxima */ }
+    }
+    setMultiPieces(null);
+    setAlertMessage(`${saved} peça${saved !== 1 ? 's' : ''} salva${saved !== 1 ? 's' : ''} com sucesso!`);
+    onPieceCreated?.();
+  };
 
   const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1107,6 +1186,19 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
                       ? pick('Analisando com Google IA...', 'Analyzing with Google AI...')
                       : pick('Analisar com Google IA', 'Analyze with Google AI')}
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={handleAnalyzeMultiPieces}
+                    disabled={isAnalyzingMulti || uploadingImage}
+                    className="fai-analyze-btn"
+                    style={{ background: 'linear-gradient(135deg,#7c3aed,#db2777)' }}
+                  >
+                    <span>🪄</span>
+                    {isAnalyzingMulti
+                      ? 'Detectando peças...'
+                      : 'Detectar múltiplas peças (Claude)'}
+                  </button>
                 </div>
               ) : null}
             </div>
@@ -1152,6 +1244,15 @@ export default function AddWardrobeItemView({ mode = 'page', onPieceCreated }: A
 
       {alertMessage ? (
         <SaiModalAlert message={alertMessage} onConfirm={() => setAlertMessage(null)} />
+      ) : null}
+
+      {multiPieces ? (
+        <MultiPieceReviewModal
+          pieces={multiPieces}
+          imagePreview={imagePreview}
+          onConfirm={handleSaveMultiPieces}
+          onClose={() => setMultiPieces(null)}
+        />
       ) : null}
     </>
   );
