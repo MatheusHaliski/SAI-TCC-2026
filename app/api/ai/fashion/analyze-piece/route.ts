@@ -13,7 +13,6 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
-    // Se não tiver chave do Claude, usa fallback heurístico
     if (!apiKey) {
       console.warn('[analyze-piece] ANTHROPIC_API_KEY not set, using fallback');
       return NextResponse.json({
@@ -37,9 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     const prompt = `Você é um especialista em moda. Analise esta imagem de peça de roupa e retorne as informações em JSON.
-
 Para as cores, use nomes em português da lista: Preto, Branco, Cinza, Grafite, Prata, Azul-marinho, Azul, Azul-claro, Vermelho, Bordô, Rosa, Coral, Verde, Verde-oliva, Amarelo, Dourado, Mostarda, Laranja, Ferrugem, Marrom, Bege, Creme, Roxo, Lavanda, Multicolorido.
-
 Retorne APENAS JSON válido no formato:
 {
   "pieceName": "nome descritivo da peça incluindo a cor principal (ex: Camisa Social Branca)",

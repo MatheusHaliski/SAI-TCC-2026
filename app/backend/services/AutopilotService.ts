@@ -57,7 +57,6 @@ export class AutopilotService {
     }
 
     const prefs = await this.prefsRepo.findByUser(userId);
-
     let weather: WeatherInfo;
     try {
       weather = await this.weatherService.getCurrentWeather(request.city);
@@ -68,7 +67,6 @@ export class AutopilotService {
 
     // Tenta usar Claude IA primeiro
     let suggestions = null;
-
     if (this.claudeService.isAvailable) {
       try {
         suggestions = await this.claudeService.generateCombinations(

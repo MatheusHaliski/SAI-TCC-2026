@@ -9,6 +9,7 @@ const ACCESSORY_TYPES = new Set(['accessory_piece', 'accessory', 'bag', 'hat', '
 
 const OCCASION_WEIGHTS: Record<Occasion, string[]> = {
   trabalho: ['formal', 'trabalho', 'social', 'casual'],
+  formal: ['formal', 'gala', 'cerimônia', 'social', 'chic', 'evento'],
   casual: ['casual', 'street', 'day', 'relax'],
   festa: ['party', 'night', 'festa', 'festivo', 'chic'],
   academia: ['sport', 'academia', 'fitness', 'esportivo'],
@@ -17,6 +18,12 @@ const OCCASION_WEIGHTS: Record<Occasion, string[]> = {
 
 /* ── Títulos variados por ocasião + humor ── */
 const LOOK_TITLES: Record<Occasion, Record<Mood, string[]>> = {
+  formal: {
+    disposto: ['Look Formal Elegante', 'Visual de Cerimônia', 'Conjunto Sofisticado'],
+    cansado: ['Elegância Confortável', 'Look Formal Leve', 'Visual Sofisticado Prático'],
+    confiante: ['Look de Gala', 'Visual Premium', 'Conjunto Impactante'],
+    criativo: ['Look Formal Autoral', 'Visual Único', 'Combinação Exclusiva'],
+  },
   trabalho: {
     disposto: ['Look Executivo', 'Visual Profissional', 'Conjunto de Escritório'],
     cansado: ['Conforto no Trabalho', 'Visual Prático', 'Look Descomplicado'],

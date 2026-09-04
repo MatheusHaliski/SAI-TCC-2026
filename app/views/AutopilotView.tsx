@@ -554,8 +554,6 @@ function HistoryPanel() {
         return;
       }
       const rawLooks: DailyLook[] = Array.isArray(data.looks) ? data.looks : [];
-
-      // Items already come from the API if stored in the daily look
       setLooks(rawLooks);
     } catch {
       setError('Erro de conexão. Tente novamente.');
