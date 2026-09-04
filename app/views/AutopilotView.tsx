@@ -36,6 +36,7 @@ const FEEDBACK_LABELS: Record<FeedbackValue, string> = {
 
 const OCCASION_LABELS: Record<string, string> = {
   trabalho: 'Trabalho',
+  formal: 'Formal',
   casual: 'Casual',
   festa: 'Festa',
   academia: 'Academia',
@@ -112,9 +113,16 @@ function DailyLookPanel() {
         credentials: 'include',
         body: JSON.stringify({
           scheme_id: suggestion.scheme_id,
+          title: suggestion.title,
           occasion,
           mood,
           weather: { temp_c: 20, condition: 'partly_cloudy', city },
+          items: suggestion.items.map((item) => ({
+            wardrobe_item_id: item.wardrobe_item_id,
+            name: item.name,
+            image_url: item.image_url,
+            piece_type: item.piece_type,
+          })),
         }),
       });
       const data = await response.json();
@@ -513,6 +521,7 @@ function WeekPlanPanel() {
 
 interface DailyLook {
   daily_look_id: string;
+  scheme_id?: string;
   date: string;
   occasion: string;
   mood: string;
@@ -520,6 +529,8 @@ interface DailyLook {
   city: string;
   feedback: FeedbackValue | null;
   created_at: string;
+  scheme_items?: AutopilotItem[];
+  title?: string;
 }
 
 function HistoryPanel() {
@@ -542,7 +553,8 @@ function HistoryPanel() {
         setError(data.error ?? 'Erro ao carregar histórico.');
         return;
       }
-      setLooks(Array.isArray(data.looks) ? data.looks : []);
+      const rawLooks: DailyLook[] = Array.isArray(data.looks) ? data.looks : [];
+      setLooks(rawLooks);
     } catch {
       setError('Erro de conexão. Tente novamente.');
     } finally {
@@ -628,11 +640,12 @@ function HistoryPanel() {
           <SectionBlock key={date} title={date} subtitle={`${dateLooks.length} look${dateLooks.length !== 1 ? 's' : ''} neste dia`}>
             <div className="mt-3 space-y-3">
               {dateLooks.map((look) => (
-                <div key={look.daily_look_id} className="rounded-xl border border-border bg-accent p-4 space-y-2">
+                <div key={look.daily_look_id} className="rounded-xl border border-border bg-accent p-4 space-y-3">
+                  {/* Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">
-                        {OCCASION_LABELS[look.occasion] ?? look.occasion}
+                        {look.title ?? OCCASION_LABELS[look.occasion] ?? look.occasion}
                       </span>
                       <span className="text-xs text-white/30">·</span>
                       <span className="text-xs text-muted-foreground">
@@ -642,6 +655,33 @@ function HistoryPanel() {
                     <span className="text-xs text-white/30">{look.city}</span>
                   </div>
 
+                  {/* Peças da combinação */}
+                  {look.scheme_items && look.scheme_items.length > 0 ? (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {look.scheme_items.map((item) => (
+                        <div key={item.wardrobe_item_id} className="flex-shrink-0 space-y-1">
+                          <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-border bg-white/5">
+                            {item.image_url ? (
+                              <img
+                                src={item.image_url}
+                                alt={item.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-white/20 text-xs">
+                                📷
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-center text-[9px] text-white/50 w-20 truncate">{item.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-white/30 italic">Peças não disponíveis</p>
+                  )}
+
+                  {/* Feedback */}
                   {look.feedback ? (
                     <span className="inline-block text-xs rounded-full bg-accent px-3 py-0.5 text-muted-foreground">
                       {FEEDBACK_LABELS[look.feedback]}

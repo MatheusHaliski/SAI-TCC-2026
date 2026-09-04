@@ -27,8 +27,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'weather with temp_c and condition is required' }, { status: 400 });
     }
 
+    const items = Array.isArray(body.items) ? body.items : [];
+    const title = String(body.title ?? '').trim();
+
     const result = await controller.confirmDailyLook(session.sub, {
       scheme_id,
+      title,
       occasion,
       mood,
       weather: {
@@ -36,6 +40,7 @@ export async function POST(request: NextRequest) {
         condition: String(weather.condition),
         city: String(weather.city ?? ''),
       },
+      items,
     });
 
     return NextResponse.json(result, { status: 201 });
