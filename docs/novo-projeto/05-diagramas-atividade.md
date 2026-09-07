@@ -165,7 +165,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A([Usuário abre um esquema ou o acervo]) --> B[S: renderiza cards com o footer de estado — RF6.CA11]
+    A([Usuário abre um esquema ou o acervo]) --> B[S: renderiza cards com a faixa de toggles no topo — RF6.CA11 · RF31.CA07]
     B --> C{Controle acionado}
     C -- Favoritar --> D[S: alterna o favorito — independente dos demais estados — RF31.CA01]
     D --> E[S: propaga o estado a todas as telas que exibem o card] --> B
@@ -178,7 +178,7 @@ flowchart TD
     C -- Sair --> Z([Fim])
 ```
 
-> Regra de consistência (RF31.CA06): *favoritar* é um sinalizador booleano independente; *disponível*, *indisponível* e *todos* são estados/filtros mutuamente exclusivos. A interface nunca deve permitir "disponível + indisponível" simultâneos.
+> **Regra de consistência (RF31.CA06/CA07).** *Favoritar* é um sinalizador booleano independente, desenhado como estrelinha pequena no padrão Spotify. *Disponível* e *indisponível* são estados mutuamente exclusivos — a interface nunca permite os dois ao mesmo tempo — e *indisponível* é compacto, só a letra. Os três ficam na **faixa superior** do card; **"todos" não é toggle de card**, é o filtro da lista, no header, ao lado do filtro de ocasião.
 
 ---
 

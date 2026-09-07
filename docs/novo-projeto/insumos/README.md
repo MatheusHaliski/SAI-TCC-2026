@@ -13,13 +13,21 @@ carrega num `<iframe>`. Para ler o conteúdo, use a URL do artefato na tabela ab
 | ✅ **Aula — DNA de Estilo (Mosaico de Eras)** | `aulas/dna-de-estilo-mosaico-de-eras.html` | [1449ec78](https://claude.ai/code/artifact/1449ec78-f56b-4025-b3d3-64e6cc050ff0) | ⏳ pendente — **conflita com a HU20**, ver aviso abaixo |
 | ✅ **Aula — Closet Inteligente** | `aulas/closet-inteligente.html` | [720ca125](https://claude.ai/code/artifact/720ca125-eea2-4719-8372-d874f94de46f) | ⏳ pendente de confronto com os CAs de RF6 |
 
-## Ainda faltando
+| ✅ **Modelagem UML & mapa de estado** (inclui a **Parte 3** dimensional dos cards) | `uml/modelagem-fashion-ai.html` | [8c050ab5](https://claude.ai/code/artifact/8c050ab5-8faf-4073-a077-dd8e492db661) | Spec do artefato #7 com cotas em mm; 7 CAs novos (doc `02`, §4.1); entidades do ER |
 
-| Insumo | Onde | Trava |
-|---|---|---|
-| **Artefato de modelagem UML — parte 3** | anexo do board Trello | Artefato #7 (esquema de vestimenta e peças de roupa) |
+## Todos os insumos foram recebidos
 
-O conector do Trello lê cards, descrições, checklists e comentários — **não lê anexos**.
+Não falta mais nenhum anexo externo.
+
+### ⚠️ Correção do time sobre a Parte 3
+
+Os quatro desenhos de card **não incluem** a faixa de toggles do **topo** do card:
+⭐ **favoritar** (estrelinha pequena, padrão Spotify) · **disponível** · **indisponível** (pequeno, só a letra).
+
+Consequências, já aplicadas nos documentos `02`, `04` e `05`:
+- os toggles do RF31 ficam **no topo**, não no rodapé — o rodapé é do RF19 (curtir, comentar, compartilhar, remixar, retornar, editar);
+- **"todos" não é toggle de card** — é o filtro da lista, no header, ao lado do filtro de ocasião;
+- a **altura dessa faixa não está cotada**. Proposta a validar: 8–10 mm, o que levaria Vestimenta compacto de 164 para ~172–174 mm e o ampliado de 216 para ~224–226 mm. **Confirmar com quem desenhou.**
 
 ## ⚠️ Conflito aberto: qual é o DNA de Estilo?
 

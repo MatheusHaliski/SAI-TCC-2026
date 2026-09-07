@@ -30,13 +30,11 @@
 
 ⚠️ **Conflito aberto que o Bloco 0 precisa decidir:** a aula "DNA de Estilo — Mosaico de Eras" define RF13 como **tipologia de publicação** (2–6 esquemas fundidos num card-retrato, com `mosaicLayout` e rótulo de era), enquanto a **HU20** define como **cartão de identidade** (arquétipo, paleta, silhueta, ousadia, peça ícone, Frase de Identidade). Os CAs de RF13 do documento `02` seguiram a HU20. Ver `insumos/README.md`.
 
-Falta apenas um insumo. O conector do Trello lê cards, descrições, checklists e comentários — **não lê anexos** —, então ele precisa ser baixado manualmente para `docs/novo-projeto/insumos/`:
+**Todos os insumos externos chegaram** — não há mais bloqueador de entrada para as 4 horas.
 
-| Arquivo | Onde | Trava |
-|---|---|---|
-| Artefato de modelagem UML **parte 3** | anexo do board | Bloco 5 — artefato #7 (esquema de vestimenta e peças) |
+A **Modelagem UML** trouxe a Parte 3 (especificação dimensional dos cards, em milímetros) que destrava o artefato #7, e o confronto com o catálogo de CAs achou **sete lacunas**, já viradas em CA no documento `02`, §4.1: campo `sexo` obrigatório, `/add-piece` como página, wearstyles por parte do corpo, listas do Build Outfit espelhando o guarda-roupa real, filtro do provador por sexo, **remixar/retornar** como interações próprias, e tema que não altera a cor do conteúdo do usuário.
 
-**Tempo:** 5 min. Sem ele o artefato #7 é feito a partir de `docs/design-schema-outfit-card.md` e `design-schema-piece-card.md`, que já estão versionados — dá para começar sem, mas vale conferir depois.
+⚠️ **Uma cota fica pendente:** os desenhos da Parte 3 não incluem a faixa de toggles do topo do card (⭐ favoritar, disponível, indisponível). Proposta de 8–10 mm a confirmar com quem desenhou — ver `insumos/README.md`.
 
 ---
 
@@ -203,7 +201,7 @@ Não invente comportamento que não esteja num CA — se faltar CA, aponte a lac
 | Risco | Probabilidade | Plano B |
 |---|---|---|
 | O time discorda sobre a definição do DNA de Estilo (HU20 × mosaico) | **alta** | Decidir no Bloco 0. Se vencer o mosaico, RF13.CA01–CA09 são reescritos no Bloco 2 (+20 min) |
-| Falta a UML parte 3 para o artefato #7 | média | Usar `docs/design-schema-outfit-card.md` e `design-schema-piece-card.md`, já versionados, e conferir depois |
+| A faixa de toggles do topo do card não está cotada | média | Usar a proposta de 8–10 mm e confirmar com quem desenhou antes de gerar arte definitiva |
 | O time decide **renumerar** os RFs no Bloco 0 | média | Some ~40 min do Bloco 2 (renumerar HUs, diagramas e commits). Nesse caso, cortar o Bloco 4. |
 | Sessões de artefato demoram mais que a janela | média | Reduzir a onda 3 para dois artefatos (#5 e #10) e adiar #4 e #9 |
 | Celebridades sai do escopo no Bloco 0 | baixa | Ganha ~15 min: caem RF21, RF22, o diagrama 12 e metade do artefato #7 |

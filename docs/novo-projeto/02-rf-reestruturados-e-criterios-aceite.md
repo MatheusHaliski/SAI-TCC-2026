@@ -180,7 +180,7 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 | RF6.CA08 | usuário acessa o Lookbook de outro perfil público | a página carrega | vê apenas os itens cuja visibilidade permite (RF3.CA12/CA13) |
 | RF6.CA09 | usuário na aba **Looks Salvos** | a página carrega | vê o feed compacto dos esquemas próprios e dos salvos de terceiros, com origem identificada |
 | RF6.CA10 | aba Looks Salvos | usuário usa o filtro de ocasião no header | o feed passa a exibir só os esquemas daquela ocasião, mantendo o filtro ao voltar da página de detalhe |
-| RF6.CA11 | card do feed compacto | é renderizado | exibe o footer social com os controles **favoritar / disponível / indisponível / todos** (RF31) |
+| RF6.CA11 | card do feed compacto | é renderizado | exibe, no **topo**, os toggles de estado — ⭐ favoritar (estrelinha pequena), disponível e indisponível (RF31) — e, no **rodapé**, o footer social do RF19 |
 | RF6.CA12 | usuário favorita um look salvo | aciona o ícone | o estado é persistido e refletido em todas as telas que exibem aquele card |
 | RF6.CA13 | usuário remove um look salvo de terceiro | confirma | o look sai da sua lista sem afetar o conteúdo original do autor |
 
@@ -387,9 +387,40 @@ Estes três pontos **não estão** no documento autoritativo e precisam entrar n
 | RF31.CA01 | usuário vê um card de esquema ou peça no seu acervo | aciona **favoritar** | o item é marcado como favorito e o estado é refletido em todas as telas que exibem aquele card |
 | RF31.CA02 | usuário marca um item como **indisponível** | confirma | o item deixa de ser oferecido na criação de looks (RF5) e no Copilot (RF10), permanecendo visível no acervo com marcação própria |
 | RF31.CA03 | usuário marca um item como **disponível** | confirma | o item volta a ser elegível para composição |
-| RF31.CA04 | usuário aciona o filtro **todos** | confirma | a lista exibe favoritos, disponíveis e indisponíveis sem distinção de filtro |
+| RF31.CA04 | usuário aciona o filtro **todos**, no header da lista (não no card) | confirma | a lista exibe favoritos, disponíveis e indisponíveis sem distinção |
 | RF31.CA05 | um filtro está ativo | usuário navega para o detalhe e volta | o filtro permanece aplicado |
-| RF31.CA06 | os quatro controles | são renderizados no footer do card | são mutuamente coerentes: *favoritar* é independente; *disponível/indisponível/todos* são exclusivos entre si |
+| RF31.CA06 | os toggles | são renderizados na **faixa superior** do card | *favoritar* é um sinalizador independente; *disponível* e *indisponível* são exclusivos entre si e nunca coexistem |
+| RF31.CA07 | a faixa de toggles | é desenhada | ⭐ favoritar é uma **estrelinha pequena** no padrão Spotify; *indisponível* é **compacto, só a letra** — o card não pode gastar altura com rótulos longos |
+
+> **Onde cada coisa mora no card** (Parte 3 da modelagem UML + correção do time):
+> **topo** → toggles de estado do RF31 (favoritar · disponível · indisponível) · **rodapé** → interações sociais do RF19 (curtir · comentar · compartilhar · remixar · retornar · editar, este só para o dono) · **header da lista** → o filtro **todos**, ao lado do filtro de ocasião.
+
+---
+
+## 4.1 Correções vindas da Modelagem UML *(insumo recebido depois da primeira redação)*
+
+O artefato **[Modelagem UML & mapa de estado](https://claude.ai/code/artifact/8c050ab5-8faf-4073-a077-dd8e492db661)** (arquivado em `insumos/uml/`) traz um mapa de telas↔RF, o ER, a Parte 3 dimensional dos cards e uma seção de **correções de incoerência**. O confronto com o catálogo acima achou **sete lacunas**. Cada uma vira CA novo:
+
+| # | CA novo | Requisito | Regra |
+|---|---|---|---|
+| 1 | **RF4.CA07** | RF4 | Toda peça carrega o campo **`sexo`**, obrigatório no formulário e exibido na identificação da peça. É ele que alimenta o filtro do Provador 2D |
+| 2 | **RF4.CA08** | RF4 · RNF7 | "Adicionar peça" é uma **página própria** (`/add-piece`) na navegação lateral, **não um modal** — o modal quebrava em telas menores. Cada campo com label explícita: nome, tipo/parte do corpo, cor, material, tamanho, ocasião, estilo, marca, sexo |
+| 3 | **RF4.CA09** e **RF5.CA07** | RF4 · RF5 | Os **wearstyles** de uma peça são um subconjunto do vocabulário permitido pela sua **parte do corpo** (ver a tabela no documento `04`, artefato #7). O input oferece apenas os valores daquela parte |
+| 4 | **RF5.CA07b** | RF5 | Na etapa **Build Outfit**, cada lista (uma por parte do corpo) é um **espelho do guarda-roupa real do usuário** — só as peças que ele possui hoje, respeitando o estado *indisponível* (RF31.CA02). Hoje as listas trazem uma variedade fictícia |
+| 5 | **RF18.CA08** | RF18 | O preset masculino/feminino define `manequim.sexo` e **filtra o catálogo**; a inserção revalida `peça.sexo == manequim.sexo` e **bloqueia** o que não corresponder |
+| 6 | **RF19.CA13** e **RF19.CA14** | RF19 · RF5 | **Remixar** e **retornar** são interações **exclusivas** do Fashion AI, distintas de curtir/comentar/compartilhar. *Remixar* instancia um **novo esquema** pré-preenchido com o conteúdo da fonte e entra no fluxo do RF5, registrando a ligação origem→novo. *Retornar*, a partir de um item da lista de peças, abre o **esquema de origem** que usou aquela peça |
+| 7 | **RF23.CA08** | RF23 · RNF6 | Trocar o tema ou o fundo da interface muda **apenas o *chrome* do app** (navegação, fundos de tela, painéis). **Nunca** altera a cor dos esquemas de vestimenta e das peças — esse conteúdo é do usuário e sua arte é definida por ele (RF11) |
+
+### Duas correções que não são CA, mas entram na arquitetura
+
+| Origem | Correção |
+|---|---|
+| **RNF6 · RF4** | Redirecionar **todas as escritas** para as **entidades canônicas do ER**, com apenas os atributos necessários por RF. Hoje há caminhos paralelos (`/add-piece` × `/wardrobe-items` × `/wardrobe/process-piece`) gravando o "mesmo" dado em formatos diferentes. Uma peça = um registro em `ClothingPiece`, sem duplicata. Alinha-se ao princípio da **minimização** e ao módulo `fai-domain` do documento `01` |
+| **RF20 · RF21** | A modelagem confirma o redesenho do selo: a IA detecta na criação e **dispensa a revisão manual**, com **tiers** por unidade de vínculo (peça = menor, look = maior). Compatível com `docs/rf20-rf21-vinculo-marca-celebridade.md`, onde a revisão já é opcional (`Perfil exige revisão? → Não, auto-aprovação`) |
+
+### Entidades que o ER acrescenta ao domínio
+
+Além das já previstas no documento `01`, a modelagem nomeia: **PrivacySettings** (com `default=private` — é o RF3.CA19 no modelo de dados), **BackgroundArt** (com escopo *look* ou *peça*), **Mannequin** (com `sexo`), **Seal** (com `tier` e `auto_detected`), **Remix** (`source_id` → `new_scheme_id`), **Interaction**, **Photo**, **StyleDNA** e **AuditLog**. O `AuditLog` aparece como entidade transversal do RNF5 — o que confirma a correção do `AuditService` feita no documento `01`.
 
 ---
 

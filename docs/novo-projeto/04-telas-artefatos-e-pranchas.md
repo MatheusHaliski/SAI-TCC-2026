@@ -149,12 +149,68 @@ Cada artefato é uma página HTML autocontida, publicada como Artifact, mostrand
 
 **Critérios de rejeição** — a tela volta se aparecer qualquer um: checkbox pré-marcado, consentimento agrupado, revogação mais cara que a concessão, ou padrão invasivo (ver a tabela de anti-padrões no documento `02`).
 
-### Artefato #7 — Esquema de vestimenta e peças, com o footer de estado
-- **RF:** RF7, RF19, RF31 · **CAs:** RF7.CA01–CA03, RF19.CA01–CA10, RF31.CA01–CA06
-- **Base de modelagem:** parte 3 do artefato UML + `docs/design-schema-outfit-card.md` e `docs/design-schema-piece-card.md` já versionados.
-- **Layout:** card do esquema (arte de fundo, nome, ocasião, autor, selo de vínculo) + lista de peças navegável (RF7.CA01) + footer social com **favoritar / disponível / indisponível / todos** + barra de reações (curtir, trend, elegante, criativo) + comentários.
-- **Regra de consistência a desenhar:** *favoritar* é independente; *disponível/indisponível/todos* são exclusivos entre si (RF31.CA06).
-- **Estados críticos:** peça excluída pelo autor exibida como snapshot (RF7.CA03); visitante sem permissão de edição (RF7.CA02).
+### Artefato #7 — Esquema de vestimenta e peças de roupa  ✅ *desbloqueado*
+- **RF:** RF6, RF7, RF9, RF19, RF31 · **CAs:** RF6.CA11, RF7.CA01–CA03, RF19.CA01–CA10, RF31.CA01–CA06
+- **Fonte:** Parte 3 do artefato **[Modelagem UML & mapa de estado](https://claude.ai/code/artifact/8c050ab5-8faf-4073-a077-dd8e492db661)** — "Especificação dimensional dos cards", arquivada em `insumos/uml/`. **As cotas em milímetros são a fonte da verdade**; as proporções do desenho são aproximadas.
+
+**Escala e grade:** 1 mm = 2,5 px · grade base 2 mm · margem interna 4 mm · raio 3 mm.
+
+São **quatro cards**, não dois. Todos com 90 mm de largura:
+
+| Card | Altura | Composição |
+|---|---|---|
+| **Peça · compacto** | ≤ **18 mm** — linha única de lista | logo + marca + nome + tipo + tamanho. **Sem imagem, header ou footer.** É o formato usado dentro da lista de peças de um esquema |
+| **Peça · ampliado** | **208 mm** | header autor 16 · imagem 80 · tipo/marca/**sexo** 22 · detalhes 40 · métricas 14 · footer 36 |
+| **Vestimenta · compacto** | **164 mm** | header 14 · capa 56 · título/style/occasion/visibility 14 · 4 miniaturas L1–L4 com marca 30 · métricas 14 · footer 36 |
+| **Vestimenta · ampliado** | **216 mm** | header 16 · capa 70 · título + `creation_mode`/descrição 20 · lista completa de peças em compacto 60 · métricas 14 · footer 36 |
+
+**Estado "comentários abertos":** soma ~**116 mm** ao ampliado — input de comentário 20 mm · item 24 mm · recuo de resposta 12 mm.
+
+#### ⚠️ Faixa ausente nos desenhos: os toggles de estado, no **topo** do card
+
+Os quatro desenhos da Parte 3 **não incluem** a faixa de toggles que fica na **parte superior** do card. Ela precisa ser cotada e desenhada:
+
+| Controle | Forma | Comportamento |
+|---|---|---|
+| ⭐ **Favoritar** | Estrelinha **pequena**, no padrão do Spotify | Alterna; independente dos demais (RF31.CA01) |
+| **Disponível** | Rótulo curto | Estado exclusivo com "indisponível" (RF31.CA03) |
+| **Indisponível** | **Pequeno, só a letra** | Estado exclusivo com "disponível" (RF31.CA02) |
+
+Três correções que isso impõe ao que estava escrito:
+
+1. **Topo, não rodapé.** A faixa de RF31 fica **acima** do header de autoria ou embutida nele — não no footer. O footer é território do RF19 (curtir · comentar · compartilhar · remixar · retornar · editar).
+2. **"Todos" não é um toggle do card.** É o **filtro da lista** — vive no header da página de Looks Salvos / Closet, ao lado do filtro de ocasião, e não no card individual.
+3. **Cota pendente.** A Parte 3 não dá altura para essa faixa. Proposta a validar, coerente com a grade de 2 mm: **8–10 mm**, o que levaria Vestimenta compacto de 164 para ~172–174 mm e o ampliado de 216 para ~224–226 mm. **Confirmar com quem desenhou antes de tratar como cota oficial.**
+
+**Seis regras de anatomia, cada uma amarrada a um CA:**
+
+| Regra | Origem | O que muda |
+|---|---|---|
+| **Header de autoria** | RF6-CA12 · RF7-CA9 | Faixa inicial com foto + nome do autor (+ visibilidade e tempo no look). **Faltava nos mockups**; adiciona 12–16 mm no topo |
+| **Footer social** | RF19-CA12–15 | curtir · comentar · compartilhar · **remixar** · **retornar**; adiciona 34–36 mm nos dois modelos |
+| **Campo `sexo` visível** | RF18 · RF4 | Exibido na identificação da peça; alimenta o filtro do Provador 2D |
+| **Botão editar só para o dono** | RF7-CA8 · RF9-CA4 | Fica no footer, visível apenas ao proprietário |
+| **Peças por versão** | RF6 · RF7-CA10 | Compacto: 4 miniaturas com marca. Ampliado: lista completa, cada peça na sua linha compacta |
+| **Modal único** | RF6-CA8 · RF7-CA7 | **O card É a superfície do modal** — o modal fornece só o scrim, nunca uma segunda borda em volta |
+
+**Três telas que reaproveitam essas cotas** (também na Parte 3):
+
+- **Feed de busca (RF8):** barra de filtros 16 mm + lista rolável de cards compactos, gap 4 mm. **Sem header/footer de página** — quem tem header e footer é o card.
+- **Perfil (RF8/RF17):** header ≈ 64 mm (avatar+nome 28 · seguir · bio 12 · contadores 12 · tabs 12) sobre body de feed. É *aqui* que existe header de página.
+- **Modal:** ao clicar num look abre o ampliado 90×216; ao clicar num item da lista de peças abre o ampliado 90×208.
+
+**Direções visuais do RF11 e os wearstyles.** As quatro direções — *Editorial Spread* (masthead serif, wearstyles sublinhados), *Luxury Glass* (glassmorphism escuro, wearstyles em pílula dourada), *Atelier* (papel kraft, wearstyles como etiquetas tracejadas) e *Show Notes* (minimalista, wearstyles numerados) — **re-renderizam os wearstyles no mesmo estilo**, sem alterar seus valores.
+
+**Wearstyles restritos por parte do corpo** (proposta a validar — vira CA em RF4 e RF5):
+
+| Parte do corpo | Wearstyles permitidos | Máx. |
+|---|---|---|
+| Cabeça & acessórios | Casual · Esporte · Praia · Festa | 4 |
+| Superior (tronco) | Casual · Social · Esporte · Festa · Trabalho · Praia | 6 |
+| Inferior (pernas) | Casual · Social · Esporte · Trabalho · Praia | 5 |
+| Calçados (pés) | Casual · Social · Esporte · Festa · Praia | 5 |
+
+**Estados críticos:** peça excluída pelo autor exibida como snapshot (RF7.CA03); visitante sem permissão de edição (RF7.CA02); toggles do topo coerentes entre si — favoritar independente, disponível/indisponível exclusivos (RF31.CA06).
 
 ### Artefato #8 — Provador 2D com manequim masculino/feminino
 - **RF:** RF18 · **CAs:** RF18.CA01–CA07, RF30.CA08
