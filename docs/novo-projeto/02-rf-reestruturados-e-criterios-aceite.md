@@ -110,6 +110,39 @@ Convenção: `RFx.CAnn`. Todo CA é **verificável** (tem um observável), **at�
 | RF3.CA16 | usuário com notificações não lidas | aciona "marcar todas como lidas" | contador zera e o estado persiste entre dispositivos |
 | RF3.CA17 | usuário nas preferências de notificação | desativa um tipo (ex.: curtidas) | deixa de receber esse tipo em qualquer canal, mantendo os demais |
 | RF3.CA18 | notificação com mais de 90 dias | o expurgo periódico executa | a notificação é removida sem afetar o conteúdo que a originou |
+| RF3.CA19 | uma conta é criada | o cadastro conclui | ela nasce no estado **mais protetivo**: perfil privado, e todos os consentimentos opcionais **desligados** — o usuário opta por abrir (*Privacy by Default*) |
+| RF3.CA20 | a tela de "Uso dos seus dados" | é renderizada | há **um controle por finalidade** (anúncios, reconhecimento facial, histórico de localização, compartilhamento com parceiros), nunca um "aceito tudo" agrupado |
+| RF3.CA21 | um consentimento foi concedido | o usuário quer revogá-lo | a revogação está **no mesmo lugar e com o mesmo número de cliques** da concessão (LGPD art. 8º, §5º) |
+| RF3.CA22 | qualquer controle de consentimento | é exibido pela primeira vez | ele **não** vem pré-marcado — o aceite exige ação afirmativa do usuário |
+| RF3.CA23 | o campo data de nascimento | é apresentado | a tela declara que ele é coletado **apenas para verificação de idade mínima** (princípio da necessidade, LGPD art. 6º, III) |
+| RF3.CA24 | usuário aciona "Baixar seus dados" | confirma | o arquivo sai em formato **legível por máquina** (JSON), não em PDF ou imagem (LGPD art. 18, V) |
+
+#### Mapa direito do titular → controle na tela *(fonte: material de padrões de interface LGPD, anexo do RNF6)*
+
+Cada linha é um direito do art. 18 e o componente concreto que o realiza. Serve de checklist para o artefato #6 e para a implementação.
+
+| Direito do titular | Artigo | Componente de UI | CA |
+|---|---|---|---|
+| Confirmação e acesso | art. 18, I e II | Página "Meus dados" | RF3.CA03 |
+| Correção | art. 18, III | Inputs editáveis (nome, e-mail, bio, nascimento) + Salvar | RF3.CA01 |
+| Anonimização / bloqueio de dados excessivos | art. 18, IV | Toggles que desativam coletas; ocultar campos | RF3.CA06, RF13.CA06 |
+| Portabilidade | art. 18, V | "Exportar dados" em JSON | RF3.CA04, RF3.CA24 |
+| Eliminação | art. 18, VI | "Excluir conta" em zona de risco, confirmação dupla | RF3.CA05 |
+| Informação sobre compartilhamento | art. 18, VII | Painel "Quem pode ver" (radio, padrão restritivo) | RF3.CA12, RF3.CA19 |
+| Revogação do consentimento | art. 18, IX | Toggles desligáveis a qualquer momento | RF3.CA06, RF3.CA21 |
+
+#### Anti-padrões que reprovam a tela *(mesma fonte)*
+
+São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela volta:
+
+| Dark pattern | Por que reprova | CA que o proíbe |
+|---|---|---|
+| Checkbox pré-marcado | Consentimento sem ação afirmativa | RF3.CA22 |
+| Consentimento agrupado | A LGPD exige granularidade por finalidade | RF3.CA20 |
+| Revogação escondida | Conceder em 1 clique, revogar em 6 — fere o art. 8º, §5º | RF3.CA21 |
+| Padrão invasivo | Perfil público e coletas ligados por padrão | RF3.CA19 |
+
+> **Confirmação da separação RF3 × RF23.** O material do RNF6 é explícito: modo escuro, tamanho de fonte e idioma são **preferências de interface** — requisito funcional de usabilidade, **não** tratamento de dado pessoal. Isso valida a divisão feita na §3: dado que identifica a pessoa → RF3 (reautenticação, base legal, relatório LGPD); preferência de uso e dado de vitrine → RF23.
 
 ### RF4 — Adicionar peça ao guarda-roupa
 
@@ -221,7 +254,7 @@ Convenção: `RFx.CAnn`. Todo CA é **verificável** (tem um observável), **at�
 |---|---|---|---|
 | RF13.CA01 | usuário com ≥10 peças e ≥5 avaliações positivas | acessa "DNA de Estilo" pela primeira vez | sistema apresenta o formulário de Identidade de Vida (lugares, pessoas, animais, objetos) |
 | RF13.CA02 | pré-requisitos não atingidos | usuário acessa a página | sistema exibe o progresso indicando exatamente quantas peças e avaliações faltam |
-| RF13.CA03 | usuário pula o formulário de vida | confirma a geração | card é gerado só com a Camada 1 (arquétipo, paleta, silhueta, ousadia, peça ícone) e avisa que pode ser enriquecido depois |
+| RF13.CA03 | usuário pula o formulário de vida | confirma a geração | card é gerado só com a Camada 1 (arquétipo, paleta, silhueta, ousadia, peça ícone), **com a Frase de Identidade baseada somente no estilo**, e avisa que pode ser enriquecido depois — conforme HU20, Critério 2 |
 | RF13.CA04 | usuário preenche as duas camadas | confirma | IA gera a Frase de Identidade cruzando estilo e vida e renderiza o Card Visual (**RF30.CA04**) |
 | RF13.CA05 | usuário edita campos da Identidade de Vida | salva | somente a Frase de Identidade é regenerada; a Camada 1 permanece intacta |
 | RF13.CA06 | usuário marca um campo da Camada 2 como privado | exporta o card | o campo não aparece na imagem exportada, mesmo tendo influenciado a frase |
@@ -298,31 +331,42 @@ Convenção: `RFx.CAnn`. Todo CA é **verificável** (tem um observável), **at�
 | RF19.CA11 | uma curtida, reação ou comentário é registrado | a transação conclui | uma notificação é enfileirada para o autor do conteúdo (consumida em RF3.CA15) |
 | RF19.CA12 | autor desativou o tipo de notificação (RF3.CA17) | a interação ocorre | a interação é contabilizada, mas nenhuma notificação é entregue |
 
-### RF20 — Vincular esquema a uma **marca** (sistema de selo)
+### RF20 / RF21 — Vínculo de esquema com marca e celebridade (selos e promoções)
 
-| ID | Dado que | Quando | Então |
+> ⚠️ **Correção.** A primeira versão deste catálogo escreveu 8 CAs genéricos para RF20 e 9 para RF21, com um fluxo "usuário escolhe a marca numa lista → marca aprova". **Esse fluxo está errado.** O repositório já tem a especificação autoritativa desses dois requisitos em **[`docs/rf20-rf21-vinculo-marca-celebridade.md`](../rf20-rf21-vinculo-marca-celebridade.md)** (mesclada no PR #555), com **23 CAs**, fluxo de atividades, modelo de dados, endpoints e rastreabilidade. Ela não foi consultada na primeira redação. Os CAs antigos foram removidos daqui.
+
+**Regra de manutenção:** RF20 e RF21 têm **um único dono documental** — o arquivo acima. Este catálogo não os duplica, para não abrir uma segunda fonte da verdade que sai de sincronia. O que segue é só o resumo e o *delta* que as pranchas acrescentaram.
+
+#### O mecanismo real, em uma frase
+
+Criar Look → **a IA analisa as peças e sugere o vínculo** (até 3 candidatos, com confiança e justificativa) → o usuário **aceita, edita ou recusa** → vínculo criado como `pendente` → **auto-aprovado se o perfil não exigir revisão**, senão vai à fila da marca/celebridade → selo emitido → **o selo habilita as promoções** publicadas no perfil (desconto em e-commerce, cupom de loja, show, evento).
+
+O que a redação anterior errou: a IA sugere *dentro do fluxo de criação* (não é escolha manual numa lista), a revisão da marca é **opcional** (não obrigatória), e o selo **habilita promoções resgatáveis** — o que não existia nos meus CAs.
+
+| CA | Assunto | CA | Assunto |
 |---|---|---|---|
-| RF20.CA01 | usuário criando ou editando um esquema | aciona "vincular a uma marca" | vê a lista de marcas **validadas** com busca por nome |
-| RF20.CA02 | usuário escolhe uma marca e publica | confirma | o vínculo é criado com estado `pendente` e o esquema exibe o selo em estado neutro |
-| RF20.CA03 | administrador da marca | aprova o vínculo | o selo passa a **verificado** e o esquema entra no perfil da marca (RF14.CA03) |
-| RF20.CA04 | administrador da marca | recusa o vínculo | o selo é removido, o esquema permanece publicado sem vínculo e o autor é notificado do motivo |
-| RF20.CA05 | vínculo pendente há mais de 15 dias | o prazo expira | o vínculo caduca automaticamente e o autor pode solicitar novamente |
-| RF20.CA06 | usuário tenta vincular a mesma marca duas vezes no mesmo esquema | confirma | sistema recusa a duplicidade |
-| RF20.CA07 | esquema com selo verificado | é exibido em qualquer feed | o selo aparece com o logo da marca e leva ao perfil dela ao ser acionado |
-| RF20.CA08 | um vínculo muda de estado | a transição ocorre | autor e marca são notificados (RF3.CA15) e o evento é registrado na auditoria (**RNF5**) |
+| CA01 | Sugestão da IA na criação do look | CA09 | Selo único por par esquema/marca |
+| CA02 | Aceite da sugestão | CA10 | Múltiplos selos no mesmo esquema |
+| CA03 | Edição da sugestão | CA11 | Promoção habilitada pelo selo |
+| CA04 | Recusa (registrada para aprendizado) | CA12 | Resgate com código único |
+| CA05 | Nenhum candidato com confiança suficiente | CA13 | Promoção indisponível |
+| CA06 | Marca não cadastrada | CA14 | Revogação e expiração do selo |
+| CA07 | Revisão pelo perfil (quando exigida) | CA15 | Visibilidade e privacidade |
+| CA08 | Emissão do selo | CA16 | Rastreabilidade e auditoria |
 
-### RF21 — Vincular esquema a uma **celebridade** (sistema de selo)
+**RF21** herda CA01–CA16 trocando "marca" por "celebridade verificada", e acrescenta CA17–CA23: base da sugestão pela assinatura de estilo, **somente celebridades verificadas**, **consentimento e direito de imagem**, Selo Premium, promoções de celebridade, promoção com marca parceira e limite de emissão por campanha.
 
-| ID | Dado que | Quando | Então |
-|---|---|---|---|
-| RF21.CA01–CA08 | — | — | **Espelham integralmente RF20.CA01–CA08**, trocando a entidade `Marca` por `Celebridade` e a aba "Marcas" pela aba "Celebridades" (RF22). Nenhuma regra diverge. |
-| RF21.CA09 | esquema vinculado a uma celebridade | é publicado | o esquema não pode alegar patrocínio nem uso comercial da imagem; o selo indica apenas "inspirado em / aprovado por" |
+#### Delta que as pranchas acrescentam *(fonte: artefato "Vinte pranchas", insumo recebido)*
 
-### RF22 — Aba "Celebridades" (feed de perfis)
+Estes três pontos **não estão** no documento autoritativo e precisam entrar nele — não aqui:
 
-| ID | Dado que | Quando | Então |
-|---|---|---|---|
-| RF22.CA01–CA05 | — | — | **Espelham RF14.CA01–CA05**, trocando `Marca` por `Celebridade`. |
+| # | O que falta no documento de RF20/RF21 | Onde impacta |
+|---|---|---|
+| 1 | **Dois tiers de selo.** `tier PEÇA` (1 peça vinculada) e `tier LOOK` (várias peças ou o look inteiro da mesma marca). CA08 fala em "um selo", sem tier. | Modelo de dados (`Seal.tier`), card do esquema, pranchas 06/07 e 10/11 |
+| 2 | **Aba "Meus Selos" guarda os selos recusados** para aplicação manual posterior. CA04 hoje só registra a recusa "para aprendizado". | RF20.CA04, tela de Meus Selos |
+| 3 | **Distinção visual categórica** entre os dois tipos: selo de marca é têxtil/dourado, selo de celebridade é vítreo/holográfico. | Artefato #7 e pranchas da Coleção E |
+
+**Ação:** abrir os três como comentário no card RF20 do Trello e atualizar `docs/rf20-rf21-vinculo-marca-celebridade.md` — este catálogo continua apenas apontando para lá.
 
 ### RF23 — Preferências de interface e dados não sensíveis
 
@@ -356,7 +400,20 @@ Convenção: `RFx.CAnn`. Todo CA é **verificável** (tem um observável), **at�
 | **Absorvidos** (viram CA) | RF24, RF25, RF26, RF27, RF28, RF29 |
 | **Reescritos** (enunciado corrigido) | RF1, RF3, RF5, RF6, RF7, RF9, RF11, RF12, RF19, RF23 |
 | **Criados** | **RF30** (IA — ver `03-rf30-ia-e-servicos-externos.md`), **RF31** (filtros favoritar/disponível/indisponível/todos) |
-| **RFs efetivos após a reestruturação** | 25 (RF1–RF23 menos os absorvidos, + RF30, RF31) |
+| **RFs efetivos após a reestruturação** | **25** — ver a conta abaixo |
+
+### 5.1 A conta dos 25, passo a passo
+
+A lista do Trello tem 30 cards, sendo 1 de rastreabilidade → **29 RFs (RF1–RF29)**. Os seis absorvidos são **RF24, RF25, RF26, RF27, RF28 e RF29** — todos *fora* da faixa RF1–RF23, e é por isso que a faixa não encolhe:
+
+| Passo | Conta | Total |
+|---|---|---|
+| RFs no board | RF1–RF29 | 29 |
+| − absorvidos (RF24–RF29) | −6 | **23** (= exatamente RF1–RF23) |
+| + RF30 (motor de IA) | +1 | 24 |
+| + RF31 (favoritar/disponível/indisponível/todos) | +1 | **25** |
+
+⚠️ O erro fácil aqui é subtrair 6 de 23 e chegar a 19. Não se subtrai: RF24–RF29 **já não fazem parte** de RF1–RF23. Os 23 são o *resultado* da absorção, não o ponto de partida.
 | **Total de CAs catalogados** | ~150 |
 
 ## 6. Matriz de rastreabilidade RF × RNF

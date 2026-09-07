@@ -248,7 +248,12 @@ flowchart TD
     C -- Sair --> Z
 ```
 
-> ⚠️ Este diagrama precisa ser confrontado com o **HTML/PDF de padrões de interface LGPD anexado ao card RNF6** antes de virar tela. O fluxo está correto quanto aos direitos do titular; o que falta validar é a *forma de apresentação* (granularidade do consentimento, linguagem, hierarquia visual).
+> ✅ **Confrontado com o material de padrões de interface LGPD** (anexo do RNF6, arquivado em `insumos/lgpd/`). O fluxo dos direitos do titular estava correto. A fonte acrescenta quatro regras de forma, agora exigíveis:
+>
+> 1. **Privacy by Default** — a conta nasce privada e com todo consentimento opcional desligado (RF3.CA19); o diagrama assume esse estado inicial.
+> 2. **Granularidade** — "Revogar consentimento" é sempre *por finalidade*, nunca um botão único de "revogar tudo" (RF3.CA20).
+> 3. **Simetria de esforço** — revogar tem o mesmo número de passos de conceder (RF3.CA21, art. 8º, §5º).
+> 4. **Exportação legível por máquina** — o nó de exportação entrega JSON, não PDF (RF3.CA24, art. 18, V).
 
 ---
 

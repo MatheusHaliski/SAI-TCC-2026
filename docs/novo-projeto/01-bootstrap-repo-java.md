@@ -21,11 +21,12 @@
 
 ### 1.2 Insumos que **faltam** e precisam ser depositados antes da Etapa 6/7
 
-> O conector do Trello desta sessão lê cards, listas, descrições, checklists e comentários — **mas não expõe anexos**. Os arquivos abaixo precisam ser baixados manualmente do Trello e colocados em `docs/novo-projeto/insumos/`:
+> ✅ O material de padrões de interface **LGPD** do RNF6 já foi recebido e está em `insumos/lgpd/padroes-interface-lgpd.html`.
+>
+> O conector do Trello desta sessão lê cards, listas, descrições, checklists e comentários — **mas não expõe anexos**. Os arquivos abaixo ainda precisam ser baixados manualmente e colocados em `docs/novo-projeto/insumos/`:
 
 | Insumo | Onde está | Etapa que trava sem ele |
 |---|---|---|
-| **HTML/PDF de padrões de interface LGPD** | anexo do card **RNF6** | Etapa 7 (página de dados pessoais) e Etapa 8 (diagrama RF3) |
 | **Artefato "Vinte pranchas"** das novas telas | anexo/Drive do time | Etapa 6 inteira |
 | **Aulas**: Perfil Lookbook, DNA de Estilo, Closet Digital | material da disciplina | Etapa 3 (refinamento de CAs desses RFs) |
 | Artefato de modelagem UML **parte 3** | anexo do board | Etapa 7 (esquema de vestimenta e peças) |
@@ -40,7 +41,8 @@ Enquanto não chegarem, os CAs de RF6, RF13 e RF23 no documento `02-…` foram e
 |---|---|---|
 | **Linguagem** | **Java 21 (LTS)** | Exigência do time; LTS com suporte até 2029; records e pattern matching reduzem *boilerplate* de DTO |
 | **Framework** | **Spring Boot 3.3.x** | Cobre sozinho RNF1 (Spring Security), RNF2 (JWT), RNF5 (auditoria), RNF8 (Resilience4j) |
-| **Persistência** | **Spring Data JPA + Hibernate 6** | Obrigatório por decisão do time; `@EntityListeners(AuditingEntityListener.class)` entrega RNF5 sem código próprio |
+| **Persistência** | **Spring Data JPA + Hibernate 6** | Obrigatório por decisão do time; `@EntityListeners(AuditingEntityListener.class)` preenche os metadados de cada entidade (quem criou/alterou e quando) — **não** é o log de auditoria do RNF5 |
+| **Auditoria (RNF5)** | **`AuditService` próprio** + tabela `audit_log` + `ApplicationEventPublisher` | O listener do JPA só enxerga escrita de entidade. Os eventos que o RNF5 exige — login falho, 403, revogação de consentimento, chamada de IA — **não passam pelo Hibernate** e precisam de um serviço explícito |
 | **Banco relacional (fonte da verdade)** | **MySQL 8.0** | Continuidade com `db/schema.sql` já modelado; transações e FKs para usuários, peças, esquemas, vínculos |
 | **NoSQL — feed/timeline** | **Cassandra 4.1** (dev: Docker; prod: DataStax Astra free tier) | É o store que a Meta/Instagram usa para timeline; escrita *append-only* ordenada por tempo, sem `JOIN` |
 | **NoSQL — contadores e cache** | **Redis 7** | Curtidas, reações, contadores de seguidores; `INCR` atômico com *write-behind* para o MySQL |
@@ -188,7 +190,8 @@ AUDIT_RETENTION_DAYS=365
 - [ ] Dependabot ativo para Maven e npm
 - [ ] Senhas com **Argon2id** (RNF3) — não BCrypt legado
 - [ ] Campos pessoais sensíveis com `@Convert(converter = AesGcmConverter.class)` (RNF3)
-- [ ] `@EntityListeners(AuditingEntityListener.class)` + tabela `audit_log` (RNF5)
+- [ ] `@EntityListeners(AuditingEntityListener.class)` nas entidades — metadados de criação/alteração (**não confundir com o RNF5**)
+- [ ] `AuditService` próprio gravando em `audit_log`, com um evento por CA-âncora do RNF5 (RNF5)
 - [ ] Spring Security com `@PreAuthorize` por recurso e teste automatizado de 403 (RNF1 / RF3.CA14)
 - [ ] Rate limit nas rotas `/api/ai/**` (RF30.CA14)
 - [ ] CORS restrito ao domínio do frontend
@@ -233,7 +236,25 @@ BrandProfile, CelebrityProfile, WardrobeItem, Scheme, SchemeItem, SchemeBrandLin
 Notification, StyleDna, Photo, PipelineJob.
 Regras: sem relacionamento EAGER; toda coleção paginada; @Version onde houver
 escrita concorrente; campos pessoais sensíveis com converter AES-GCM (RNF3);
-auditoria via @EntityListeners (RNF5).
+metadados de criação/alteração via @EntityListeners.
+
+## Tarefa 3b — Auditoria (RNF5)
+Atenção: @EntityListeners(AuditingEntityListener.class) NÃO satisfaz o RNF5. Ele
+só preenche createdAt/updatedAt/createdBy/lastModifiedBy quando uma entidade é
+gravada pelo Hibernate. Os eventos que o RNF5 exige em sua maioria nem tocam o
+Hibernate. Crie um AuditService explícito, gravando em audit_log
+(actor, acao, recurso, resultado, ip, user_agent, timestamp, correlation_id),
+alimentado por eventos de aplicação e com persistência em transação própria
+(REQUIRES_NEW), para que o registro sobreviva ao rollback da operação auditada.
+Eventos obrigatórios, um por CA:
+  - login bem-sucedido e login falho / bloqueio por tentativas  (RF2.CA03)
+  - acesso negado 403 a recurso de outro usuário                (RF3.CA14)
+  - alteração de dado pessoal sensível e troca de senha         (RF3.CA01, CA11)
+  - concessão e revogação de consentimento                      (RF3.CA06)
+  - exportação e exclusão de conta                              (RF3.CA04, CA05)
+  - mudança de estado de vínculo com marca/celebridade          (RF20.CA08)
+  - chamada de IA: provedor, modelo, latência, custo estimado   (RF30.CA16)
+Nenhum evento pode conter senha, token ou o conteúdo dos campos cifrados.
 
 ## Tarefa 3 — Segurança
 Spring Security com JWT (RSA), access 15 min, refresh rotativo persistido, Argon2id
@@ -270,5 +291,10 @@ Nenhuma chave de API sai do backend.
 4. Gerar `V1__baseline.sql` no Flyway a partir do schema MySQL revisado.
 5. Migrar os dados do Firestore → MySQL com um script descartável, **sem** dados reais de usuário no ambiente de demonstração.
 6. Fatiar por RF (Tarefa 4), uma sprint por vez.
-7. Apagar o projeto Firebase e revogar todas as chaves antigas.
-8. Arquivar o repositório atual como `fashion-ai-legacy` (somente leitura), preservando o histórico do TCC.
+7. **Migrar as identidades antes de desligar o Firebase.** `db/schema.sql` mostra que a conta viva hoje é a do Firebase Auth: `users.firebase_uid VARCHAR(128) NULL UNIQUE` e `users.password_hash VARCHAR(255) NULL`, este último comentado no próprio schema como *"Legado: a autenticação migrou para o Firebase"*. Ou seja, **as contas existentes não têm hash de senha** — apagar o Firebase antes de migrar tranca todo mundo para fora. Sequência obrigatória:
+   1. importar os usuários do Firebase Auth (`firebase auth:export`) preservando `firebase_uid` e e-mail;
+   2. manter uma **ponte de autenticação temporária** — o backend Java valida o ID token do Firebase e, na primeira autenticação bem-sucedida, faz o *enrolment* da senha em Argon2id (ou dispara o fluxo de definição de senha do RF3.CA07);
+   3. para quem não voltar dentro da janela, enviar convite de redefinição de senha por e-mail;
+   4. **só desligar o Firebase quando** a taxa de contas com `password_hash` preenchido (ou identidade federada própria) cobrir a base ativa e um login de ponta a ponta estiver validado sem o Firebase.
+8. Apagar o projeto Firebase e revogar todas as chaves antigas.
+9. Arquivar o repositório atual como `fashion-ai-legacy` (somente leitura), preservando o histórico do TCC.

@@ -4,65 +4,83 @@
 
 ## Parte A — Etapa 6: as vinte pranchas
 
-### A.1 Situação
+### A.1 O artefato chegou
 
-O artefato "Vinte pranchas para as novas telas do Fashion AI" **não está acessível nesta sessão** — o conector do Trello lê cards, descrições, checklists e comentários, mas não anexos. Para a Etapa 6 avançar, o arquivo precisa ser colocado em `docs/novo-projeto/insumos/pranchas/`.
+O artefato **"Vinte pranchas para as novas telas do Fashion AI"** está arquivado em `insumos/pranchas/` e legível em [claude.ai/code/artifact/bb3132be](https://claude.ai/code/artifact/bb3132be-c756-4e95-bef1-022e3b5faf66). Ele não é uma lista de telas — é **direção de arte generativa**: 20 pranchas com prompt de Adobe Firefly, prompt negativo, barra de cor fechada, o bloco de parâmetros do `ArtworkStudioInput` e o caminho do arquivo no código.
 
-O que **pode** ser feito agora, e está feito abaixo, é montar o esqueleto de rastreabilidade: a ficha padrão de cada prancha e a lista provisória das 20 telas derivada dos RFs. Quando o artefato chegar, basta preencher as fichas — sem refazer a estrutura.
+Isso muda o que a Etapa 6 é. A suposição inicial deste documento — "20 pranchas = 20 telas" — **estava errada**. As 20 pranchas cobrem **quatro superfícies visuais novas**, não vinte telas; a lista provisória de telas foi removida e substituída pelo catálogo real abaixo.
 
-### A.2 Onde as pranchas entram: RF23
+### A.2 Contrato técnico das pranchas
 
-RF23 (**Gerenciar preferências de interface e dados não sensíveis**) é o requisito hospedeiro do sistema de interface. As pranchas não viram 20 CAs soltos; viram **um item de checklist por prancha** dentro de RF23, mais os CAs de comportamento já escritos (RF23.CA01–CA07). A razão: uma prancha é um *artefato de design*, não um comportamento verificável — o comportamento dela pertence ao RF da tela que ela desenha.
+O Background Studio não recebe imagem solta: recebe um `ArtworkStudioInput` tipado. Cada prancha já traz o bloco correspondente.
 
-**Regra de ouro da Etapa 6:** cada prancha aponta para **um RF dono** e para os **CAs que ela materializa**. Prancha sem RF dono é sinal de requisito faltando; RF sem prancha é sinal de tela não desenhada.
+| Campo | Valores | Uso |
+|---|---|---|
+| `compositionType` | `background` · `shape_pack` · `overlay` · `frame` | fundo de card · selos e badges · scrims · molduras de mosaico |
+| `stylePreset` | `editorial_fashion` · `luxury_minimal` · `futuristic_sport` · `streetwear` · `monochrome_premium` | mapeia quase 1:1 nas ocasiões: trabalho→`luxury_minimal`, festa→`editorial_fashion`, academia→`futuristic_sport`, casual→`streetwear` |
+| `paletteMode` | `monochrome` · `cool_luxury` · `warm_neutral` · `custom` | `custom` quando a prancha traz barra de cor fechada |
+| `shapeLanguage` | `diamond` · `orb` · `mesh` · `panels` · `mixed` | `diamond` nos selos (lê como brasão em tamanho pequeno) |
+| `safeAreaMode` | booleano | **sempre `true`** em fundo de card |
+| `contrastLevel` · `glowIntensity` · `density` | `low`/`medium`/`high` · 0–100 · 0–100 | card compacto fica em `low` e densidade baixa |
 
-### A.3 Ficha padrão de prancha
+**Onde os arquivos entram:** soltos em `public/`, registrados no array de artworks de `OutfitBackgroundStudioModal.tsx`, agrupados por `group`. As 20 pranchas formam três coleções novas, seguindo a numeração existente (Coleção A = `a1`–`a32`, Coleção C = `c1`–`c6`):
+
+| Coleção | Arquivos | Pranchas |
+|---|---|---|
+| **D** — Ocasiões & Looks Salvos | `public/d1.png` … `d5.png` | 01–05 |
+| **E** — Selos, Marcas & Celebridades | `public/e1.png` … `e8.png` | 06–13 |
+| **F** — DNA, Closet & Lookbook | `public/f1.png` … `f7.png` | 14–20 |
+
+### A.3 As cinco famílias
+
+| Família | Pranchas | RF | Problema visual que resolve |
+|---|---|---|---|
+| **I — Looks Salvos** | 01–05 | RF29 *(absorvido em RF6)* | No feed compacto, 5–15 cards com a mesma silhueta só se distinguem pela cor. O fundo diz de longe se é look de trabalho ou de festa. As 4 ocasiões vêm do código: `casual`, `trabalho`, `festa`, `academia`. A prancha 05 é o **scrim de indisponível** (`overlay` a `opacity:.55`) |
+| **II — Marcas** | 06–09 | RF20 · RF27 | O selo em **dois tiers**: `tier PEÇA` é um botão de alfaiate metálico; `tier LOOK` é um brasão têxtil bordado. A escala vira material, não só tamanho. Centro sempre **vazio**, para receber o `logo_url` cadastrado pela marca |
+| **III — Celebridades** | 10–13 | RF21 · RF28 | Mesmos dois tiers, materialmente opostos: marca é **têxtil e dourado**, celebridade é **vítreo e holográfico**. O usuário identifica o tipo sem ler |
+| **IV — DNA de Estilo** | 14–17 | RF13 | Moldura de mosaico, selo circular **DNA** no cruzamento da costura, fundo por era atrás de fotos reais |
+| **V — Closet & Lookbook** | 18–20 | RF6 · RF17 | Badge de uso legível sobre foto de produto, estado vazio da peça nunca usada, capa de assinatura derivada da paleta dominante |
+
+### A.4 Quatro regras que valem para todas as vinte
+
+Estas são **critérios de rejeição** — uma prancha que as viole não entra:
+
+1. **Nenhuma prancha retrata pessoa real.** A tela de celebridades nomeia artistas reais com eras nomeadas. As pranchas trabalham a *atmosfera cromática e material* da era, nunca rosto, corpo ou silhueta identificável. Não é só política do Firefly: retrato gerado de pessoa real, dentro de um produto que a vincula comercialmente a um look, é problema de **direito de imagem** — e a banca vai perguntar.
+2. **Nenhum logotipo de marca existente.** As pranchas geram **superfície e moldura** (monograma têxtil, textura de etiqueta, brasão vazio) e deixam o centro livre para o `logo_url` que a marca cadastrou no RF27.
+3. **Área segura antes de beleza.** No card compacto (90 × 164 mm) sobram **56 mm de capa**; o resto é texto. Os prompts pedem *large uncluttered central area* e *detail confined to the outer third*. Arte linda no Firefly e ilegível no card é arte descartada.
+4. **Texturas são *tiles*, fundos não.** As pranchas de textura (04, 09, 17, 20) pedem *seamless tile* em 1:1. As de fundo são composições únicas em 9:16 ou 16:9. Misturar produz emenda visível no meio do card.
+
+### A.5 O que as pranchas revelaram sobre os requisitos
+
+A leitura do artefato encontrou **três lacunas** nos requisitos — anotadas no documento `02`, §RF20/RF21:
+
+1. **Dois tiers de selo** (`PEÇA` / `LOOK`) não existem no modelo de dados nem nos CAs de RF20/RF21.
+2. **Aba "Meus Selos"** guarda os selos recusados para aplicação manual posterior; o CA04 atual só registra a recusa "para aprendizado".
+3. **RF13 aparece como tipologia de publicação** (2–6 esquemas fundidos, `isDNAdeEstilo`, `mosaicLayout`, rótulo de era por célula) — o que **conflita** com a definição da HU20. Decisão pendente do time; ver `insumos/README.md`.
+
+### A.6 Ficha padrão de prancha *(para preencher no Bloco 4)*
 
 ```markdown
-### Prancha NN — <nome da tela>
-- **RF dono:** RFx
-- **CAs materializados:** RFx.CAnn, RFy.CAmm
-- **Estados desenhados:** vazio · carregando · sucesso · erro · sem permissão
-- **Componentes novos:** <lista — alimenta o design system>
-- **Assets a gerar (Adobe Firefly/Express):** <texturas, fundos, ícones, ilustrações de estado vazio>
-- **Divergência com o RF atual:** <o que a prancha mostra e o requisito não previa>
-- **Ação:** [ ] criar CA · [ ] editar CA · [ ] remover CA · [ ] nenhuma
+### Prancha NN — <nome>
+- **Família / Coleção:** <I–V> · <D|E|F> · arquivo `public/xN.png`
+- **RF dono:** RFx · **CAs materializados:** RFx.CAnn
+- **Proporção:** 9:16 (card) · 16:9 (faixa) · 1:1 (selo ou tile)
+- **Barra de cor:** #… #… #… #… #…
+- **Prompt / Excluir:** <do artefato>
+- **ArtworkStudioInput:** compositionType · stylePreset · paletteMode · shapeLanguage · contrastLevel · density · glowIntensity · safeAreaMode
+- **Onde aplica no código:** <condição> · registrar em `OutfitBackgroundStudioModal.tsx`
+- **Gerada?** [ ] Firefly · [ ] vetorizada no Illustrator · [ ] registrada no array
 ```
 
-### A.4 Lista provisória das 20 telas (a reconciliar com o artefato real)
+### A.7 Assets a gerar no Adobe Firefly / Express
 
-| # | Tela | RF dono | Artefato da Etapa 7 |
-|---|---|---|---|
-| 01 | Splash / onboarding | RF1 | — |
-| 02 | Cadastro com escolha de tipo de perfil | RF1 | — |
-| 03 | Login e recuperação de senha | RF2, RF3 | — |
-| 04 | Home / Feed pessoal | RF8 | — |
-| 05 | **Buscar / Explorar** | RF8 | **#5** |
-| 06 | Perfil Lookbook — Closet Digital | RF6 | — |
-| 07 | Perfil Lookbook — Looks Salvos | RF6 | — |
-| 08 | Adicionar nova peça (com detecção por IA) | RF4, RF30 | — |
-| 09 | **Criar Look** | RF5 | **#1** |
-| 10 | **Background Studio** | RF11 | **#1** |
-| 11 | Detalhe do esquema de vestimenta | RF7, RF19, RF31 | **#7** |
-| 12 | Detalhe da peça de roupa | RF7, RF19, RF31 | **#7** |
-| 13 | **Editar esquema** | RF9 | **#9** |
-| 14 | **Copilot** | RF10 | **#2** |
-| 15 | **DNA de Estilo** | RF13 | **#3** |
-| 16 | **Minhas Fotos** | RF12 | **#4** |
-| 17 | **Provador 2D** | RF18 | **#8** |
-| 18 | Aba Marcas / Celebridades e perfil institucional | RF14, RF22 | — |
-| 19 | **Dados pessoais (LGPD) e preferências** | RF3, RF23 | **#6** |
-| 20 | **Central de notificações** | RF3 (ex-RF26) | **#10** |
-
-### A.5 Assets a gerar no Adobe Firefly / Express
-
-Gerar **só o que a prancha exigir** e sempre em duas versões (tema claro e escuro):
+As 20 pranchas cobrem fundos de ocasião, selos, capas de perfil, moldura de mosaico e badges. Os itens abaixo são o que **sobra** depois delas — gerar só o que faltar, sempre em tema claro e escuro:
 
 | Tipo | Onde | Observação |
 |---|---|---|
 | Fundos do Background Studio | RF11 | 8–12 texturas por categoria (liso, urbano, natureza, editorial, geométrico) |
 | Ilustrações de estado vazio | RF6, RF8, RF12, RF13, RF14 | Uma por tela; sem elas o estado vazio vira tela em branco (RF8.CA04) |
-| Manequins masculino e feminino | RF18 | Silhuetas neutras em SVG, com variação de tom de pele e porte (RF18.CA06) |
+| Manequins masculino e feminino | RF18 | Silhuetas neutras em SVG, com variação de tom de pele e porte (RF18.CA06) — **não coberto pelas 20 pranchas** |
 | Moldura do Card do DNA de Estilo | RF13 | Template SVG parametrizado, convertido em PNG no servidor |
 | Selo de vínculo verificado | RF20, RF21 | Três estados: neutro (pendente), verificado, recusado |
 | Ícones do footer de card | RF31 | favoritar · disponível · indisponível · todos |
@@ -111,11 +129,25 @@ Cada artefato é uma página HTML autocontida, publicada como Artifact, mostrand
 - **Layout:** campo de busca + chips de filtro removíveis + abas de resultado (Looks · Peças · Pessoas · Marcas · Celebridades) + grade paginada por cursor.
 - **Estados críticos:** busca sem resultado com sugestões (CA04); conteúdo privado nunca listado (CA05); fim de página sem duplicar itens (CA06).
 
-### Artefato #6 — Dados pessoais (LGPD, RF3) e dados não sensíveis (RF23)
-- **RF:** RF3, RF23 · **CAs:** RF3.CA01–CA06, CA12–CA14; RF23.CA01–CA06
-- **Layout:** duas seções claramente separadas — **"Meus dados"** (sensíveis; cada campo com finalidade, base legal e prazo; exige reautenticação) e **"Meu perfil e preferências"** (não sensíveis; salva direto).
-- **Controles LGPD obrigatórios:** exportar meus dados · revogar consentimentos · visibilidade do perfil · excluir conta com carência de 30 dias.
-- ⚠️ **Bloqueado até chegar o HTML/PDF de padrões LGPD anexo ao RNF6.** A estrutura acima está correta quanto aos direitos do titular; o que o anexo define é a *forma* (granularidade do consentimento, linguagem, hierarquia visual). Gerar o artefato antes de lê-lo produz retrabalho.
+### Artefato #6 — Dados pessoais (LGPD, RF3) e preferências (RF23)  ✅ *desbloqueado*
+- **RF:** RF3, RF23 · **CAs:** RF3.CA01–CA06, CA12–CA14, **CA19–CA24**; RF23.CA01–CA06
+- **Fonte:** `insumos/lgpd/padroes-interface-lgpd.html` (anexo do RNF6, recebido).
+
+**Estrutura de cinco seções** — é o padrão das grandes plataformas e o que a fonte descreve; seguir esta divisão, nesta ordem:
+
+| Seção | O que vive nela | Regra que a governa |
+|---|---|---|
+| **Conta** | Dados identificadores: nome de exibição, @, e-mail, telefone, data de nascimento, foto, bio | Direito de correção (art. 18, III). E-mail e telefone com **verificação de posse**, não só digitação. Alteração sensível dispara **reautenticação** (RF3.CA01) |
+| **Privacidade** | "Quem pode ver seu perfil" (radio: Somente você · Conexões · Público) + consentimentos por finalidade | Padrão mais restritivo pré-selecionado (RF3.CA19); um toggle por finalidade (RF3.CA20) |
+| **Aparência** | Tema, contraste, tamanho de fonte | **RF23, não RF3** — preferência de interface, não dado pessoal |
+| **Idioma** | Idioma da interface | **RF23**. Ligação indireta com transparência (art. 6º, IV e VI): o titular precisa entender no idioma dele o que consente |
+| **Seus dados** | "Baixar seus dados" (JSON) · "Excluir conta" | Portabilidade (art. 18, V) e eliminação (art. 18, VI); ações destrutivas com **confirmação dupla** e consequências explicadas |
+
+**Cada controle exibe a etiqueta do artigo que cumpre** — é o detalhe que transforma a tela em artefato defensável na banca. Ex.: campo Nome → `Art. 18, III · Correção`; toggle de anúncios → `Art. 7º, I · Consentimento revogável`; reconhecimento facial → `Art. 11 · Dado sensível`.
+
+**Estados críticos:** reautenticação exigida (CA01); e-mail em confirmação pendente (CA02); exclusão em carência de 30 dias (CA05); exportação em preparo com link expirável (CA04).
+
+**Critérios de rejeição** — a tela volta se aparecer qualquer um: checkbox pré-marcado, consentimento agrupado, revogação mais cara que a concessão, ou padrão invasivo (ver a tabela de anti-padrões no documento `02`).
 
 ### Artefato #7 — Esquema de vestimenta e peças, com o footer de estado
 - **RF:** RF7, RF19, RF31 · **CAs:** RF7.CA01–CA03, RF19.CA01–CA10, RF31.CA01–CA06
@@ -146,4 +178,4 @@ Cada artefato é uma página HTML autocontida, publicada como Artifact, mostrand
 | 1 | #7, #1 | Card e composição são a base visual de todas as outras telas |
 | 2 | #2, #3, #8 | Telas de IA — definem o padrão de "sugestão", "carregando" e "provedor fora do ar" |
 | 3 | #5, #4, #9, #10 | Telas de listagem e edição, que reaproveitam os componentes das ondas 1 e 2 |
-| 4 | #6 | Por último, porque depende do anexo LGPD do RNF6 |
+| 4 | #6 | A fonte já chegou; fica por último só porque é a tela com mais regras — vale ter os componentes das ondas 1–3 prontos antes |

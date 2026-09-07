@@ -20,16 +20,23 @@
 
 ## Bloqueadores a resolver **antes** de iniciar as 4 horas
 
-O conector do Trello lê cards, descrições, checklists e comentários — **não lê anexos**. Baixar manualmente e colocar em `docs/novo-projeto/insumos/`:
+✅ **Quatro dos cinco insumos chegaram** e estão em `docs/novo-projeto/insumos/` (índice e URLs dos artefatos em [`insumos/README.md`](insumos/README.md)):
+
+| Insumo | Estado |
+|---|---|
+| Padrões de interface **LGPD** (RNF6) | ✅ **incorporado** — gerou RF3.CA19–CA24, o mapa direito→controle, os anti-padrões, a spec do artefato #6 e a revisão do diagrama 10 |
+| **Vinte pranchas** (Firefly) | ✅ **incorporado** — catálogo das 5 famílias e Coleções D/E/F no documento `04`; revelou o *delta* de RF20/RF21 (dois tiers de selo, aba Meus Selos) |
+| Aulas **Perfil Lookbook · DNA de Estilo · Closet Inteligente** | ✅ recebidas, ⏳ **ainda não confrontadas** com os CAs de RF6 e RF13 — é o trabalho do Bloco 2 |
+
+⚠️ **Conflito aberto que o Bloco 0 precisa decidir:** a aula "DNA de Estilo — Mosaico de Eras" define RF13 como **tipologia de publicação** (2–6 esquemas fundidos num card-retrato, com `mosaicLayout` e rótulo de era), enquanto a **HU20** define como **cartão de identidade** (arquétipo, paleta, silhueta, ousadia, peça ícone, Frase de Identidade). Os CAs de RF13 do documento `02` seguiram a HU20. Ver `insumos/README.md`.
+
+Falta apenas um insumo. O conector do Trello lê cards, descrições, checklists e comentários — **não lê anexos** —, então ele precisa ser baixado manualmente para `docs/novo-projeto/insumos/`:
 
 | Arquivo | Onde | Trava |
 |---|---|---|
-| HTML/PDF de padrões de interface **LGPD** | anexo do card **RNF6** | Bloco 5 (artefato #6) e o diagrama 10 |
-| Artefato **"Vinte pranchas"** | anexo/Drive do time | Bloco 4 inteiro |
-| Aulas **Perfil Lookbook · DNA de Estilo · Closet Digital** | material da disciplina | Bloco 2 (revalidação dos CAs de RF6/RF13) |
-| Artefato de modelagem UML **parte 3** | anexo do board | Bloco 5 (artefato #7) |
+| Artefato de modelagem UML **parte 3** | anexo do board | Bloco 5 — artefato #7 (esquema de vestimenta e peças) |
 
-**Tempo:** 15 min, feito por qualquer pessoa, **antes** do T=0. Sem isso o Bloco 4 e o artefato #6 não acontecem.
+**Tempo:** 5 min. Sem ele o artefato #7 é feito a partir de `docs/design-schema-outfit-card.md` e `design-schema-piece-card.md`, que já estão versionados — dá para começar sem, mas vale conferir depois.
 
 ---
 
@@ -109,14 +116,14 @@ O conector do Trello lê cards, descrições, checklists e comentários — **n�
 
 ### Bloco 4 — Etapa 6: as vinte pranchas · **T+01:35 → 02:05** · frente B
 
-> Depende do artefato de pranchas ter sido baixado no pré-requisito. Sem ele, **pular para o Bloco 5** e remarcar este bloco.
+> ✅ **Desbloqueado** — o artefato das pranchas chegou. O catálogo das 5 famílias e das Coleções D/E/F já está no documento `04`, §A.3; este bloco agora é preencher as fichas e gerar os assets, não descobrir o conteúdo.
 
 | Passo | Ação | Tempo |
 |---|---|---|
-| 1 | Preencher a **ficha padrão** (§A.3 do documento `04`) para cada uma das 20 pranchas: RF dono, CAs materializados, estados desenhados, componentes novos, assets a gerar | 15 min |
-| 2 | Reconciliar com a **lista provisória** (§A.4): prancha sem RF dono → requisito faltando; RF sem prancha → tela não desenhada. Anotar as duas listas. | 5 min |
+| 1 | Preencher a **ficha padrão** (§A.6 do documento `04`) para cada uma das 20 pranchas: família, coleção, arquivo, RF dono, CAs, proporção, barra de cor, prompt e bloco `ArtworkStudioInput` | 15 min |
+| 2 | Conferir contra as **cinco famílias** (§A.3) e as **quatro regras de rejeição** (§A.4): nenhuma pessoa real, nenhum logotipo existente, área segura antes de beleza, tile só onde for tile. | 5 min |
 | 3 | Registrar em RF23 um **item de checklist por prancha** (não CAs soltos) | 5 min |
-| 4 | Gerar no **Adobe Firefly/Express** apenas os assets da §A.5 que as pranchas exigirem, em tema claro e escuro; registrar a autoria em `insumos/assets/CREDITOS.md` | 5 min |
+| 4 | Gerar os prompts no **Firefly**, vetorizar os selos no **Illustrator**, registrar cada arquivo em `public/` (Coleções D/E/F) e no array de `OutfitBackgroundStudioModal.tsx`; anotar a autoria em `insumos/assets/CREDITOS.md` | 5 min |
 
 **Pronto quando:** 20 fichas preenchidas, RF23 com 20 itens de checklist, divergências anotadas.
 
@@ -168,7 +175,7 @@ Não invente comportamento que não esteja num CA — se faltar CA, aponte a lac
 | Passo | Ação | Tempo |
 |---|---|---|
 | 1 | **Varredura dos 8 RNFs** com a matriz da §6 do documento `02`: cada RNF tem ao menos um CA-âncora? Se não tem, ele não é verificável e vira risco na banca. | 8 min |
-| 2 | Atualizar a descrição de cada card de RNF com os **CAs-âncora** e com o **mecanismo do Spring Boot** que o realiza (documento `01`, §2): RNF1→Spring Security `@PreAuthorize`; RNF2→JWT RSA + refresh rotativo; RNF3→Argon2id + converter AES-GCM; RNF4→Flyway + backup automatizado; RNF5→`@EntityListeners` + `audit_log`; RNF6→telas de RF3 + exportação/exclusão; RNF7→Actuator/Micrometer; RNF8→Resilience4j | 8 min |
+| 2 | Atualizar a descrição de cada card de RNF com os **CAs-âncora** e com o **mecanismo do Spring Boot** que o realiza (documento `01`, §2): RNF1→Spring Security `@PreAuthorize`; RNF2→JWT RSA + refresh rotativo; RNF3→Argon2id + converter AES-GCM; RNF4→Flyway + backup automatizado; RNF5→**`AuditService` próprio** gravando em `audit_log` (o `@EntityListeners` do JPA só cobre metadados de entidade, não login falho, 403, consentimento nem chamada de IA); RNF6→telas de RF3 + exportação/exclusão; RNF7→Actuator/Micrometer; RNF8→Resilience4j | 8 min |
 | 3 | Conferir o resultado da sessão de bootstrap do Bloco 1 e commitar | 4 min |
 | 4 | Escrever a lista **"o que ficou de fora"**: artefato #6 (LGPD), migração de dados, exclusão do Firebase, implementação dos RFs | 5 min |
 
@@ -181,10 +188,10 @@ Não invente comportamento que não esteja num CA — se faltar CA, aponte a lac
 | Etapa do seu plano | Bloco | Frente | Já escrito? |
 |---|---|---|---|
 | 1–2 · Reunir insumos e criar o repositório Java | 1 | D | ✅ `01` |
-| 3 · Estudar aulas e ajustar CAs | 2 (passos 1–2) | A | ⚠️ depende das aulas |
+| 3 · Estudar aulas e ajustar CAs | 2 (passos 1–2) | A | ⏳ aulas recebidas, confronto pendente |
 | 4 · Novo RF de IA + tabela de serviços | 3 | A | ✅ `03` |
 | 5 · Arrumar todos os CAs e RFs | 2 (passos 3–5) | A | ✅ `02` |
-| 6 · Vinte pranchas → RF23 | 4 | B | ⚠️ depende do artefato |
+| 6 · Vinte pranchas → RF23 | 4 | B | ✅ catalogado em `04` |
 | 7 · Dez artefatos de interface | 5 | B + C | ✅ especificado em `04` |
 | 8 · Diagramas de atividade | 6 | C | ✅ `05` (14 de 21) |
 | 9 · Plano guiado + RNFs | 0 e 7 | todos | ✅ este documento |
@@ -195,7 +202,8 @@ Não invente comportamento que não esteja num CA — se faltar CA, aponte a lac
 
 | Risco | Probabilidade | Plano B |
 |---|---|---|
-| Anexos do Trello não chegam a tempo | **alta** | Bloco 4 e artefato #6 saem das 4h; os outros 9 artefatos não dependem deles |
+| O time discorda sobre a definição do DNA de Estilo (HU20 × mosaico) | **alta** | Decidir no Bloco 0. Se vencer o mosaico, RF13.CA01–CA09 são reescritos no Bloco 2 (+20 min) |
+| Falta a UML parte 3 para o artefato #7 | média | Usar `docs/design-schema-outfit-card.md` e `design-schema-piece-card.md`, já versionados, e conferir depois |
 | O time decide **renumerar** os RFs no Bloco 0 | média | Some ~40 min do Bloco 2 (renumerar HUs, diagramas e commits). Nesse caso, cortar o Bloco 4. |
 | Sessões de artefato demoram mais que a janela | média | Reduzir a onda 3 para dois artefatos (#5 e #10) e adiar #4 e #9 |
 | Celebridades sai do escopo no Bloco 0 | baixa | Ganha ~15 min: caem RF21, RF22, o diagrama 12 e metade do artefato #7 |

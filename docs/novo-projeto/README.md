@@ -10,7 +10,7 @@ Documentos de planejamento para a migração do Fashion AI para um repositório 
 | 03 | [`03-rf30-ia-e-servicos-externos.md`](03-rf30-ia-e-servicos-externos.md) | **4** | RF30 (motor de IA) com 16 CAs · tabela RF × serviço externo com custo e fallback |
 | 04 | [`04-telas-artefatos-e-pranchas.md`](04-telas-artefatos-e-pranchas.md) | **6 e 7** | Ficha das 20 pranchas · assets do Firefly · especificação dos 10 artefatos de interface |
 | 05 | [`05-diagramas-atividade.md`](05-diagramas-atividade.md) | **8** | 14 diagramas de atividade em Mermaid, com os CAs anotados nos fluxos |
-| — | [`insumos/`](insumos/README.md) | pré-requisito | Onde depositar os anexos do Trello que o conector não lê |
+| — | [`insumos/`](insumos/README.md) | pré-requisito | LGPD, vinte pranchas e as três aulas **recebidas**; falta só a UML parte 3 |
 
 ## Decisões que o time precisa fechar antes de aplicar
 
@@ -18,3 +18,14 @@ Documentos de planejamento para a migração do Fashion AI para um repositório 
 2. **RF26 → RF3** para a gestão de notificações; o *disparo* permanece rastreado em RF19/RF20 (documento 02, §2).
 3. **RF21/RF22 (celebridades)** dentro ou fora do escopo do TCC.
 4. **Criar RF30** (IA) e **RF31** (favoritar/disponível/indisponível/todos).
+5. **Qual é o DNA de Estilo (RF13)?** A HU20 define um cartão de identidade (arquétipo, paleta, silhueta, ousadia, peça ícone, Frase de Identidade); a aula "Mosaico de Eras" e o artefato das pranchas definem uma tipologia de publicação (2–6 esquemas fundidos num card-retrato). Os CAs seguiram a HU20 — ver [`insumos/README.md`](insumos/README.md).
+
+## Fontes da verdade por requisito
+
+Para evitar duas versões do mesmo requisito saindo de sincronia:
+
+| Requisito | Dono documental |
+|---|---|
+| **RF20 · RF21** (vínculo, selos, promoções) | [`docs/rf20-rf21-vinculo-marca-celebridade.md`](../rf20-rf21-vinculo-marca-celebridade.md) — 23 CAs. O documento 02 **só aponta** para lá |
+| **RF13** (DNA de Estilo) | `HU20.md` — enquanto a decisão 5 não for tomada |
+| Demais RFs | `02-rf-reestruturados-e-criterios-aceite.md` |
