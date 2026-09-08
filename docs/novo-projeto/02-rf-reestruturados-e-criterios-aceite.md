@@ -183,6 +183,9 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 | RF6.CA11 | card do feed compacto | é renderizado | exibe, no **topo**, os toggles de estado — ⭐ favoritar (estrelinha pequena), disponível e indisponível (RF31) — e, no **rodapé**, o footer social do RF19 |
 | RF6.CA12 | usuário favorita um look salvo | aciona o ícone | o estado é persistido e refletido em todas as telas que exibem aquele card |
 | RF6.CA13 | usuário remove um look salvo de terceiro | confirma | o look sai da sua lista sem afetar o conteúdo original do autor |
+| RF6.CA14 | usuário abre um Perfil Lookbook do tipo **celebridade** (Rihanna, Madonna, Beyoncé, Lady Gaga, Ariana Grande, Taylor Swift) e seleciona uma **era nomeada** (Renaissance, Chromatica, Folklore, Blond Ambition) | o sistema monta o prompt enviado ao serviço de geração de imagem (pranchas 11–13, Coleção F) | o prompt descreve **exclusivamente a atmosfera cromática e material da era** — paleta, textura, tecido, acabamento, luz, referência de styling — e **não contém** o nome da pessoa real, descrição facial, descrição corporal nem silhueta identificável; qualquer prompt que viole a regra é rejeitado **antes do envio** e a rejeição é registrada conforme RF24.CA16 |
+
+> **Justificativa da RF6.CA14 (a banca vai perguntar).** A restrição não decorre apenas da política de uso do Adobe Firefly. Um retrato gerado de pessoa real, dentro de um produto que a vincula comercialmente a um look, é problema de **direito de imagem**. O nome da celebridade e o nome da era permanecem como rótulo textual de curadoria; a imagem gerada é sempre **atmosfera**, nunca a pessoa.
 
 ### RF7 — Acessar peça a partir da lista de um esquema
 
