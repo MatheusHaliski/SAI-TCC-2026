@@ -192,6 +192,21 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 | RF5.CA04 | usuário aciona "gerar com IA" | confirma ocasião e humor | sistema apresenta 3 composições distintas usando apenas peças do guarda-roupa do usuário (**RF24.CA02**) |
 | RF5.CA05 | esquema salvo | usuário publica no feed | esquema passa a aparecer na aba "Buscar" (RF8) respeitando a visibilidade escolhida |
 | RF5.CA06 | usuário tenta salvar sem nenhuma peça | aciona salvar | sistema recusa e indica o mínimo de 1 peça |
+| RF5.CA07 | usuário percorre o fluxo "Criar Look" | avança pelas etapas | o sistema apresenta **5 etapas**, nesta ordem: **1** escolher modo de geração (com ou sem IA) · **2** preencher o prompt do chat da IA *(só no modo COM IA)* · **3** preencher o formulário de geração manual *(só no modo SEM IA)* · **4** editar arte de background, com as subetapas **4.1** (esquema de vestimenta / card maior) e **4.2** (esquema de peça de roupa) · **5** visualizar o preview do conjunto, revisar os slots e salvar |
+| RF5.CA08 | usuário escolheu o modo **com IA** na etapa 1 | avança | o sistema apresenta a **etapa 2** (prompt do chat da IA) e **pula a etapa 3**, que é exclusiva do modo manual |
+| RF5.CA09 | usuário escolheu o modo **sem IA** na etapa 1 | avança | o sistema apresenta a **etapa 3** (formulário de geração manual) e **pula a etapa 2**, que é exclusiva do modo com IA |
+
+> 📐 **As 5 etapas do fluxo Criar Look.** Esta é a numeração canônica; qualquer outro documento que cite "etapa N" do Criar Look se resolve por aqui.
+>
+> | Etapa | Nome | Quando aparece | RF dono |
+> |---|---|---|---|
+> | **1** | Escolher modo de geração (com ou sem IA) | sempre | RF5 |
+> | **2** | Preencher o prompt do chat da IA | só no modo **com IA** | RF5 · RF24.CA02 |
+> | **3** | Preencher o formulário de geração manual | só no modo **sem IA** | RF5 |
+> | **4** | Editar arte de background — **4.1** esquema de vestimenta (card maior) · **4.2** esquema de peça de roupa | sempre | **RF11** |
+> | **5** | Visualizar preview do conjunto, revisar slots e salvar | sempre | RF5 |
+>
+> As etapas **2 e 3 são mutuamente exclusivas** — são os dois ramos do modo escolhido na etapa 1, nunca as duas na mesma passagem.
 
 ### RF6 — Perfil Lookbook: Closet Digital e Looks Salvos *(absorve RF29)*
 
@@ -266,13 +281,20 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 | RF11.CA03 | usuário gera um fundo por IA descrevendo um cenário | confirma | sistema entrega a arte gerada em até 30 s ou informa o andamento (**RF24.CA07**) |
 | RF11.CA04 | usuário envia a própria imagem de fundo | aplica | sistema valida formato e proporção e recorta para o formato do card |
 | RF11.CA05 | usuário remove o fundo aplicado | salva | o card volta ao fundo padrão sem perder os demais dados |
-| RF11.CA06 | usuário está na etapa 5 (arte de background) | seleciona uma das frentes da navegação segmentada | o sistema exibe o formulário da frente escolhida entre as **três**: **Cor & Gradiente**, **Arte com AI** e **Background das peças** |
-| RF11.CA07 | usuário está na frente **Cor & Gradiente** | alterna entre cor sólida e gradiente | ambos os modos ficam no **mesmo formulário**, sem troca de aba |
-| RF11.CA08 | usuário está na frente **Background das peças** | edita a arte de uma peça do esquema | a alteração vale **apenas para aquela peça** e **não** altera a arte de fundo do card do look, definida nas frentes 1 e 2 |
+| RF11.CA06 | usuário está na **etapa 4** (editar arte de background) | seleciona um dos modos de geração | o sistema exibe o formulário do modo escolhido entre os **três**: **Cor & Gradiente** e **Arte com AI** (ambos na subetapa **4.1**) e **Background das peças** (subetapa **4.2**) |
+| RF11.CA07 | usuário está no modo **Cor & Gradiente** (etapa 4.1) | alterna entre cor sólida e gradiente | ambos ficam no **mesmo formulário**, sem troca de aba |
+| RF11.CA08 | usuário está na subetapa **4.2 — arte de background do esquema de peça de roupa** | edita a arte de uma peça | a alteração vale **apenas para aquela peça** e **não** altera a arte de background do esquema de vestimenta (card maior), que é decidida na subetapa **4.1** |
 
-> ✏️ **Renomeação das três frentes do modo de geração (etapa 5).** A navegação segmentada era `cor · gradiente · AI Artwork`. Passou a ser **Cor & Gradiente** (as duas primeiras fundidas — é a mesma decisão, como preencher o fundo), **Arte com AI** e **Background das peças** (que era a *etapa 6* do fluxo Criar Look).
+> ✏️ **Numeração das etapas do fluxo Criar Look — definida pelo time.** O RF11 é a **etapa 4** e tem duas subetapas:
 >
-> ⚠️ **Decisão pendente do time.** Se a arte das peças agora é a terceira frente da etapa 5, ela deixa de ser a etapa 6 e o fluxo Criar Look volta a **6 etapas**, com *Save & Generate* como a 6ª. Os CA17 e CA18 do HU-RF11 já estão redigidos nessa hipótese e sinalizados. Manter a mesma função nos dois lugares duplicaria a implementação e confundiria o usuário — mas a escolha é do time.
+> | Subetapa | O que é | Modos de geração |
+> |---|---|---|
+> | **4.1** | Arte de background do **esquema de vestimenta** — o **card maior** | **Cor & Gradiente** (modo 1) e **Arte com AI** (modo 2) |
+> | **4.2** | Arte de background do **esquema de peça de roupa** | **Background das peças** (modo 3, novo dentro do Background Studio) |
+>
+> Os modos foram renomeados: `cor` e `gradiente` fundiram-se em **Cor & Gradiente**, `AI Artwork` virou **Arte com AI**, e **Background das peças** entrou como o modo 3.
+>
+> ✅ **Decisão anterior encerrada.** A dúvida "a arte das peças é etapa 6 ou frente da etapa 5?" está resolvida: não é nenhuma das duas — é a **subetapa 4.2**. Não existe etapa 6, e o fluxo tem **5 etapas** (ver RF5).
 
 ### RF12 — Minhas Fotos
 

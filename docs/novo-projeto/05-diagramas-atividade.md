@@ -425,31 +425,45 @@ flowchart TD
 
 ---
 
-## 18. RF5 — Criar esquema de vestimenta (aba "Criar Look")
+## 18. RF5 — Criar esquema de vestimenta ("Criar Look" · 5 etapas)
+
+> 📐 **Numeração canônica das etapas** (definida pelo time): **1** modo de geração · **2** prompt do chat da IA *(só com IA)* · **3** formulário de geração manual *(só sem IA)* · **4** arte de background, subetapas **4.1** e **4.2** *(RF11)* · **5** preview, revisão dos slots e salvar. As etapas **2 e 3 são mutuamente exclusivas**.
 
 ```mermaid
 flowchart TD
-    A([Usuário abre a aba 'Criar Look']) --> B[S: conta as peças disponíveis do acervo]
+    A([Usuário abre a aba 'Criar Look']) --> B[S: carrega guarda-roupa e dados do perfil]
     B --> C{Possui ≥ 2 peças?}
     C -- Não --> D[/S: orienta o cadastro de peças — RF5.CA02 · RF4/] --> Z([Fim])
     C -- Sim --> E[S: exibe o Closet Digital filtrável e o espaço de composição — RF5.CA01]
-    E --> F{Como o usuário compõe?}
-    F -- Manual --> G[U: arrasta peças para a composição]
-    F -- Gerar com IA --> H[U: confirma ocasião e humor]
+
+    E --> F["ETAPA 1 · U: escolhe o modo de geração — com ou sem IA — RF5.CA07"]
+    F --> G{Modo escolhido}
+
+    G -- Com IA --> H["ETAPA 2 · U: preenche o prompt do chat da IA — RF5.CA08"]
     H --> I[S: monta o prompt restrito ao acervo do usuário]
     I --> J[E: provedor de IA — RF24.CA02]
-    J --> K{Resposta válida e só com peças do acervo?}
+    J --> K{Composições válidas e só com peças do acervo?}
     K -- Não --> I
     K -- Sim --> L[S: apresenta 3 composições distintas — RF5.CA04]
-    L --> M[U: escolhe uma e ajusta] --> G
-    G --> N[U: informa nome e ocasião e aciona salvar]
-    N --> O{Ao menos 1 peça na composição?}
-    O -- Não --> P[/S: recusa e indica o mínimo de 1 peça — RF5.CA06/] --> G
-    O -- Sim --> Q[S: cria o esquema herdando a visibilidade padrão do perfil — RF5.CA03 · RF3.CA12]
-    Q --> R[S: sugere vínculo de marca/celebridade detectado — RF24.CA09 · RF20/RF21]
-    R --> S1{Usuário publica no feed?}
-    S1 -- Não --> Z
-    S1 -- Sim --> T[S: publica respeitando a visibilidade escolhida — RF5.CA05 · RF8] --> Z
+    L --> M[U: escolhe uma e ajusta os slots] --> P
+
+    G -- Sem IA --> N["ETAPA 3 · U: preenche o formulário de geração manual — RF5.CA09"]
+    N --> O[U: arrasta as peças para a composição] --> P
+
+    P["ETAPA 4 · Arte de background — RF11, ver diagrama 20"]
+    P --> Q[S: 4.1 arte do esquema de vestimenta, o card maior]
+    Q --> R[S: 4.2 arte do esquema de peça de roupa]
+
+    R --> S1["ETAPA 5 · U: visualiza o preview do conjunto e revisa os slots"]
+    S1 --> T{Confirma?}
+    T -- Não --> F
+    T -- Sim --> U1{Ao menos 1 peça na composição?}
+    U1 -- Não --> V[/S: recusa e indica o mínimo de 1 peça — RF5.CA06/] --> S1
+    U1 -- Sim --> W[S: salva o esquema herdando a visibilidade padrão do perfil — RF5.CA03 · RF3.CA12]
+    W --> X[S: sugere vínculo de marca/celebridade detectado — RF24.CA09 · RF20/RF21]
+    X --> Y{Usuário publica no feed?}
+    Y -- Não --> Z
+    Y -- Sim --> AA[S: publica respeitando a visibilidade escolhida — RF5.CA05 · RF8] --> Z
 ```
 
 ---
@@ -501,50 +515,52 @@ flowchart TD
 
 ---
 
-## 20. RF11 — Background Studio (etapa 5 · três frentes)
+## 20. RF11 — Background Studio (**etapa 4** · subetapas 4.1 e 4.2)
 
-> ✏️ **Redesenhado.** A navegação segmentada era `cor · gradiente · AI Artwork`. Agora são três frentes: **Cor & Gradiente**, **Arte com AI** e **Background das peças** — esta última era a antiga etapa 6 do fluxo Criar Look.
+> ✏️ **Redesenhado duas vezes.** Os modos de geração eram `cor · gradiente · AI Artwork`; agora são **Cor & Gradiente** (modo 1), **Arte com AI** (modo 2) e **Background das peças** (modo 3). E a numeração fechou: isto é a **etapa 4** do Criar Look, com **4.1** = arte do esquema de vestimenta (card maior, modos 1 e 2) e **4.2** = arte do esquema de peça de roupa (modo 3). Não existe etapa 6.
 
 ```mermaid
 flowchart TD
-    A([Usuário entra na etapa 5 - arte de background]) --> B[S: carrega o card em pré-visualização em tempo real — RF11.CA01]
-    B --> C{Frente da navegação segmentada — RF11.CA03}
+    A([Usuário chega na etapa 4 - editar arte de background]) --> B[S: carrega o card em pré-visualização em tempo real — RF11.CA01]
+    B --> C{Subetapa}
 
-    C -- "1 · Cor & Gradiente" --> D[S: abre o formulário único de preenchimento do fundo]
-    D --> E{Modo de preenchimento}
-    E -- Cor sólida --> F[U: escolhe a cor] --> V
-    E -- Gradiente --> G[U: define as paradas e a direção do degradê] --> V
+    C -- "4.1 · arte do esquema de VESTIMENTA (card maior)" --> D{Modo de geração — RF11.CA06}
 
-    C -- "2 · Arte com AI" --> H[S: abre o formulário com os 8 inputs do CA8]
-    H --> I{Como o usuário define a arte}
-    I -- Galeria / editorial / preset Aura --> J[U: escolhe uma predefinição] --> V
-    I -- Imagem própria --> K[U: envia a imagem]
-    K --> L{Formato e proporção válidos?}
-    L -- Não --> M[/S: recusa indicando o motivo/] --> K
-    L -- Sim --> N[S: recorta para o formato do card — RF11.CA04] --> V
-    I -- Prompt --> O[U: descreve o cenário e aciona gerar]
-    O --> P[E: provedor de geração de arte — RF24.CA07]
-    P --> Q{Resposta em até 30 s?}
-    Q -- "Não / erro" --> R[/S: informa o andamento do job sem travar a tela — RF11.CA03 · RNF8/] --> P
-    Q -- Sim --> S1[S: entrega a arte respeitando a área segura do card] --> V
+    D -- "modo 1 · Cor & Gradiente" --> E[S: abre o formulário único de preenchimento do fundo]
+    E --> F{Preenchimento}
+    F -- Cor sólida --> G[U: escolhe a cor] --> V
+    F -- Gradiente --> H[U: define as paradas e a direção do degradê] --> V
 
-    C -- "3 · Background das peças" --> T[S: lista as peças do esquema — RF11.CA18]
-    T --> U1[U: seleciona uma peça e define cor, gradiente, imagem ou preset]
-    U1 --> W[S: pré-visualiza a arte daquela peça, sem alterar o fundo do card do look]
-    W --> X{Faltam peças a editar?}
-    X -- Sim --> U1
-    X -- Não --> V
+    D -- "modo 2 · Arte com AI" --> I[S: abre o formulário com os 8 inputs do CA8]
+    I --> J{Como o usuário define a arte}
+    J -- Galeria / editorial / preset Aura --> K[U: escolhe uma predefinição] --> V
+    J -- Imagem própria --> L[U: envia a imagem]
+    L --> M{Formato e proporção válidos?}
+    M -- Não --> N[/S: recusa indicando o motivo/] --> L
+    M -- Sim --> O[S: recorta para o formato do card — RF11.CA04] --> V
+    J -- Prompt --> P[U: descreve o cenário e aciona gerar]
+    P --> Q[E: provedor de geração de arte — RF24.CA07]
+    Q --> R{Resposta em até 30 s?}
+    R -- "Não / erro" --> S1[/S: informa o andamento do job sem travar a tela — RF11.CA03 · RNF8/] --> Q
+    R -- Sim --> T[S: entrega a arte respeitando a área segura do card] --> V
 
-    C -- Remover fundo --> Y[S: card volta ao fundo padrão sem perder os demais dados — RF11.CA05] --> Z([Fim])
+    C -- "4.2 · arte do esquema de PEÇA DE ROUPA (modo 3)" --> U1[S: lista as peças do esquema — RF11.CA08]
+    U1 --> W[U: seleciona uma peça e define cor, gradiente, imagem ou preset]
+    W --> X[S: pré-visualiza a arte daquela peça, sem tocar na arte do card maior da 4.1]
+    X --> Y{Faltam peças a editar?}
+    Y -- Sim --> W
+    Y -- Não --> V
+
+    C -- Remover fundo --> AB[S: card volta ao fundo padrão sem perder os demais dados — RF11.CA05] --> Z([Segue para a etapa 5])
 
     V[S: valida a legibilidade do texto sobreposto nos temas claro e escuro]
-    V --> AA{Contraste suficiente nos dois temas?}
-    AA -- Não --> AB[/S: avisa e sugere ajuste ou outro fundo/] --> C
-    AA -- Sim --> AC[S: salva a arte aplicada — RF11.CA02 · CA05 · CA06]
-    AC --> AD[S: registra a inferência quando houve IA — RF24.CA16] --> Z
+    V --> AC{Contraste suficiente nos dois temas?}
+    AC -- Não --> AD[/S: avisa e sugere ajuste ou outro fundo/] --> C
+    AC -- Sim --> AE[S: salva a arte aplicada — RF11.CA02 · CA05 · CA06]
+    AE --> AF[S: registra a inferência quando houve IA — RF24.CA16] --> Z
 ```
 
-**A regra que o diagrama torna verificável:** a frente **Background das peças** age *por peça* e **nunca** toca a arte de fundo do card do look — essa é decidida nas frentes 1 e 2. Sem essa separação explícita, editar uma peça sobrescreveria o fundo do look inteiro.
+**A regra que o diagrama torna verificável:** a subetapa **4.2** age *por peça* e **nunca** toca a arte do **card maior**, que é decidida na **4.1**. Sem essa separação explícita no requisito, a implementação natural seria sobrescrever o fundo do look inteiro ao editar uma peça.
 
 ---
 
