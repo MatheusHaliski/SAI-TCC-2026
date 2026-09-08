@@ -1,0 +1,54 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: sai-backend
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/sai_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate       # Flyway gerencia o schema; Hibernate apenas valida
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET:sai-super-secret-key-at-least-256-bits-long-change-in-production}
+  expiration-ms: 86400000    # 24 horas
+
+# APIs externas
+external:
+  runpod:
+    api-key: ${RUNPOD_API_KEY:}
+    base-url: ${RUNPOD_BASE_URL:https://api.runpod.ai/v2}
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    base-url: https://generativelanguage.googleapis.com/v1beta
+  vercel-blob:
+    token: ${BLOB_READ_WRITE_TOKEN:}
+
+# CORS - origens permitidas (ajustar para o domínio do frontend)
+cors:
+  allowed-origins: ${CORS_ORIGINS:http://localhost:3000}
+
+logging:
+  level:
+    com.sai: DEBUG
+    org.hibernate.SQL: WARN
