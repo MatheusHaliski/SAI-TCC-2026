@@ -501,32 +501,50 @@ flowchart TD
 
 ---
 
-## 20. RF11 — Background Studio
+## 20. RF11 — Background Studio (etapa 5 · três frentes)
+
+> ✏️ **Redesenhado.** A navegação segmentada era `cor · gradiente · AI Artwork`. Agora são três frentes: **Cor & Gradiente**, **Arte com AI** e **Background das peças** — esta última era a antiga etapa 6 do fluxo Criar Look.
 
 ```mermaid
 flowchart TD
-    A([Usuário edita um card de esquema ou peça]) --> B[U: abre o Background Studio]
-    B --> C[S: exibe a galeria de fundos por categoria com pré-visualização em tempo real — RF11.CA01]
-    C --> D{Origem do fundo}
+    A([Usuário entra na etapa 5 - arte de background]) --> B[S: carrega o card em pré-visualização em tempo real — RF11.CA01]
+    B --> C{Frente da navegação segmentada — RF11.CA03}
 
-    D -- Galeria --> E[U: escolhe um fundo] --> J
-    D -- Imagem própria --> F[U: envia a imagem]
-    F --> G{Formato e proporção válidos?}
-    G -- Não --> H[/S: recusa indicando o motivo/] --> F
-    G -- Sim --> I[S: recorta para o formato do card — RF11.CA04] --> J
-    D -- Gerar por IA --> K[U: descreve o cenário]
-    K --> L[E: provedor de geração de arte — RF24.CA07]
-    L --> M{Resposta em até 30 s?}
-    M -- Não --> N[/S: informa o andamento do job sem travar a tela — RF11.CA03 · RNF8/] --> L
-    M -- Sim --> O[S: entrega a arte gerada — RF11.CA03] --> J
-    D -- Remover fundo --> P[S: card volta ao fundo padrão sem perder os demais dados — RF11.CA05] --> Z([Fim])
+    C -- "1 · Cor & Gradiente" --> D[S: abre o formulário único de preenchimento do fundo]
+    D --> E{Modo de preenchimento}
+    E -- Cor sólida --> F[U: escolhe a cor] --> V
+    E -- Gradiente --> G[U: define as paradas e a direção do degradê] --> V
 
-    J[S: valida a legibilidade do texto sobreposto nos temas claro e escuro]
-    J --> Q{Contraste suficiente nos dois temas?}
-    Q -- Não --> R[/S: avisa e sugere ajuste ou outro fundo/] --> D
-    Q -- Sim --> S1[S: salva o card com o fundo aplicado — RF11.CA02]
-    S1 --> T[S: registra a inferência quando houve IA — RF24.CA16] --> Z
+    C -- "2 · Arte com AI" --> H[S: abre o formulário com os 8 inputs do CA8]
+    H --> I{Como o usuário define a arte}
+    I -- Galeria / editorial / preset Aura --> J[U: escolhe uma predefinição] --> V
+    I -- Imagem própria --> K[U: envia a imagem]
+    K --> L{Formato e proporção válidos?}
+    L -- Não --> M[/S: recusa indicando o motivo/] --> K
+    L -- Sim --> N[S: recorta para o formato do card — RF11.CA04] --> V
+    I -- Prompt --> O[U: descreve o cenário e aciona gerar]
+    O --> P[E: provedor de geração de arte — RF24.CA07]
+    P --> Q{Resposta em até 30 s?}
+    Q -- "Não / erro" --> R[/S: informa o andamento do job sem travar a tela — RF11.CA03 · RNF8/] --> P
+    Q -- Sim --> S1[S: entrega a arte respeitando a área segura do card] --> V
+
+    C -- "3 · Background das peças" --> T[S: lista as peças do esquema — RF11.CA18]
+    T --> U1[U: seleciona uma peça e define cor, gradiente, imagem ou preset]
+    U1 --> W[S: pré-visualiza a arte daquela peça, sem alterar o fundo do card do look]
+    W --> X{Faltam peças a editar?}
+    X -- Sim --> U1
+    X -- Não --> V
+
+    C -- Remover fundo --> Y[S: card volta ao fundo padrão sem perder os demais dados — RF11.CA05] --> Z([Fim])
+
+    V[S: valida a legibilidade do texto sobreposto nos temas claro e escuro]
+    V --> AA{Contraste suficiente nos dois temas?}
+    AA -- Não --> AB[/S: avisa e sugere ajuste ou outro fundo/] --> C
+    AA -- Sim --> AC[S: salva a arte aplicada — RF11.CA02 · CA05 · CA06]
+    AC --> AD[S: registra a inferência quando houve IA — RF24.CA16] --> Z
 ```
+
+**A regra que o diagrama torna verificável:** a frente **Background das peças** age *por peça* e **nunca** toca a arte de fundo do card do look — essa é decidida nas frentes 1 e 2. Sem essa separação explícita, editar uma peça sobrescreveria o fundo do look inteiro.
 
 ---
 

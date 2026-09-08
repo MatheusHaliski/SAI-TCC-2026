@@ -266,6 +266,13 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 | RF11.CA03 | usuário gera um fundo por IA descrevendo um cenário | confirma | sistema entrega a arte gerada em até 30 s ou informa o andamento (**RF24.CA07**) |
 | RF11.CA04 | usuário envia a própria imagem de fundo | aplica | sistema valida formato e proporção e recorta para o formato do card |
 | RF11.CA05 | usuário remove o fundo aplicado | salva | o card volta ao fundo padrão sem perder os demais dados |
+| RF11.CA06 | usuário está na etapa 5 (arte de background) | seleciona uma das frentes da navegação segmentada | o sistema exibe o formulário da frente escolhida entre as **três**: **Cor & Gradiente**, **Arte com AI** e **Background das peças** |
+| RF11.CA07 | usuário está na frente **Cor & Gradiente** | alterna entre cor sólida e gradiente | ambos os modos ficam no **mesmo formulário**, sem troca de aba |
+| RF11.CA08 | usuário está na frente **Background das peças** | edita a arte de uma peça do esquema | a alteração vale **apenas para aquela peça** e **não** altera a arte de fundo do card do look, definida nas frentes 1 e 2 |
+
+> ✏️ **Renomeação das três frentes do modo de geração (etapa 5).** A navegação segmentada era `cor · gradiente · AI Artwork`. Passou a ser **Cor & Gradiente** (as duas primeiras fundidas — é a mesma decisão, como preencher o fundo), **Arte com AI** e **Background das peças** (que era a *etapa 6* do fluxo Criar Look).
+>
+> ⚠️ **Decisão pendente do time.** Se a arte das peças agora é a terceira frente da etapa 5, ela deixa de ser a etapa 6 e o fluxo Criar Look volta a **6 etapas**, com *Save & Generate* como a 6ª. Os CA17 e CA18 do HU-RF11 já estão redigidos nessa hipótese e sinalizados. Manter a mesma função nos dois lugares duplicaria a implementação e confundiria o usuário — mas a escolha é do time.
 
 ### RF12 — Minhas Fotos
 
