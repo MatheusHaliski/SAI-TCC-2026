@@ -5,6 +5,20 @@
 
 ---
 
+## 0. Onde os Critérios de Aceite moram — **só no card HU-RF**
+
+**Regra do time, sem exceção:** o texto de um Critério de Aceite vive em **um único lugar**, a checklist "Critérios de Aceite" do card **HU-RFx** no Product Backlog do Trello. O card do RF (lista *Requisitos Funcionais*) descreve o requisito, as dependências, a sprint e as decisões de modelagem — **nunca** carrega o texto dos CA, apenas o link para o HU correspondente.
+
+| Onde | O que fica lá |
+|---|---|
+| Card **RF**x (lista Requisitos Funcionais) | Enunciado, dependências, sprint, decisões de modelagem, ponteiro para o HU |
+| Card **HU-RF**x (lista Product Backlog) | ✅ **Os Critérios de Aceite** + a checklist de Tarefas por área (`[BE]` `[DB]` `[FE]` `[INT]` `[IA]` `[QA]`) |
+| Este documento (`02`) | A versão canônica em Gherkin, versionada no git |
+
+**Por que isso importa, e não é burocracia:** CA duplicado em dois cards diverge na primeira edição. Quando duas versões do mesmo critério discordam, ninguém sabe qual vale, e o critério deixa de ser verificável — que é a única função dele. Um dono documental por critério, sempre.
+
+---
+
 ## 1. Política de renumeração — **não renumerar**
 
 O time pediu fundir RFs em CAs de outros RFs. Existem duas formas de fazer isso:
