@@ -52,7 +52,7 @@ Enquanto não chegarem, os CAs de RF6, RF13 e RF23 no documento `02-…` foram e
 | **Mapeamento DTO** | **MapStruct** | Impede vazar entidade JPA na API (risco de expor campo sensível) |
 | **API** | **REST + OpenAPI (springdoc)** | Contrato publicado = artefato do TCC |
 | **Autenticação** | **Spring Security + JWT** (access 15 min / refresh 7 dias, refresh rotativo em tabela) | RNF2 e RF3.CA09/CA10 |
-| **Resiliência** | **Resilience4j** (circuit breaker, retry, timeout, rate limiter) | RNF8 e RF30.CA13/CA14 |
+| **Resiliência** | **Resilience4j** (circuit breaker, retry, timeout, rate limiter) | RNF8 e RF24.CA13/CA14 |
 | **Observabilidade** | **Actuator + Micrometer + Logback JSON** | RNF5 e RNF7 (medir os 3 s) |
 | **Testes** | **JUnit 5 + Testcontainers + RestAssured** | Testcontainers sobe MySQL/Redis reais → CA verificável de verdade |
 | **Build** | **Maven** (multi-módulo) | Mais previsível que Gradle para banca e para CI |
@@ -163,7 +163,7 @@ PASSWORD_HASH_ALGORITHM=argon2id
 PASSWORD_HASH_MEMORY_KB=19456
 PASSWORD_HASH_ITERATIONS=2
 
-# ─── Provedores de IA (RF30) — só no backend ──────────────────
+# ─── Provedores de IA (RF24) — só no backend ──────────────────
 ANTHROPIC_API_KEY=
 GOOGLE_AI_API_KEY=
 FASHN_API_KEY=
@@ -193,7 +193,7 @@ AUDIT_RETENTION_DAYS=365
 - [ ] `@EntityListeners(AuditingEntityListener.class)` nas entidades — metadados de criação/alteração (**não confundir com o RNF5**)
 - [ ] `AuditService` próprio gravando em `audit_log`, com um evento por CA-âncora do RNF5 (RNF5)
 - [ ] Spring Security com `@PreAuthorize` por recurso e teste automatizado de 403 (RNF1 / RF3.CA14)
-- [ ] Rate limit nas rotas `/api/ai/**` (RF30.CA14)
+- [ ] Rate limit nas rotas `/api/ai/**` (RF24.CA14)
 - [ ] CORS restrito ao domínio do frontend
 - [ ] Headers de segurança: HSTS, CSP, X-Content-Type-Options
 - [ ] **Nenhum dado real de usuário** migrado para o ambiente de demonstração
@@ -212,8 +212,8 @@ descartado por dívida técnica e por risco de credenciais expostas.
 
 ## Fontes da verdade (leia antes de escrever qualquer código)
 - docs/novo-projeto/01-bootstrap-repo-java.md   → decisões técnicas, módulos, variáveis de ambiente
-- docs/novo-projeto/02-rf-reestruturados-e-criterios-aceite.md → RF1–RF23, RF30, RF31 e ~150 critérios de aceite
-- docs/novo-projeto/03-rf30-ia-e-servicos-externos.md → capacidades de IA e provedores
+- docs/novo-projeto/02-rf-reestruturados-e-criterios-aceite.md → RF1–RF23, RF24, RF31 e ~150 critérios de aceite
+- docs/novo-projeto/03-rf24-ia-e-servicos-externos.md → capacidades de IA e provedores
 - docs/novo-projeto/05-diagramas-atividade.md   → fluxos por RF
 
 ## Stack obrigatória
@@ -253,7 +253,7 @@ Eventos obrigatórios, um por CA:
   - concessão e revogação de consentimento                      (RF3.CA06)
   - exportação e exclusão de conta                              (RF3.CA04, CA05)
   - mudança de estado de vínculo com marca/celebridade          (RF20.CA08)
-  - chamada de IA: provedor, modelo, latência, custo estimado   (RF30.CA16)
+  - chamada de IA: provedor, modelo, latência, custo estimado   (RF24.CA16)
 Nenhum evento pode conter senha, token ou o conteúdo dos campos cifrados.
 
 ## Tarefa 3 — Segurança
@@ -264,7 +264,7 @@ para senhas, @PreAuthorize por recurso, e um teste que prova que o usuário A re
 ## Tarefa 4 — Fatiar por RF
 Para cada RF, um caso de uso em fai-application, um controller em fai-web e testes
 que verificam os CAs correspondentes do documento 02. Ordem: RF1, RF2, RF3, RF4,
-RF6, RF5, RF9, RF31, RF8, RF19, RF17, RF10/RF30, RF13, RF14/RF20, RF22/RF21,
+RF6, RF5, RF9, RF31, RF8, RF19, RF17, RF10/RF24, RF13, RF14/RF20, RF22/RF21,
 RF11, RF12, RF15, RF18, RF23, RF16.
 
 ## Tarefa 5 — IA

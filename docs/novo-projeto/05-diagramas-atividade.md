@@ -17,7 +17,7 @@ flowchart TD
     C -- Sim --> E[S: pré-preenche ocasião, humor e clima — RF10.CA01]
     E --> F[U: ajusta o contexto e solicita sugestão]
     F --> G{Cota diária disponível?}
-    G -- Não --> H[/S: informa cota e horário de reposição — RF30.CA14/] --> Z
+    G -- Não --> H[/S: informa cota e horário de reposição — RF24.CA14/] --> Z
     G -- Sim --> I[S: monta prompt com catálogo do usuário]
     I --> J[E: provedor de IA]
     J --> K{Resposta em até 30 s?}
@@ -30,7 +30,7 @@ flowchart TD
     Q -- Gerar outras --> R[S: exclui as composições já vistas — RF10.CA03] --> I
     Q -- Aceitar --> S1[S: salva esquema com origem 'Copilot' — RF10.CA06]
     Q -- Sair --> Z
-    S1 --> T[S: registra inferência: provedor, latência, custo — RF30.CA16] --> Z
+    S1 --> T[S: registra inferência: provedor, latência, custo — RF24.CA16] --> Z
 ```
 
 ---
@@ -50,7 +50,7 @@ flowchart TD
     I --> J[S: cifra os campos da Camada 2 em repouso — RF13.CA08 · RNF3]
     J --> K[S: calcula Camada 1 — arquétipo, paleta, silhueta, ousadia, peça ícone]
     H --> K
-    K --> L[E: LLM gera a Frase de Identidade — RF30.CA04]
+    K --> L[E: LLM gera a Frase de Identidade — RF24.CA04]
     L --> M[S: renderiza o Card Visual — RF13.CA04]
     E -- Sim --> N{≥ 10 novas interações desde a última geração?}
     N -- Sim --> K
@@ -147,7 +147,7 @@ flowchart TD
     E -- Remover peça --> F[S: retira do esquema; peça permanece no Closet — RF9.CA02] --> E
     E -- Adicionar peça --> G[S: anexa a peça do acervo — RF9.CA03] --> E
     E -- Editar dados de uma peça --> H[S: altera a peça no acervo e em todos os esquemas dali em diante — RF9.CA07] --> E
-    E -- Melhorar com IA --> I[E: IA propõe diff] --> J[U: aceita ou recusa item a item — RF30.CA10] --> E
+    E -- Melhorar com IA --> I[E: IA propõe diff] --> J[U: aceita ou recusa item a item — RF24.CA10] --> E
     E -- Sair sem salvar --> K{Há alterações pendentes?}
     K -- Sim --> L[/S: pede confirmação antes de descartar — RF9.CA06/] --> M{Confirma?}
     M -- Não --> E
@@ -188,7 +188,7 @@ flowchart TD
 flowchart TD
     A([Usuário abre a aba Marcas ou Celebridades]) --> B[S: consulta perfis com status = VALIDADO — RF14.CA01]
     B --> C{Usuário tem DNA de Estilo?}
-    C -- Sim --> D[S: ordena por afinidade com o arquétipo — RF30.CA06]
+    C -- Sim --> D[S: ordena por afinidade com o arquétipo — RF24.CA06]
     C -- Não --> E[S: ordena por mais recentes]
     D --> F[S: renderiza logo, nome, nº de vínculos e de seguidores]
     E --> F
@@ -266,9 +266,9 @@ flowchart TD
     C -- Alterar tema/idioma/densidade/fonte --> D[S: aplica imediatamente e persiste entre dispositivos — RF23.CA02] --> C
     C -- Alto contraste / reduzir animações --> E[S: aplica em todas as telas — RF23.CA05] --> C
     C -- Alterar nome de exibição, bio, avatar ou capa --> F[S: persiste SEM reautenticação — RF23.CA03] --> C
-    C -- Alterar @ --> G{@ disponível?}
+    C -- "Alterar @" --> G{"@ disponível?"}
     G -- Não --> H[/S: recusa e sugere alternativas — RF23.CA04/] --> C
-    G -- Sim --> I[S: atualiza o @ e mantém redirecionamento do antigo por 30 dias] --> C
+    G -- Sim --> I["S: atualiza o @ e mantém redirecionamento do antigo por 30 dias"] --> C
     C -- Navegar por teclado --> J[S: foco visível em todo controle interativo — RF23.CA06 · RNF7] --> C
     C -- Sair --> Z([Fim])
 ```
@@ -341,7 +341,7 @@ flowchart TD
     E -- Trocar manequim (masc/fem) --> F[S: troca e memoriza a escolha] --> E
     E -- Ajustar tom de pele / porte --> G[S: salva a preferência no perfil — RF18.CA06 · RF23] --> E
     E -- Vestir uma peça --> H{Peça tem fundo removido?}
-    H -- Não --> I[E: remoção de fundo sob demanda — RF30.CA08]
+    H -- Não --> I[E: remoção de fundo sob demanda — RF24.CA08]
     I --> J{Serviço respondeu?}
     J -- Não --> K[/S: avisa que a sobreposição será aproximada — RF18.CA05 · RNF8/] --> L
     J -- Sim --> L[S: identifica a camada da peça: base, intermediária, externa, acessório]
@@ -364,17 +364,241 @@ flowchart TD
 
 ---
 
+## 16. RF2 — Autenticar usuário
+
+```mermaid
+flowchart TD
+    A([Usuário abre a tela de login]) --> B[U: informa e-mail e senha]
+    B --> C{Conta bloqueada por tentativas?}
+    C -- Sim --> D[/S: informa bloqueio temporário e horário de liberação — RF2.CA03/] --> Z([Fim])
+    C -- Não --> E[S: verifica credenciais com Argon2id]
+    E --> F{Credenciais válidas?}
+    F -- Não --> G[S: incrementa contador de falhas da janela de 15 min]
+    G --> H[/S: mensagem genérica 'credenciais inválidas' — RF2.CA02/]
+    H --> I{5ª falha na janela?}
+    I -- Sim --> J[S: bloqueia e registra o evento na auditoria — RF2.CA03 · RNF5] --> Z
+    I -- Não --> B
+    F -- Sim --> K[S: emite token de acesso e token de renovação — RF2.CA01 · RNF2]
+    K --> L{Tipo de perfil}
+    L -- Marca / Celebridade --> M[S: direciona ao painel do perfil — RF2.CA05] --> Z
+    L -- Pessoal --> N[S: direciona ao Perfil Lookbook — RF6] --> Z
+```
+
+**Renovação transparente da sessão (RF2.CA04)** — executa fora do fluxo de login:
+
+```mermaid
+flowchart TD
+    A([App faz requisição autenticada]) --> B{Token de acesso expirado?}
+    B -- Não --> C[S: processa a requisição] --> Z([Fim])
+    B -- Sim --> D{Token de renovação válido?}
+    D -- Sim --> E[S: rotaciona o par de tokens e repete a requisição — RF2.CA04] --> C
+    D -- Não --> F[/S: encerra a sessão e leva ao login — RF3.CA07/] --> Z
+```
+
+---
+
+## 17. RF4 — Adicionar peça ao guarda-roupa
+
+```mermaid
+flowchart TD
+    A([Usuário abre 'Adicionar nova peça']) --> B[U: envia uma ou mais fotografias]
+    B --> C{Formato JPG/PNG/WebP e ≤ 10 MB?}
+    C -- Não --> D[/S: recusa com mensagem clara do motivo — RF4.CA01/] --> B
+    C -- Sim --> E{Mais de uma foto?}
+    E -- Sim --> F[S: cria um rascunho por foto para revisão em lote — RF4.CA05]
+    E -- Não --> G[S: cria um rascunho]
+    F --> G
+    G --> H[E: IA de detecção de peça — RF24.CA01]
+    H --> I{Confiança suficiente?}
+    I -- Não --> J[/S: formulário vazio com aviso de preenchimento manual — RF4.CA03 · RNF8/] --> L
+    I -- Sim --> K[S: pré-preenche categoria, cor dominante e tecido, tudo editável — RF4.CA02] --> L
+    L[U: revisa e completa nome, categoria e cor]
+    L --> M{Campos obrigatórios preenchidos?}
+    M -- Não --> N[/S: indica os campos faltantes/] --> L
+    M -- Sim --> O[E: remoção de fundo]
+    O --> P{Serviço disponível?}
+    P -- Não --> Q[S: salva com a foto original e enfileira reprocessamento — RF4.CA06 · RNF8] --> R
+    P -- Sim --> R[S: persiste a peça em ClothingPiece]
+    R --> S1[S: peça aparece imediatamente no Closet Digital — RF4.CA04 · RF6]
+    S1 --> T[S: registra a inferência — RF24.CA16] --> Z([Fim])
+```
+
+---
+
+## 18. RF5 — Criar esquema de vestimenta (aba "Criar Look")
+
+```mermaid
+flowchart TD
+    A([Usuário abre a aba 'Criar Look']) --> B[S: conta as peças disponíveis do acervo]
+    B --> C{Possui ≥ 2 peças?}
+    C -- Não --> D[/S: orienta o cadastro de peças — RF5.CA02 · RF4/] --> Z([Fim])
+    C -- Sim --> E[S: exibe o Closet Digital filtrável e o espaço de composição — RF5.CA01]
+    E --> F{Como o usuário compõe?}
+    F -- Manual --> G[U: arrasta peças para a composição]
+    F -- Gerar com IA --> H[U: confirma ocasião e humor]
+    H --> I[S: monta o prompt restrito ao acervo do usuário]
+    I --> J[E: provedor de IA — RF24.CA02]
+    J --> K{Resposta válida e só com peças do acervo?}
+    K -- Não --> I
+    K -- Sim --> L[S: apresenta 3 composições distintas — RF5.CA04]
+    L --> M[U: escolhe uma e ajusta] --> G
+    G --> N[U: informa nome e ocasião e aciona salvar]
+    N --> O{Ao menos 1 peça na composição?}
+    O -- Não --> P[/S: recusa e indica o mínimo de 1 peça — RF5.CA06/] --> G
+    O -- Sim --> Q[S: cria o esquema herdando a visibilidade padrão do perfil — RF5.CA03 · RF3.CA12]
+    Q --> R[S: sugere vínculo de marca/celebridade detectado — RF24.CA09 · RF20/RF21]
+    R --> S1{Usuário publica no feed?}
+    S1 -- Não --> Z
+    S1 -- Sim --> T[S: publica respeitando a visibilidade escolhida — RF5.CA05 · RF8] --> Z
+```
+
+---
+
+## 19. RF6 — Perfil Lookbook (Closet Digital + Looks Salvos)
+
+```mermaid
+flowchart TD
+    A([Usuário acessa um Perfil Lookbook]) --> B{Perfil próprio ou de terceiro?}
+    B -- Terceiro --> C[S: filtra pelo que a visibilidade permite — RF6.CA08 · RF3.CA12/CA13] --> D
+    B -- Próprio --> D[S: exibe as abas Closet Digital e Looks Salvos com contadores — RF6.CA01]
+    D --> E{Aba escolhida}
+
+    E -- Closet Digital --> F{Possui peças?}
+    F -- Não --> G[/S: estado vazio com chamada 'Adicionar nova peça' — RF6.CA03 · RF4/] --> Z([Fim])
+    F -- Sim --> H[S: carrega a grade paginada, resposta em até 3 s — RF6.CA06 · RNF7]
+    H --> I{Ação do usuário}
+    I -- Filtrar --> J[S: filtra por categoria, cor ou estação sem recarregar — RF6.CA02] --> H
+    I -- Editar peça --> K[S: abre o formulário com os dados atuais — RF6.CA04 · RF9] --> Z
+    I -- Marcar indisponível --> L[S: peça deixa de ser oferecida em RF5 e RF10, mas permanece no acervo — RF6.CA07] --> H
+    I -- Excluir peça --> M{Peça usada em esquemas?}
+    M -- Sim --> N[/S: avisa quantos esquemas serão afetados/] --> O
+    M -- Não --> O[U: confirma]
+    O --> P[S: exclui preservando o histórico dos esquemas já publicados — RF6.CA05] --> H
+
+    E -- Looks Salvos --> Q[S: exibe o feed compacto com a origem identificada — RF6.CA09]
+    Q --> R[S: cada card traz os toggles de estado no TOPO e o footer social no RODAPÉ — RF6.CA11 · RF31 · RF19]
+    R --> S1{Ação do usuário}
+    S1 -- Filtrar ocasião --> T[S: filtra e preserva o filtro ao voltar do detalhe — RF6.CA10] --> R
+    S1 -- Favoritar --> U[S: persiste o estado e reflete em todas as telas do card — RF6.CA12] --> R
+    S1 -- Remover salvo de terceiro --> V[S: remove da lista sem afetar o original do autor — RF6.CA13] --> R
+    S1 -- Sair --> Z
+```
+
+**Lookbook de celebridade — era como atmosfera (RF6.CA14).** É o subfluxo que a banca vai questionar, por isso está isolado:
+
+```mermaid
+flowchart TD
+    A([Usuário abre um Lookbook de celebridade]) --> B[S: exibe as eras nomeadas como rótulo textual de curadoria]
+    B --> C[U: seleciona uma era — Renaissance, Chromatica, Folklore, Blond Ambition]
+    C --> D[S: monta o prompt apenas com atmosfera cromática e material: paleta, textura, tecido, acabamento, luz, styling]
+    D --> E{Prompt contém nome da pessoa real, rosto, corpo ou silhueta identificável?}
+    E -- Sim --> F[S: REJEITA antes do envio — RF6.CA14]
+    F --> G[S: registra a rejeição — RF24.CA16] --> Z([Fim])
+    E -- Não --> H[E: serviço de geração de imagem — pranchas 11 a 13, Coleção F]
+    H --> I[S: entrega a arte de atmosfera da era, nunca a pessoa — RF6.CA14]
+    I --> G2[S: registra a inferência — RF24.CA16] --> Z
+```
+
+---
+
+## 20. RF11 — Background Studio
+
+```mermaid
+flowchart TD
+    A([Usuário edita um card de esquema ou peça]) --> B[U: abre o Background Studio]
+    B --> C[S: exibe a galeria de fundos por categoria com pré-visualização em tempo real — RF11.CA01]
+    C --> D{Origem do fundo}
+
+    D -- Galeria --> E[U: escolhe um fundo] --> J
+    D -- Imagem própria --> F[U: envia a imagem]
+    F --> G{Formato e proporção válidos?}
+    G -- Não --> H[/S: recusa indicando o motivo/] --> F
+    G -- Sim --> I[S: recorta para o formato do card — RF11.CA04] --> J
+    D -- Gerar por IA --> K[U: descreve o cenário]
+    K --> L[E: provedor de geração de arte — RF24.CA07]
+    L --> M{Resposta em até 30 s?}
+    M -- Não --> N[/S: informa o andamento do job sem travar a tela — RF11.CA03 · RNF8/] --> L
+    M -- Sim --> O[S: entrega a arte gerada — RF11.CA03] --> J
+    D -- Remover fundo --> P[S: card volta ao fundo padrão sem perder os demais dados — RF11.CA05] --> Z([Fim])
+
+    J[S: valida a legibilidade do texto sobreposto nos temas claro e escuro]
+    J --> Q{Contraste suficiente nos dois temas?}
+    Q -- Não --> R[/S: avisa e sugere ajuste ou outro fundo/] --> D
+    Q -- Sim --> S1[S: salva o card com o fundo aplicado — RF11.CA02]
+    S1 --> T[S: registra a inferência quando houve IA — RF24.CA16] --> Z
+```
+
+---
+
+## 21. RF15 — Editor Canvas Interativo 2D · **Tema Futuro**
+
+> ⚠️ Card marcado com o label **TEMAS FUTUROS** no board. O diagrama existe para fechar a cobertura e dimensionar o esforço; não é compromisso de sprint.
+
+```mermaid
+flowchart TD
+    A([Usuário abre uma foto no editor]) --> B[S: carrega a imagem e a pilha de histórico — RF15.CA01]
+    B --> C{Ferramenta escolhida}
+    C -- Recorte / rotação / brilho / contraste --> D[S: aplica a transformação e empilha no histórico] --> H
+    C -- Remoção de fundo --> E[E: serviço de remoção de fundo]
+    E --> F{Serviço respondeu?}
+    F -- Não --> G[/S: informa a falha e mantém as demais ferramentas operantes — RF15.CA04 · RNF8/] --> C
+    F -- Sim --> D
+    C -- Desfazer --> I[S: retrocede um passo, até o estado original, sem encerrar a sessão — RF15.CA03] --> H
+    H{Usuário continua editando?}
+    H -- Sim --> C
+    H -- Não --> J{Salvar ou sair?}
+    J -- Sair --> K[U: confirma a saída]
+    K --> L[S: descarta as edições e preserva a imagem original íntegra — RF15.CA05] --> Z([Fim])
+    J -- Salvar --> M[S: a imagem editada substitui a exibida na peça]
+    M --> N[S: a original permanece em 'Minhas Fotos' — RF15.CA02 · RF12] --> Z
+```
+
+---
+
+## 22. RF16 — Geração 3D das peças · **Tema Futuro** *(stretch goal)*
+
+> ⚠️ Card marcado com o label **TEMAS FUTUROS**. Dependência de API 3D externa e de custo por job — é o requisito de maior risco do board.
+
+```mermaid
+flowchart TD
+    A([Usuário abre uma peça com fotografia válida]) --> B[U: solicita a geração 3D]
+    B --> C{Cota de uso disponível?}
+    C -- Não --> D[/S: informa a cota e o horário de reposição — RF24.CA14/] --> Z([Fim])
+    C -- Sim --> E[S: cria o job no estado 'enfileirado' — RF16.CA01]
+    E --> F[S: exibe o estado do job na peça: enfileirado → processando → concluído → falhou]
+    F --> G[E: serviço externo de geração 3D]
+    G --> H{Resultado}
+    H -- Falha ou tempo limite --> I[S: atualiza o estado para 'falhou' com motivo legível — RF16.CA03 · RNF8]
+    I --> J{Reprocessamento gratuito já usado?}
+    J -- Não --> K[U: reprocessa uma vez sem custo — RF16.CA03] --> G
+    J -- Sim --> L[/S: mantém a versão 2D como alternativa/] --> Z
+    H -- Sucesso --> M[S: persiste o modelo e marca o job como 'concluído']
+    M --> N[S: exibe o modelo 3D com rotação e zoom, com a versão 2D disponível — RF16.CA02]
+    N --> O[S: registra a inferência: provedor, latência, custo — RF24.CA16] --> Z
+
+    P([Usuário fecha o app durante o processamento]) --> Q[U: reabre o app depois]
+    Q --> R[S: recupera o estado do job do servidor, não do dispositivo — RF16.CA04] --> F
+```
+
+---
+
 ## Cobertura
 
 | RF | Diagrama | RF | Diagrama |
 |---|---|---|---|
-| RF1 (ex-RF27/RF28) | 12 | RF14 / RF22 | 8 e 9 |
-| RF3 — dados pessoais | 10 | RF17 | 4 |
-| RF3 (ex-RF26) — notificações | 13 | RF18 | 14 |
-| RF7 | 5 | RF19 | 4, 5, 7 |
-| RF8 | 4 | RF20 / RF21 | 12 |
-| RF9 | 6 | RF23 | 11 |
-| RF10 | 1 | RF31 (ex-RF19 filtros) | 7 |
-| RF12 | 3 | RF13 | 2 |
+| RF1 (ex-RF27/RF28) | 12 | RF13 | 2 |
+| RF2 | **16** | RF14 / RF22 | 8 e 9 |
+| RF3 — dados pessoais | 10 | RF15 | **21** *(Tema Futuro)* |
+| RF3 (ex-RF26) — notificações | 13 | RF16 | **22** *(Tema Futuro)* |
+| RF4 | **17** | RF17 | 4 |
+| RF5 | **18** | RF18 | 14 |
+| RF6 | **19** *(inclui o subfluxo RF6.CA14)* | RF19 | 4, 5, 7 |
+| RF7 | 5 | RF20 / RF21 | 12 |
+| RF8 | 4 | RF23 | 11 |
+| RF9 | 6 | RF24 — motor de IA | transversal: 1, 17, 18, 19, 20, 22 |
+| RF10 | 1 | RF31 (filtros do esquema) | 7 |
+| RF11 | **20** | RF12 | 3 |
 
-**Ainda sem diagrama de atividade** (não estavam na lista da Etapa 8, mas fecham a cobertura do board): RF2, RF4, RF5, RF6, RF11, RF15, RF16. Recomendo gerá-los no Bloco 6 do plano guiado, reutilizando o mesmo padrão.
+**Cobertura completa.** Todos os RFs efetivos do board têm diagrama de atividade. Os diagramas 16 a 22 fecharam as lacunas que restavam (RF2, RF4, RF5, RF6, RF11, RF15, RF16).
+
+O **RF24** não recebe diagrama próprio de propósito: ele é o motor transversal de IA, e cada uma de suas capacidades é exercida *dentro* do fluxo do RF que a consome — é por isso que os CAs do RF24 aparecem como caixas de saída nos diagramas dos outros requisitos, e não isolados. A única exceção destacada é o subfluxo de **direito de imagem** do RF6.CA14, separado no diagrama 19 justamente porque é o ponto que a banca tende a questionar.

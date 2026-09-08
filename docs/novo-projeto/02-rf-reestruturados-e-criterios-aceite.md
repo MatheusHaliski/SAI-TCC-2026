@@ -14,7 +14,7 @@ O time pediu fundir RFs em CAs de outros RFs. Existem duas formas de fazer isso:
 | Renumerar (RF24 vira RF3.CA7 e os números seguintes deslizam) | Quebra toda a rastreabilidade já escrita em HUs, diagramas, commits, PDF do TCC e histórico do Trello | ❌ |
 | **Absorver mantendo o número morto** — o RF absorvido vira CA do RF hospedeiro e o card antigo é marcado `[ABSORVIDO em RFx]` e arquivado | Rastreabilidade preservada; qualquer documento antigo que cite "RF24" continua resolvível | ✅ **adotada aqui** |
 
-**Regra:** números de RF nunca são reciclados. RFs novos recebem o próximo número livre (a partir de **RF30**).
+**Regra:** números de RF nunca são reciclados. RFs novos recebem o próximo número livre (a partir de **RF24**).
 
 ---
 
@@ -24,10 +24,23 @@ O time pediu fundir RFs em CAs de outros RFs. Existem duas formas de fazer isso:
 |---|---|---|
 | **RF27** — Cadastrar/gerenciar perfil de MARCA | **RF1.CA06–CA08** | É o mesmo caso de uso "criar conta", variando apenas o `tipo_de_perfil`. Manter separado gerava dois fluxos de cadastro redundantes. |
 | **RF28** — Cadastrar/gerenciar perfil de CELEBRIDADE | **RF1.CA09–CA10** | Idem RF27. |
-| **RF24** — Recuperar senha, logout, sessões ativas | **RF3.CA07–CA10** | Ciclo de vida da conta autenticada = gerenciamento de conta. |
+| **RF24 (antigo)** — Recuperar senha, logout, sessões ativas | **RF3.CA07–CA10** | Ciclo de vida da conta autenticada = gerenciamento de conta. ⚠️ **O número RF24 foi reaproveitado** — ver nota abaixo. |
 | **RF25** — Configurações de conta e segurança | **RF3.CA11–CA14** | A "página Configurações" é a *interface* do RF3, não um requisito distinto. |
 | **RF26** — Receber e gerenciar notificações | **RF3.CA15–CA18** | Conforme decisão do time. ⚠️ **Ver nota de rastreabilidade abaixo.** |
 | **RF29** — Página de Looks Salvos | **RF6.CA09–CA13** | Looks Salvos é uma aba do Perfil Lookbook (RF6), gerada pelo mesmo modelo de interface. |
+
+> ⚠️ **Nota de rastreabilidade sobre o REAPROVEITAMENTO do número RF24.**
+>
+> A política desta seção é **não renumerar e não reciclar números**: um RF absorvido tem o número aposentado.
+> O time abriu **uma exceção explícita** para o RF24. O RF24 original ("Recuperar senha, logout, sessões ativas")
+> foi absorvido pelo RF3 (CA07–CA10) e o card antigo está arquivado; o número foi então reatribuído ao novo
+> **RF24 — Usar a IA do sistema**, o motor transversal de inteligência artificial descrito em
+> [`03-rf24-ia-e-servicos-externos.md`](03-rf24-ia-e-servicos-externos.md).
+>
+> **Consequência prática, e é a razão desta nota existir:** qualquer documento anterior a esta decisão que cite
+> "RF24" está falando de recuperação de senha, **não** de IA. Ao ler material antigo (HUs, atas, versões prévias
+> do PDF do TCC, histórico do Trello), resolva "RF24" para **RF3.CA07–CA10**. Deste documento em diante, RF24
+> significa exclusivamente o motor de IA. Esta é a única exceção à política; nenhum outro número foi reciclado.
 
 > ⚠️ **Nota de rastreabilidade sobre RF26 (notificações).**
 > Colocar notificações dentro de RF3 é correto para a *gestão* (central de notificações, marcar como lida, preferências de canal). Mas o *disparo* das notificações nasce das interações sociais (RF19) e do vínculo por selo (RF20/RF21). Para não perder essa origem, os CAs foram divididos:
@@ -149,7 +162,7 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 | ID | Dado que | Quando | Então |
 |---|---|---|---|
 | RF4.CA01 | usuário autenticado na aba "Adicionar nova peça" | envia uma fotografia | sistema aceita JPG/PNG/WebP até 10 MB e rejeita os demais formatos com mensagem clara |
-| RF4.CA02 | fotografia enviada | o upload conclui | a IA de detecção (**RF30.CA01**) pré-preenche categoria, cor dominante e tipo de tecido, deixando todos os campos editáveis |
+| RF4.CA02 | fotografia enviada | o upload conclui | a IA de detecção (**RF24.CA01**) pré-preenche categoria, cor dominante e tipo de tecido, deixando todos os campos editáveis |
 | RF4.CA03 | a IA não reconhece a peça com confiança suficiente | a detecção retorna | formulário é apresentado vazio com aviso de preenchimento manual, sem bloquear o cadastro (**RNF8**) |
 | RF4.CA04 | usuário preencheu os campos obrigatórios (nome, categoria, cor) | salva | peça é persistida e aparece imediatamente no Closet Digital (RF6) |
 | RF4.CA05 | usuário envia várias fotografias de uma vez | conclui o envio | sistema cria um rascunho por foto e permite revisar cada um antes de confirmar o lote |
@@ -162,7 +175,7 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 | RF5.CA01 | usuário com ao menos 2 peças cadastradas | abre a aba "Criar Look" | vê o Closet Digital filtrável por categoria e um espaço de composição vazio |
 | RF5.CA02 | usuário com menos de 2 peças | abre a aba "Criar Look" | sistema orienta o cadastro de peças (RF4) e não apresenta o compositor vazio sem explicação |
 | RF5.CA03 | usuário arrastou peças para a composição | informa nome e ocasião e salva | esquema é criado com a lista de peças, visibilidade padrão herdada do perfil (RF3.CA12) |
-| RF5.CA04 | usuário aciona "gerar com IA" | confirma ocasião e humor | sistema apresenta 3 composições distintas usando apenas peças do guarda-roupa do usuário (**RF30.CA02**) |
+| RF5.CA04 | usuário aciona "gerar com IA" | confirma ocasião e humor | sistema apresenta 3 composições distintas usando apenas peças do guarda-roupa do usuário (**RF24.CA02**) |
 | RF5.CA05 | esquema salvo | usuário publica no feed | esquema passa a aparecer na aba "Buscar" (RF8) respeitando a visibilidade escolhida |
 | RF5.CA06 | usuário tenta salvar sem nenhuma peça | aciona salvar | sistema recusa e indica o mínimo de 1 peça |
 
@@ -223,7 +236,7 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 | ID | Dado que | Quando | Então |
 |---|---|---|---|
 | RF10.CA01 | usuário com ao menos 3 peças | abre a aba Copilot | vê o campo de contexto (ocasião, humor, clima) já pré-preenchido com o que o sistema conhece |
-| RF10.CA02 | usuário solicita sugestão | a IA responde | sistema apresenta 3 looks distintos, cada um com justificativa curta em linguagem natural (**RF30.CA03**) |
+| RF10.CA02 | usuário solicita sugestão | a IA responde | sistema apresenta 3 looks distintos, cada um com justificativa curta em linguagem natural (**RF24.CA03**) |
 | RF10.CA03 | usuário rejeita todas as sugestões | aciona "gerar outras" | as 3 novas sugestões não repetem nenhuma composição da rodada anterior |
 | RF10.CA04 | guarda-roupa insuficiente (<3 peças) | usuário solicita sugestão | sistema explica a limitação e leva ao cadastro de peças (RF4) |
 | RF10.CA05 | serviço de IA indisponível ou acima do limite de uso | usuário solicita sugestão | sistema informa a indisponibilidade e oferece recomendações por regras locais, sem travar a interface (**RNF8**) |
@@ -236,7 +249,7 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 |---|---|---|---|
 | RF11.CA01 | usuário editando um card de esquema ou peça | abre o Background Studio | vê a galeria de fundos por categoria e a pré-visualização em tempo real sobre o card |
 | RF11.CA02 | usuário escolhe um fundo | aplica | o card é salvo com o fundo e mantém a legibilidade do texto sobreposto em ambos os temas |
-| RF11.CA03 | usuário gera um fundo por IA descrevendo um cenário | confirma | sistema entrega a arte gerada em até 30 s ou informa o andamento (**RF30.CA07**) |
+| RF11.CA03 | usuário gera um fundo por IA descrevendo um cenário | confirma | sistema entrega a arte gerada em até 30 s ou informa o andamento (**RF24.CA07**) |
 | RF11.CA04 | usuário envia a própria imagem de fundo | aplica | sistema valida formato e proporção e recorta para o formato do card |
 | RF11.CA05 | usuário remove o fundo aplicado | salva | o card volta ao fundo padrão sem perder os demais dados |
 
@@ -258,7 +271,7 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 | RF13.CA01 | usuário com ≥10 peças e ≥5 avaliações positivas | acessa "DNA de Estilo" pela primeira vez | sistema apresenta o formulário de Identidade de Vida (lugares, pessoas, animais, objetos) |
 | RF13.CA02 | pré-requisitos não atingidos | usuário acessa a página | sistema exibe o progresso indicando exatamente quantas peças e avaliações faltam |
 | RF13.CA03 | usuário pula o formulário de vida | confirma a geração | card é gerado só com a Camada 1 (arquétipo, paleta, silhueta, ousadia, peça ícone), **com a Frase de Identidade baseada somente no estilo**, e avisa que pode ser enriquecido depois — conforme HU20, Critério 2 |
-| RF13.CA04 | usuário preenche as duas camadas | confirma | IA gera a Frase de Identidade cruzando estilo e vida e renderiza o Card Visual (**RF30.CA04**) |
+| RF13.CA04 | usuário preenche as duas camadas | confirma | IA gera a Frase de Identidade cruzando estilo e vida e renderiza o Card Visual (**RF24.CA04**) |
 | RF13.CA05 | usuário edita campos da Identidade de Vida | salva | somente a Frase de Identidade é regenerada; a Camada 1 permanece intacta |
 | RF13.CA06 | usuário marca um campo da Camada 2 como privado | exporta o card | o campo não aparece na imagem exportada, mesmo tendo influenciado a frase |
 | RF13.CA07 | usuário acumula 10 novas interações relevantes | acessa o DNA | Camada 1 é recalculada e o usuário é notificado de que sua identidade evoluiu |
@@ -431,20 +444,20 @@ Além das já previstas no documento `01`, a modelagem nomeia: **PrivacySettings
 
 | Ação | Itens |
 |---|---|
-| **Absorvidos** (viram CA) | RF24, RF25, RF26, RF27, RF28, RF29 |
+| **Absorvidos** (viram CA) | RF24 *(antigo — senha)*, RF25, RF26, RF27, RF28, RF29 |
 | **Reescritos** (enunciado corrigido) | RF1, RF3, RF5, RF6, RF7, RF9, RF11, RF12, RF19, RF23 |
-| **Criados** | **RF30** (IA — ver `03-rf30-ia-e-servicos-externos.md`), **RF31** (filtros favoritar/disponível/indisponível/todos) |
+| **Criados** | **RF24** *(número reaproveitado)* — motor de IA, ver [`03-rf24-ia-e-servicos-externos.md`](03-rf24-ia-e-servicos-externos.md); **RF31** — filtros favoritar/disponível/indisponível/todos |
 | **RFs efetivos após a reestruturação** | **25** — ver a conta abaixo |
 
 ### 5.1 A conta dos 25, passo a passo
 
-A lista do Trello tem 30 cards, sendo 1 de rastreabilidade → **29 RFs (RF1–RF29)**. Os seis absorvidos são **RF24, RF25, RF26, RF27, RF28 e RF29** — todos *fora* da faixa RF1–RF23, e é por isso que a faixa não encolhe:
+A lista do Trello tem 30 cards, sendo 1 de rastreabilidade → **29 RFs (RF1–RF29)**. Os seis absorvidos são **RF24 *(o antigo, de senha)*, RF25, RF26, RF27, RF28 e RF29** — todos *fora* da faixa RF1–RF23, e é por isso que a faixa não encolhe:
 
 | Passo | Conta | Total |
 |---|---|---|
 | RFs no board | RF1–RF29 | 29 |
-| − absorvidos (RF24–RF29) | −6 | **23** (= exatamente RF1–RF23) |
-| + RF30 (motor de IA) | +1 | 24 |
+| − absorvidos (RF24–RF29, numeração antiga) | −6 | **23** (= exatamente RF1–RF23) |
+| + RF24 (motor de IA — número reaproveitado) | +1 | 24 |
 | + RF31 (favoritar/disponível/indisponível/todos) | +1 | **25** |
 
 ⚠️ O erro fácil aqui é subtrair 6 de 23 e chegar a 19. Não se subtrai: RF24–RF29 **já não fazem parte** de RF1–RF23. Os 23 são o *resultado* da absorção, não o ponto de partida.
@@ -461,4 +474,4 @@ A lista do Trello tem 30 cards, sendo 1 de rastreabilidade → **29 RFs (RF1–R
 | RNF5 — Auditoria e logging | RF1, RF2, RF3, RF9, RF20 | RF1.CA04, RF2.CA03, RF3.CA06, RF3.CA14, RF20.CA08 |
 | RNF6 — Privacidade / LGPD | RF3, RF13, RF23 | RF3.CA03–CA06, RF13.CA06, RF13.CA08 |
 | RNF7 — Desempenho e usabilidade | RF6, RF8, RF12, RF23 | RF6.CA06, RF12.CA06, RF23.CA05, RF23.CA06 |
-| RNF8 — Falhas de APIs externas | RF4, RF10, RF11, RF15, RF16, RF18, RF30 | RF4.CA03, RF10.CA05, RF15.CA04, RF16.CA03, RF18.CA05 |
+| RNF8 — Falhas de APIs externas | RF4, RF10, RF11, RF15, RF16, RF18, RF24 | RF4.CA03, RF10.CA05, RF15.CA04, RF16.CA03, RF18.CA05 |

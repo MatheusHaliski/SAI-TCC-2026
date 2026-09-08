@@ -12,7 +12,7 @@
 |---|---|---|
 | `01-bootstrap-repo-java.md` | **1 e 2** — inventário, tabela de decisões técnicas, arquitetura MySQL + NoSQL, variáveis de ambiente, segurança, prompt de bootstrap | ✅ pronto |
 | `02-rf-reestruturados-e-criterios-aceite.md` | **3 e 5** — política de renumeração, mapa de absorção, enunciados corrigidos, ~150 CAs, matriz RF × RNF | ✅ pronto — falta validar RF6/RF13/RF23 contra as aulas |
-| `03-rf30-ia-e-servicos-externos.md` | **4** — RF30 com 16 CAs + tabela RF × serviço externo de IA com custo | ✅ pronto |
+| `03-rf24-ia-e-servicos-externos.md` | **4** — RF24 com 16 CAs + tabela RF × serviço externo de IA com custo | ✅ pronto |
 | `04-telas-artefatos-e-pranchas.md` | **6 e 7** — ficha das 20 pranchas, assets Firefly, especificação dos 10 artefatos | ⚠️ esqueleto pronto; **bloqueado** pelos anexos |
 | `05-diagramas-atividade.md` | **8** — 14 diagramas de atividade em Mermaid, com CAs anotados | ✅ pronto — faltam RF2, RF4, RF5, RF6, RF11, RF15, RF16 |
 
@@ -60,7 +60,7 @@ A **Modelagem UML** trouxe a Parte 3 (especificação dimensional dos cards, em 
 | 1 | Ler em voz alta a §1 do documento `02` (**política de não renumerar**) e fechar a decisão em grupo. É a decisão que trava tudo o mais — se o time preferir renumerar, o plano inteiro muda. |
 | 2 | Confirmar a decisão sobre **RF26 → RF3** (nota de rastreabilidade em `02`, §2): a gestão vai para RF3, o disparo fica em RF19/RF20. |
 | 3 | Confirmar **RF21/RF22 (celebridades)** dentro ou fora do escopo do TCC — o card de rastreabilidade do board levanta que "Celebridades" não consta em Temas Futuros. Se sair, sai também metade do artefato #7 e o diagrama 12. |
-| 4 | Confirmar a criação de **RF30** (IA) e **RF31** (favoritar/disponível/indisponível/todos). |
+| 4 | Confirmar a criação de **RF24** (IA) e **RF31** (favoritar/disponível/indisponível/todos). |
 | 5 | Distribuir as frentes A–D. |
 
 **Pronto quando:** as quatro decisões estão registradas como comentário no card de rastreabilidade do Trello.
@@ -99,16 +99,16 @@ A **Modelagem UML** trouxe a Parte 3 (especificação dimensional dos cards, em 
 
 ---
 
-### Bloco 3 — Etapa 4: RF30 e a tabela de IA · **T+01:15 → 01:35** · frente A
+### Bloco 3 — Etapa 4: RF24 e a tabela de IA · **T+01:15 → 01:35** · frente A
 
 | Passo | Ação | Tempo |
 |---|---|---|
-| 1 | Criar no Trello o card **RF30 — Prover capacidades de IA**, com a descrição e os 16 CAs do documento `03` | 8 min |
+| 1 | Criar no Trello o card **RF24 — Prover capacidades de IA**, com a descrição e os 16 CAs do documento `03` | 8 min |
 | 2 | Criar o card **RF31 — Filtros favoritar/disponível/indisponível/todos**, com os 6 CAs | 5 min |
 | 3 | Anexar a **tabela RF × serviço externo de IA** (documento `03`) ao card **RNF8** — é lá que a decisão de provedor e de fallback precisa ser lida | 4 min |
-| 4 | Distribuir os labels de sprint: RF30 → Sprint 3 (motor, Copilot, detecção) e Sprint 4 (DNA, arte, provador); RF31 → Sprint 3 | 3 min |
+| 4 | Distribuir os labels de sprint: RF24 → Sprint 3 (motor, Copilot, detecção) e Sprint 4 (DNA, arte, provador); RF31 → Sprint 3 | 3 min |
 
-**Pronto quando:** RF30 e RF31 existem no board, com CAs e sprint, e a tabela de IA está no RNF8.
+**Pronto quando:** RF24 e RF31 existem no board, com CAs e sprint, e a tabela de IA está no RNF8.
 
 ---
 
@@ -217,4 +217,4 @@ Dizer isso é parte do plano — a alternativa é prometer o impossível e chega
 - **Apagar o projeto Firebase** (só depois que a migração estiver validada);
 - **Implementar qualquer RF** no novo backend (é o trabalho das quatro sprints);
 - **Gerar o artefato #6** (LGPD) sem ler o anexo do RNF6 — geraria retrabalho;
-- **Escrever as HU** correspondentes aos RFs novos (RF30, RF31) — 30 min extras, fora da janela.
+- **Escrever as HU** correspondentes aos RFs novos (RF24, RF31) — 30 min extras, fora da janela.
