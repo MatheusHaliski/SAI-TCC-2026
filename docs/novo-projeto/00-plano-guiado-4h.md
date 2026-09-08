@@ -32,7 +32,7 @@
 
 **Todos os insumos externos chegaram** — não há mais bloqueador de entrada para as 4 horas.
 
-A **Modelagem UML** trouxe a Parte 3 (especificação dimensional dos cards, em milímetros) que destrava o artefato #7, e o confronto com o catálogo de CAs achou **sete lacunas**, já viradas em CA no documento `02`, §4.1: campo `sexo` obrigatório, `/add-piece` como página, wearstyles por parte do corpo, listas do Build Outfit espelhando o guarda-roupa real, filtro do provador por sexo, **remixar/retornar** como interações próprias, e tema que não altera a cor do conteúdo do usuário.
+A **Modelagem UML** trouxe a Parte 3 (especificação dimensional dos cards, em milímetros) que destrava o artefato #7, e o confronto com o catálogo de CAs achou **sete lacunas**, já viradas em CA no documento `02`, §4.1: campo `sexo` obrigatório, `/add-piece` como página, wearstyles por parte do corpo, listas da etapa 3 (antigo Build Outfit) espelhando o guarda-roupa real, filtro do provador por sexo, **remixar/retornar** como interações próprias, e tema que não altera a cor do conteúdo do usuário.
 
 ⚠️ **Uma cota fica pendente:** os desenhos da Parte 3 não incluem a faixa de toggles do topo do card (⭐ favoritar, disponível, indisponível). Proposta de 8–10 mm a confirmar com quem desenhou — ver `insumos/README.md`.
 
