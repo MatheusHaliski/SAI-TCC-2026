@@ -427,44 +427,46 @@ flowchart TD
 
 ## 18. RF5 — Criar esquema de vestimenta ("Criar Look" · 5 etapas)
 
-> 📐 **Numeração canônica das etapas** (definida pelo time): **1** modo de geração · **2** prompt do chat da IA *(só com IA)* · **3** formulário de geração manual *(só sem IA)* · **4** arte de background, subetapas **4.1** e **4.2** *(RF11)* · **5** preview, revisão dos slots e salvar. As etapas **2 e 3 são mutuamente exclusivas**.
+> 📐 **Numeração canônica**: **1** modo de geração · **2** prompt do chat da IA *(caminho COM IA)* · **3** formulário de geração manual *(caminho SEM IA)* · **4** arte de background, subetapas **4.1** e **4.2** *(RF11)* · **5** preview, revisão dos slots e salvar.
+>
+> ✏️ **Bifurcação, não gateway.** As etapas 2 e 3 são os dois caminhos de geração; o usuário percorre um deles, e **ambos produzem a mesma coisa** — o esquema de vestimenta editado. Por isso o diagrama usa **fork/join** (barras `▮`) no lugar do losango: o que importa a jusante não é qual caminho foi tomado, é o produto comum. A **persistência ocorre uma única vez**, no botão salvar da etapa 5.
 
 ```mermaid
 flowchart TD
-    A([Usuário abre a aba 'Criar Look']) --> B[S: carrega guarda-roupa e dados do perfil]
+    A([Usuário acessa a página de criação do esquema]) --> B[S: carrega guarda-roupa, perfil e dados do usuário]
     B --> C{Possui ≥ 2 peças?}
     C -- Não --> D[/S: orienta o cadastro de peças — RF5.CA02 · RF4/] --> Z([Fim])
-    C -- Sim --> E[S: exibe o Closet Digital filtrável e o espaço de composição — RF5.CA01]
+    C -- Sim --> E1["ETAPA 1 · U: escolhe o modo de geração, com ou sem IA — RF5.CA07"]
 
-    E --> F["ETAPA 1 · U: escolhe o modo de geração — com ou sem IA — RF5.CA07"]
-    F --> G{Modo escolhido}
+    E1 --> FK[" "]:::bar
+    FK --> E2["ETAPA 2 · U: preenche o prompt do chat da IA — caminho COM IA · RF5.CA08"]
+    FK --> E3["ETAPA 3 · U: preenche o formulário de geração manual — caminho SEM IA · RF5.CA09"]
 
-    G -- Com IA --> H["ETAPA 2 · U: preenche o prompt do chat da IA — RF5.CA08"]
-    H --> I[S: monta o prompt restrito ao acervo do usuário]
-    I --> J[E: provedor de IA — RF24.CA02]
-    J --> K{Composições válidas e só com peças do acervo?}
-    K -- Não --> I
-    K -- Sim --> L[S: apresenta 3 composições distintas — RF5.CA04]
-    L --> M[U: escolhe uma e ajusta os slots] --> P
+    E2 --> IA1[S: monta o prompt restrito ao acervo do usuário]
+    IA1 --> IA2[E: provedor de IA — RF24.CA02]
+    IA2 --> IA3{Composições válidas e só com peças do acervo?}
+    IA3 -- Não --> IA1
+    IA3 -- Sim --> IA4[S: apresenta 3 composições distintas — RF5.CA04] --> JN
 
-    G -- Sem IA --> N["ETAPA 3 · U: preenche o formulário de geração manual — RF5.CA09"]
-    N --> O[U: arrasta as peças para a composição] --> P
+    E3 --> MA1[U: seleciona as peças do próprio guarda-roupa, sem as indisponíveis — RF5.CA02 · RF31] --> JN
 
-    P["ETAPA 4 · Arte de background — RF11, ver diagrama 20"]
-    P --> Q[S: 4.1 arte do esquema de vestimenta, o card maior]
-    Q --> R[S: 4.2 arte do esquema de peça de roupa]
-
-    R --> S1["ETAPA 5 · U: visualiza o preview do conjunto e revisa os slots"]
-    S1 --> T{Confirma?}
-    T -- Não --> F
-    T -- Sim --> U1{Ao menos 1 peça na composição?}
-    U1 -- Não --> V[/S: recusa e indica o mínimo de 1 peça — RF5.CA06/] --> S1
-    U1 -- Sim --> W[S: salva o esquema herdando a visibilidade padrão do perfil — RF5.CA03 · RF3.CA12]
+    JN[" "]:::bar --> P(["ESQUEMA DE VESTIMENTA EDITADO — produto comum aos dois caminhos"])
+    P --> E4["ETAPA 4 · Arte de background — RF11 · subetapas 4.1 e 4.2, ver diagrama 20"]
+    E4 --> E5["ETAPA 5 · U: visualiza o preview do conjunto e revisa os slots"]
+    E5 --> SV{Confirma e aciona salvar?}
+    SV -- Não --> E1
+    SV -- Sim --> V1{Ao menos 1 peça na composição?}
+    V1 -- Não --> V2[/S: recusa e indica o mínimo de 1 peça — RF5.CA06/] --> E5
+    V1 -- Sim --> W[S: PERSISTE o esquema, herdando a visibilidade padrão do perfil — RF5.CA03 · RF3.CA12]
     W --> X[S: sugere vínculo de marca/celebridade detectado — RF24.CA09 · RF20/RF21]
     X --> Y{Usuário publica no feed?}
     Y -- Não --> Z
     Y -- Sim --> AA[S: publica respeitando a visibilidade escolhida — RF5.CA05 · RF8] --> Z
+
+    classDef bar fill:#2A2632,stroke:#2A2632,color:#2A2632;
 ```
+
+**O que a bifurcação torna verificável:** nada é gravado antes da etapa 5. Um fluxo desenhado com gateway convida a implementar "salvar ao sair de cada etapa", e aí um abandono no meio deixa esquema órfão no banco.
 
 ---
 
@@ -517,50 +519,54 @@ flowchart TD
 
 ## 20. RF11 — Background Studio (**etapa 4** · subetapas 4.1 e 4.2)
 
-> ✏️ **Redesenhado duas vezes.** Os modos de geração eram `cor · gradiente · AI Artwork`; agora são **Cor & Gradiente** (modo 1), **Arte com AI** (modo 2) e **Background das peças** (modo 3). E a numeração fechou: isto é a **etapa 4** do Criar Look, com **4.1** = arte do esquema de vestimenta (card maior, modos 1 e 2) e **4.2** = arte do esquema de peça de roupa (modo 3). Não existe etapa 6.
+> ✏️ **Três modos coexistentes, com bifurcação.** Os modos eram `cor · gradiente · AI artwork`; agora são **1 · Cor & Gradiente** e **2 · Arte com AI** (ambos na subetapa **4.1**, arte do esquema de vestimenta — o card maior) e **3 · Background das peças** (subetapa **4.2**, arte do esquema de peça de roupa).
+>
+> O losango saiu porque **as escolhas são coexistentes**: o usuário pode aplicar cor, pedir arte à IA e tratar o fundo das peças **na mesma passagem**. A gravação acontece **uma única vez**, no **botão salvar dentro do modal do Background Studio**.
 
 ```mermaid
 flowchart TD
-    A([Usuário chega na etapa 4 - editar arte de background]) --> B[S: carrega o card em pré-visualização em tempo real — RF11.CA01]
-    B --> C{Subetapa}
+    A([Usuário chega na etapa 4 e abre o Background Studio]) --> B[S: carrega o card em pré-visualização em tempo real — RF11.CA01]
+    B --> FK[" "]:::bar
 
-    C -- "4.1 · arte do esquema de VESTIMENTA (card maior)" --> D{Modo de geração — RF11.CA06}
+    FK --> M3["MODO 3 · Background das peças — subetapa 4.2"]
+    FK --> M2["MODO 2 · Arte com AI — subetapa 4.1"]
+    FK --> M1["MODO 1 · Cor & Gradiente — subetapa 4.1"]
 
-    D -- "modo 1 · Cor & Gradiente" --> E[S: abre o formulário único de preenchimento do fundo]
-    E --> F{Preenchimento}
-    F -- Cor sólida --> G[U: escolhe a cor] --> V
-    F -- Gradiente --> H[U: define as paradas e a direção do degradê] --> V
+    M1 --> C1{Preenchimento}
+    C1 -- Cor sólida --> C2[U: escolhe a cor, no mesmo formulário — RF11.CA07] --> JN
+    C1 -- Gradiente --> C3[U: define as paradas e a direção do degradê — RF11.CA07] --> JN
 
-    D -- "modo 2 · Arte com AI" --> I[S: abre o formulário com os 8 inputs do CA8]
-    I --> J{Como o usuário define a arte}
-    J -- Galeria / editorial / preset Aura --> K[U: escolhe uma predefinição] --> V
-    J -- Imagem própria --> L[U: envia a imagem]
-    L --> M{Formato e proporção válidos?}
-    M -- Não --> N[/S: recusa indicando o motivo/] --> L
-    M -- Sim --> O[S: recorta para o formato do card — RF11.CA04] --> V
-    J -- Prompt --> P[U: descreve o cenário e aciona gerar]
-    P --> Q[E: provedor de geração de arte — RF24.CA07]
-    Q --> R{Resposta em até 30 s?}
-    R -- "Não / erro" --> S1[/S: informa o andamento do job sem travar a tela — RF11.CA03 · RNF8/] --> Q
-    R -- Sim --> T[S: entrega a arte respeitando a área segura do card] --> V
+    M2 --> D1{Como o usuário define a arte}
+    D1 -- Galeria / editorial / preset Aura --> D2[U: escolhe uma predefinição] --> JN
+    D1 -- Imagem própria --> D3[U: envia a imagem]
+    D3 --> D4{Formato e proporção válidos?}
+    D4 -- Não --> D5[/S: recusa indicando o motivo/] --> D3
+    D4 -- Sim --> D6[S: recorta para o formato do card — RF11.CA04] --> JN
+    D1 -- Prompt --> D7[U: descreve o cenário e aciona gerar]
+    D7 --> D8[E: provedor de geração de arte — RF24.CA07]
+    D8 --> D9{Resposta em até 30 s?}
+    D9 -- Não / erro --> D10[/S: informa o andamento do job sem travar a tela — RF11.CA03 · RNF8/] --> D8
+    D9 -- Sim --> D11[S: entrega a arte respeitando a área segura do card] --> JN
 
-    C -- "4.2 · arte do esquema de PEÇA DE ROUPA (modo 3)" --> U1[S: lista as peças do esquema — RF11.CA08]
-    U1 --> W[U: seleciona uma peça e define cor, gradiente, imagem ou preset]
-    W --> X[S: pré-visualiza a arte daquela peça, sem tocar na arte do card maior da 4.1]
-    X --> Y{Faltam peças a editar?}
-    Y -- Sim --> W
-    Y -- Não --> V
+    M3 --> E1[S: lista as peças do esquema — RF11.CA08]
+    E1 --> E2[U: seleciona uma peça e define cor, gradiente, imagem ou preset]
+    E2 --> E3[S: pré-visualiza a arte daquela peça, sem tocar no card maior da 4.1]
+    E3 --> E4{Faltam peças a editar?}
+    E4 -- Sim --> E2
+    E4 -- Não --> JN
 
-    C -- Remover fundo --> AB[S: card volta ao fundo padrão sem perder os demais dados — RF11.CA05] --> Z([Segue para a etapa 5])
+    JN[" "]:::bar --> V[S: pré-visualização acumulada de tudo o que foi aplicado]
+    V --> AC{Texto legível nos temas claro e escuro?}
+    AC -- Não --> AD[/S: avisa e sugere ajuste ou outro fundo/] --> FK
+    AC -- Sim --> SV[U: aciona o BOTÃO SALVAR do modal do Background Studio]
+    SV --> AE[S: PERSISTE a arte aplicada — RF11.CA02 · CA05 · CA06]
+    AE --> AF[S: registra a inferência quando houve IA — RF24.CA16]
+    AF --> Z([Segue para a etapa 5 — preview e slots])
 
-    V[S: valida a legibilidade do texto sobreposto nos temas claro e escuro]
-    V --> AC{Contraste suficiente nos dois temas?}
-    AC -- Não --> AD[/S: avisa e sugere ajuste ou outro fundo/] --> C
-    AC -- Sim --> AE[S: salva a arte aplicada — RF11.CA02 · CA05 · CA06]
-    AE --> AF[S: registra a inferência quando houve IA — RF24.CA16] --> Z
+    classDef bar fill:#2A2632,stroke:#2A2632,color:#2A2632;
 ```
 
-**A regra que o diagrama torna verificável:** a subetapa **4.2** age *por peça* e **nunca** toca a arte do **card maior**, que é decidida na **4.1**. Sem essa separação explícita no requisito, a implementação natural seria sobrescrever o fundo do look inteiro ao editar uma peça.
+**As duas regras que o diagrama torna verificáveis:** (1) a subetapa **4.2** age *por peça* e **nunca** sobrescreve a arte do **card maior**, decidida na **4.1** — sem isso escrito, a implementação natural seria sobrescrever o fundo do look inteiro ao editar uma peça; (2) **nenhum modo grava sozinho** — os três alimentam a mesma pré-visualização e só o botão salvar do modal persiste.
 
 ---
 
