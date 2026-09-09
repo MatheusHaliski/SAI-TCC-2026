@@ -192,21 +192,25 @@ São **critérios de rejeição** do artefato #6 — se algum aparecer, a tela v
 | RF5.CA04 | usuário aciona "gerar com IA" | confirma ocasião e humor | sistema apresenta 3 composições distintas usando apenas peças do guarda-roupa do usuário (**RF24.CA02**) |
 | RF5.CA05 | esquema salvo | usuário publica no feed | esquema passa a aparecer na aba "Buscar" (RF8) respeitando a visibilidade escolhida |
 | RF5.CA06 | usuário tenta salvar sem nenhuma peça | aciona salvar | sistema recusa e indica o mínimo de 1 peça |
-| RF5.CA07 | usuário percorre o fluxo "Criar Look" | avança pelas etapas | o sistema apresenta **5 etapas**, nesta ordem: **1** escolher modo de geração (com ou sem IA) · **2** preencher o prompt do chat da IA *(só no modo COM IA)* · **3** preencher o formulário de geração manual *(só no modo SEM IA)* · **4** editar arte de background, com as subetapas **4.1** (esquema de vestimenta / card maior) e **4.2** (esquema de peça de roupa) · **5** visualizar o preview do conjunto, revisar os slots e salvar |
-| RF5.CA08 | usuário escolheu o modo **com IA** na etapa 1 | avança | o sistema apresenta a **etapa 2** (prompt do chat da IA) e **pula a etapa 3**, que é exclusiva do modo manual |
-| RF5.CA09 | usuário escolheu o modo **sem IA** na etapa 1 | avança | o sistema apresenta a **etapa 3** (formulário de geração manual) e **pula a etapa 2**, que é exclusiva do modo com IA |
+| RF5.CA07 | usuário percorre o fluxo "Criar Look" | avança pelas etapas | o sistema apresenta **5 etapas**, nesta ordem: **1** escolher modo de geração (com ou sem IA) · **2** preencher o prompt do chat da IA · **3** preencher o formulário de geração manual · **4** editar arte de background, com as subetapas **4.1** (esquema de vestimenta / card maior) e **4.2** (esquema de peça de roupa) · **5** visualizar o preview do conjunto, revisar os slots e salvar |
+| RF5.CA08 | usuário escolheu um modo de geração na etapa 1 | avança no criador | a escolha **apenas navega** até a etapa correspondente — **não bloqueia nem descarta a outra**. As etapas **2 e 3 coexistem**: o usuário pode usar o prompt da IA **e** o formulário manual na mesma passagem, em qualquer ordem, voltando à etapa 1 para alternar |
+| RF5.CA09 | usuário passou pela etapa 2, pela etapa 3, ou por ambas | aciona **salvar** na **etapa 5** | é **só nesse momento** que o esquema é aplicado e persistido, com o resultado acumulado de tudo o que foi feito — **independentemente** de ter usado a IA, o formulário manual ou os dois |
 
 > 📐 **As 5 etapas do fluxo Criar Look.** Esta é a numeração canônica; qualquer outro documento que cite "etapa N" do Criar Look se resolve por aqui.
 >
 > | Etapa | Nome | Quando aparece | RF dono |
 > |---|---|---|---|
 > | **1** | Escolher modo de geração (com ou sem IA) | sempre | RF5 |
-> | **2** | Preencher o prompt do chat da IA | só no modo **com IA** | RF5 · RF24.CA02 |
-> | **3** | Preencher o formulário de geração manual | só no modo **sem IA** | RF5 |
+> | **2** | Preencher o prompt do chat da IA | sempre acessível | RF5 · RF24.CA02 |
+> | **3** | Preencher o formulário de geração manual | sempre acessível | RF5 |
 > | **4** | Editar arte de background — **4.1** esquema de vestimenta (card maior) · **4.2** esquema de peça de roupa | sempre | **RF11** |
 > | **5** | Visualizar preview do conjunto, revisar slots e salvar | sempre | RF5 |
 >
-> As etapas **2 e 3 são mutuamente exclusivas** — são os dois ramos do modo escolhido na etapa 1, nunca as duas na mesma passagem.
+> ⚠️ **As etapas 2 e 3 NÃO são mutuamente exclusivas.** O "modo de geração" da etapa 1 é apenas um **navegador entre etapas** — ele leva o usuário à etapa correspondente, mas **não bloqueia a outra**. O usuário pode pedir uma composição à IA (etapa 2) e depois ajustar tudo à mão no formulário (etapa 3), ou o contrário, quantas vezes quiser.
+>
+> **O que decide o resultado é o salvamento na etapa 5**, e só ele: o produto final é aplicado quando o usuário salva, com o estado acumulado do que quer que tenha feito — IA, formulário, ou os dois. Nada é aplicado ao sair da etapa 2 ou da etapa 3.
+>
+> Modelar isso como decisão excludente seria um erro caro: levaria a implementar bloqueio de navegação e um "commit" por etapa, quebrando justamente o uso mais provável — gerar com IA e depois refinar à mão.
 
 ### RF6 — Perfil Lookbook: Closet Digital e Looks Salvos *(absorve RF29)*
 

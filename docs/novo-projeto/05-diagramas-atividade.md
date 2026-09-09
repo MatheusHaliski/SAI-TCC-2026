@@ -427,20 +427,22 @@ flowchart TD
 
 ## 18. RF5 — Criar esquema de vestimenta ("Criar Look" · 5 etapas)
 
-> 📐 **Numeração canônica**: **1** modo de geração · **2** prompt do chat da IA *(caminho COM IA)* · **3** formulário de geração manual *(caminho SEM IA)* · **4** arte de background, subetapas **4.1** e **4.2** *(RF11)* · **5** preview, revisão dos slots e salvar.
+> 📐 **Numeração canônica**: **1** modo de geração · **2** prompt do chat da IA · **3** formulário de geração manual · **4** arte de background, subetapas **4.1** e **4.2** *(RF11)* · **5** preview, revisão dos slots e salvar.
 >
-> ✏️ **Bifurcação, não gateway.** As etapas 2 e 3 são os dois caminhos de geração; o usuário percorre um deles, e **ambos produzem a mesma coisa** — o esquema de vestimenta editado. Por isso o diagrama usa **fork/join** (barras `▮`) no lugar do losango: o que importa a jusante não é qual caminho foi tomado, é o produto comum. A **persistência ocorre uma única vez**, no botão salvar da etapa 5.
+> ⚠️ **As etapas 2 e 3 coexistem — o modo de geração é apenas um navegador entre etapas.** Escolher "com IA" ou "sem IA" na etapa 1 leva o usuário à etapa correspondente, mas **não bloqueia a outra**: dá para gerar com a IA e depois refinar à mão no formulário, ou o contrário, quantas vezes quiser. Por isso o diagrama usa **fork/join** (barras `▮`) e não losango.
+>
+> **O produto final é aplicado apenas ao salvar na etapa 5**, com o estado acumulado — independentemente de ter usado a IA, o formulário, ou os dois.
 
 ```mermaid
 flowchart TD
     A([Usuário acessa a página de criação do esquema]) --> B[S: carrega guarda-roupa, perfil e dados do usuário]
     B --> C{Possui ≥ 2 peças?}
     C -- Não --> D[/S: orienta o cadastro de peças — RF5.CA02 · RF4/] --> Z([Fim])
-    C -- Sim --> E1["ETAPA 1 · U: escolhe o modo de geração, com ou sem IA — RF5.CA07"]
+    C -- Sim --> E1["ETAPA 1 · U: escolhe o modo de geração — navegador entre etapas, NÃO bloqueia nenhuma — RF5.CA08"]
 
     E1 --> FK[" "]:::bar
-    FK --> E2["ETAPA 2 · U: preenche o prompt do chat da IA — caminho COM IA · RF5.CA08"]
-    FK --> E3["ETAPA 3 · U: preenche o formulário de geração manual — caminho SEM IA · RF5.CA09"]
+    FK --> E2["ETAPA 2 · U: preenche o prompt do chat da IA"]
+    FK --> E3["ETAPA 3 · U: preenche o formulário de geração manual"]
 
     E2 --> IA1[S: monta o prompt restrito ao acervo do usuário]
     IA1 --> IA2[E: provedor de IA — RF24.CA02]
@@ -448,16 +450,18 @@ flowchart TD
     IA3 -- Não --> IA1
     IA3 -- Sim --> IA4[S: apresenta 3 composições distintas — RF5.CA04] --> JN
 
-    E3 --> MA1[U: seleciona as peças do próprio guarda-roupa, sem as indisponíveis — RF5.CA02 · RF31] --> JN
+    E3 --> MA1[U: seleciona e ajusta as peças do próprio guarda-roupa, sem as indisponíveis — RF5.CA02 · RF31] --> JN
 
-    JN[" "]:::bar --> P(["ESQUEMA DE VESTIMENTA EDITADO — produto comum aos dois caminhos"])
-    P --> E4["ETAPA 4 · Arte de background — RF11 · subetapas 4.1 e 4.2, ver diagrama 20"]
+    JN[" "]:::bar --> P(["ESQUEMA EM EDIÇÃO — estado acumulado da IA, do formulário, ou dos dois"])
+    P --> ALT{Usuário quer alternar de modo?}
+    ALT -- Sim, voltar e usar o outro --> E1
+    ALT -- Não, seguir --> E4["ETAPA 4 · Arte de background — RF11 · subetapas 4.1 e 4.2, ver diagrama 20"]
     E4 --> E5["ETAPA 5 · U: visualiza o preview do conjunto e revisa os slots"]
-    E5 --> SV{Confirma e aciona salvar?}
+    E5 --> SV{Aciona salvar?}
     SV -- Não --> E1
     SV -- Sim --> V1{Ao menos 1 peça na composição?}
     V1 -- Não --> V2[/S: recusa e indica o mínimo de 1 peça — RF5.CA06/] --> E5
-    V1 -- Sim --> W[S: PERSISTE o esquema, herdando a visibilidade padrão do perfil — RF5.CA03 · RF3.CA12]
+    V1 -- Sim --> W[S: APLICA E PERSISTE o esquema com o estado acumulado — RF5.CA09 · RF5.CA03 · RF3.CA12]
     W --> X[S: sugere vínculo de marca/celebridade detectado — RF24.CA09 · RF20/RF21]
     X --> Y{Usuário publica no feed?}
     Y -- Não --> Z
@@ -466,7 +470,7 @@ flowchart TD
     classDef bar fill:#2A2632,stroke:#2A2632,color:#2A2632;
 ```
 
-**O que a bifurcação torna verificável:** nada é gravado antes da etapa 5. Um fluxo desenhado com gateway convida a implementar "salvar ao sair de cada etapa", e aí um abandono no meio deixa esquema órfão no banco.
+**O que a bifurcação torna verificável, e por que importa:** as etapas 2 e 3 alimentam o **mesmo** esquema em edição, e **nada é gravado** antes da etapa 5. Desenhado com gateway excludente, o fluxo convidaria a duas implementações erradas ao mesmo tempo — bloquear a navegação entre os modos e dar "commit" a cada etapa — quebrando justamente o uso mais provável, que é **gerar com a IA e depois refinar à mão**.
 
 ---
 

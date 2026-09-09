@@ -175,7 +175,7 @@ a.inl{color:var(--ia);text-decoration:none;border-bottom:1px solid var(--ia-soft
           <tr><td><span class="route">/my-wardrobe</span> · Guarda-roupa</td><td>Grade de peças + esquemas compactos</td><td class="rf">RF6 · RF7</td><td class="rnf">RNF1 · RNF7</td><td>RF6-CA19: exibe esquemas de peça no modelo compacto</td></tr>
           <tr><td><span class="route">/add-piece</span> · <b>Adicionar Peça</b></td><td>Página (nav lateral) · foto + formulário rotulado (inclui <b>sexo</b>)</td><td class="rf">RF4</td><td class="rnf">RNF7 · RNF8</td><td>Era modal → vira página, por responsividade (ver Correções)</td></tr>
           <tr><td>Modal <b>Editor Canvas 2D</b></td><td>Recorte, fundo, cor, camadas</td><td class="rf">RF15</td><td class="rnf">RNF8</td><td>Aberto a partir de RF4/RF5</td></tr>
-          <tr><td><b>Criar Look</b> (fluxo)</td><td>1 modo de geração · 2 prompt da IA · 3 formulário manual · 4 arte de background (4.1 vestimenta · 4.2 peças) · 5 preview + slots + salvar</td><td class="rf">RF5 · RF10 · RF11</td><td class="rnf">RNF8</td><td><b>5 etapas.</b> Bifurcação IA/manual (não gateway); etapas 2 e 3 são os dois caminhos e convergem no mesmo esquema editado</td></tr>
+          <tr><td><b>Criar Look</b> (fluxo)</td><td>1 modo de geração · 2 prompt da IA · 3 formulário manual · 4 arte de background (4.1 vestimenta · 4.2 peças) · 5 preview + slots + salvar</td><td class="rf">RF5 · RF10 · RF11</td><td class="rnf">RNF8</td><td><b>5 etapas.</b> Bifurcação, não gateway: o modo de geração só <b>navega</b> — as etapas 2 e 3 <b>coexistem</b> e acumulam no mesmo esquema. O produto é aplicado ao <b>salvar na etapa 5</b></td></tr>
           <tr><td><b>Provador 2D</b></td><td>Manequim + seleção de peças</td><td class="rf">RF18</td><td class="rnf">RNF7</td><td>Gateway masculino/feminino filtra peças por <b>sexo</b></td></tr>
           <tr><td>Provador 3D</td><td>Manequim 3D (tema futuro)</td><td class="rf">RF16</td><td class="rnf">RNF8</td><td>Job assíncrono / worker externo</td></tr>
           <tr><td><span class="route">/explore</span> · Buscar</td><td>Filtros + lista de cards</td><td class="rf">RF8</td><td class="rnf">RNF7</td><td>Descoberta de peças, esquemas, usuários, marcas</td></tr>
@@ -435,33 +435,35 @@ flowchart LR
     <!-- ============ ATIVIDADE ============ -->
     <section id="atividade">
       <h2><span class="n">06</span>Diagramas de atividade</h2>
-      <p class="sub">RF5 e RF11 foram redesenhados com <b>bifurcação (fork/join)</b> no lugar do gateway losango — em ambos os caminhos convergem para um mesmo produto, e a gravação acontece num único ponto. RF18 mantém o gateway masculino/feminino, onde a decisão é real e excludente; RF4 detalha o cadastro de peça.</p>
+      <p class="sub">RF5 e RF11 foram redesenhados com <b>bifurcação (fork/join)</b> no lugar do gateway losango — em ambos as opções <b>coexistem</b> (não são excludentes), alimentam um mesmo estado em edição, e a gravação acontece num único ponto. RF18 mantém o gateway masculino/feminino, onde a decisão é real e excludente; RF4 detalha o cadastro de peça.</p>
 
       <h3><span class="code ia">RF5</span> Criar Look — bifurcação dos modos de geração · 5 etapas</h3>
-      <p class="sub" style="margin-bottom:8px">O <b>gateway</b> foi substituído por uma <b>bifurcação</b>: a etapa 1 abre os dois caminhos de geração e, <b>qualquer que seja o escolhido</b>, ambos desembocam no <b>mesmo produto — o esquema de vestimenta editado</b>. Só ali o fluxo segue para a arte de background (etapa 4) e o estado é <b>persistido no botão salvar da etapa 5</b>.</p>
+      <p class="sub" style="margin-bottom:8px">O <b>gateway</b> foi substituído por uma <b>bifurcação</b> porque as etapas 2 e 3 <b>coexistem</b>: o "modo de geração" da etapa 1 é apenas um <b>navegador entre etapas</b> — leva à etapa correspondente, mas <b>não bloqueia a outra</b>. O usuário pode pedir uma composição à IA e depois refinar tudo à mão no formulário, ou o contrário, quantas vezes quiser. <b>O produto final é aplicado apenas quando ele salva na etapa 5</b>, com o estado acumulado — tendo usado a IA, o formulário, ou os dois.</p>
       <figure class="dg">
         <pre class="mermaid">
 flowchart TD
   A([Acessar a página de criação do esquema]) --> L["Sistema carrega guarda-roupa,<br/>perfil e dados do usuário"]
   L --> E1["<b>Etapa 1</b> · Escolher modo de geração<br/>(com ou sem IA)"]
   E1 --> FK[" "]:::bar
-  FK --> E2["<b>Etapa 2</b> · Preencher o prompt do chat da IA<br/><i>caminho: geração COM IA</i>"]:::ia
-  FK --> E3["<b>Etapa 3</b> · Preencher o formulário de geração manual<br/><i>caminho: geração SEM IA</i>"]:::man
+  FK --> E2["<b>Etapa 2</b> · Preencher o prompt do chat da IA<br/><i>acessível em qualquer momento</i>"]:::ia
+  FK --> E3["<b>Etapa 3</b> · Preencher o formulário de geração manual<br/><i>acessível em qualquer momento</i>"]:::man
   E2 --> IA2["IA interpreta o pedido e pré-compõe o esquema"]:::ia
-  E3 --> MA3["Usuário seleciona as peças do próprio guarda-roupa<br/>(RF5-CA2 · sem peças indisponíveis)"]:::man
+  E3 --> MA3["Usuário seleciona e ajusta as peças do guarda-roupa<br/>(RF5-CA2 · sem peças indisponíveis)"]:::man
   IA2 --> JN[" "]:::bar
   MA3 --> JN
-  JN --> P(["<b>Esquema de vestimenta editado</b><br/>produto comum aos dois caminhos"])
-  P --> E4["<b>Etapa 4</b> · Editar arte de background — RF11<br/>4.1 esquema de vestimenta · 4.2 esquema de peça"]
+  JN --> P(["<b>Esquema em edição</b><br/>estado acumulado da IA, do formulário, ou dos dois"])
+  P --> ALT{"Alternar de modo e usar também o outro?"}
+  ALT -->|Sim| E1
+  ALT -->|Não, seguir| E4["<b>Etapa 4</b> · Editar arte de background — RF11<br/>4.1 esquema de vestimenta · 4.2 esquema de peça"]
   E4 --> E5["<b>Etapa 5</b> · Visualizar preview do conjunto<br/>e revisar os slots"]
   E5 --> SV["Clicar em <b>salvar</b> (etapa 5)"]
-  SV --> DB[("Estado do esquema persistido")]
+  SV --> DB[("Esquema APLICADO e persistido<br/>com o estado acumulado")]
   DB --> F([Esquema salvo])
   classDef ia fill:#EEEBFB,stroke:#5B4BC4,color:#2c245e;
   classDef man fill:#E7F3EC,stroke:#2E7D57,color:#1c4d36;
   classDef bar fill:#2A2632,stroke:#2A2632,color:#2A2632;
         </pre>
-        <figcaption>As barras escuras são a <b>bifurcação</b> (fork) e a <b>reunião</b> (join) que substituíram o gateway losango. As etapas <b>2</b> e <b>3</b> são os dois caminhos de geração — o usuário percorre um deles — e <b>ambos produzem a mesma coisa</b>: o esquema de vestimenta editado. A <b>persistência acontece uma única vez</b>, no botão <b>salvar</b> da etapa 5; nada é gravado antes disso.</figcaption>
+        <figcaption>As barras escuras são a <b>bifurcação</b> (fork) e a <b>reunião</b> (join) que substituíram o gateway losango. As etapas <b>2</b> e <b>3</b> <b>não são excludentes</b>: o modo escolhido na etapa 1 apenas <b>navega</b> até uma delas, sem bloquear a outra, e as duas alimentam o <b>mesmo esquema em edição</b>. A <b>aplicação e a persistência acontecem uma única vez</b>, no botão <b>salvar</b> da etapa 5 — nada é gravado ao sair da etapa 2 ou da 3. Desenhar isso como decisão excludente levaria a bloquear a navegação entre os modos e a dar “commit” por etapa, quebrando o uso mais provável: <b>gerar com IA e depois refinar à mão</b>.</figcaption>
       </figure>
 
       <h3><span class="code">RF18</span> Provador 2D — gateway masculino / feminino</h3>
@@ -677,14 +679,15 @@ sequenceDiagram
   participant IA
   participant API
   participant DB
-  alt Caminho manual (etapa 3)
-    U->>App: formulário manual · peças do guarda-roupa
-  else Caminho com IA (etapa 2)
+  opt Etapa 2 · com IA
     U->>App: prompt do chat da IA
     App->>IA: interpretar pedido
     IA-->>App: esquema pré-composto
   end
-  Note over U,App: os dois caminhos convergem no mesmo<br/>esquema de vestimenta editado
+  opt Etapa 3 · formulário manual
+    U->>App: peças do guarda-roupa · ajustes à mão
+  end
+  Note over U,App: etapas 2 e 3 coexistem e acumulam no<br/>mesmo esquema — nada e gravado ainda
   U->>App: etapa 4 · arte de background (4.1 + 4.2)
   U->>App: etapa 5 · preview + revisar slots
   U->>App: clicar em salvar (etapa 5)
