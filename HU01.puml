@@ -1,0 +1,278 @@
+@startuml HU-RF1_Cadastro_Perfis
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #E1F5FE
+skinparam classBorderColor #01579B
+skinparam arrowColor #01579B
+skinparam sequenceParticipantBkgColor #E1F5FE
+
+' ========================================
+' CLASSE BASE - USUÁRIO COMUM
+' ========================================
+class User {
+    ' Identificação
+    - id: UUID
+    - fullName: String
+    - email: String (unique)
+    - password: String (hash)
+    - profileType: Enum[common, brand, celebrity]
+
+    ' Auditoria
+    - createdAt: Timestamp
+    - updatedAt: Timestamp
+    - lastLoginAt: Timestamp
+
+    ' Status
+    - status: Enum[active, inactive, suspended, deleted]
+    - emailVerified: Boolean
+    - verificationToken: String
+    - acceptTerms: Boolean
+
+    ' Perfil
+    - profilePicture: URL {optional}
+    - bio: String {optional}
+
+    --
+    + register(data): Boolean
+    + verify(): void
+    + updateProfile(data): void
+    + deactivate(): void
+}
+
+' ========================================
+' CLASSE - USUÁRIO COMUM (Extensão)
+' ========================================
+class CommonUser extends User {
+    --
+    ' Sem campos adicionais específicos
+    ' Herda todos os campos de User
+}
+
+' ========================================
+' CLASSE - MARCA DE ROUPA
+' ========================================
+class Brand extends User {
+    ' Dados Legais
+    - cnpj: String (unique)
+    - razaoSocial: String
+    - nomeFantasia: String
+
+    ' Informações Comerciais
+    - website: URL
+    - categoriaModa: Enum[fast-fashion, luxo, sustentável, streetwear]
+    - descricaoComercial: String
+    - logoOficial: URL
+    - fotoCapa: URL
+    - hashtagOficial: String {optional}
+
+    ' Contato
+    - contatoComercial: ContactInfo
+        - email: String
+        - telefone: String
+
+    ' Documentação
+    - comprovanteAtividade: FileReference
+
+    ' Verificação
+    - status: Enum[pending_verification, active, suspended, deleted]
+    - verificationScore: Integer[0-100]
+    - verificationNotes: String
+    - documentVerified: Boolean
+
+    ' Aprovação
+    - approvedBy: UUID {optional}
+    - approvedAt: Timestamp {optional}
+
+    --
+    + registerBrand(data): Boolean
+    + submitVerification(): void
+    + updateBrandInfo(data): void
+}
+
+' ========================================
+' CLASSE - CELEBRIDADE
+' ========================================
+class Celebrity extends User {
+    ' Identificação Profissional
+    - nomeArtistico: String
+    - nomeReal: String
+    - areasAtuacao: Array[String]
+
+    ' Redes Sociais & Verificação
+    - seguidoresVerificaveis: SocialMediaLinks
+        - instagram: {URL, followerCount}
+        - tiktok: {URL, followerCount}
+        - youtube: {URL, subscriberCount}
+        - twitter: {URL, followerCount}
+    - urlVerificacao: URL
+
+    ' Documentação
+    - comprovanteIdentidade: FileReference
+    - historicoProfissional: String
+
+    ' Representação
+    - contatoRepresentacao: ContactInfo {optional}
+        - nome: String
+        - email: String
+        - telefone: String
+
+    ' Perfil
+    - fotoPerfil: URL
+    - areasInteresseModa: Array[String]
+
+    ' Verificação
+    - status: Enum[pending_verification, active, suspended, deleted]
+    - verificationScore: Integer[0-100]
+    - verificationNotes: String
+    - identityVerified: Boolean
+    - badgeVerificado: Boolean
+
+    ' Aprovação
+    - approvedBy: UUID {optional}
+    - approvedAt: Timestamp {optional}
+
+    --
+    + registerCelebrity(data): Boolean
+    + submitVerification(): void
+    + updateCelebrity Info(data): void
+}
+
+' ========================================
+' CLASSE - PROCESSO DE VERIFICAÇÃO
+' ========================================
+class VerificationProcess {
+    - id: UUID
+    - profileId: UUID
+    - profileType: Enum[brand, celebrity]
+    - status: Enum[draft, under_review, approved, rejected]
+    - submittedAt: Timestamp
+    - reviewedBy: UUID {optional}
+    - reviewedAt: Timestamp {optional}
+    - riskScore: Integer[0-100]
+    - decision: String
+    - notes: String
+    - createdAt: Timestamp
+    - updatedAt: Timestamp
+
+    --
+    + submitForVerification(): void
+    + autoValidate(): AutoValidationResult
+    + reviewManually(admin): void
+    + approve(): void
+    + reject(reason): void
+    + notifyUser(decision): void
+}
+
+' ========================================
+' CLASSE - AUDITORIA
+' ========================================
+class AuditLog {
+    - id: UUID
+    - action: String
+    - entityType: String
+    - entityId: UUID
+    - changedBy: UUID
+    - timestamp: Timestamp
+    - details: JSON
+
+    --
+    + logAction(action, entityId): void
+}
+
+' ========================================
+' RELACIONAMENTOS
+' ========================================
+
+User <|-- CommonUser : extends
+User <|-- Brand : extends
+User <|-- Celebrity : extends
+
+Brand --* VerificationProcess : submits
+Celebrity --* VerificationProcess : submits
+VerificationProcess "1" --> "1" AuditLog : logged in
+
+note right of Brand
+    **Status Progressão:**
+    1. Cadastro → pending_verification
+    2. Validação automática → under_review
+    3. Revisão manual → approved/rejected
+    4. Aprovado → active (badge ✓)
+end note
+
+note right of Celebrity
+    **Status Progressão:**
+    1. Cadastro → pending_verification
+    2. Validação automática → under_review
+    3. Revisão manual → approved/rejected
+    4. Aprovado → active (badge ✓)
+end note
+
+note bottom of User
+    **Campos de Monitoramento:**
+    • createdAt → Início de atividade
+    • updatedAt → Última mudança
+    • lastLoginAt → Análise de atividade
+    • status → Governança
+end note
+
+' ========================================
+' SEQUÊNCIA - FLUXO DE CADASTRO
+' ========================================
+
+@enduml
+
+' ========================================
+' FLUXO DE VERIFICAÇÃO (Workflow)
+' ========================================
+
+@startuml HU-RF1_Verificacao_Workflow
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequenceParticipantBkgColor #E1F5FE
+skinparam sequenceActorBkgColor #FFECB3
+skinparam sequenceLifeLineBkgColor #B3E5FC
+skinparam sequenceArrowColor #01579B
+
+participant "Usuário\n(Marca/Celebridade)" as User
+participant "Sistema FE\n(Frontend)" as FE
+participant "Sistema BE\n(Backend)" as BE
+participant "Banco de Dados\n(Firestore)" as DB
+participant "Admin Portal\n(Dashboard)" as Admin
+participant "Serviço de Email" as Email
+
+User -> FE: 1. Preenche formulário de cadastro
+FE -> BE: 2. POST /auth/register (perfil=marca/celebridade)
+BE -> BE: 3. Validação de campos obrigatórios
+BE -> DB: 4. Busca email duplicado
+DB --> BE: Email único ✓
+BE -> DB: 5. Hash senha + salvar usuário\nstatus=pending_verification
+DB --> BE: Usuário criado
+BE -> BE: 6. Etapa 1: Validação Automática\n- Validar formato documento\n- Buscar em base pública (CNPJ/seguidores)\n- Verificar duplicação\n- Calcular riskScore
+BE -> DB: 7. Atualizar: status=under_review,\nverificationScore=XX
+DB --> BE: Atualizado ✓
+BE -> Email: 8. Enviar email de confirmação\n+ instruções de verificação
+Email --> User: Email recebido ✓
+FE --> User: 9. "Cadastro em análise!"
+
+User -> User: Aguarda aprovação do admin...
+
+Admin -> Admin: 10. Acessa painel de verificações
+Admin -> Admin: 11. Etapa 2: Revisão Manual\n- Analisa documentos\n- Score de risco (baixo/médio/alto)\n- Histórico de submissões
+Admin -> BE: 12. APROVAR ou REJEITAR\nPOST /admin/verify/{id}
+BE -> DB: 13. Etapa 3: Implementação\nAtualizar: status=active,\napprovedBy=adminId,\napprovedAt=now,\nbadgeVerificado=true
+DB --> BE: Atualizado ✓
+BE -> DB: 14. Criar AuditLog\naction=APPROVED_BRAND/CELEBRITY
+DB --> BE: Log registrado ✓
+BE -> Email: 15. Enviar email de aprovação\n+ badge + acesso premium
+Email --> User: Email de sucesso! 🎉
+FE --> User: 16. Perfil ATIVADO ✓\nBadge "Verificado" visível
+
+note over Admin
+    **Critérios de Análise:**
+    - Documentação completa?
+    - Dados conferem com base pública?
+    - Risk score aceitável?
+    - Não-duplicata?
+end note
+
+@enduml
