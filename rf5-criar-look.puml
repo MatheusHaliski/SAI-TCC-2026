@@ -61,132 +61,70 @@ stop
 @enduml
 
 
-@startuml RF5_CriarLook_Diagrama_Sequencia
+@startuml RF5_CriarLook_Fluxo_Manual_vs_IA
 
-title RF5 — Criar Look: Diagrama de Sequência (Manual × IA)
+title RF5 — Criar Look: Fluxo Comparativo (Manual × IA)
 
-actor User
-participant "UI (CreateMySchemeView)" as UI
-participant "API Routes" as API
-participant "Service Layer" as SVC
-participant "Database (MySQL)" as DB
-participant "IA Service" as IA
+start
 
-alt Modo Manual
-    User->>UI: Clica em "Criar Look" (modo Manual)
-    UI->>API: POST /api/schemes/create {creation_mode: "manual"}
-    API->>SVC: initSchemeCreation("manual")
-    SVC->>DB: create scheme (status: draft)
-    DB-->>SVC: scheme_id
+:Etapa 1: Modo de Geração;
 
-    loop Seleção de Peças
-        User->>UI: Seleciona peça para slot
-        UI->>API: POST /api/schemes/{scheme_id}/items {slot, piece_id}
-        API->>SVC: addPieceToScheme(scheme_id, {slot, piece_id})
-        SVC->>DB: insert scheme_item
-        DB-->>SVC: scheme_item_id
-        SVC->>API: OK
-    end
+if (Escolher Modo?) then (Manual)
+    partition "🔄 CAMINHO MANUAL" {
+        :Etapa 2: Seleção Direta;
+        :Usuário abre Closet Digital;
+        :Arrasta peças para composition;
+        :Motor valida compatibilidade;
+        if (Peças válidas?) then (Sim)
+            :Peças confirmadas;
+        else (Não)
+            :Indicar erro de compatibilidade;
+            :Retornar para seleção;
+            note right : Loop até validação OK
+        endif
+    }
+else (IA)
+    partition "🤖 CAMINHO IA" {
+        :Etapa 2: Descrição/Intent;
+        :Usuário descreve look;
+        :Ex: 'Casual verão, cores claras';
 
-else Modo IA
-    User->>UI: Clica em "Criar Look" (modo IA)
-    UI->>API: POST /api/schemes/create {creation_mode: "ai"}
-    API->>SVC: initSchemeCreation("ai")
-    SVC->>DB: create scheme (status: draft)
+        :Etapa 3: IA Assist;
+        :IA processa descrição;
+        :IA sugere 3 composições;
+        :Usuário escolhe uma;
 
-    loop Até sugestão aceitável
-        User->>UI: Descreve o look ("Casual verão, cores claras...")
-        UI->>API: POST /api/schemes/{scheme_id}/ai-assist {description}
-        API->>IA: generateOutfit(description, user_wardrobe)
-        IA->>API: {suggestions: [{slot, piece_ids}, ...]}
-        API->>UI: Exibe sugestões
-        User->>UI: Aceita ou rejeita
-    end
+        if (Sugestão aceita?) then (Sim)
+            :Peças sugeridas aceitas;
+        else (Não)
+            :Usuário pode editar;
+            :ou gerar nova sugestão;
+            note right : Loop até aceitação
+        endif
+    }
+endif
 
-    User->>UI: Confirma sugestão
-    UI->>API: POST /api/schemes/{scheme_id}/apply-ai-suggestion
-    API->>SVC: applySuggestion(scheme_id, suggestion)
-    SVC->>DB: insert scheme_items (batch)
-end
+partition "🎨 AMBOS OS CAMINHOS" {
+    :Etapa 4: Background Art;
+    :Abrir Background Studio;
+    :Selecionar cores/gradiente/imagem;
+    :Pré-visualizar;
 
-User->>UI: Clica "Próxima: Arte de Background"
-UI->>UI: Abre Background Studio Modal
+    :Etapa 5: Salvar & Publicar;
+    :Validar todos os campos;
+    :Persistir em DB;
 
-loop Ajustes de Background
-    User->>UI: Configura cores/gradiente/imagem
-    UI->>API: PATCH /api/schemes/{scheme_id}/background {config}
-    API->>SVC: updateSchemeBackground(scheme_id, config)
-    SVC->>DB: update schemes.background_config
-end
-
-User->>UI: Clica "Salvar Look"
-UI->>API: POST /api/schemes/{scheme_id}/publish {is_public}
-API->>SVC: publishScheme(scheme_id)
-SVC->>DB: update schemes (status: published)
-
-User->>UI: Redirecionado para "Looks Salvos"
-
-@enduml
-
-
-@startuml RF5_CriarLook_Componentes
-
-title RF5 — Criar Look: Diagrama de Componentes
-
-package "Frontend (Next.js)" {
-  component "CreateMySchemeView" as View
-  component "ModeSelectionStep" as ModeStep
-  component "ManualSelectionStep" as ManualStep
-  component "AIAssistStep" as AIStep
-  component "OutfitBackgroundStudioModal" as BgModal
-  component "SchemePreviewCard" as Preview
+    if (Publicar?) then (Sim)
+        :Publicar no feed;
+    else (Não)
+        :Salvar como rascunho;
+    endif
 }
 
-package "Backend (API Routes)" {
-  component "SchemeController" as SchemeCtrl
-  component "SchemeService" as SchemeSvc
-  component "AIAssistService" as AISvc
-  component "PieceCompatibilityEngine" as CompatEngine
-  component "BackgroundStyleService" as BgSvc
-}
+:Look criado com sucesso;
+:Redirecionar para Looks Salvos;
 
-package "Data Layer" {
-  component "SchemeRepository" as SchemeRepo
-  component "SchemeItemsRepository" as ItemsRepo
-  component "WardrobeRepository" as WardrobeRepo
-  database "MySQL\n(schemes, scheme_items, wardrobe_items)" as DB
-}
-
-package "External Services" {
-  component "OpenAI / Claude\n(IA Generation)" as AIModel
-  component "Adobe / ImageMagick\n(Image Processing)" as ImgProcessor
-}
-
-View --> ModeStep: Render steps
-ModeStep --> ManualStep: mode = "manual"
-ModeStep --> AIStep: mode = "ai"
-
-ManualStep --> Preview: Show selection
-AIStep --> Preview: Show suggestions
-Preview --> BgModal: Next step
-
-BgModal --> SchemeCtrl: Submit all
-
-SchemeCtrl --> SchemeSvc: orchestrate
-SchemeSvc --> CompatEngine: Validate pieces
-SchemeSvc --> AISvc: if mode=ai
-AISvc --> AIModel: Generate suggestion
-AIModel --> AISvc: Return JSON
-SchemeSvc --> BgSvc: Process background
-BgSvc --> ImgProcessor: Generate preview
-
-SchemeSvc --> SchemeRepo: Save scheme
-SchemeSvc --> ItemsRepo: Save scheme_items
-SchemeRepo --> DB: INSERT schemes
-ItemsRepo --> DB: INSERT scheme_items
-
-SchemeSvc --> WardrobeRepo: Check availability
-WardrobeRepo --> DB: Query wardrobe_items
+stop
 
 @enduml
 
@@ -264,5 +202,51 @@ Publishing --> Public: Usuário escolhe público
 
 Private --> [*]: Look criado (privado)
 Public --> [*]: Look criado (público)
+
+@enduml
+
+
+@startuml RF5_CriarLook_Componentes_Simplificado
+
+title RF5 — Criar Look: Arquitetura Simplificada
+
+start
+
+partition "Frontend (Next.js)" {
+    :CreateMySchemeView;
+    :ModeSelectionStep;
+    :ManualSelectionStep;
+    :AIAssistStep;
+    :BackgroundStudioModal;
+}
+
+partition "Backend (API Routes)" {
+    :SchemeController;
+    :SchemeService;
+    :AIAssistService;
+    :CompatibilityEngine;
+}
+
+partition "Data Layer" {
+    :Database;
+    :Repositories;
+}
+
+partition "External Services" {
+    :IA Provider;
+    :Image Processing;
+}
+
+:Fluxo:;
+:1. Frontend renderiza seleção de modo;
+:2. Backend cria scheme draft;
+:3. Se Manual: Seleção direta;
+:4. Se IA: Enviar para IA Service;
+:5. IA retorna sugestões;
+:6. Ambos convergem em Background;
+:7. Validar e persistir;
+:8. Publicar ou salvar privado;
+
+stop
 
 @enduml
