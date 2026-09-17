@@ -8,28 +8,28 @@ title RF12 — Visualizar e Editar "Minhas Fotos"\nCronologia de Estilo Interati
 
 start
 
-:👤 Usuário autenticado
+:Usuário autenticado
 acessa "Minhas Fotos"/
 
-:🔄 Sistema carrega
+:Sistema carrega
 acervo de fotos
 (peça, esquema, DNA, provador)/
 
-:📊 IA detecta padrões
+:IA detecta padrões
 - cores preferidas
 - tipos de peça
 - ocasiões recorrentes
 - peças "momento-chave"/
 
-:💡 Sistema exibe card de insights
+:Sistema exibe card de insights
 "Você subiu 40% o uso de roxo
 nos últimos 2 meses"/
 
-:🎯 Usuário escolhe
+:Usuário escolhe
 modo de visualização/
 
-if (modo = TIMELINE?) then (✅ Sim)
-  :📅 Sistema agrupa fotos
+if (modo = TIMELINE?) then (Sim)
+  :Sistema agrupa fotos
   por período (semana/mês)
 
   Cada grupo mostra:
@@ -37,22 +37,22 @@ if (modo = TIMELINE?) then (✅ Sim)
   - Contador "X fotos neste período"
   - Contexto: ocasião, estilo, engajamento/
 
-  :⭐ Identifica momentos-chave
+  :Identifica momentos-chave
   - Fotos com ≥200 curtidas (RF19)
   - Peças usadas em ≥10 looks
   - DNA de Estilo
 
   Marca com destaque visual/
 
-  :🏷️ Enriquece contexto
+  :Enriquece contexto
   Cada foto exibe:
   - Origem (peça/esquema/DNA/provador)
   - Ocasião, estilo, material
   - Engajamento social (curtidas, comentários)
   - "Por quê foi criada"/
 
-else (❌ Não - Grade)
-  :🖼️ Sistema exibe
+else (Não - Grade)
+  :Sistema exibe
   grade de imagens (thumbnail)
 
   Cada card mostra:
@@ -62,37 +62,37 @@ else (❌ Não - Grade)
 
 endif
 
-:🔍 Usuário aplica filtros
+:Usuário aplica filtros
 avançados (opcional)/
 
-if (quer filtrar?) then (✅ Sim)
+if (quer filtrar?) then (Sim)
 
-  if (escolhe ORIGEM?) then (✅ Peça/Esquema/DNA)
+  if (escolhe ORIGEM?) then (Peça/Esquema/DNA)
     :Filter por origem selecionada/
   else
     :Mantém todas as origens/
   endif
 
-  if (escolhe PERÍODO?) then (✅ Últimas 4 sem / Mês / 3 meses / Ano)
+  if (escolhe PERÍODO?) then (Últimas 4 sem / Mês / 3 meses / Ano)
     :Recalcula agrupamento
     com novo intervalo temporal/
   else
     :Timeline padrão/
   endif
 
-  if (escolhe OCASIÃO?) then (✅ Formal/Casual/Esporte)
+  if (escolhe OCASIÃO?) then (Formal/Casual/Esporte)
     :Filtra por ocasião/
   else
     :Mostra todas as ocasiões/
   endif
 
-  if (escolhe ESTILO?) then (✅ Minimalista/Maximista/Eclético)
+  if (escolhe ESTILO?) then (Minimalista/Maximista/Eclético)
     :Filtra por estilo pessoal/
   else
     :Mostra todos os estilos/
   endif
 
-  if (escolhe COR?) then (✅ Cores específicas)
+  if (escolhe COR?) then (Cores específicas)
     :IA detecta cores dominantes
     e filtra fotos que contêm
     aquelas cores/
@@ -100,25 +100,25 @@ if (quer filtrar?) then (✅ Sim)
     :Mostra todas as cores/
   endif
 
-else (❌ Não)
+else (Não)
   :Exibe timeline completa
   sem filtros adicionais/
 endif
 
-:📊 Sistema aplica filtros
+:Sistema aplica filtros
 e recalcula vista/
 
-:🎬 Exibe timeline atualizada
+:Exibe timeline atualizada
 com:
 - Fotos agrupadas por período
-- Momentos-chave destacados (⭐)
+- Momentos-chave destacados
 - Contexto enriquecido
 - Engajamento social visível/
 
-:👆 Usuário seleciona
+:Usuário seleciona
 uma foto/
 
-if (quer COMPARAÇÃO?) then (✅ Sim - "Evolução")
+if (quer COMPARAÇÃO?) then (Sim - "Evolução")
   :Compara dois períodos
   lado-a-lado:
   - Paleta de cores
@@ -126,13 +126,13 @@ if (quer COMPARAÇÃO?) then (✅ Sim - "Evolução")
   - Ocasiões principais
   - Estilo prevalente/
 
-else (❌ Não - Ação direta)
+else (Não - Ação direta)
   :Segue para ação/
 endif
 
-:🎨 Usuário escolhe ação/
+:Usuário escolhe ação/
 
-if (ação = EDITAR?) then (✅ Editar)
+if (ação = EDITAR?) then (Editar)
   :Abre Editor Canvas 2D (RF15)
   com foto carregada
 
@@ -141,7 +141,7 @@ if (ação = EDITAR?) then (✅ Editar)
   - Brilho/contraste
   - Remoção de fundo/
 
-  if (usuário salva?) then (✅ Sim)
+  if (usuário salva?) then (Sim)
     :Imagem editada substitui
     a exibida na peça
 
@@ -152,22 +152,22 @@ if (ação = EDITAR?) then (✅ Editar)
     Original permanece íntegra/
   endif
 
-else if (ação = DOWNLOAD?) then (✅ Download)
+else if (ação = DOWNLOAD?) then (Download)
   :Entrega imagem original
   SEM marca d'água
 
   (disponível apenas
   para o dono da foto)/
 
-else if (ação = DELETAR?) then (✅ Deletar)
+else if (ação = DELETAR?) then (Deletar)
 
-  if (foto vinculada a peça ativa?) then (✅ Sim)
-    :⚠️ Sistema avisa:
+  if (foto vinculada a peça ativa?) then (Sim)
+    :Sistema avisa:
     "Peça ficará sem imagem"
 
     Exige confirmação explícita/
 
-    if (usuário confirma?) then (✅ Sim)
+    if (usuário confirma?) then (Sim)
       :Deleta foto/
     else
       :Cancela operação/
@@ -178,7 +178,7 @@ else if (ação = DELETAR?) then (✅ Deletar)
     com confirmação simples/
   endif
 
-else if (ação = DELETAR EM LOTE?) then (✅ Múltiplas)
+else if (ação = DELETAR EM LOTE?) then (Múltiplas)
 
   :Usuário seleciona várias fotos
   com checkboxes/
@@ -186,7 +186,7 @@ else if (ação = DELETAR EM LOTE?) then (✅ Múltiplas)
   :Sistema pede confirmação única:
   "Deseja deletar X fotos?"/
 
-  if (usuário confirma?) then (✅ Sim)
+  if (usuário confirma?) then (Sim)
     :Deleta todas as fotos
     selecionadas/
   else
@@ -195,37 +195,37 @@ else if (ação = DELETAR EM LOTE?) then (✅ Múltiplas)
 
 endif
 
-:✅ Ação concluída/
+:Ação concluída/
 
-:🎁 Sistema atualiza timeline
+:Sistema atualiza timeline
 - Recarrega a vista
 - Recalcula padrões (se necessário)
 - Exibe insights atualizados/
 
-if (usuário quer explorar mais?) then (✅ Sim)
+if (usuário quer explorar mais?) then (Sim)
   :Volta para seleção de foto/
-else (❌ Não)
+else (Não)
   :Sai de "Minhas Fotos"/
 endif
 
 stop
 
 note right of start
-  **RF12 Critérios de Aceite Implementados:**
-  ✅ RF12.CA01 — Acesso e agrupamento por origem
-  ✅ RF12.CA02 — Editor Canvas 2D (RF15)
-  ✅ RF12.CA03 — Aviso antes deletar vinculada
-  ✅ RF12.CA04 — Exclusão em lote
-  ✅ RF12.CA05 — Download sem marca d'água
-  ✅ RF12.CA06 — Lazy load (>50 fotos)
+  RF12 Critérios de Aceite Implementados:
+  [CA01] Acesso e agrupamento por origem
+  [CA02] Editor Canvas 2D (RF15)
+  [CA03] Aviso antes deletar vinculada
+  [CA04] Exclusão em lote
+  [CA05] Download sem marca d'água
+  [CA06] Lazy load (>50 fotos)
 
-  **Novos CAs da Cronologia de Estilo:**
-  ✅ RF12.CA07 — Agrupamento por período
-  ✅ RF12.CA08 — Momentos-chave identificados
-  ✅ RF12.CA09 — Contexto enriquecido
-  ✅ RF12.CA10 — Filtros temporais
-  ✅ RF12.CA11 — Insights de padrão
-  ✅ RF12.CA12 — Comparação de períodos
+  Novos CAs da Cronologia de Estilo:
+  [CA07] Agrupamento por período
+  [CA08] Momentos-chave identificados
+  [CA09] Contexto enriquecido
+  [CA10] Filtros temporais
+  [CA11] Insights de padrão
+  [CA12] Comparação de períodos
 end note
 
 @enduml
