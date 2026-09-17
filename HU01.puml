@@ -77,7 +77,8 @@ class Brand extends User {
     - status: Enum[pending_verification, active, suspended, deleted]
     - verificationScore: Integer[0-100]
     - verificationNotes: String
-    - documentVerified: Boolean
+    - identityVerified: Boolean
+    - badgeVerificado: Boolean
 
     ' Aprovação
     - approvedBy: UUID {optional}
