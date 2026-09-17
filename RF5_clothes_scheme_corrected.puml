@@ -1,0 +1,272 @@
+@startuml RF5_Criar_Look_Corrigido
+
+title RF5 — Criar Look: Diagrama de Classes (Corrigido com Divergências)
+
+'' Enumerations
+
+enum SchemeStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  DELETED
+}
+
+enum CreationMode {
+  MANUAL
+  AI_ASSISTED
+}
+
+enum Visibility {
+  PRIVATE
+  PUBLIC
+  FRIENDS_ONLY
+  FOLLOWERS: DIVERGENTE - não existe no ENUM de db/schema.sql
+}
+
+enum SlotType {
+  TOP
+  BOTTOM
+  DRESS
+  OUTERWEAR
+  SHOES
+  ACCESSORIES
+  FULL_BODY
+}
+
+'' Entities
+
+entity User {
+  * id: UUID
+  * email: String
+  * fullName: String
+  * visibility_default: Visibility
+  * createdAt: Timestamp
+  * updatedAt: Timestamp
+}
+
+entity WardrobeItem {
+  * id: UUID
+  * userId: UUID
+  * name: String
+  * category: String
+  * availability_status: String
+  * createdAt: Timestamp
+}
+
+entity Scheme <<FirestoreDocument>> {
+  * id: UUID
+  * userId: UUID
+  * title: String
+  * description: String
+  * creationMode: CreationMode
+  * status: SchemeStatus
+  * visibility: Visibility
+  * backgroundColor: String
+  * backgroundGradient: String
+  * backgroundImageUrl: URL
+  * displayMode: String
+  * createdAt: Timestamp
+  * updatedAt: Timestamp
+  * publishedAt: Timestamp (DIVERGENTE: campo derivado por COUNT())
+  --
+  + createScheme(mode): void
+  + addItem(slot, wardrobeItem): void
+  + validatePieces(): boolean
+  + configureBackground(config): void
+  + publish(): void
+  + archive(): void
+  + updateVisibility(visibility): void
+  + suggestBrandLinks(): Brand[]
+}
+
+entity SchemeItem <<FirestoreDocument>> {
+  * id: UUID
+  * schemeId: UUID
+  * wardrobeItemId: UUID (DIVERGENTE: validação feita apenas para 'suggested', não como FK)
+  * slot: SlotType
+  * zIndex: Integer
+  * sortOrder: Integer
+  * positionX: Float
+  * positionY: Float
+  * scale: Float
+  * rotation: Float
+  * createdAt: Timestamp
+  * updatedAt: Timestamp
+  --
+  + validateCompatibility(): boolean
+  + getWardrobeItem(): WardrobeItem
+}
+
+entity SchemeBackground <<FirestoreDocument>> {
+  * id: UUID
+  * schemeId: UUID
+  * backgroundColor: String
+  * backgroundGradient: String
+  * backgroundImageUrl: URL
+  * colorStartHex: String
+  * colorEndHex: String
+  * gradientAngle: Integer
+  * displayMode: String
+  * opacity: Float
+  * createdAt: Timestamp
+  * updatedAt: Timestamp
+  --
+  + applyBackground(): void
+  + generatePreview(): URL
+  + validateColors(): boolean
+}
+
+entity AIAssistance <<FirestoreDocument>> {
+  * id: UUID
+  * schemeId: UUID
+  * userDescription: String
+  * occasion: String
+  * mood: String
+  * suggestedItems: SchemeItem[]
+  * confidenceScores: Float[]
+  * generationAttempts: Integer
+  * createdAt: Timestamp
+  --
+  + generateSuggestions(): SchemeItem[]
+  + validateSuggestions(): boolean
+  + applySuggestion(schemeId, items): void
+  + regenerate(): SchemeItem[]
+}
+
+entity Brand <<MySQL>> {
+  * id: UUID
+  * name: String
+  * officialLogoUrl: URL
+}
+
+entity UserSavedScheme <<MySQL>> {
+  * id: UUID
+  * userId: UUID
+  * schemeId: UUID
+  * origin: String
+  * originAuthorId: UUID
+  * isFavorited: Boolean
+  * favoritedAt: Timestamp
+  * createdAt: Timestamp
+  --
+  + favorite(): void
+  + unfavorite(): void
+}
+
+entity OutfitLike <<MySQL>> {
+  * id: UUID
+  * userId: UUID
+  * schemeId: UUID (DIVERGENTE: pode estar ausente no código atual)
+  * createdAt: Timestamp
+}
+
+entity OutfitComment <<MySQL>> {
+  * id: UUID
+  * schemeId: UUID
+  * userId: UUID
+  * text: String
+  * createdAt: Timestamp
+}
+
+entity Remix <<MySQL>> {
+  * id: UUID
+  * originSchemeId: UUID
+  * remixSchemeId: UUID
+  * createdAt: Timestamp
+}
+
+'' Services
+
+service SchemeCompatibilityEngine {
+  + validatePieces(slots): boolean
+  + checkColorHarmony(colors): boolean
+  + validateMinimumPieces(items): boolean
+  + detectBrands(items): Brand[]
+  + suggestBrands(items): Brand[]
+}
+
+service AIOutfitGenerator {
+  + generateOutfit(description, userWardrobe): SchemeItem[]
+  + analyzeDescription(text): {occasion, mood, colors}
+  + restrictToAvailable(items, wardrobe): SchemeItem[]
+  + scoreCompatibility(items): Float
+  + rankSuggestions(items): SchemeItem[]
+}
+
+service BackgroundStyleService {
+  + parseConfig(config): SchemeBackground
+  + generatePreview(config): URL
+  + validateColorScheme(colors): boolean
+  + applyPreset(presetName): SchemeBackground
+}
+
+entity AuditLog <<MySQL>> {
+  * id: UUID
+  * action: String
+  * entityType: String
+  * entityId: UUID
+  * changedBy: UUID
+  * details: JSON
+  * timestamp: Timestamp
+}
+
+'' Relationships
+
+User "1" -- "0..*" Scheme : creates
+User "1" -- "0..*" UserSavedScheme : saves
+
+Scheme "1" -- "1..*" SchemeItem : contains
+Scheme "1" -- "0..1" SchemeBackground : has
+Scheme "1" -- "0..1" AIAssistance : uses
+
+SchemeItem "0..*" -- "1" WardrobeItem : references
+
+Scheme "0..*" -- "0..*" Brand : linksTo
+
+Scheme "1" -- "0..*" UserSavedScheme : isSavedIn
+Scheme "1" -- "0..*" OutfitLike : receives
+Scheme "1" -- "0..*" OutfitComment : receives
+Scheme "1" -- "0..*" Remix : isRemixedFrom
+
+SchemeCompatibilityEngine .. Scheme : validates
+AIOutfitGenerator .. AIAssistance : generates
+BackgroundStyleService .. SchemeBackground : configures
+
+Scheme "1" -- "0..*" AuditLog : records
+
+note right of Scheme
+  **Armazenamento Principal:** Firestore (NoSQL)
+  **Banco de Dados:** schemes (coleção)
+
+  **Divergências Críticas:**
+  1. publishedAt é derivado, não armazenado
+  2. Visibility ENUM não inclui 'followers'
+  3. Relacionamentos com OutfitLike/Comment/Remix em MySQL
+     não estão refletidos como subcoleções Firestore
+end note
+
+note right of SchemeItem
+  **Armazenamento:** Firestore (subcoleção dentro de schemes)
+  **Divergência:** wardrobeItemId validação apenas para 'suggested'
+  Não há FK real, apenas snapshot desnormalizado das peças
+end note
+
+note right of UserSavedScheme
+  **Armazenamento:** MySQL (tabela relacional)
+  **Propósito:** Rastrear favoritos e remoções de scheme
+  Contadores de favoritos em Redis para performance
+end note
+
+note right of OutfitLike
+  **Armazenamento:** MySQL
+  **Divergência:** Tabela pode estar ausente no código atual
+  Contadores derivados por COUNT()
+end note
+
+note right of OutfitComment
+  **Armazenamento:** MySQL
+  **Divergência:** Mencionada como 'comentary_section' na especificação
+  Referencia Scheme, não WardrobeItem (apenas looks têm comentários)
+end note
+
+@enduml

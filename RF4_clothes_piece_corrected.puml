@@ -1,0 +1,264 @@
+@startuml RF4_Adicionar_Peca_Corrigido
+
+!define THEME_DIR https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!include THEME_DIR/C4/C4_Component.puml
+
+title RF4 — Adicionar Peça ao Guarda-Roupa: Diagrama de Classes (Corrigido)
+
+'' Enumerations
+enum PieceCategory {
+  TOPS
+  BOTTOMS
+  DRESSES
+  OUTERWEAR
+  SHOES
+  ACCESSORIES
+  ACTIVEWEAR
+  INTIMATE
+}
+
+enum PieceStatus {
+  DRAFT
+  PROCESSING
+  ACTIVE
+  ARCHIVED
+  REMOVED
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  FOR_SALE
+}
+
+enum MaterialType {
+  COTTON
+  POLYESTER
+  WOOL
+  SILK
+  LINEN
+  LEATHER
+  SYNTHETIC
+  MIXED
+}
+
+enum PipelineJobStatus {
+  CREATED
+  QUEUED
+  RUNNING
+  RETRYING
+  COMPLETED
+  FAILED
+}
+
+enum PipelineJobProvider {
+  BLENDER
+  MESHY
+  REMBG
+  LOCAL_YOLO
+}
+
+'' Entities
+
+entity User {
+  * id: UUID
+  * email: String
+  * fullName: String
+  * createdAt: Timestamp
+  * updatedAt: Timestamp
+}
+
+entity WardrobeItem <<FirestoreDocument>> {
+  * id: UUID
+  * userId: UUID <<FK: users.id>>
+  * name: String
+  * category: PieceCategory
+  * color: String
+  * material: MaterialType
+  * description: String
+  * imageUrl: URL
+  * imagePath: String
+  * model3dUrl: URL (DIVERGENTE: tipo de URL não suportado pelo TypeScript)
+  * availability_status: AvailabilityStatus
+  * is_favorite: Boolean
+  * for_sale: Boolean
+  * listing_price: Decimal (DIVERGENTE: lido pela interface, nunca gravado)
+  * pieceStatus: PieceStatus
+  * brand_id: UUID <<FK: brands.id>>
+  * market_id: UUID <<FK: markets.id>>
+  * createdAt: Timestamp
+  * updatedAt: Timestamp
+  --
+  + uploadImage(file): boolean
+  + analyzePiece(imageBytes): AIInference
+  + removeBgProcess(): PipelineJob
+  + updateAvailability(status): void
+  + toggleFavorite(): void
+  + markForSale(price): void
+  + validateImageFormat(): boolean
+}
+
+entity PieceMetadata <<FirestoreDocument>> {
+  * id: UUID
+  * wardrobeItemId: UUID <<FK>>
+  * confidenceScore: Float
+  * detectedCategory: String
+  * detectedColor: String
+  * detectedMaterial: String
+  * width: Integer
+  * height: Integer
+  * mimeType: String
+  * fileSize: Long
+  * fileHash: String
+  * createdAt: Timestamp
+  * updatedAt: Timestamp
+}
+
+entity AIInference <<FirestoreDocument>> {
+  * id: UUID
+  * wardrobeItemId: UUID <<FK>>
+  * provider: String
+  * inputPrompt: String
+  * detectedCategory: PieceCategory
+  * colorDominant: String
+  * materialDetected: MaterialType
+  * patternDetected: String
+  * confidenceScore: Float
+  * rawResponse: JSON
+  * createdAt: Timestamp
+  --
+  + isAcceptable(): boolean
+  + getConfidenceLevel(): String
+}
+
+entity PipelineJob <<FirestoreDocument>> {
+  * id: UUID
+  * wardrobeItemId: UUID <<FK>>
+  * jobType: String
+  * provider: PipelineJobProvider
+  * status: PipelineJobStatus
+  * jobId: String
+  * externalUrl: URL
+  * inputImageUrl: URL
+  * outputImageUrl: URL
+  * priority: Integer
+  * retryCount: Integer
+  * maxRetries: Integer
+  * startedAt: Timestamp
+  * completedAt: Timestamp
+  * createdAt: Timestamp
+  * updatedAt: Timestamp
+  --
+  + submit(): boolean
+  + getStatus(): PipelineJobStatus
+  + retry(): boolean
+  + complete(): void
+  + fail(errorMessage): void
+}
+
+entity BackgroundRemovalJob <<FirestoreDocument>> {
+  * id: UUID
+  * pipelineJobId: UUID <<FK>>
+  * originalImageUrl: URL
+  * processedImageUrl: URL
+  * removalMethod: String
+  * confidence: Float
+  * isFallback: Boolean
+  * createdAt: Timestamp
+  * completedAt: Timestamp
+}
+
+entity Brand <<MySQL>> {
+  * id: UUID
+  * name: String
+  * officialLogoUrl: URL
+  * createdAt: Timestamp
+}
+
+entity Market <<MySQL>> {
+  * id: UUID
+  * season: String
+  * gender: String
+  * createdAt: Timestamp
+}
+
+entity AuditLog <<MySQL>> {
+  * id: UUID
+  * action: String
+  * entityType: String
+  * entityId: UUID
+  * changedBy: UUID
+  * details: JSON
+  * timestamp: Timestamp
+  --
+  + logAction(action, entityId, changedBy): void
+}
+
+'' Services
+
+service ImageValidation {
+  + validateFormat(file): boolean
+  + validateSize(file): boolean
+  + validateDimensions(width, height): boolean
+  + getFileHash(file): String
+  + detectMimeType(file): String
+}
+
+service AIDetectionService {
+  + analyzeImage(imageBytes): AIInference
+  + getConfidence(inference): Float
+  + classifyCategory(inference): PieceCategory
+  + extractColors(imageBytes): String[]
+  + detectMaterial(inference): MaterialType
+  + preprocessImage(imageBytes): ImageData
+}
+
+service BackgroundRemovalService {
+  + removeBackground(imageUrl): BackgroundRemovalJob
+  + submitJob(imageBytes): String
+  + getJobStatus(jobId): PipelineJobStatus
+  + downloadResult(jobId): URL
+  + handleFallback(imageUrl): void
+}
+
+'' Relationships
+
+User "1" -- "0..*" WardrobeItem : owns
+
+WardrobeItem "1" -- "0..*" PieceMetadata : has
+
+WardrobeItem "1" -- "0..*" AIInference : generates
+
+WardrobeItem "1" -- "0..*" PipelineJob : submits
+
+PipelineJob "1" -- "0..*" BackgroundRemovalJob : creates
+
+WardrobeItem "1" -- "0..1" Brand : linkedTo
+
+WardrobeItem "1" -- "0..1" Market : linkedTo
+
+WardrobeItem "1" -- "0..*" AuditLog : records
+
+ImageValidation .. WardrobeItem : validates
+AIDetectionService .. WardrobeItem : analyzes
+BackgroundRemovalService .. PipelineJob : manages
+
+note right of WardrobeItem
+  **Armazenamento:** Firestore (NoSQL)
+  **Banco de Dados:** wardrobe_items (coleção)
+
+  **Divergências Identificadas:**
+  - model3dUrl: tipo não suportado (TypeScript)
+  - listing_price: lido apenas, nunca gravado
+  - Relacionamento é para marcas via brand_id
+end note
+
+note right of PipelineJob
+  **Background Removal com Fallback:**
+  Se serviço indisponível:
+  - Salva com imagem original
+  - Enfileira para reprocessamento
+  - Não bloqueia o usuário
+end note
+
+@enduml
