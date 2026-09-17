@@ -1,0 +1,51 @@
+@startuml HU-RF1_Verificacao_Workflow
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequenceParticipantBkgColor #E1F5FE
+skinparam sequenceActorBkgColor #FFECB3
+skinparam sequenceLifeLineBkgColor #B3E5FC
+skinparam sequenceArrowColor #01579B
+
+participant "Usuario" as User
+participant "Frontend" as FE
+participant "Backend" as BE
+participant "Firestore" as DB
+participant "Admin Portal" as Admin
+participant "Email Service" as Email
+
+User -> FE: 1. Preenche formulario de cadastro
+FE -> BE: 2. POST /auth/register (perfil=marca/celebridade)
+BE -> BE: 3. Validacao de campos obrigatorios
+BE -> DB: 4. Busca email duplicado
+DB --> BE: Email unico
+BE -> DB: 5. Hash senha + salvar usuario\nstatus=pending_verification
+DB --> BE: Usuario criado
+BE -> BE: 6. Etapa 1: Validacao Automatica\n- Validar formato documento\n- Buscar em base publica
+BE -> DB: 7. Atualizar: status=under_review,\nverificationScore=XX
+DB --> BE: Atualizado
+BE -> Email: 8. Enviar email de confirmacao
+Email --> User: Email recebido
+FE --> User: 9. Cadastro em analise!
+
+User -> User: Aguarda aprovacao do admin...
+
+Admin -> Admin: 10. Acessa painel de verificacoes
+Admin -> Admin: 11. Etapa 2: Revisao Manual\n- Analisa documentos\n- Score de risco
+Admin -> BE: 12. APROVAR ou REJEITAR
+BE -> DB: 13. Etapa 3: Implementacao\nAtualizar: status=active,\napprovedBy=adminId,\nbadgeVerificado=true
+DB --> BE: Atualizado
+BE -> DB: 14. Criar AuditLog\naction=APPROVED
+DB --> BE: Log registrado
+BE -> Email: 15. Enviar email de aprovacao
+Email --> User: Email de sucesso!
+FE --> User: 16. Perfil ATIVADO - Badge exibido
+
+note over Admin
+    Criterios de Analise:
+    - Documentacao completa?
+    - Dados conferem com base publica?
+    - Risk score aceitavel?
+    - Nao-duplicata?
+end note
+
+@enduml
