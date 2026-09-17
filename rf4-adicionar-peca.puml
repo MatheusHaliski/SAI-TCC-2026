@@ -1,0 +1,295 @@
+@startuml RF4_AdicionarPeca_Gateway_IA
+
+title RF4 — Adicionar Peça ao Guarda-Roupa: Gateway de IA (Detecção)
+
+start
+
+:Etapa 1: Usuário Abre 'Adicionar Nova Peça';
+
+:Etapa 2: Upload de Foto(s);
+:Usuário envia uma ou mais fotografias;
+
+:Validar Formato e Tamanho;
+if (Formato JPG/PNG/WebP\ne ≤ 10 MB?) then (Sim)
+    :✅ Formato OK;
+else (Não)
+    :❌ Recusar com mensagem clara;
+    note right : RF4.CA01
+    stop
+endif
+
+:Etapa 3: Verificar Quantidade de Fotos;
+if (Mais de uma foto?) then (Sim)
+    :Criar rascunho por foto;
+    note right : RF4.CA05 - Lote
+else (Não)
+    :Criar um rascunho;
+endif
+
+partition "🤖 IA DETECTION GATEWAY (RF24.CA01)" {
+    :Enviar imagem(ns) para IA;
+    :IA analisa categoria, cor, tecido;
+    :IA retorna índice de confiança;
+}
+
+:**Validação de Confiança**;
+if (Confiança ≥ threshold?) then (Sim)
+    :✅ Confiança Alta;
+    :Etapa 4a: Pré-preencher;
+    :RF4.CA02 - Categoria, cor, tecido;
+    note right : Tudo editável
+else (Não)
+    :⚠️ Confiança Baixa;
+    :Etapa 4b: Formulário Vazio;
+    :RF4.CA03 - Aviso manual;
+    note right : Sem bloqueio
+endif
+
+partition "👤 MANUAL REVIEW" {
+    repeat
+        :Etapa 5: Revisar e Editar;
+        :Usuário completa formulário;
+        :Nome, categoria, cor;
+    repeat while (Campos OK?)
+}
+
+:Etapa 6: Remoção de Fundo;
+:Enviar para serviço;
+
+if (Serviço disponível?) then (Sim)
+    :Processar remoção;
+    :Salvar com fundo removido;
+else (Não)
+    :Salvar com original;
+    :Enfileirar reprocessamento;
+    note right : RF4.CA06
+endif
+
+:Etapa 7: Persistência;
+:Persistir wardrobe_item;
+:Gerar URLs;
+
+:Etapa 8: Aparição no Closet;
+:Peça aparece imediatamente;
+note right : RF4.CA04
+
+:Etapa 9: Registrar Inferência;
+:Registrar metadata IA;
+note right : RF24.CA16
+
+:✅ Peça adicionada;
+
+stop
+
+@enduml
+
+
+@startuml RF4_AdicionarPeca_Fluxo_Com_Falhas
+
+title RF4 — Adicionar Peça: Fluxo Com Tratamento de Falhas
+
+start
+
+:1. Upload de Foto;
+
+if (Validar formato/tamanho?) then (OK)
+    :2. Criar Rascunho;
+else (ERRO)
+    :Recusar (CA01);
+    stop
+endif
+
+:3. Análise IA;
+:Enviar para Gemini Vision;
+
+if (IA retornou resultado?) then (Sim)
+    :4. Verificar Confiança;
+else (Timeout/Erro)
+    :Avisar usuário;
+    :Permitir entrada manual;
+endif
+
+if (Confiança alta?) then (≥threshold)
+    :5a. Pré-preencher (CA02);
+else (< threshold)
+    :5b. Form vazio (CA03);
+endif
+
+:6. Usuário Revisa;
+
+if (Campos válidos?) then (Sim)
+    :7. Processar Imagem;
+else (Não)
+    :Indicar erros;
+    :Repetir edição;
+    note right : Loop até OK
+endif
+
+:8. Background Removal;
+
+if (Serviço ok?) then (Sim)
+    :Remover fundo;
+    :Persistir processada;
+else (Indisponível)
+    :Persistir original;
+    :Enfileirar (CA06);
+endif
+
+:9. Salvar em BD;
+:10. Aparecer no Closet (CA04);
+:✅ Sucesso;
+
+stop
+
+@enduml
+
+
+@startuml RF4_AdicionarPeca_Estados
+
+title RF4 — Adicionar Peça: Máquina de Estados
+
+state "Não Iniciado" as Start
+state "Upload" as Upload
+state "Validação Arquivo" as FileValidation {
+    state "OK" as FileOK
+    state "Erro Formato" as FileError
+}
+
+state "Rascunho" as Draft
+
+state "IA Detecção" as IADetection {
+    state "Enviando para IA" as SendingIA
+    state "Analisando" as AnalyzingIA
+}
+
+state "Confiança" as Confidence {
+    state "Alta (≥threshold)" as HighConf
+    state "Baixa (<threshold)" as LowConf
+}
+
+state "Preenchimento" as Filling {
+    state "Pré-preenchido (CA02)" as Prepopulated
+    state "Vazio (CA03)" as Empty
+    state "Edição Manual" as ManualEdit
+}
+
+state "Validação Campos" as FieldValidation {
+    state "OK" as FieldsOK
+    state "Erro" as FieldsError
+}
+
+state "Background" as BgRemoval {
+    state "Removendo" as Removing
+    state "Sucesso" as BgSuccess
+    state "Fallback" as BgFallback
+}
+
+state "Persistência" as Persistence
+state "Finalização" as Final
+
+Start --> Upload
+Upload --> FileValidation
+
+FileValidation --> FileOK: Válido
+FileValidation --> FileError: Inválido
+FileError --> [*]: CA01
+
+FileOK --> Draft
+
+Draft --> IADetection
+IADetection --> SendingIA
+SendingIA --> AnalyzingIA
+
+AnalyzingIA --> Confidence
+
+Confidence --> HighConf: Confiança OK
+Confidence --> LowConf: Confiança baixa
+
+HighConf --> Prepopulated: CA02
+LowConf --> Empty: CA03
+
+Prepopulated --> ManualEdit
+Empty --> ManualEdit
+
+ManualEdit --> FieldValidation
+
+FieldValidation --> FieldsOK: Tudo OK
+FieldValidation --> FieldsError: Faltam campos
+FieldsError --> ManualEdit: Voltar
+
+FieldsOK --> BgRemoval
+
+BgRemoval --> Removing: Serviço ok?
+BgRemoval --> BgFallback: Indisponível
+
+Removing --> BgSuccess: Sucesso
+BgSuccess --> Persistence
+
+BgFallback --> Persistence: Enfileirado (CA06)
+
+Persistence --> Final: CA04
+Final --> [*]: Sucesso
+
+@enduml
+
+
+@startuml RF4_AdicionarPeca_Componentes_Simples
+
+title RF4 — Adicionar Peça: Fluxo de Componentes
+
+start
+
+:FRONTEND;
+:AddPieceView;
+:File Upload Input;
+
+:API;
+:POST /upload;
+:Validar arquivo;
+
+:SERVICE;
+:Create Draft;
+:Call IA Service;
+
+:IA SERVICE;
+:Google Gemini Vision;
+:Analyze image;
+:Return confidence;
+
+:DECISION;
+if (Confidence OK?) then (Sim)
+    :Prepopulated Form (CA02);
+else (Não)
+    :Empty Form (CA03);
+endif
+
+:USER;
+:Review & Complete;
+:Validate fields;
+
+if (All valid?) then (Sim)
+    :Image Processing;
+else (Não)
+    :Show errors;
+    note right : Loop até OK
+endif
+
+:BG REMOVAL;
+if (Service available?) then (Sim)
+    :Remove background;
+else (Não)
+    :Queue for reprocess (CA06);
+endif
+
+:DATABASE;
+:Save wardrobe_item;
+:Save metadata;
+
+:CLOSET;
+:Piece appears immediately (CA04);
+
+:SUCCESS;
+
+stop
+
+@enduml
