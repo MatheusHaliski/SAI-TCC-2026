@@ -1,0 +1,268 @@
+@startuml RF5_CriarLook_Bifurcacao_Modos_Geracao
+
+title RF5 — Criar Look: Bifurcação dos Modos de Geração (5 Etapas)
+
+' ============================================================================
+' DIAGRAMA DE ATIVIDADES — Fluxo principal com bifurcação Manual × IA
+' ============================================================================
+
+start
+
+:Etapa 1: Modo de Geração;
+:Usuário escolhe modo: Manual ou IA;
+
+if (Modo de Geração?) then (Manual)
+    repeat
+        :Etapa 2: Seleção Manual de Peças;
+        :Usuário seleciona peças por slot;
+        :Motor valida compatibilidade;
+    repeat while (Peças compatíveis?)
+
+else (IA)
+    repeat
+        :Etapa 2: Descrição / Intent;
+        :Usuário descreve look desejado;
+        :Enviar descrição para IA;
+
+        :Etapa 3: AI Assist — Seleção de Peças;
+        :IA analisa descrição;
+        :IA seleciona peças compatíveis;
+        :IA determina cores e combinações;
+        :IA seleciona marcas relevantes;
+    repeat while (IA gerou seleção válida?)
+
+    :Sugerir seleção ao usuário;
+    :Usuário pode aceitar ou editar;
+endif
+
+:Etapa 4: Configurar Arte de Background;
+:Abrir Background Studio Modal;
+:Opções: cor sólida, gradiente, imagem;
+:Gerar pré-visualização automática;
+:Usuário confirma arte;
+
+:Etapa 5: Salvar Look;
+:Validar campos obrigatórios;
+:Persistir em 'schemes' (banco);
+:Persistir em 'scheme_items' (slots + sort_order);
+:Persistir config de background;
+:Look criado com sucesso;
+
+if (Look será público?) then (Sim)
+    :Publicar esquema;
+else (Não)
+    :Manter como privado;
+endif
+
+:Retornar para Dashboard / Looks Salvos;
+
+stop
+
+@enduml
+
+
+@startuml RF5_CriarLook_Diagrama_Sequencia
+
+title RF5 — Criar Look: Diagrama de Sequência (Manual × IA)
+
+actor User
+participant "UI (CreateMySchemeView)" as UI
+participant "API Routes" as API
+participant "Service Layer" as SVC
+participant "Database (MySQL)" as DB
+participant "IA Service" as IA
+
+alt Modo Manual
+    User->>UI: Clica em "Criar Look" (modo Manual)
+    UI->>API: POST /api/schemes/create {creation_mode: "manual"}
+    API->>SVC: initSchemeCreation("manual")
+    SVC->>DB: create scheme (status: draft)
+    DB-->>SVC: scheme_id
+
+    loop Seleção de Peças
+        User->>UI: Seleciona peça para slot
+        UI->>API: POST /api/schemes/{scheme_id}/items {slot, piece_id}
+        API->>SVC: addPieceToScheme(scheme_id, {slot, piece_id})
+        SVC->>DB: insert scheme_item
+        DB-->>SVC: scheme_item_id
+        SVC->>API: OK
+    end
+
+else Modo IA
+    User->>UI: Clica em "Criar Look" (modo IA)
+    UI->>API: POST /api/schemes/create {creation_mode: "ai"}
+    API->>SVC: initSchemeCreation("ai")
+    SVC->>DB: create scheme (status: draft)
+
+    loop Até sugestão aceitável
+        User->>UI: Descreve o look ("Casual verão, cores claras...")
+        UI->>API: POST /api/schemes/{scheme_id}/ai-assist {description}
+        API->>IA: generateOutfit(description, user_wardrobe)
+        IA->>API: {suggestions: [{slot, piece_ids}, ...]}
+        API->>UI: Exibe sugestões
+        User->>UI: Aceita ou rejeita
+    end
+
+    User->>UI: Confirma sugestão
+    UI->>API: POST /api/schemes/{scheme_id}/apply-ai-suggestion
+    API->>SVC: applySuggestion(scheme_id, suggestion)
+    SVC->>DB: insert scheme_items (batch)
+end
+
+User->>UI: Clica "Próxima: Arte de Background"
+UI->>UI: Abre Background Studio Modal
+
+loop Ajustes de Background
+    User->>UI: Configura cores/gradiente/imagem
+    UI->>API: PATCH /api/schemes/{scheme_id}/background {config}
+    API->>SVC: updateSchemeBackground(scheme_id, config)
+    SVC->>DB: update schemes.background_config
+end
+
+User->>UI: Clica "Salvar Look"
+UI->>API: POST /api/schemes/{scheme_id}/publish {is_public}
+API->>SVC: publishScheme(scheme_id)
+SVC->>DB: update schemes (status: published)
+
+User->>UI: Redirecionado para "Looks Salvos"
+
+@enduml
+
+
+@startuml RF5_CriarLook_Componentes
+
+title RF5 — Criar Look: Diagrama de Componentes
+
+package "Frontend (Next.js)" {
+  component "CreateMySchemeView" as View
+  component "ModeSelectionStep" as ModeStep
+  component "ManualSelectionStep" as ManualStep
+  component "AIAssistStep" as AIStep
+  component "OutfitBackgroundStudioModal" as BgModal
+  component "SchemePreviewCard" as Preview
+}
+
+package "Backend (API Routes)" {
+  component "SchemeController" as SchemeCtrl
+  component "SchemeService" as SchemeSvc
+  component "AIAssistService" as AISvc
+  component "PieceCompatibilityEngine" as CompatEngine
+  component "BackgroundStyleService" as BgSvc
+}
+
+package "Data Layer" {
+  component "SchemeRepository" as SchemeRepo
+  component "SchemeItemsRepository" as ItemsRepo
+  component "WardrobeRepository" as WardrobeRepo
+  database "MySQL\n(schemes, scheme_items, wardrobe_items)" as DB
+}
+
+package "External Services" {
+  component "OpenAI / Claude\n(IA Generation)" as AIModel
+  component "Adobe / ImageMagick\n(Image Processing)" as ImgProcessor
+}
+
+View --> ModeStep: Render steps
+ModeStep --> ManualStep: mode = "manual"
+ModeStep --> AIStep: mode = "ai"
+
+ManualStep --> Preview: Show selection
+AIStep --> Preview: Show suggestions
+Preview --> BgModal: Next step
+
+BgModal --> SchemeCtrl: Submit all
+
+SchemeCtrl --> SchemeSvc: orchestrate
+SchemeSvc --> CompatEngine: Validate pieces
+SchemeSvc --> AISvc: if mode=ai
+AISvc --> AIModel: Generate suggestion
+AIModel --> AISvc: Return JSON
+SchemeSvc --> BgSvc: Process background
+BgSvc --> ImgProcessor: Generate preview
+
+SchemeSvc --> SchemeRepo: Save scheme
+SchemeSvc --> ItemsRepo: Save scheme_items
+SchemeRepo --> DB: INSERT schemes
+ItemsRepo --> DB: INSERT scheme_items
+
+SchemeSvc --> WardrobeRepo: Check availability
+WardrobeRepo --> DB: Query wardrobe_items
+
+@enduml
+
+
+@startuml RF5_CriarLook_Estados
+
+title RF5 — Criar Look: Máquina de Estados
+
+state "Não Iniciado" as NotStarted
+state "Modo de Geração" as ModeSelection {
+  state "Manual" as ManualMode
+  state "IA" as AIMode
+}
+
+state "Seleção de Peças" as PieceSelection {
+  state "Manual: Slots" as ManualSlots
+  state "IA: Descrição" as AIDescription
+  state "IA: Processamento" as AIProcessing
+  state "IA: Sugestões" as AISuggestions
+}
+
+state "Arte de Background" as BackgroundArt {
+  state "Studio Aberto" as BackgroundOpen
+  state "Configurando" as Configuring
+}
+
+state "Validação" as Validation {
+  state "Validando" as Validating
+  state "Válido" as Valid
+}
+
+state "Persistência" as Persistence {
+  state "Salvando Scheme" as SavingScheme
+  state "Salvando Itens" as SavingItems
+  state "Salvando Background" as SavingBackground
+}
+
+state "Publicação" as Publishing {
+  state "Privado" as Private
+  state "Público" as Public
+}
+
+NotStarted --> ModeSelection: Usuário inicia
+
+ModeSelection --> ManualMode: Manual
+ModeSelection --> AIMode: IA
+
+ManualMode --> ManualSlots: Abre seleção
+ManualSlots --> Validating: Submete
+
+AIMode --> AIDescription: Abre input
+AIDescription --> AIProcessing: Submete texto
+AIProcessing --> AISuggestions: IA processa
+AISuggestions --> Validating: Aceita sugestão
+
+Validating --> Valid: OK
+Validating --> ManualSlots: Erro (Manual)
+Validating --> AIDescription: Erro (IA)
+
+Valid --> BackgroundArt: Continua
+
+BackgroundArt --> BackgroundOpen: Abre modal
+BackgroundOpen --> Configuring: Usuário ajusta
+Configuring --> Validation: Aplica
+
+Validation --> Persistence: Validado
+
+Persistence --> SavingScheme: Registra scheme
+SavingScheme --> SavingItems: Registra itens
+SavingItems --> SavingBackground: Registra background
+SavingBackground --> Publishing: Pergunta visibilidade
+
+Publishing --> Private: Usuário escolhe privado
+Publishing --> Public: Usuário escolhe público
+
+Private --> [*]: Look criado (privado)
+Public --> [*]: Look criado (público)
+
+@enduml
