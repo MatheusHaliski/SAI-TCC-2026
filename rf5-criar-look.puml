@@ -15,12 +15,11 @@ if (Modo de Geração?) then (Manual)
     :Etapa 2: Seleção Manual de Peças;
     :Usuário seleciona peças por slot;
     :Motor valida compatibilidade;
-    if (Peças compátiveis?) then (Não)
-        :Exibir erro de compatibilidade;
-        :Retornar para seleção;
-        backward :Etapa 2: Seleção Manual de Peças;
-    else (Sim)
+    if (Peças compátiveis?) then (Sim)
         :Peças selecionadas com sucesso;
+    else (Não)
+        :Exibir erro de compatibilidade;
+        note right : Retornar para seleção manual
     endif
 
 else (IA)
@@ -33,13 +32,12 @@ else (IA)
     :IA seleciona peças compatíveis;
     :IA determina cores e combinações;
     :IA seleciona marcas relevantes;
-    if (IA gerou seleção válida?) then (Não)
-        :Exibir erro de processamento;
-        :Retornar para descrição;
-        backward :Etapa 2: Descrição / Intent;
-    else (Sim)
+    if (IA gerou seleção válida?) then (Sim)
         :Sugerir seleção ao usuário;
         :Usuário pode aceitar ou editar;
+    else (Não)
+        :Exibir erro de processamento;
+        note right : Retornar para descrição
     endif
 endif
 
