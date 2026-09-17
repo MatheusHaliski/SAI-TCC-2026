@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RF12 — Diagrama de Atividades com Cronologia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8B5CF6;
+            --accent: #EC4899;
+            --bg: #F8F6FF;
+            --text: #1F2937;
+            --border: #E5E7EB;
+            --success: #10B981;
+            --warning: #F59E0B;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0F0D15;
+                --text: #F3F4F6;
+                --border: #374151;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        .flow-container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .flow-container {
+                background: #1F1933;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        .flow-section {
+            margin-bottom: 3rem;
+        }
+
+        .phase-title {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .flow-step {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .step-content {
+            flex: 1;
+            padding-top: 0.25rem;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .step-description {
+            color: var(--text);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .step-details {
+            background: rgba(139, 92, 246, 0.05);
+            padding: 1rem;
+            border-left: 3px solid var(--primary);
+            border-radius: 6px;
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .decision-box {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+            padding: 1.25rem;
+            border-radius: 8px;
+            border: 2px solid var(--accent);
+            margin: 1.5rem 0;
+        }
+
+        .decision-title {
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .decision-path {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .path {
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 4px solid var(--success);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .path {
+                background: #2D2639;
+            }
+        }
+
+        .path.negative {
+            border-left-color: #EF4444;
+        }
+
+        .path-label {
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .path.positive .path-label {
+            color: var(--success);
+        }
+
+        .path.negative .path-label {
+            color: #DC2626;
+        }
+
+        .path-content {
+            font-size: 0.85rem;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .criteria-box {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border: 2px solid var(--success);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+
+        .criteria-title {
+            color: var(--success);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .criteria-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .criteria-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .criteria-item {
+                background: #2D2639;
+            }
+        }
+
+        .criteria-item strong {
+            color: var(--success);
+        }
+
+        .highlight-new {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            border-left: 2px solid var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .decision-path {
+                grid-template-columns: 1fr;
+            }
+
+            .flow-step {
+                gap: 1rem;
+            }
+
+            .phase-title {
+                font-size: 1rem;
+                padding: 0.75rem 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .flow-container {
+                padding: 1rem;
+            }
+        }
+
+        .arrow {
+            text-align: center;
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin: 1rem 0;
+            opacity: 0.6;
+        }
+
+        .section-divider {
+            border-top: 2px dashed var(--border);
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .section-divider::after {
+            content: attr(data-label);
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg);
+            padding: 0 1rem;
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📸 RF12 — Minhas Fotos</h1>
+            <p class="subtitle">Cronologia de Estilo Interativa (Diagrama de Atividades Aprimorado)</p>
+        </header>
+
+        <div class="flow-container">
+            <!-- FASE 1: ACESSO E CARREGAMENTO -->
+            <div class="flow-section">
+                <div class="phase-title">🚀 Fase 1: Acesso e Carregamento</div>
+
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">👤 Usuário autenticado acessa "Minhas Fotos"</div>
+                        <div class="step-description">
+                            Navegação lateral → Aba "Minhas Fotos"
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow">⬇️</div>
+
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">🔄 Sistema carrega acervo</div>
+                        <div class="step-description">
+                            Busca todas as fotografias do usuário com suas metadatas
+                        </div>
+                        <div class="step-details">
+                            <strong>Origens:</strong> peça, esquema, DNA de Estilo, provador virtual
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow">⬇️</div>
+
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">📊 IA detecta padrões <span class="highlight-new">[NOVO]</span></div>
+                        <div class="step-description">
+                            Motor de análise identifica tendências pessoais do usuário
+                        </div>
+                        <div class="step-details">
+                            ✓ Cores preferidas<br>
+                            ✓ Tipos de peça recorrentes<br>
+                            ✓ Ocasiões mais frequentes<br>
+                            ✓ Peças "momento-chave" (viralização, uso recorrente)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow">⬇️</div>
+
+                <div class="flow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">💡 Sistema exibe card de insights <span class="highlight-new">[NOVO]</span></div>
+                        <div class="step-description">
+                            Card flutuante no topo com descoberta pessoal
+                        </div>
+                        <div class="step-details">
+                            Ex: "Você subiu 40% o uso de roxo nos últimos 2 meses" ou "Sua peça mais usada: Bolsa Violeta (12 looks)"
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider" data-label="VISUALIZAÇÃO"></div>
+
+            <!-- FASE 2: ESCOLHA DE MODO -->
+            <div class="flow-section">
+                <div class="phase-title">🎯 Fase 2: Modo de Visualização</div>
+
+                <div class="flow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">🎨 Usuário escolhe modo de visualização</div>
+                        <div class="step-description">
+                            Botões no header: Timeline | Galeria
+                        </div>
+                    </div>
+                </div>
+
+                <div class="decision-box">
+                    <div class="decision-title">📅 Qual modo escolhe?</div>
+                    <div class="decision-path">
+                        <div class="path positive">
+                            <div class="path-label">✅ TIMELINE <span class="highlight-new">[NOVO]</span></div>
+                            <div class="path-content">
+                                <strong>Agrupamento por período</strong><br>
+                                Fotos organizadas cronologicamente (semana/mês)<br><br>
+                                Cada grupo mostra:<br>
+                                • 2-4 fotos representativas<br>
+                                • Contador "X fotos neste período"<br>
+                                • Contexto enriquecido
+                            </div>
+                        </div>
+                        <div class="path positive">
+                            <div class="path-label">✅ GALERIA</div>
+                            <div class="path-content">
+                                <strong>Grade de thumbnails</strong><br>
+                                Visualização clássica em grid<br><br>
+                                Cada card mostra:<br>
+                                • Imagem de preview<br>
+                                • Badge de origem<br>
+                                • Engajamento social
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">⭐ Sistema identifica momentos-chave <span class="highlight-new">[NOVO]</span></div>
+                        <div class="step-description">
+                            Marca fotos especiais com destaque visual
+                        </div>
+                        <div class="step-details">
+                            <strong>Critérios:</strong><br>
+                            • ≥200 curtidas (integração RF19)<br>
+                            • Peça usada em ≥10 looks<br>
+                            • DNA de Estilo<br>
+                            • Padrão quebrador (cor/estilo novo)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">7</div>
+                    <div class="step-content">
+                        <div class="step-title">🏷️ Enriquece contexto <span class="highlight-new">[NOVO]</span></div>
+                        <div class="step-description">
+                            Exibe informação completa de cada foto
+                        </div>
+                        <div class="step-details">
+                            <strong>Dados exibidos:</strong><br>
+                            • Origem (peça/esquema/DNA/provador)<br>
+                            • Ocasião, estilo, material<br>
+                            • Engajamento social (curtidas, comentários)<br>
+                            • "Por quê foi criada"
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider" data-label="FILTROS E BUSCA"></div>
+
+            <!-- FASE 3: FILTROS -->
+            <div class="flow-section">
+                <div class="phase-title">🔍 Fase 3: Filtros Avançados <span class="highlight-new">[NOVO]</span></div>
+
+                <div class="flow-step">
+                    <div class="step-number">8</div>
+                    <div class="step-content">
+                        <div class="step-title">🔍 Usuário aplica filtros (opcional)</div>
+                        <div class="step-description">
+                            Sistema oferece 5 dimensões de filtro
+                        </div>
+                    </div>
+                </div>
+
+                <div class="decision-box">
+                    <div class="decision-title">🎛️ Que filtro quer aplicar?</div>
+
+                    <div class="path positive" style="grid-column: 1 / -1; margin-bottom: 1rem;">
+                        <div class="path-label">📦 ORIGEM</div>
+                        <div class="path-content">Peça | Esquema | DNA | Provador | Todos</div>
+                    </div>
+
+                    <div class="path positive" style="grid-column: 1 / -1; margin-bottom: 1rem;">
+                        <div class="path-label">📅 PERÍODO</div>
+                        <div class="path-content">Últimas 4 semanas | Este mês | 3 meses | Ano | Tudo</div>
+                    </div>
+
+                    <div class="path positive" style="grid-column: 1 / -1; margin-bottom: 1rem;">
+                        <div class="path-label">🎭 OCASIÃO</div>
+                        <div class="path-content">Formal | Casual | Esporte | Social | Todos</div>
+                    </div>
+
+                    <div class="path positive" style="grid-column: 1 / -1; margin-bottom: 1rem;">
+                        <div class="path-label">🎨 ESTILO</div>
+                        <div class="path-content">Minimalista | Maximista | Eclético | Bohemian | Todos</div>
+                    </div>
+
+                    <div class="path positive" style="grid-column: 1 / -1;">
+                        <div class="path-label">🌈 COR</div>
+                        <div class="path-content">IA detecta cores dominantes e filtra fotos contendo aquelas cores</div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">9</div>
+                    <div class="step-content">
+                        <div class="step-title">📊 Sistema aplica filtros e recalcula</div>
+                        <div class="step-description">
+                            Recarrega timeline com novo subconjunto de fotos
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">10</div>
+                    <div class="step-content">
+                        <div class="step-title">🔄 Comparação de períodos <span class="highlight-new">[NOVO]</span></div>
+                        <div class="step-description">
+                            Usuário pode comparar evolução estilística entre dois períodos
+                        </div>
+                        <div class="step-details">
+                            <strong>Exibição lado-a-lado:</strong><br>
+                            • Paleta de cores predominantes<br>
+                            • Tipos de peça (proporção)<br>
+                            • Ocasiões principais<br>
+                            • Estilo prevalente
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider" data-label="AÇÕES"></div>
+
+            <!-- FASE 4: AÇÕES -->
+            <div class="flow-section">
+                <div class="phase-title">🎯 Fase 4: Ações sobre Fotos</div>
+
+                <div class="flow-step">
+                    <div class="step-number">11</div>
+                    <div class="step-content">
+                        <div class="step-title">👆 Usuário seleciona uma foto</div>
+                        <div class="step-description">
+                            Clica no card para interagir
+                        </div>
+                    </div>
+                </div>
+
+                <div class="decision-box">
+                    <div class="decision-title">🎨 Qual ação?</div>
+                    <div class="decision-path">
+                        <div class="path positive">
+                            <div class="path-label">✏️ EDITAR</div>
+                            <div class="path-content">
+                                Abre Editor Canvas 2D (RF15) com ferramentas:<br>
+                                • Recorte e rotação<br>
+                                • Brilho/contraste<br>
+                                • Remoção de fundo<br><br>
+                                <strong>Resultado:</strong> Imagem editada substitui a exibida; original preservada
+                            </div>
+                        </div>
+                        <div class="path positive">
+                            <div class="path-label">⬇️ DOWNLOAD</div>
+                            <div class="path-content">
+                                Entrega imagem original SEM marca d'água<br><br>
+                                (Disponível apenas para o dono da foto)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="decision-box">
+                    <div class="decision-title">🗑️ DELETAR</div>
+                    <div class="decision-path">
+                        <div class="path negative">
+                            <div class="path-label">⚠️ Foto vinculada a peça ativa?</div>
+                            <div class="path-content">
+                                SIM: Sistema avisa "Peça ficará sem imagem"<br>
+                                Exige confirmação explícita
+                            </div>
+                        </div>
+                        <div class="path positive">
+                            <div class="path-label">✓ Foto independente</div>
+                            <div class="path-content">
+                                Deleta diretamente com confirmação simples
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">12</div>
+                    <div class="step-content">
+                        <div class="step-title">🗑️ Exclusão em lote (RF12.CA04)</div>
+                        <div class="step-description">
+                            Usuário seleciona múltiplas fotos com checkboxes
+                        </div>
+                        <div class="step-details">
+                            Sistema pede uma única confirmação:<br>
+                            "Deseja deletar X fotos?"<br><br>
+                            Depois: deleta todas de uma vez
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">13</div>
+                    <div class="step-content">
+                        <div class="step-title">✅ Ação concluída</div>
+                        <div class="step-description">
+                            Sistema atualiza timeline automaticamente
+                        </div>
+                        <div class="step-details">
+                            • Recarrega a vista<br>
+                            • Recalcula padrões (se necessário)<br>
+                            • Exibe insights atualizados
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CRITÉRIOS DE ACEITE -->
+            <div class="criteria-box">
+                <div class="criteria-title">✅ Critérios de Aceite Implementados</div>
+
+                <div class="criteria-grid">
+                    <div class="criteria-item">
+                        <strong>RF12.CA01</strong><br>
+                        Acesso e agrupamento por origem (peça, esquema, provador, DNA)
+                    </div>
+                    <div class="criteria-item">
+                        <strong>RF12.CA02</strong><br>
+                        Editor Canvas 2D (RF15) para edição de fotos
+                    </div>
+                    <div class="criteria-item">
+                        <strong>RF12.CA03</strong><br>
+                        Aviso antes de deletar foto vinculada a peça ativa
+                    </div>
+                    <div class="criteria-item">
+                        <strong>RF12.CA04</strong><br>
+                        Exclusão em lote com confirmação única
+                    </div>
+                    <div class="criteria-item">
+                        <strong>RF12.CA05</strong><br>
+                        Download sem marca d'água (apenas dono)
+                    </div>
+                    <div class="criteria-item">
+                        <strong>RF12.CA06</strong><br>
+                        Lazy load para acervos com &gt;50 fotos (resposta &lt;3s)
+                    </div>
+
+                    <div class="criteria-item" style="border-left-color: var(--accent);">
+                        <strong>RF12.CA07 <span class="highlight-new">[NOVO]</span></strong><br>
+                        Agrupamento por período (semana/mês configurável)
+                    </div>
+                    <div class="criteria-item" style="border-left-color: var(--accent);">
+                        <strong>RF12.CA08 <span class="highlight-new">[NOVO]</span></strong><br>
+                        Identificação automática de momentos-chave (≥200 curtidas, ≥10 uses)
+                    </div>
+                    <div class="criteria-item" style="border-left-color: var(--accent);">
+                        <strong>RF12.CA09 <span class="highlight-new">[NOVO]</span></strong><br>
+                        Contexto enriquecido: origem, ocasião, estilo, engajamento
+                    </div>
+                    <div class="criteria-item" style="border-left-color: var(--accent);">
+                        <strong>RF12.CA10 <span class="highlight-new">[NOVO]</span></strong><br>
+                        Filtros temporais dinâmicos com recalcuação de agrupamento
+                    </div>
+                    <div class="criteria-item" style="border-left-color: var(--accent);">
+                        <strong>RF12.CA11 <span class="highlight-new">[NOVO]</span></strong><br>
+                        Insights de padrão gerados por IA ao abrir página
+                    </div>
+                    <div class="criteria-item" style="border-left-color: var(--accent);">
+                        <strong>RF12.CA12 <span class="highlight-new">[NOVO]</span></strong><br>
+                        Comparação lado-a-lado de evolução entre dois períodos
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
