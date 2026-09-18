@@ -5,6 +5,19 @@
 !define REDIS_COLOR #FFF3E0
 !define ENUM_COLOR #F3E5F5
 
+' Configurar bordas adequadas nas entidades
+skinparam entity {
+  BackgroundColor White
+  BorderColor Black
+  BorderThickness 2
+}
+
+skinparam enum {
+  BackgroundColor White
+  BorderColor Black
+  BorderThickness 1.5
+}
+
 title RF5 — Criar Esquema de Vestimenta (Look): Diagrama de Classes Atualizado
 
 '' ===== ENUMERAÇÕES =====
@@ -139,15 +152,15 @@ entity Scheme <<FirestoreDocument>> #FIRESTORE_COLOR {
   * visibility: Visibility
   * status: SchemeStatus
   --
-  ** CONTEXTUALIZAÇÃO (Taxonomias Controladas) **
-  * occasion: OccasionType[] (≤3, sintetizado)
-  * style: StyleType[] (≤3, sintetizado)
+  ** CONTEXTUALIZAÇÃO (Taxonomias Controladas - Derivadas) **
+  * occasion: OccasionType[] (≤3, sintetizado - derivado do relacionamento)
+  * style: StyleType[] (≤3, sintetizado - derivado do relacionamento)
   * season: String [OPTIONAL]
   * mood: String [OPTIONAL]
   --
-  ** PREÇO E SELOS **
-  * totalPrice: Float (derivado - soma de peças, USD)
-  * seals: SealType[] (≤4, sugerido pela IA)
+  ** PREÇO E SELOS (Derivados) **
+  * totalPrice: Float (derivado - soma automática de peças, USD)
+  * seals: SealType[] (≤4, sugerido pela IA ao selecionar peças)
   --
   ** COMPOSIÇÃO VISUAL **
   * backgroundColor: String
@@ -343,15 +356,16 @@ note right of Scheme
   **CRITICAL:** Etapas 2 e 3 NÃO são excludentes
   Resultados se acumulam até salvar (nada persiste antes)
 
-  **Style & Occasion:**
-  - IA deve SINTETIZAR (não concatenar) tags das peças
+  **Style & Occasion (Derivados):**
+  - Derivados do relacionamento N:N com StyleType/OccasionType
+  - IA deve SINTETIZAR (não concatenar) valores das peças
   - Descrição do efeito visual do conjunto completo
-  - Máximo 3 valores cada (vs. 2 para peça)
+  - Máximo 3 valores cada (vs. 2 para peça individual)
 
-  **Preço & Selos:**
-  - totalPrice: derivado (soma dos preços das peças)
+  **Preço & Selos (Derivados):**
+  - totalPrice: derivado (soma automática dos preços das peças)
   - seals: máximo 4, sugeridos automaticamente pela IA
-    ao selecionar peças (baseado na combinação)
+    ao selecionar peças (baseado na combinação do conjunto)
 end note
 
 note right of SchemeItem
@@ -410,6 +424,18 @@ note right of SealType
   **Máximo:** 4 selos por esquema de vestimenta
   **Exemplos:** Affordable-chic, Premium-look, Eco-conscious,
   Trendy-combo, Casual-elegance, Professional, Activewear, etc.
+end note
+
+note bottom of Scheme
+  **Campos Derivados no Esquema:**
+  • occasion[] & style[] = sintetizados das peças (N:N com enums)
+    IA ranqueia e combina, não simplesmente concatena
+  • totalPrice = soma automática dos preços das peças
+  • seals[] = sugeridos automaticamente pela IA da combinação
+
+  **Vs Tags:**
+  • tags[] = keywords de busca pessoais (hashtags, etc)
+  • style[] & occasion[] = taxonomias controladas (derivadas)
 end note
 
 @enduml

@@ -5,6 +5,19 @@
 !define REDIS_COLOR #FFF3E0
 !define ENUM_COLOR #F3E5F5
 
+' Configurar bordas adequadas nas entidades
+skinparam entity {
+  BackgroundColor White
+  BorderColor Black
+  BorderThickness 2
+}
+
+skinparam enum {
+  BackgroundColor White
+  BorderColor Black
+  BorderThickness 1.5
+}
+
 title RF4 — Adicionar Peça ao Guarda-Roupa: Diagrama de Classes Atualizado
 
 '' ===== ENUMERAÇÕES =====
@@ -158,8 +171,8 @@ entity WardrobeItem <<FirestoreDocument>> #FIRESTORE_COLOR {
   * flatLayMetadata: JSON
   --
   ** CAMPOS MONITORAMENTO **
-  * tags: String[]
   * notes: String
+  * tags: String[] (tags pessoais de organização)
   * wear_count: Integer
   * last_worn_date: Timestamp
   * imageMimetype: String
@@ -171,6 +184,10 @@ entity WardrobeItem <<FirestoreDocument>> #FIRESTORE_COLOR {
   * purchaseLocation: String [OPTIONAL]
   * sku: String [OPTIONAL]
   * care_instructions: String [OPTIONAL]
+  --
+  ** CAMPOS DERIVADOS (de Style & Occasion) **
+  * style: StyleType[] (≤2, derivado do relacionamento)
+  * occasion: OccasionType[] (≤2, derivado do relacionamento)
   --
   * createdAt: Timestamp
   * updatedAt: Timestamp
@@ -250,9 +267,13 @@ WardrobeItem "1" -- "0..*" ProcessingJobsLog : audited_by
 note right of WardrobeItem
   **Armazenamento:** Firestore (Coleção /users/{userId}/wardrobeItems)
   **Categoria:** 4 valores fixos (PARTE_CIMA, PARTE_BAIXO, TENIS, ACESSORIO)
-  **Style & Occasion:** Taxonomias Controladas (máx 2 cada)
-    - Sugeridos por IA (analisador de peças) ou edição manual
-  **Preço:** Campo obrigatório (USD)
+  **Subcategoria:** Campo String próprio - permite N variações por categoria
+    (ex: PARTE_CIMA → camiseta, jaqueta, blazer, etc.)
+  **Style & Occasion (Derivados):** Taxonomias Controladas (máx 2 cada)
+    - Armazenados via relacionamento N:N com StyleType e OccasionType
+    - Sugeridos por IA ou edição manual
+    - Distintos de tags[] que são apenas organização pessoal
+  **Preço:** Campo obrigatório (USD) - entrada do formulário
   **Selos:** Máximo 2 selos, sugeridos pela IA baseado em:
     - Estilo, ocasião, preço, categoria, material
   **RF4 Pipeline:** Foto → Validação → Rembg (BG) → OpenCV (Perspectiva) →
@@ -298,6 +319,16 @@ note right of SealType
   **Máximo:** 2 selos por peça de roupa
   **Exemplos:** Premium, Eco-friendly, Trending, Limited Edition,
   Exclusive, Budget-friendly, Luxury, Casual-chic, Professional, Activewear
+end note
+
+note bottom of WardrobeItem
+  **Diferença: Tags vs Style/Occasion:**
+  • tags[] = organização pessoal (ex: "favorita", "novo", "venda")
+  • style[] & occasion[] = taxonomias controladas (N:N com enums)
+
+  **Campos Derivados:**
+  style[] e occasion[] são derivados dos relacionamentos N:N com os enums,
+  permitindo acesso direto sem decodificação das relações
 end note
 
 @enduml
