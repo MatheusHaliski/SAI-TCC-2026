@@ -1,34 +1,76 @@
 @startuml RF4_Adicionar_Peca_Corrigido
 
-!define THEME_DIR https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
-!include THEME_DIR/C4/C4_Component.puml
+!define FIRESTORE_COLOR #E8F5E9
+!define MYSQL_COLOR #E3F2FD
+!define REDIS_COLOR #FFF3E0
+!define ENUM_COLOR #F3E5F5
 
-title RF4 — Adicionar Peça ao Guarda-Roupa: Diagrama de Classes (Corrigido)
+title RF4 — Adicionar Peça ao Guarda-Roupa: Diagrama de Classes Atualizado
 
-'' Enumerations
-enum PieceCategory {
-  TOPS
-  BOTTOMS
-  DRESSES
-  OUTERWEAR
-  SHOES
-  ACCESSORIES
-  ACTIVEWEAR
-  INTIMATE
+'' ===== ENUMERAÇÕES =====
+
+enum ClothingCategory #ENUM_COLOR {
+  PARTE_CIMA
+  PARTE_BAIXO
+  TENIS
+  ACESSORIO
 }
 
-enum PieceStatus {
-  DRAFT
-  PROCESSING
-  ACTIVE
-  ARCHIVED
-  REMOVED
+enum StyleType #ENUM_COLOR {
+  classic
+  minimalist
+  modern
+  chic
+  streetwear
+  sporty
+  athleisure
+  preppy
+  romantic
+  boho
+  vintage
+  grunge
+  edgy
+  glam
+  luxury
+  avant_garde
+  y2k
+  utility
+  techwear
+  tailored
+  urban
+  resort
+  basic
+  statement
+  futuristic
 }
 
-enum AvailabilityStatus {
-  AVAILABLE
-  UNAVAILABLE
-  FOR_SALE
+enum OccasionType #ENUM_COLOR {
+  casual
+  work
+  business
+  formal
+  party
+  night_out
+  date
+  wedding
+  ceremony
+  sport
+  gym
+  travel
+  beach
+  vacation
+  school
+  university
+  social
+  home
+  outdoor
+  festival
+}
+
+enum SexType {
+  MASCULINO
+  FEMININO
+  UNISSEX
 }
 
 enum MaterialType {
@@ -36,229 +78,199 @@ enum MaterialType {
   POLYESTER
   WOOL
   SILK
-  LINEN
   LEATHER
   SYNTHETIC
-  MIXED
+  BLEND
 }
 
-enum PipelineJobStatus {
-  CREATED
-  QUEUED
-  RUNNING
-  RETRYING
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  ARCHIVED
+}
+
+enum ConditionType {
+  NEW
+  GOOD
+  WORN
+  DAMAGED
+}
+
+enum PhotoProcessingStatus {
+  NEW
+  PROCESSING
   COMPLETED
   FAILED
 }
 
-enum PipelineJobProvider {
-  BLENDER
-  MESHY
-  REMBG
-  LOCAL_YOLO
-}
-
-'' Entities
+'' ===== ENTIDADES =====
 
 entity User {
-  * id: UUID
-  * email: String
+  * id: UUID [PK]
+  * email: String [UNIQUE]
   * fullName: String
   * createdAt: Timestamp
   * updatedAt: Timestamp
 }
 
-entity WardrobeItem <<FirestoreDocument>> {
-  * id: UUID
-  * userId: UUID <<FK: users.id>>
+entity WardrobeItem <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * userId: UUID [FK → User]
+  --
+  ** CAMPOS DO FORMULÁRIO **
   * name: String
-  * category: PieceCategory
+  * category: ClothingCategory
+  * subcategory: String
+  * sex: SexType
+  * brandId: UUID [FK → Brand, OPTIONAL]
   * color: String
   * material: MaterialType
-  * description: String
+  * size: String
+  * price: Float [OPTIONAL]
   * imageUrl: URL
   * imagePath: String
-  * model3dUrl: URL (DIVERGENTE: tipo de URL não suportado pelo TypeScript)
+  --
+  ** CAMPOS DE DISPONIBILIDADE **
   * availability_status: AvailabilityStatus
   * is_favorite: Boolean
   * for_sale: Boolean
-  * listing_price: Decimal (DIVERGENTE: lido pela interface, nunca gravado)
-  * pieceStatus: PieceStatus
-  * brand_id: UUID <<FK: brands.id>>
-  * market_id: UUID <<FK: markets.id>>
-  * createdAt: Timestamp
-  * updatedAt: Timestamp
+  * condition: ConditionType
   --
-  + uploadImage(file): boolean
-  + analyzePiece(imageBytes): AIInference
-  + removeBgProcess(): PipelineJob
-  + updateAvailability(status): void
-  + toggleFavorite(): void
-  + markForSale(price): void
-  + validateImageFormat(): boolean
-}
-
-entity PieceMetadata <<FirestoreDocument>> {
-  * id: UUID
-  * wardrobeItemId: UUID <<FK>>
-  * confidenceScore: Float
-  * detectedCategory: String
-  * detectedColor: String
-  * detectedMaterial: String
-  * width: Integer
-  * height: Integer
-  * mimeType: String
-  * fileSize: Long
-  * fileHash: String
+  ** CAMPOS RF4 - PROCESSAMENTO **
+  * photoProcessingStatus: PhotoProcessingStatus
+  * photoQualityScores: Reference [FK → QualityScore]
+  * processingJobId: UUID [FK → ProcessingJob]
+  * processingTimeMs: Integer
+  * flatLayMetadata: JSON
+  --
+  ** CAMPOS MONITORAMENTO **
+  * tags: String[]
+  * notes: String
+  * wear_count: Integer
+  * last_worn_date: Timestamp
+  * imageMimetype: String
+  * imageFileSize: Long
+  * imageHash: String
+  * thumbnailUrl: URL
+  * marketId: UUID [FK → Market, OPTIONAL]
+  * purchaseDate: Timestamp [OPTIONAL]
+  * purchaseLocation: String [OPTIONAL]
+  * sku: String [OPTIONAL]
+  * care_instructions: String [OPTIONAL]
+  --
   * createdAt: Timestamp
   * updatedAt: Timestamp
 }
 
-entity AIInference <<FirestoreDocument>> {
-  * id: UUID
-  * wardrobeItemId: UUID <<FK>>
-  * provider: String
-  * inputPrompt: String
-  * detectedCategory: PieceCategory
-  * colorDominant: String
-  * materialDetected: MaterialType
-  * patternDetected: String
-  * confidenceScore: Float
-  * rawResponse: JSON
+entity QualityScore <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * wardrobeItemId: UUID [FK]
+  * background_removal_confidence: Float (0-1)
+  * perspective_correction_applied: Boolean
+  * color_normalization_score: Float (0-1)
+  * composition_quality: Float (0-1)
+  * failed_stages: String[]
+  * retry_count: Integer
+  * fallback_used: Boolean
   * createdAt: Timestamp
-  --
-  + isAcceptable(): boolean
-  + getConfidenceLevel(): String
 }
 
-entity PipelineJob <<FirestoreDocument>> {
-  * id: UUID
-  * wardrobeItemId: UUID <<FK>>
-  * jobType: String
-  * provider: PipelineJobProvider
-  * status: PipelineJobStatus
-  * jobId: String
-  * externalUrl: URL
-  * inputImageUrl: URL
-  * outputImageUrl: URL
-  * priority: Integer
-  * retryCount: Integer
-  * maxRetries: Integer
-  * startedAt: Timestamp
-  * completedAt: Timestamp
+entity ProcessingJob <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * wardrobeItemId: UUID [FK]
+  * job_type: String
+  * status: PhotoProcessingStatus
+  * total_processing_time_ms: Integer
+  * stage_times: JSON
+  * final_quality_score: Float
+  * was_accepted: Boolean
+  * retry_count: Integer
+  * fallback_used: Boolean
   * createdAt: Timestamp
-  * updatedAt: Timestamp
-  --
-  + submit(): boolean
-  + getStatus(): PipelineJobStatus
-  + retry(): boolean
-  + complete(): void
-  + fail(errorMessage): void
+  * completed_at: Timestamp
 }
 
-entity BackgroundRemovalJob <<FirestoreDocument>> {
-  * id: UUID
-  * pipelineJobId: UUID <<FK>>
-  * originalImageUrl: URL
-  * processedImageUrl: URL
-  * removalMethod: String
-  * confidence: Float
-  * isFallback: Boolean
-  * createdAt: Timestamp
-  * completedAt: Timestamp
-}
-
-entity Brand <<MySQL>> {
-  * id: UUID
+entity Brand <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
   * name: String
-  * officialLogoUrl: URL
+  * officialLogoUrl: URL [OPTIONAL]
   * createdAt: Timestamp
 }
 
-entity Market <<MySQL>> {
-  * id: UUID
-  * season: String
-  * gender: String
+entity Market <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
+  * name: String
   * createdAt: Timestamp
 }
 
-entity AuditLog <<MySQL>> {
-  * id: UUID
-  * action: String
-  * entityType: String
-  * entityId: UUID
-  * changedBy: UUID
-  * details: JSON
-  * timestamp: Timestamp
-  --
-  + logAction(action, entityId, changedBy): void
+entity ProcessingJobsLog <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
+  * wardrobe_item_id: UUID [FK]
+  * user_id: UUID [FK]
+  * job_type: String
+  * status: String
+  * total_processing_time_ms: Integer
+  * stage_times: JSON
+  * final_quality_score: Float
+  * was_accepted: Boolean
+  * retry_count: Integer
+  * fallback_used: Boolean
+  * created_at: Timestamp
+  * completed_at: Timestamp
 }
 
-'' Services
-
-service ImageValidation {
-  + validateFormat(file): boolean
-  + validateSize(file): boolean
-  + validateDimensions(width, height): boolean
-  + getFileHash(file): String
-  + detectMimeType(file): String
-}
-
-service AIDetectionService {
-  + analyzeImage(imageBytes): AIInference
-  + getConfidence(inference): Float
-  + classifyCategory(inference): PieceCategory
-  + extractColors(imageBytes): String[]
-  + detectMaterial(inference): MaterialType
-  + preprocessImage(imageBytes): ImageData
-}
-
-service BackgroundRemovalService {
-  + removeBackground(imageUrl): BackgroundRemovalJob
-  + submitJob(imageBytes): String
-  + getJobStatus(jobId): PipelineJobStatus
-  + downloadResult(jobId): URL
-  + handleFallback(imageUrl): void
-}
-
-'' Relationships
+'' ===== RELACIONAMENTOS =====
 
 User "1" -- "0..*" WardrobeItem : owns
+WardrobeItem "1" -- "0..*" QualityScore : has
+WardrobeItem "1" -- "0..*" ProcessingJob : submits
+WardrobeItem "0..*" -- "0..*" StyleType : has_styles (≤2)
+WardrobeItem "0..*" -- "0..*" OccasionType : has_occasions (≤2)
+WardrobeItem "0..1" -- "1" Brand : linkedTo
+WardrobeItem "0..1" -- "1" Market : linkedTo
+WardrobeItem "1" -- "0..*" ProcessingJobsLog : audited_by
 
-WardrobeItem "1" -- "0..*" PieceMetadata : has
-
-WardrobeItem "1" -- "0..*" AIInference : generates
-
-WardrobeItem "1" -- "0..*" PipelineJob : submits
-
-PipelineJob "1" -- "0..*" BackgroundRemovalJob : creates
-
-WardrobeItem "1" -- "0..1" Brand : linkedTo
-
-WardrobeItem "1" -- "0..1" Market : linkedTo
-
-WardrobeItem "1" -- "0..*" AuditLog : records
-
-ImageValidation .. WardrobeItem : validates
-AIDetectionService .. WardrobeItem : analyzes
-BackgroundRemovalService .. PipelineJob : manages
+'' ===== NOTAS =====
 
 note right of WardrobeItem
-  **Armazenamento:** Firestore (NoSQL)
-  **Banco de Dados:** wardrobe_items (coleção)
-
-  **Divergências Identificadas:**
-  - model3dUrl: tipo não suportado (TypeScript)
-  - listing_price: lido apenas, nunca gravado
-  - Relacionamento é para marcas via brand_id
+  **Armazenamento:** Firestore (Coleção /users/{userId}/wardrobeItems)
+  **Categoria:** 4 valores fixos (PARTE_CIMA, PARTE_BAIXO, TENIS, ACESSORIO)
+  **Style & Occasion:** Taxonomias Controladas (máx 2 cada)
+    - Sugeridos por IA (analisador de peças) ou edição manual
+  **RF4 Pipeline:** Foto → Validação → Rembg (BG) → OpenCV (Perspectiva) →
+                   Cloudinary (Cores) → Canvas 2D → Validação Qualidade
 end note
 
-note right of PipelineJob
-  **Background Removal com Fallback:**
-  Se serviço indisponível:
-  - Salva com imagem original
-  - Enfileira para reprocessamento
-  - Não bloqueia o usuário
+note right of QualityScore
+  **Armazenamento:** Firestore (Subcoleção ou Documento Relacionado)
+  **Propósito:** Rastreamento de qualidade após processamento RF4
+  **Score Mínimo:** ≥0.6 para exibir em RF5/RF6
+end note
+
+note right of ProcessingJob
+  **Armazenamento:** Firestore (/processingJobs coleção global)
+  **Auditoria:** Também registra em MySQL (processing_jobs_log)
+  **Status:** Transição desde NEW → PROCESSING → COMPLETED/FAILED
+  **Fallback:** Se falhar, usa foto original com aviso
+end note
+
+note right of StyleType
+  **Taxonomia Compartilhada:** RF4 (peça) e RF5 (esquema)
+  **25 Estilos Predefinidos:**
+  Clássico, Minimalista, Moderno, Chique, Streetwear,
+  Esportivo, Athleisure, Colegial, Romântico, Boêmio,
+  Vintage, Grunge, Ousado, Glamouroso, Luxuoso,
+  Vanguarda, Anos2000, Utilitário, Techwear, Alfaiataria,
+  Urbano, Resort, Básico, Marcante, Futurista
+end note
+
+note right of OccasionType
+  **Taxonomia Compartilhada:** RF4 (peça) e RF5 (esquema)
+  **20 Ocasiões Predefinidas:**
+  Casual, Trabalho, Negócios, Formal, Festa,
+  Saída Noturna, Encontro, Casamento, Cerimônia, Esporte,
+  Academia, Viagem, Praia, Férias, Escola,
+  Universidade, Evento Social, Casa, Atividade Ar Livre, Festival
 end note
 
 @enduml
