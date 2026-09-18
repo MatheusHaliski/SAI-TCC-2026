@@ -125,6 +125,32 @@ enum SealType #ENUM_COLOR {
   activewear
 }
 
+enum UpperPieceSubcategory #ENUM_COLOR {
+  t_shirt, tank_top, blouse, sweater, hoodie, blazer
+  cardigan, vest, jacket, coat, dress_shirt, polo_shirt
+  turtleneck, crop_top, camisole, corset, shrug, poncho
+}
+
+enum LowerPieceSubcategory #ENUM_COLOR {
+  jeans, tailored_pants, casual_pants, chino_pants
+  cargo_pants, jogger_pants, sweatpants, leggings
+  shorts, bermuda_shorts, denim_shorts, culottes, skirt, skort
+}
+
+enum ShoesSubcategory #ENUM_COLOR {
+  casual_sneakers, running_shoes, training_shoes, basketball_shoes
+  skate_shoes, high_top_sneakers, derby_shoes, ankle_boots
+  long_boots, combat_boots, sandals, flip_flops, loafers
+  moccasins, oxford_shoes, heels, flats, espadrilles
+}
+
+enum AccessorySubcategory #ENUM_COLOR {
+  handbag, crossbody_bag, tote_bag, clutch, backpack
+  belt, cap, hat, beanie, scarf, tie, bow_tie
+  sunglasses, eyeglasses, necklace, bracelet, earrings
+  ring, watch, gloves, socks, hair_accessory
+}
+
 '' ===== ENTIDADES =====
 
 entity User {
@@ -436,6 +462,12 @@ note bottom of Scheme
   **Vs Tags:**
   • tags[] = keywords de busca pessoais (hashtags, etc)
   • style[] & occasion[] = taxonomias controladas (derivadas)
+
+  **Subcategorias Controladas das Peças:**
+  • PARTE_CIMA → 18 subcategorias (t_shirt, tank_top, blouse, sweater, hoodie, blazer, cardigan, vest, jacket, coat, dress_shirt, polo_shirt, turtleneck, crop_top, camisole, corset, shrug, poncho)
+  • PARTE_BAIXO → 14 subcategorias (jeans, tailored_pants, casual_pants, chino_pants, cargo_pants, jogger_pants, sweatpants, leggings, shorts, bermuda_shorts, denim_shorts, culottes, skirt, skort)
+  • TENIS → 18 subcategorias de calçados
+  • ACESSORIO → 22 subcategorias (handbag, crossbody_bag, tote_bag, clutch, backpack, belt, cap, hat, beanie, scarf, tie, bow_tie, sunglasses, eyeglasses, necklace, bracelet, earrings, ring, watch, gloves, socks, hair_accessory)
 end note
 
 @enduml
