@@ -25,7 +25,10 @@
 **Contexto de Uso (Taxonomias Controladas):**
 - `occasion` (string[], obrigatório, máx 2) – Ocasião(ões) da peça (casual, work, business, formal, party, night_out, date, wedding, ceremony, sport, gym, travel, beach, vacation, school, university, social, home, outdoor, festival) [Sugerido por IA ou edição manual]
 - `style` (string[], obrigatório, máx 2) – Estilo(s) da peça (classic, minimalist, modern, chic, streetwear, sporty, athleisure, preppy, romantic, boho, vintage, grunge, edgy, glam, luxury, avant_garde, y2k, utility, techwear, tailored, urban, resort, basic, statement, futuristic) [Sugerido por IA ou edição manual]
-- `price` (float, opcional) – Preço (USD)
+
+**Preço e Selos:**
+- `price` (float, obrigatório) – Preço unitário da peça (USD)
+- `seals` (string[], NOVO - sugerido) – Selos/badges sugeridos pela IA com base em style, occasion, price, category (ex: "premium", "eco-friendly", "trending", "limited-edition", "exclusive", etc.) [Sistema sugere automaticamente; usuário pode aceitar/remover]
 
 **Mídia:**
 - `imageUrl` (URL, obrigatório) – Foto da peça (JPG/PNG/WebP até 10 MB - CA01)
@@ -59,6 +62,11 @@
   - `failed_stages`: String[]
   - `retry_count`: Integer
   - `fallback_used`: Boolean (se processamento fallou, usou imagem original)
+
+**Sugestão de Selos (IA)**
+- `suggestedSeals` (string[], NOVO) – Selos sugeridos pela IA baseado em: style, occasion, price, category, material, etc.
+  - Exemplos: "premium", "eco-friendly", "trending", "limited-edition", "exclusive", "budget-friendly", "luxury", "casual-chic", "professional", "activewear", etc.
+  - **Processo**: IA analisa os campos de contexto e sugere automaticamente ao usuário salvar a peça
 
 **Observações e Tags:**
 - `tags` (string[]) – Tags de organização pessoal

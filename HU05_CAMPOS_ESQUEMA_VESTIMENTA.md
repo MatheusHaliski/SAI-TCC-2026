@@ -18,6 +18,10 @@
 - `season` (string, opcional) – Estação (primavera, verão, outono, inverno)
 - `mood` (string, opcional) – Clima/humor (energético, elegante, confortável, sofisticado)
 
+**Preço e Selos:**
+- `totalPrice` (float, DERIVADO - calculado) – Soma total do preço de todas as peças do esquema (USD) [Atualiza automaticamente ao adicionar/remover peças]
+- `seals` (string[], NOVO - sugerido, máx 4) – Selos/badges sugeridos automaticamente pela IA ao selecionar peças (ex: "affordable-chic", "premium-look", "eco-conscious", "trendy-combo", "casual-elegance", etc.) [Sistema sugere automaticamente; usuário pode aceitar/modificar/remover, máximo 4 selos]
+
 **Composição Visual:**
 - `backgroundColor` (string, obrigatório) – Cor de fundo (hex #RRGGBB ou nome: white, black, navy, etc.)
 - `backgroundGradient` (string, opcional) – Gradiente CSS (ex: "linear-gradient(45deg, #fff 0%, #000 100%)")
