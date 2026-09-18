@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama Completo - Entidades com Pipelines RF4 & RF18</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 0.9em;
+            opacity: 0.85;
+            margin-top: 10px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .zoom-info {
+            color: #666;
+            font-size: 0.9em;
+            margin-left: auto;
+        }
+
+        .diagram-container {
+            padding: 40px;
+            background: white;
+            overflow-x: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 800px;
+        }
+
+        #diagram {
+            transform-origin: top center;
+            transition: transform 0.2s ease;
+        }
+
+        .legend {
+            background: #f8f9fa;
+            padding: 20px 40px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .legend h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .legend-item {
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid;
+            background: white;
+        }
+
+        .legend-item.mysql {
+            border-color: #F7EBE0;
+            background: #F7EBE0;
+        }
+
+        .legend-item.pipeline {
+            border-color: #FFE082;
+            background: #FFE082;
+        }
+
+        .legend-item.firestore {
+            border-color: #FFF4E6;
+            background: #FFF4E6;
+        }
+
+        .legend-item.redis {
+            border-color: #E8F5E9;
+            background: #E8F5E9;
+        }
+
+        .legend-item.dynamodb {
+            border-color: #F3E5F5;
+            background: #F3E5F5;
+        }
+
+        .legend-item.opensearch {
+            border-color: #E3F2FD;
+            background: #E3F2FD;
+        }
+
+        .legend-item.storage {
+            border-color: #FCE4EC;
+            background: #FCE4EC;
+        }
+
+        .legend-item strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #212121;
+            font-weight: 700;
+        }
+
+        .legend-item span {
+            color: #555;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 2px solid #e0e0e0;
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-card .label {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .zoom-info {
+                margin-left: 0;
+                order: 5;
+                text-align: center;
+            }
+
+            .diagram-container {
+                padding: 20px;
+            }
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ Arquitetura FashionAI Completa</h1>
+            <p>Diagrama de Entidades com Pipelines de Processamento</p>
+            <div class="subtitle">
+                RF4 (Flat Lay Photo Standardization) + RF18 (Virtual 2D Dressing Room)
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="zoomIn()">🔍 Ampliar (+)</button>
+            <button onclick="zoomOut()">🔍 Reduzir (-)</button>
+            <button onclick="resetZoom()">↺ Resetar Zoom</button>
+            <button onclick="downloadDiagram()">⬇️ Download PNG</button>
+            <div class="zoom-info" id="zoomLevel">Zoom: 100%</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number">21+</div>
+                <div class="label">Entidades</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">7</div>
+                <div class="label">Camadas</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">4</div>
+                <div class="label">Novas Entidades (RF4/RF18)</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">2</div>
+                <div class="label">Entidades Modificadas</div>
+            </div>
+        </div>
+
+        <div class="diagram-container">
+            <svg id="diagram"></svg>
+        </div>
+
+        <div class="legend">
+            <h3>📋 Legenda de Cores - Camadas de Persistência</h3>
+            <div class="legend-grid">
+                <div class="legend-item mysql">
+                    <strong>🟤 MySQL</strong>
+                    <span>Relacional - Fonte de Verdade (transações, auditoria)</span>
+                </div>
+                <div class="legend-item pipeline">
+                    <strong>🟠 Pipeline Logs</strong>
+                    <span>MySQL - Auditoria e Analytics de RF4/RF18 (NOVO)</span>
+                </div>
+                <div class="legend-item firestore">
+                    <strong>🟡 Firestore</strong>
+                    <span>NoSQL - Documentos flexíveis com metadados de IA</span>
+                </div>
+                <div class="legend-item redis">
+                    <strong>🟢 Redis</strong>
+                    <span>Cache - Performance e contadores (TTL)</span>
+                </div>
+                <div class="legend-item dynamodb">
+                    <strong>🟣 DynamoDB</strong>
+                    <span>Série Temporal - Timeline e feeds do usuário</span>
+                </div>
+                <div class="legend-item opensearch">
+                    <strong>🔵 OpenSearch</strong>
+                    <span>Full-Text Search - Busca de peças e looks</span>
+                </div>
+                <div class="legend-item storage">
+                    <strong>🩷 S3/Blob</strong>
+                    <span>Armazenamento de assets (imagens, vídeos)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>✨ Novas Entidades para Pipelines</h3>
+            <div class="legend-grid">
+                <div class="legend-item firestore">
+                    <strong>ProcessingJob (RF4)</strong>
+                    <span>Pipeline de 5 estágios: BG Removal → Perspective → Colors → Composition → Validation</span>
+                </div>
+                <div class="legend-item firestore">
+                    <strong>QualityScore (RF4)</strong>
+                    <span>8 métricas de qualidade: blur, contraste, color shift, overall. Threshold: 0.6</span>
+                </div>
+                <div class="legend-item firestore">
+                    <strong>OutfitRenderJob (RF18)</strong>
+                    <span>Pipeline de 4 estágios: Fashn.ai → Cleanup.ai → Canvas → Validation</span>
+                </div>
+                <div class="legend-item redis">
+                    <strong>RenderCache (RF18)</strong>
+                    <span>Redis cache de renderizações (1hr TTL), reduz custos e melhora UX</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>📊 Entidades Modificadas</h3>
+            <div class="legend-grid">
+                <div class="legend-item firestore">
+                    <strong>WardrobeItem (+5 campos RF4)</strong>
+                    <span>photoProcessingStatus, photoQualityScores, processingJobId, processingTimeMs, flatLayMetadata</span>
+                </div>
+                <div class="legend-item firestore">
+                    <strong>Scheme (+6 campos RF18)</strong>
+                    <span>renderingStatus, virtualTryOnUrl, renderingJobId, renderingQuality, cachedUntil, renderingMetadata</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>📄 Diagrama PlantUML renderizado com Kroki | 🏗️ Arquitetura Poliglota FashionAI (SAI-TCC-2026)</p>
+            <p style="margin-top: 10px; font-size: 0.85em;">
+                Documentação: ANALISE_RF4_Flat_Lay_Pipeline.md | ANALISE_RF18_Provador_Virtual_2D.md | RFC_COMPLETE_ARCHITECTURE_RF4_RF18.md
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const plantUmlCode = `@startuml
+!define MYSQL_COLOR #F7EBE0
+!define FIRESTORE_COLOR #FFF4E6
+!define REDIS_COLOR #E8F5E9
+!define DYNAMODB_COLOR #F3E5F5
+!define OPENSEARCH_COLOR #E3F2FD
+!define STORAGE_COLOR #FCE4EC
+!define PIPELINE_COLOR #FFE082
+
+skinparam class {
+    BackgroundColor<<MySQL>> MYSQL_COLOR
+    BackgroundColor<<Firestore>> FIRESTORE_COLOR
+    BackgroundColor<<Redis>> REDIS_COLOR
+    BackgroundColor<<DynamoDB>> DYNAMODB_COLOR
+    BackgroundColor<<OpenSearch>> OPENSEARCH_COLOR
+    BackgroundColor<<Storage>> STORAGE_COLOR
+    BackgroundColor<<Pipeline>> PIPELINE_COLOR
+    BorderColor #424242
+    FontColor #212121
+}
+
+title Diagrama Completo de Entidades com Pipelines RF4 + RF18\\nArquitetura Poliglota com Processamento de Imagens e Renderização Virtual
+
+package "MySQL - Relacional (Fonte da Verdade)" #MYSQL_COLOR {
+    entity User <<MySQL>> {
+        * id: UUID
+        * email: String
+        * fullName: String
+        * profileType: Enum
+    }
+    entity Brand <<MySQL>> {
+        * id: UUID
+        * name: String [UNIQUE]
+        * officialLogoUrl: URL
+    }
+    entity Market <<MySQL>> {
+        * id: UUID
+        * season: String
+        * gender: String
+    }
+    entity PieceLike <<MySQL>> {
+        * id: UUID
+        * user_id: UUID
+        * piece_id: UUID
+    }
+    entity OutfitLike <<MySQL>> {
+        * id: UUID
+        * user_id: UUID
+        * scheme_id: UUID
+    }
+}
+
+package "MySQL - Pipeline Logs & Analytics (NOVO)" #PIPELINE_COLOR {
+    entity ProcessingJobsLog <<MySQL>> {
+        * id: UUID
+        * total_processing_time_ms: Integer
+        * final_quality_score: Float
+        * was_accepted: Boolean
+    }
+    entity QualityMetrics <<MySQL>> {
+        * acceptance_rate: Float
+        * avg_quality_score: Float
+    }
+    entity RenderJobsLog <<MySQL>> {
+        * total_processing_time_ms: Integer
+        * final_quality_score: Float
+        * total_cost: Float
+    }
+}
+
+package "Firestore - NoSQL (Documentos Flexíveis)" #FIRESTORE_COLOR {
+    entity WardrobeItem <<Firestore>> {
+        * id: UUID
+        * userId: UUID
+        * name: String
+        * photoProcessingStatus: Enum (NEW: RF4)
+        * photoQualityScores: Reference (NEW: RF4)
+        * processingJobId: UUID (NEW: RF4)
+    }
+    entity ProcessingJob <<Firestore>> {
+        * id: UUID (NEW: RF4)
+        * stages: {...}
+        * totalProcessingTimeMs: Integer
+        * status: Enum
+    }
+    entity QualityScore <<Firestore>> {
+        * id: UUID (NEW: RF4)
+        * metrics: {...}
+        * isAccepted: Boolean
+    }
+    entity Scheme <<Firestore>> {
+        * id: UUID
+        * userId: UUID
+        * title: String
+        * renderingStatus: Enum (NEW: RF18)
+        * virtualTryOnUrl: String (NEW: RF18)
+    }
+    entity OutfitRenderJob <<Firestore>> {
+        * id: UUID (NEW: RF18)
+        * stages: {...}
+        * totalCost: Float
+    }
+}
+
+package "Redis - Cache (Performance)" #REDIS_COLOR {
+    entity PieceCounterCache <<Redis>> {
+        piece_counter:{piece_id}
+        - num_likes: Long
+    }
+    entity RenderCache <<Redis>> {
+        render_cache:{schemeId} (NEW: RF18)
+        - ttl: 3600s
+    }
+}
+
+package "DynamoDB - Série Temporal" #DYNAMODB_COLOR {
+    entity Timeline <<DynamoDB>> {
+        * partition_key: user_id
+        * outfit_id: UUID
+    }
+}
+
+package "OpenSearch - Índices de Busca" #OPENSEARCH_COLOR {
+    entity LooksIndex <<OpenSearch>> {
+        * title: String
+        * renderingQuality: Float (NEW: RF18)
+    }
+    entity PiecesIndex <<OpenSearch>> {
+        * name: String
+        * photoQualityScore: Float (NEW: RF4)
+    }
+}
+
+package "S3 / Blob - Storage" #STORAGE_COLOR {
+    entity Asset <<Storage>> {
+        * path: /fashion-ai-assets/...
+        * content_type: String
+    }
+}
+
+User "1" -- "0..*" PieceLike
+User "1" -- "0..*" OutfitLike
+Brand "1" -- "0..*" WardrobeItem
+WardrobeItem "1" -- "0..*" ProcessingJob
+ProcessingJob "1" -- "0..1" QualityScore
+Scheme "1" -- "0..*" OutfitRenderJob
+OutfitRenderJob .. RenderCache
+WardrobeItem .. PieceCounterCache
+Scheme .. Timeline
+Scheme .. LooksIndex
+WardrobeItem .. PiecesIndex
+WardrobeItem "1" -- "0..*" Asset
+Scheme "1" -- "0..*" Asset
+
+@enduml`;
+
+        let currentZoom = 1;
+        const minZoom = 0.5;
+        const maxZoom = 3;
+        const zoomStep = 0.1;
+
+        function encodePlantUml(text) {
+            return encodeURIComponent(text);
+        }
+
+        function loadDiagram() {
+            const encoded = btoa(plantUmlCode);
+            const url = `https://kroki.io/plantuml/svg/${encoded}`;
+
+            fetch(url)
+                .then(response => response.text())
+                .then(data => {
+                    const diagramContainer = document.getElementById('diagram');
+                    diagramContainer.innerHTML = data;
+                    diagramContainer.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar diagrama:', error);
+                    document.querySelector('.diagram-container').innerHTML =
+                        '<div class="error">❌ Erro ao carregar diagrama. Verifique sua conexão com a internet.</div>';
+                });
+        }
+
+        function zoomIn() {
+            if (currentZoom < maxZoom) {
+                currentZoom += zoomStep;
+                updateZoom();
+            }
+        }
+
+        function zoomOut() {
+            if (currentZoom > minZoom) {
+                currentZoom -= zoomStep;
+                updateZoom();
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            updateZoom();
+        }
+
+        function updateZoom() {
+            const diagram = document.getElementById('diagram');
+            if (diagram) {
+                diagram.style.transform = `scale(${currentZoom})`;
+                document.getElementById('zoomLevel').textContent = `Zoom: ${Math.round(currentZoom * 100)}%`;
+            }
+        }
+
+        function downloadDiagram() {
+            const svg = document.getElementById('diagram');
+            if (!svg) {
+                alert('Diagrama ainda não foi carregado');
+                return;
+            }
+
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = 'diagrama_entidades_rf4_rf18.png';
+                link.click();
+            };
+
+            img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+        }
+
+        // Carregar diagrama ao abrir página
+        window.addEventListener('load', loadDiagram);
+    </script>
+</body>
+</html>
