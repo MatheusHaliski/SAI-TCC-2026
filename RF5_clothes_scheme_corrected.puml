@@ -94,6 +94,24 @@ enum RenderingStatus {
   FAILED
 }
 
+enum SealType #ENUM_COLOR {
+  premium
+  eco_friendly
+  trending
+  limited_edition
+  exclusive
+  budget_friendly
+  luxury
+  casual_chic
+  affordable_chic
+  premium_look
+  eco_conscious
+  trendy_combo
+  casual_elegance
+  professional
+  activewear
+}
+
 '' ===== ENTIDADES =====
 
 entity User {
@@ -126,6 +144,10 @@ entity Scheme <<FirestoreDocument>> #FIRESTORE_COLOR {
   * style: StyleType[] (≤3, sintetizado)
   * season: String [OPTIONAL]
   * mood: String [OPTIONAL]
+  --
+  ** PREÇO E SELOS **
+  * totalPrice: Float (derivado - soma de peças, USD)
+  * seals: SealType[] (≤4, sugerido pela IA)
   --
   ** COMPOSIÇÃO VISUAL **
   * backgroundColor: String
@@ -294,6 +316,7 @@ Scheme "1" -- "0..1" SchemeBackground : has
 Scheme "1" -- "0..1" AIAssistance : generates_via
 Scheme "0..*" -- "0..*" StyleType : has_styles (≤3, sintetizado)
 Scheme "0..*" -- "0..*" OccasionType : has_occasions (≤3, sintetizado)
+Scheme "0..*" -- "0..*" SealType : has_seals (≤4, sugerido)
 
 SchemeItem "0..*" -- "1" WardrobeItem : references
 SchemeItem "0..*" -- "1" SlotType : uses_slot
@@ -324,6 +347,11 @@ note right of Scheme
   - IA deve SINTETIZAR (não concatenar) tags das peças
   - Descrição do efeito visual do conjunto completo
   - Máximo 3 valores cada (vs. 2 para peça)
+
+  **Preço & Selos:**
+  - totalPrice: derivado (soma dos preços das peças)
+  - seals: máximo 4, sugeridos automaticamente pela IA
+    ao selecionar peças (baseado na combinação)
 end note
 
 note right of SchemeItem
@@ -373,6 +401,15 @@ note right of OccasionType
   Saída Noturna, Encontro, Casamento, Cerimônia, Esporte,
   Academia, Viagem, Praia, Férias, Escola,
   Universidade, Evento Social, Casa, Atividade Ar Livre, Festival
+end note
+
+note right of SealType
+  **Selos/Badges Sugeridos pela IA (RF5):**
+  Sistema analisa a combinação de peças selecionadas
+  e sugere automaticamente até 4 selos para o esquema
+  **Máximo:** 4 selos por esquema de vestimenta
+  **Exemplos:** Affordable-chic, Premium-look, Eco-conscious,
+  Trendy-combo, Casual-elegance, Professional, Activewear, etc.
 end note
 
 @enduml

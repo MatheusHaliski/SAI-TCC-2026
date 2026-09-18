@@ -103,6 +103,19 @@ enum PhotoProcessingStatus {
   FAILED
 }
 
+enum SealType #ENUM_COLOR {
+  premium
+  eco_friendly
+  trending
+  limited_edition
+  exclusive
+  budget_friendly
+  luxury
+  casual_chic
+  professional
+  activewear
+}
+
 '' ===== ENTIDADES =====
 
 entity User {
@@ -126,7 +139,8 @@ entity WardrobeItem <<FirestoreDocument>> #FIRESTORE_COLOR {
   * color: String
   * material: MaterialType
   * size: String
-  * price: Float [OPTIONAL]
+  * price: Float (USD, obrigatório)
+  * seals: SealType[] (≤2, sugerido pela IA)
   * imageUrl: URL
   * imagePath: String
   --
@@ -226,6 +240,7 @@ WardrobeItem "1" -- "0..*" QualityScore : has
 WardrobeItem "1" -- "0..*" ProcessingJob : submits
 WardrobeItem "0..*" -- "0..*" StyleType : has_styles (≤2)
 WardrobeItem "0..*" -- "0..*" OccasionType : has_occasions (≤2)
+WardrobeItem "0..*" -- "0..*" SealType : has_seals (≤2, sugerido)
 WardrobeItem "0..1" -- "1" Brand : linkedTo
 WardrobeItem "0..1" -- "1" Market : linkedTo
 WardrobeItem "1" -- "0..*" ProcessingJobsLog : audited_by
@@ -237,6 +252,9 @@ note right of WardrobeItem
   **Categoria:** 4 valores fixos (PARTE_CIMA, PARTE_BAIXO, TENIS, ACESSORIO)
   **Style & Occasion:** Taxonomias Controladas (máx 2 cada)
     - Sugeridos por IA (analisador de peças) ou edição manual
+  **Preço:** Campo obrigatório (USD)
+  **Selos:** Máximo 2 selos, sugeridos pela IA baseado em:
+    - Estilo, ocasião, preço, categoria, material
   **RF4 Pipeline:** Foto → Validação → Rembg (BG) → OpenCV (Perspectiva) →
                    Cloudinary (Cores) → Canvas 2D → Validação Qualidade
 end note
@@ -271,6 +289,15 @@ note right of OccasionType
   Saída Noturna, Encontro, Casamento, Cerimônia, Esporte,
   Academia, Viagem, Praia, Férias, Escola,
   Universidade, Evento Social, Casa, Atividade Ar Livre, Festival
+end note
+
+note right of SealType
+  **Selos/Badges Sugeridos pela IA (RF4):**
+  Sistema analisa estilo, ocasião, preço, categoria, material
+  e sugere até 2 selos para cada peça
+  **Máximo:** 2 selos por peça de roupa
+  **Exemplos:** Premium, Eco-friendly, Trending, Limited Edition,
+  Exclusive, Budget-friendly, Luxury, Casual-chic, Professional, Activewear
 end note
 
 @enduml
