@@ -13,8 +13,8 @@
 **Identificação e Contextualização:**
 - `title` (string, obrigatório) – Nome do look (ex: "Look de trabalho elegante")
 - `description` (string, opcional) – Descrição ou contexto
-- `occasion` (string, obrigatório) – Ocasião (casual, formal, esportiva, trabalho, noite, praia)
-- `style` (string[], obrigatório) – Estilos de look (array: minimalista, clássico, moderno, boho, punk, street, etc.)
+- `occasion` (string[], obrigatório, máx 3) – Ocasião(ões) do esquema (casual, work, business, formal, party, night_out, date, wedding, ceremony, sport, gym, travel, beach, vacation, school, university, social, home, outdoor, festival) [IA a partir das peças ou edição manual - valores ranqueados/sintetizados]
+- `style` (string[], obrigatório, máx 3) – Estilo(s) do esquema (classic, minimalist, modern, chic, streetwear, sporty, athleisure, preppy, romantic, boho, vintage, grunge, edgy, glam, luxury, avant_garde, y2k, utility, techwear, tailored, urban, resort, basic, statement, futuristic) [IA a partir das peças ou edição manual - valores ranqueados/sintetizados]
 - `season` (string, opcional) – Estação (primavera, verão, outono, inverno)
 - `mood` (string, opcional) – Clima/humor (energético, elegante, confortável, sofisticado)
 
@@ -253,6 +253,7 @@ Cada item dentro do look possui:
 4. **Visibilidade**: PRIVATE (só você), FOLLOWERS (seguidores), PUBLIC (todos)
 5. **Cache Renderização**: Uma renderização é cache por 1h; acessos subsequentes são rápidos
 6. **Monitoramento**: `view_count` rastreia popularidade; `save_count` rastreia salvamentos
+7. **Style & Occasion Sintetizados**: Quando a IA gera `style` e `occasion` a partir das peças inseridas, deve ranquear e sintetizar os valores. NÃO deve simplesmente concatenar todas as tags das peças quando ultrapassar o limite de 3. O esquema descreve o efeito visual/uso do *conjunto completo*, não apenas a soma de suas partes.
 
 ---
 

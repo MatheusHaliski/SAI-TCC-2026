@@ -22,9 +22,9 @@
 - `material` (enum, obrigatório) – Material (COTTON, POLYESTER, WOOL, SILK, LEATHER, SYNTHETIC, BLEND)
 - `size` (string, obrigatório) – Tamanho (XS, S, M, L, XL, XXL ou tamanho numérico)
 
-**Contexto de Uso:**
-- `occasion` (string, obrigatório) – Ocasião (casual, formal, esportiva, praia, trabalho)
-- `wearstyles` (string[], obrigatório) – Estilos de uso (array: minimalista, clássico, moderno, boho, punk, street, etc.) [restrito ao vocabulário CA09]
+**Contexto de Uso (Taxonomias Controladas):**
+- `occasion` (string[], obrigatório, máx 2) – Ocasião(ões) da peça (casual, work, business, formal, party, night_out, date, wedding, ceremony, sport, gym, travel, beach, vacation, school, university, social, home, outdoor, festival) [Sugerido por IA ou edição manual]
+- `style` (string[], obrigatório, máx 2) – Estilo(s) da peça (classic, minimalist, modern, chic, streetwear, sporty, athleisure, preppy, romantic, boho, vintage, grunge, edgy, glam, luxury, avant_garde, y2k, utility, techwear, tailored, urban, resort, basic, statement, futuristic) [Sugerido por IA ou edição manual]
 - `price` (float, opcional) – Preço (USD)
 
 **Mídia:**
@@ -135,7 +135,8 @@
 | `imageUrl` | JPG/PNG/WebP, ≤10 MB | "Apenas JPG, PNG ou WebP até 10 MB" |
 | `size` | Não vazio | "Tamanho é obrigatório" |
 | `photoProcessingStatus` | Não pode ser vazio após salvar | Sistema auto-valida |
-| `wearstyles` | Restrito a vocabulário CA09 | "Estilo não permitido para essa parte do corpo" |
+| `style` | Máximo 2 valores, restrito à taxonomia controlada | "Máximo 2 estilos permitidos" |
+| `occasion` | Máximo 2 valores, restrito à taxonomia controlada | "Máximo 2 ocasiões permitidas" |
 | `sex` | MASCULINO/FEMININO/UNISSEX | "Sexo obrigatório (alimenta Provador 2D)" |
 
 ---
