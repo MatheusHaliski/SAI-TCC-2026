@@ -1,8 +1,76 @@
 @startuml RF5_Criar_Look_Corrigido
 
-title RF5 — Criar Look: Diagrama de Classes (Corrigido com Divergências)
+!define FIRESTORE_COLOR #E8F5E9
+!define MYSQL_COLOR #E3F2FD
+!define REDIS_COLOR #FFF3E0
+!define ENUM_COLOR #F3E5F5
 
-'' Enumerations
+title RF5 — Criar Esquema de Vestimenta (Look): Diagrama de Classes Atualizado
+
+'' ===== ENUMERAÇÕES =====
+
+enum SlotType #ENUM_COLOR {
+  TOP
+  BOTTOM
+  SHOES
+  ACCESSORIES
+}
+
+enum StyleType #ENUM_COLOR {
+  classic
+  minimalist
+  modern
+  chic
+  streetwear
+  sporty
+  athleisure
+  preppy
+  romantic
+  boho
+  vintage
+  grunge
+  edgy
+  glam
+  luxury
+  avant_garde
+  y2k
+  utility
+  techwear
+  tailored
+  urban
+  resort
+  basic
+  statement
+  futuristic
+}
+
+enum OccasionType #ENUM_COLOR {
+  casual
+  work
+  business
+  formal
+  party
+  night_out
+  date
+  wedding
+  ceremony
+  sport
+  gym
+  travel
+  beach
+  vacation
+  school
+  university
+  social
+  home
+  outdoor
+  festival
+}
+
+enum CreationMode {
+  MANUAL
+  AI_ASSISTED
+}
 
 enum SchemeStatus {
   DRAFT
@@ -11,262 +79,300 @@ enum SchemeStatus {
   DELETED
 }
 
-enum CreationMode {
-  MANUAL
-  AI_ASSISTED
-}
-
 enum Visibility {
   PRIVATE
+  FOLLOWERS
   PUBLIC
-  FRIENDS_ONLY
-  FOLLOWERS: DIVERGENTE - não existe no ENUM de db/schema.sql
 }
 
-enum SlotType {
-  TOP
-  BOTTOM
-  DRESS
-  OUTERWEAR
-  SHOES
-  ACCESSORIES
-  FULL_BODY
+enum RenderingStatus {
+  PENDING
+  RENDERING
+  ENHANCING
+  COMPOSITING
+  COMPLETED
+  FAILED
 }
 
-'' Entities
+'' ===== ENTIDADES =====
 
 entity User {
-  * id: UUID
-  * email: String
+  * id: UUID [PK]
+  * email: String [UNIQUE]
   * fullName: String
-  * visibility_default: Visibility
   * createdAt: Timestamp
   * updatedAt: Timestamp
 }
 
-entity WardrobeItem {
-  * id: UUID
-  * userId: UUID
+entity WardrobeItem <<FirestoreDocument>> {
+  * id: UUID [PK]
   * name: String
   * category: String
-  * availability_status: String
   * createdAt: Timestamp
 }
 
-entity Scheme <<FirestoreDocument>> {
-  * id: UUID
-  * userId: UUID
+entity Scheme <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * userId: UUID [FK → User]
+  --
+  ** CAMPOS DO FORMULÁRIO **
   * title: String
-  * description: String
-  * creationMode: CreationMode
-  * status: SchemeStatus
+  * description: String [OPTIONAL]
   * visibility: Visibility
+  * status: SchemeStatus
+  --
+  ** CONTEXTUALIZAÇÃO (Taxonomias Controladas) **
+  * occasion: OccasionType[] (≤3, sintetizado)
+  * style: StyleType[] (≤3, sintetizado)
+  * season: String [OPTIONAL]
+  * mood: String [OPTIONAL]
+  --
+  ** COMPOSIÇÃO VISUAL **
   * backgroundColor: String
-  * backgroundGradient: String
-  * backgroundImageUrl: URL
-  * displayMode: String
+  * backgroundGradient: String [OPTIONAL]
+  * backgroundImageUrl: URL [OPTIONAL - RF11]
+  * displayMode: String (CAROUSEL|GRID|STACKED)
+  --
+  ** RF18 - RENDERIZAÇÃO 2D **
+  * renderingStatus: RenderingStatus
+  * virtualTryOnUrl: URL [OPTIONAL]
+  * renderingJobId: UUID [FK → OutfitRenderJob, OPTIONAL]
+  * renderingQuality: JSON [OPTIONAL]
+  * cachedUntil: Timestamp [OPTIONAL]
+  * renderingMetadata: JSON [OPTIONAL]
+  --
+  ** ENGAJAMENTO & MONITORAMENTO **
+  * likes: Integer
+  * shares: Integer
+  * remixes: Integer
+  * view_count: Integer
+  * save_count: Integer
+  * tags: String[]
+  * is_remixed_from: UUID [FK → Scheme, OPTIONAL]
+  --
+  ** GERAÇÃO COM IA **
+  * creationMode: CreationMode
+  --
   * createdAt: Timestamp
   * updatedAt: Timestamp
-  * publishedAt: Timestamp (DIVERGENTE: campo derivado por COUNT())
-  --
-  + createScheme(mode): void
-  + addItem(slot, wardrobeItem): void
-  + validatePieces(): boolean
-  + configureBackground(config): void
-  + publish(): void
-  + archive(): void
-  + updateVisibility(visibility): void
-  + suggestBrandLinks(): Brand[]
+  * publishedAt: Timestamp [DERIVADO]
 }
 
-entity SchemeItem <<FirestoreDocument>> {
-  * id: UUID
-  * schemeId: UUID
-  * wardrobeItemId: UUID (DIVERGENTE: validação feita apenas para 'suggested', não como FK)
+entity SchemeItem <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * schemeId: UUID [FK → Scheme]
+  * wardrobeItemId: UUID [FK → WardrobeItem]
+  --
+  ** POSICIONAMENTO VISUAL **
   * slot: SlotType
-  * zIndex: Integer
+  * zIndex: Integer (0-1000)
   * sortOrder: Integer
-  * positionX: Float
-  * positionY: Float
-  * scale: Float
-  * rotation: Float
+  * positionX: Float (0-100%)
+  * positionY: Float (0-100%)
+  * scale: Float (0.5-2.0)
+  * rotation: Float (0-360°)
+  * opacity: Float (0-1)
+  --
+  ** EFEITOS **
+  * filters: JSON {
+      blur: Float (0-100)
+      saturation: Float (-100 to 100)
+      brightness: Float (-100 to 100)
+      contrast: Float (-100 to 100)
+      hue_shift: Float (0-360)
+    }
+  --
+  ** ESTADO **
+  * visibility: Enum (VISIBLE|HIDDEN)
   * createdAt: Timestamp
   * updatedAt: Timestamp
-  --
-  + validateCompatibility(): boolean
-  + getWardrobeItem(): WardrobeItem
 }
 
-entity SchemeBackground <<FirestoreDocument>> {
-  * id: UUID
-  * schemeId: UUID
+entity SchemeBackground <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * schemeId: UUID [FK → Scheme]
   * backgroundColor: String
-  * backgroundGradient: String
-  * backgroundImageUrl: URL
-  * colorStartHex: String
-  * colorEndHex: String
-  * gradientAngle: Integer
+  * backgroundGradient: String [OPTIONAL]
+  * backgroundImageUrl: URL [OPTIONAL]
+  * colorStartHex: String [OPTIONAL]
+  * colorEndHex: String [OPTIONAL]
+  * gradientAngle: Integer [OPTIONAL]
   * displayMode: String
   * opacity: Float
+  * blurBackground: Float [OPTIONAL]
+  * patternOverlay: String [OPTIONAL]
   * createdAt: Timestamp
   * updatedAt: Timestamp
-  --
-  + applyBackground(): void
-  + generatePreview(): URL
-  + validateColors(): boolean
 }
 
-entity AIAssistance <<FirestoreDocument>> {
-  * id: UUID
-  * schemeId: UUID
+entity AIAssistance <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * schemeId: UUID [FK → Scheme]
   * userDescription: String
-  * occasion: String
-  * mood: String
+  * occasion: OccasionType[] [FROM peças]
+  * mood: String [OPTIONAL]
+  * style_preferences: StyleType[] [FROM peças]
   * suggestedItems: SchemeItem[]
   * confidenceScores: Float[]
   * generationAttempts: Integer
   * createdAt: Timestamp
-  --
-  + generateSuggestions(): SchemeItem[]
-  + validateSuggestions(): boolean
-  + applySuggestion(schemeId, items): void
-  + regenerate(): SchemeItem[]
 }
 
-entity Brand <<MySQL>> {
-  * id: UUID
+entity OutfitRenderJob <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * schemeId: UUID [FK]
+  * renderingStatus: RenderingStatus
+  * renderingType: String (Fashn.ai|Custom)
+  * total_processing_time_ms: Integer
+  * stage_times: JSON
+  * final_quality_score: Float
+  * quality_metrics: JSON
+  * createdAt: Timestamp
+  * completed_at: Timestamp
+}
+
+entity RenderCache <<Redis>> #REDIS_COLOR {
+  * schemeId: UUID [PK]
+  * renderType: String
+  * renderUrl: URL
+  * thumbnailUrl: URL
+  * quality: Float
+  * generatedAt: Timestamp
+  * accessCount: Integer
+  * lastAccessed: Timestamp
+  * ttl: Integer (3600s)
+}
+
+entity RenderJobsLog <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
+  * scheme_id: UUID [FK]
+  * user_id: UUID [FK]
+  * rendering_type: String
+  * status: String
+  * total_processing_time_ms: Integer
+  * stage_times: JSON
+  * final_quality_score: Float
+  * total_cost: Float
+  * retry_count: Integer
+  * created_at: Timestamp
+  * completed_at: Timestamp
+}
+
+entity Brand <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
   * name: String
-  * officialLogoUrl: URL
-}
-
-entity UserSavedScheme <<MySQL>> {
-  * id: UUID
-  * userId: UUID
-  * schemeId: UUID
-  * origin: String
-  * originAuthorId: UUID
-  * isFavorited: Boolean
-  * favoritedAt: Timestamp
-  * createdAt: Timestamp
-  --
-  + favorite(): void
-  + unfavorite(): void
-}
-
-entity OutfitLike <<MySQL>> {
-  * id: UUID
-  * userId: UUID
-  * schemeId: UUID (DIVERGENTE: pode estar ausente no código atual)
   * createdAt: Timestamp
 }
 
-entity OutfitComment <<MySQL>> {
-  * id: UUID
-  * schemeId: UUID
-  * userId: UUID
+entity SchemeLike <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
+  * schemeId: UUID [FK]
+  * userId: UUID [FK]
+  * createdAt: Timestamp
+}
+
+entity SchemeComment <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
+  * schemeId: UUID [FK]
+  * userId: UUID [FK]
   * text: String
   * createdAt: Timestamp
 }
 
-entity Remix <<MySQL>> {
-  * id: UUID
-  * originSchemeId: UUID
-  * remixSchemeId: UUID
+entity SchemeRemix <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
+  * originSchemeId: UUID [FK]
+  * remixSchemeId: UUID [FK]
   * createdAt: Timestamp
 }
 
-'' Services
-
-service SchemeCompatibilityEngine {
-  + validatePieces(slots): boolean
-  + checkColorHarmony(colors): boolean
-  + validateMinimumPieces(items): boolean
-  + detectBrands(items): Brand[]
-  + suggestBrands(items): Brand[]
-}
-
-service AIOutfitGenerator {
-  + generateOutfit(description, userWardrobe): SchemeItem[]
-  + analyzeDescription(text): {occasion, mood, colors}
-  + restrictToAvailable(items, wardrobe): SchemeItem[]
-  + scoreCompatibility(items): Float
-  + rankSuggestions(items): SchemeItem[]
-}
-
-service BackgroundStyleService {
-  + parseConfig(config): SchemeBackground
-  + generatePreview(config): URL
-  + validateColorScheme(colors): boolean
-  + applyPreset(presetName): SchemeBackground
-}
-
-entity AuditLog <<MySQL>> {
-  * id: UUID
-  * action: String
-  * entityType: String
-  * entityId: UUID
-  * changedBy: UUID
-  * details: JSON
-  * timestamp: Timestamp
-}
-
-'' Relationships
+'' ===== RELACIONAMENTOS =====
 
 User "1" -- "0..*" Scheme : creates
-User "1" -- "0..*" UserSavedScheme : saves
-
 Scheme "1" -- "1..*" SchemeItem : contains
 Scheme "1" -- "0..1" SchemeBackground : has
-Scheme "1" -- "0..1" AIAssistance : uses
+Scheme "1" -- "0..1" AIAssistance : generates_via
+Scheme "0..*" -- "0..*" StyleType : has_styles (≤3, sintetizado)
+Scheme "0..*" -- "0..*" OccasionType : has_occasions (≤3, sintetizado)
 
 SchemeItem "0..*" -- "1" WardrobeItem : references
+SchemeItem "0..*" -- "1" SlotType : uses_slot
 
-Scheme "0..*" -- "0..*" Brand : linksTo
+Scheme "1" -- "0..*" OutfitRenderJob : uses
+Scheme "1" -- "0..1" RenderCache : cached_in
+Scheme "1" -- "0..*" RenderJobsLog : audited_by
 
-Scheme "1" -- "0..*" UserSavedScheme : isSavedIn
-Scheme "1" -- "0..*" OutfitLike : receives
-Scheme "1" -- "0..*" OutfitComment : receives
-Scheme "1" -- "0..*" Remix : isRemixedFrom
+Scheme "1" -- "0..*" SchemeLike : receives
+Scheme "1" -- "0..*" SchemeComment : receives
+Scheme "1" -- "0..*" SchemeRemix : remixed_from
 
-SchemeCompatibilityEngine .. Scheme : validates
-AIOutfitGenerator .. AIAssistance : generates
-BackgroundStyleService .. SchemeBackground : configures
-
-Scheme "1" -- "0..*" AuditLog : records
+'' ===== NOTAS =====
 
 note right of Scheme
-  **Armazenamento Principal:** Firestore (NoSQL)
-  **Banco de Dados:** schemes (coleção)
+  **Armazenamento Principal:** Firestore (/users/{userId}/schemes)
+  **5-ÉTAPAS DE CRIAÇÃO:**
+  1. Escolher modo (MANUAL ou AI_ASSISTED)
+  2. Preencher prompt IA (acumula em aiAssistance)
+  3. Preencher formulário manual (acumula em items)
+  4. Editar fundo (RF11 - backgroundImageUrl)
+  5. Preview + Salvar (RF18 - renderização)
 
-  **Divergências Críticas:**
-  1. publishedAt é derivado, não armazenado
-  2. Visibility ENUM não inclui 'followers'
-  3. Relacionamentos com OutfitLike/Comment/Remix em MySQL
-     não estão refletidos como subcoleções Firestore
+  **CRITICAL:** Etapas 2 e 3 NÃO são excludentes
+  Resultados se acumulam até salvar (nada persiste antes)
+
+  **Style & Occasion:**
+  - IA deve SINTETIZAR (não concatenar) tags das peças
+  - Descrição do efeito visual do conjunto completo
+  - Máximo 3 valores cada (vs. 2 para peça)
 end note
 
 note right of SchemeItem
-  **Armazenamento:** Firestore (subcoleção dentro de schemes)
-  **Divergência:** wardrobeItemId validação apenas para 'suggested'
-  Não há FK real, apenas snapshot desnormalizado das peças
+  **Armazenamento:** Firestore (subcoleção items)
+  **Slot:** 4 valores apenas
+  - TOP (parte cima) ↔ categoria PARTE_CIMA
+  - BOTTOM (parte baixo) ↔ categoria PARTE_BAIXO
+  - SHOES (tênis) ↔ categoria TENIS
+  - ACCESSORIES (acessório) ↔ categoria ACESSORIO
+
+  **Posicionamento:** Canvas 2D no provador virtual
+  **Múltiplos Efeitos:** Blur, saturação, brilho, contraste, matiz
 end note
 
-note right of UserSavedScheme
-  **Armazenamento:** MySQL (tabela relacional)
-  **Propósito:** Rastrear favoritos e remoções de scheme
-  Contadores de favoritos em Redis para performance
+note right of AIAssistance
+  **Geração com IA (RF24):**
+  Analisa peças inseridas e sugere combinações
+  Retorna até 3 SchemeItem com confidenceScores
+  Acumula até etapa 5 (salvar)
+
+  **Regra IA:** Valores de style/occasion ranqueados,
+  não simples concatenação de tags das peças
 end note
 
-note right of OutfitLike
-  **Armazenamento:** MySQL
-  **Divergência:** Tabela pode estar ausente no código atual
-  Contadores derivados por COUNT()
+note right of OutfitRenderJob
+  **RF18 - Provador Virtual 2D:**
+  Pipeline: Fashn.ai → Cleanup.ai → Canvas 2D
+  Status: PENDING → RENDERING → ENHANCING → COMPOSITING → COMPLETED/FAILED
+  Qualidade: overall_score (0-1), colors_matched, fabric_realism, composition_score
+  Cache: TTL 1 hora em Redis
 end note
 
-note right of OutfitComment
-  **Armazenamento:** MySQL
-  **Divergência:** Mencionada como 'comentary_section' na especificação
-  Referencia Scheme, não WardrobeItem (apenas looks têm comentários)
+note right of StyleType
+  **Taxonomia Compartilhada:** RF4 (≤2) e RF5 (≤3)
+  **25 Estilos Predefinidos (ID do banco de dados)**
+  Clássico, Minimalista, Moderno, Chique, Streetwear,
+  Esportivo, Athleisure, Colegial, Romântico, Boêmio,
+  Vintage, Grunge, Ousado, Glamouroso, Luxuoso,
+  Vanguarda, Anos2000, Utilitário, Techwear, Alfaiataria,
+  Urbano, Resort, Básico, Marcante, Futurista
+end note
+
+note right of OccasionType
+  **Taxonomia Compartilhada:** RF4 (≤2) e RF5 (≤3)
+  **20 Ocasiões Predefinidas (ID do banco de dados)**
+  Casual, Trabalho, Negócios, Formal, Festa,
+  Saída Noturna, Encontro, Casamento, Cerimônia, Esporte,
+  Academia, Viagem, Praia, Férias, Escola,
+  Universidade, Evento Social, Casa, Atividade Ar Livre, Festival
 end note
 
 @enduml
