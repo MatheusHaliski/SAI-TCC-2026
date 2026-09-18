@@ -1,0 +1,479 @@
+@startuml Diagrama_Entidades_Completo_FashionAI
+
+!define MYSQL_COLOR #F7EBE0
+!define FIRESTORE_COLOR #FFF4E6
+!define REDIS_COLOR #E8F5E9
+!define DYNAMODB_COLOR #F3E5F5
+!define OPENSEARCH_COLOR #E3F2FD
+!define STORAGE_COLOR #FCE4EC
+
+skinparam class {
+    BackgroundColor<<MySQL>> MYSQL_COLOR
+    BackgroundColor<<Firestore>> FIRESTORE_COLOR
+    BackgroundColor<<Redis>> REDIS_COLOR
+    BackgroundColor<<DynamoDB>> DYNAMODB_COLOR
+    BackgroundColor<<OpenSearch>> OPENSEARCH_COLOR
+    BackgroundColor<<Storage>> STORAGE_COLOR
+    BorderColor #424242
+    FontColor #212121
+}
+
+title Diagrama Completo de Entidades - FashionAI\nArquitetura Poliglota (MySQL + Firestore + Redis + DynamoDB + OpenSearch + S3)
+
+'' ============================================================
+'' CAMADA MYSQL - RELACIONAL (Fonte da Verdade)
+'' ============================================================
+
+package "MySQL - Relacional (Fonte da Verdade)" #MYSQL_COLOR {
+
+    entity User <<MySQL>> {
+        * id: UUID [PK]
+        * email: String [UNIQUE]
+        * fullName: String
+        * profileType: Enum
+        * createdAt: Timestamp
+        * updatedAt: Timestamp
+    }
+
+    entity Brand <<MySQL>> {
+        * id: UUID [PK]
+        * name: String [UNIQUE]
+        * officialLogoUrl: URL
+        * createdAt: Timestamp
+    }
+
+    entity Market <<MySQL>> {
+        * id: UUID [PK]
+        * season: String
+        * gender: String
+        * createdAt: Timestamp
+    }
+
+    entity PieceLike <<MySQL>> {
+        * id: UUID [PK]
+        * user_id: UUID [FK]
+        * piece_id: UUID [FK]
+        * createdAt: Timestamp
+    }
+
+    entity OutfitLike <<MySQL>> {
+        * id: UUID [PK]
+        * user_id: UUID [FK]
+        * scheme_id: UUID [FK]
+        * createdAt: Timestamp
+    }
+
+    entity PieceComment <<MySQL>> {
+        * id: UUID [PK]
+        * piece_id: UUID [FK]
+        * user_id: UUID [FK]
+        * text: String
+        * createdAt: Timestamp
+    }
+
+    entity OutfitComment <<MySQL>> {
+        * id: UUID [PK]
+        * scheme_id: UUID [FK]
+        * user_id: UUID [FK]
+        * text: String
+        * createdAt: Timestamp
+    }
+
+    entity Remix <<MySQL>> {
+        * id: UUID [PK]
+        * origin_scheme_id: UUID [FK]
+        * remix_scheme_id: UUID [FK]
+        * created_by: UUID [FK]
+        * createdAt: Timestamp
+    }
+
+    entity UserSavedScheme <<MySQL>> {
+        * id: UUID [PK]
+        * user_id: UUID [FK]
+        * scheme_id: UUID [FK]
+        * isFavorited: Boolean
+        * favoritedAt: Timestamp
+        * createdAt: Timestamp
+    }
+
+    entity AuditLog <<MySQL>> {
+        * id: UUID [PK]
+        * action: String
+        * entityType: String
+        * entityId: UUID
+        * changedBy: UUID [FK]
+        * details: JSON
+        * timestamp: Timestamp
+    }
+
+    entity PieceCounters <<MySQL>> {
+        * piece_id: UUID [PK/FK]
+        * num_likes: BIGINT
+        * num_shares: BIGINT
+        * num_remixes: BIGINT
+        * num_throwbacks: BIGINT
+        * lastUpdatedAt: Timestamp
+    }
+}
+
+'' ============================================================
+'' CAMADA FIRESTORE - DOCUMENTOS FLEXÍVEIS (NoSQL)
+'' ============================================================
+
+package "Firestore - NoSQL (Documentos Flexíveis)" #FIRESTORE_COLOR {
+
+    entity WardrobeItem <<Firestore>> {
+        * id: UUID [PK]
+        * userId: UUID [FK → users]
+        * name: String
+        * category: Enum (TOPS, BOTTOMS, SHOES, etc)
+        * color: String
+        * material: Enum
+        * description: String
+        * imageUrl: URL
+        * imagePath: String
+        * availability_status: Enum
+        * is_favorite: Boolean
+        * for_sale: Boolean
+        * brand_id: UUID [FK → brands]
+        * market_id: UUID [FK → markets]
+        * pieceStatus: Enum (DRAFT, PROCESSING, ACTIVE, ARCHIVED)
+        * createdAt: Timestamp
+        * updatedAt: Timestamp
+    }
+
+    entity PieceMetadata <<Firestore>> {
+        * id: UUID [PK]
+        * wardrobeItemId: UUID [FK]
+        * confidenceScore: Float
+        * detectedCategory: String
+        * detectedColor: String
+        * detectedMaterial: String
+        * width: Integer
+        * height: Integer
+        * mimeType: String
+        * fileSize: Long
+        * fileHash: String
+        * createdAt: Timestamp
+        * updatedAt: Timestamp
+    }
+
+    entity AIInference <<Firestore>> {
+        * id: UUID [PK]
+        * wardrobeItemId: UUID [FK]
+        * provider: String (BLENDER, MESHY, REMBG, YOLO)
+        * inputPrompt: String [0..1]
+        * detectedCategory: Enum
+        * colorDominant: String
+        * materialDetected: Enum
+        * patternDetected: String
+        * confidenceScore: Float
+        * rawResponse: JSON
+        * createdAt: Timestamp
+    }
+
+    entity PipelineJob <<Firestore>> {
+        * id: UUID [PK]
+        * wardrobeItemId: UUID [FK]
+        * jobType: String
+        * provider: Enum
+        * status: Enum (CREATED, QUEUED, RUNNING, COMPLETED, FAILED)
+        * jobId: String
+        * externalUrl: URL
+        * inputImageUrl: URL
+        * outputImageUrl: URL [0..1]
+        * priority: Integer
+        * retryCount: Integer
+        * maxRetries: Integer
+        * startedAt: Timestamp [0..1]
+        * completedAt: Timestamp [0..1]
+        * createdAt: Timestamp
+        * updatedAt: Timestamp
+    }
+
+    entity BackgroundRemovalJob <<Firestore>> {
+        * id: UUID [PK]
+        * pipelineJobId: UUID [FK]
+        * originalImageUrl: URL
+        * processedImageUrl: URL
+        * removalMethod: String
+        * confidence: Float
+        * isFallback: Boolean
+        * createdAt: Timestamp
+        * completedAt: Timestamp
+    }
+
+    entity Scheme <<Firestore>> {
+        * id: UUID [PK]
+        * userId: UUID [FK → users]
+        * title: String
+        * description: String
+        * creationMode: Enum (MANUAL, AI_ASSISTED)
+        * status: Enum (DRAFT, PUBLISHED, ARCHIVED, DELETED)
+        * visibility: Enum (PRIVATE, FOLLOWERS, PUBLIC)
+        * backgroundColor: String
+        * backgroundGradient: String
+        * backgroundImageUrl: URL [0..1]
+        * displayMode: String
+        * createdAt: Timestamp
+        * updatedAt: Timestamp
+        * publishedAt: Timestamp [DERIVADO]
+    }
+
+    entity SchemeItem <<Firestore>> {
+        * id: UUID [PK]
+        * schemeId: UUID [FK]
+        * wardrobeItemId: UUID [FK] (DIVERGENTE: sem FK real)
+        * slot: Enum (TOP, BOTTOM, SHOES, ACCESSORIES, DRESS, FULL_BODY)
+        * zIndex: Integer
+        * sortOrder: Integer
+        * positionX: Float
+        * positionY: Float
+        * scale: Float
+        * rotation: Float
+        * createdAt: Timestamp
+        * updatedAt: Timestamp
+    }
+
+    entity SchemeBackground <<Firestore>> {
+        * id: UUID [PK]
+        * schemeId: UUID [FK]
+        * backgroundColor: String
+        * backgroundGradient: String
+        * backgroundImageUrl: URL [0..1]
+        * colorStartHex: String
+        * colorEndHex: String
+        * gradientAngle: Integer
+        * displayMode: String
+        * opacity: Float
+        * createdAt: Timestamp
+        * updatedAt: Timestamp
+    }
+
+    entity AIAssistance <<Firestore>> {
+        * id: UUID [PK]
+        * schemeId: UUID [FK]
+        * userDescription: String
+        * occasion: String
+        * mood: String
+        * suggestedItems: SchemeItem[] [Array]
+        * confidenceScores: Float[] [Array]
+        * generationAttempts: Integer
+        * createdAt: Timestamp
+    }
+}
+
+'' ============================================================
+'' CAMADA REDIS - CACHE (Performance)
+'' ============================================================
+
+package "Redis - Cache (Performance)" #REDIS_COLOR {
+
+    entity PieceCounterCache <<Redis>> {
+        piece_counter:{piece_id}
+        - num_likes: Long
+        - num_shares: Long
+        - num_remixes: Long
+        - num_throwbacks: Long
+        - ttl: 3600s
+    }
+
+    entity UserTimelineCache <<Redis>> {
+        user_timeline:{user_id}
+        - recent_outfits: SchemeID[]
+        - last_updated: Timestamp
+        - ttl: 300s
+    }
+}
+
+'' ============================================================
+'' CAMADA DYNAMODB - SÉRIE TEMPORAL
+'' ============================================================
+
+package "DynamoDB - Série Temporal" #DYNAMODB_COLOR {
+
+    entity Timeline <<DynamoDB>> {
+        * partition_key: user_id
+        * sort_key: timestamp
+        * outfit_id: UUID
+        * author_id: UUID
+        * outfit_title: String
+        * visibility: Enum
+        * action_type: Enum (PUBLISHED, SHARED, LIKED)
+    }
+}
+
+'' ============================================================
+'' CAMADA OPENSEARCH - ÍNDICES DE BUSCA
+'' ============================================================
+
+package "OpenSearch - Índices de Busca" #OPENSEARCH_COLOR {
+
+    entity LooksIndex <<OpenSearch>> {
+        * id: UUID
+        * title: String (analyzed)
+        * description: String (analyzed)
+        * author_id: UUID
+        * occasion_tags: String[] (analyzed)
+        * style_tags: String[] (analyzed)
+        * visibility: String
+        * published_at: Timestamp
+    }
+
+    entity PiecesIndex <<OpenSearch>> {
+        * id: UUID
+        * name: String (analyzed)
+        * category: String
+        * material: String
+        * color: String (analyzed)
+        * brand_name: String
+        * owner_id: UUID
+    }
+}
+
+'' ============================================================
+'' CAMADA S3 / BLOB - STORAGE
+'' ============================================================
+
+package "S3 / Vercel Blob - Storage" #STORAGE_COLOR {
+
+    entity Asset <<Storage>> {
+        * path: /fashion-ai-assets/{user_id}/{type}/{id}.{ext}
+        * content_type: String (image/jpeg, image/png, video/mp4)
+        * size: Long
+        * created_at: Timestamp
+        * metadata: {
+            - original_filename: String
+            - uploader_id: UUID
+            - source_entity: String
+          }
+    }
+}
+
+'' ============================================================
+'' RELACIONAMENTOS - MySQL
+'' ============================================================
+
+User "1" -- "0..*" PieceLike : possui
+User "1" -- "0..*" OutfitLike : marca
+User "1" -- "0..*" PieceComment : comenta
+User "1" -- "0..*" OutfitComment : comenta
+User "1" -- "0..*" Remix : remixeia
+User "1" -- "0..*" UserSavedScheme : salva
+User "1" -- "0..*" AuditLog : realiza
+User "1" -- "0..*" WardrobeItem : possui
+
+Brand "1" -- "0..*" WardrobeItem : marca
+
+Market "1" -- "0..*" WardrobeItem : categoriza
+
+PieceLike "0..*" -- "1" WardrobeItem : gosta_de
+OutfitLike "0..*" -- "1" Scheme : gosta_de
+PieceComment "0..*" -- "1" WardrobeItem : comenta
+OutfitComment "0..*" -- "1" Scheme : comenta
+Remix "0..*" -- "1" Scheme : origem_de
+UserSavedScheme "0..*" -- "1" Scheme : favorita
+
+WardrobeItem "1" -- "1" PieceCounters : tem_contadores
+
+'' ============================================================
+'' RELACIONAMENTOS - Firestore
+'' ============================================================
+
+WardrobeItem "1" -- "0..*" PieceMetadata : contém
+WardrobeItem "1" -- "0..*" AIInference : gera
+WardrobeItem "1" -- "0..*" PipelineJob : submete
+
+PipelineJob "1" -- "0..*" BackgroundRemovalJob : cria
+
+Scheme "1" -- "1..*" SchemeItem : contém
+Scheme "1" -- "0..1" SchemeBackground : configura
+Scheme "1" -- "0..1" AIAssistance : usa
+
+SchemeItem "0..*" -- "1" WardrobeItem : referencia (DIVERGENTE)
+
+'' ============================================================
+'' RELACIONAMENTOS - Cache & Índices
+'' ============================================================
+
+WardrobeItem .. PieceCounterCache : atualiza_cache
+User .. UserTimelineCache : alimenta_cache
+
+Scheme .. Timeline : registra_em
+User .. Timeline : visualiza
+
+Scheme .. LooksIndex : indexa
+WardrobeItem .. PiecesIndex : indexa
+
+'' ============================================================
+'' RELACIONAMENTOS - Storage
+'' ============================================================
+
+WardrobeItem "1" -- "0..*" Asset : armazena_imagens
+Scheme "1" -- "0..*" Asset : armazena_background
+
+'' ============================================================
+'' LEGENDAS E NOTAS
+'' ============================================================
+
+note right of User
+    **Usuário**
+    Identidade e autenticação
+    Base para todos os relacionamentos
+end note
+
+note right of WardrobeItem
+    **Peça do Guarda-Roupa**
+    Armazenagem em Firestore
+    com metadados de IA
+
+    DIVERGÊNCIAS:
+    - model3dUrl não suportado
+    - listing_price nunca salvo
+end note
+
+note right of Scheme
+    **Look/Outfit**
+    Composição visual de peças
+    Armazenado em Firestore
+
+    DIVERGÊNCIAS:
+    - publishedAt é derivado
+    - ENUM visibility falta 'followers'
+end note
+
+note right of SchemeItem
+    **Peça dentro do Look**
+    Posicionamento e zIndex
+
+    DIVERGÊNCIA:
+    - wardrobeItemId sem FK real
+    - validação apenas por prefixo
+end note
+
+note right of PieceCounters
+    **Contadores Desnormalizados**
+    Copiados de MySQL para Redis
+
+    DIVERGÊNCIA:
+    - Contadores não implementados
+    - Requer CDC do MySQL
+end note
+
+note right of Timeline
+    **Feed do Usuário**
+    Série temporal de looks
+    Particionado por user_id
+end note
+
+note bottom of User
+    **Legenda de Cores:**
+    🟤 MySQL - Fonte de Verdade (dados estruturados, transacionais)
+    🟡 Firestore - Documentos Flexíveis (peças, looks, IA)
+    🟢 Redis - Cache (contadores, sessions)
+    🟣 DynamoDB - Série Temporal (timeline)
+    🔵 OpenSearch - Busca Full-Text (peças, looks)
+    🩷 S3/Blob - Armazenamento (imagens, vídeos)
+end note
+
+@enduml
