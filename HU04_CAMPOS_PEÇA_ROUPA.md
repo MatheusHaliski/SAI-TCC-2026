@@ -28,7 +28,7 @@
 
 **Preço e Selos:**
 - `price` (float, obrigatório) – Preço unitário da peça (USD)
-- `seals` (string[], NOVO - sugerido) – Selos/badges sugeridos pela IA com base em style, occasion, price, category (ex: "premium", "eco-friendly", "trending", "limited-edition", "exclusive", etc.) [Sistema sugere automaticamente; usuário pode aceitar/remover]
+- `seals` (string[], NOVO - sugerido, máx 2) – Selos/badges sugeridos pela IA com base em style, occasion, price, category (ex: "premium", "eco-friendly", "trending", "limited-edition", "exclusive", "budget-friendly", "luxury", "casual-chic", etc.) [Sistema sugere automaticamente; usuário pode aceitar/remover, máximo 2 selos]
 
 **Mídia:**
 - `imageUrl` (URL, obrigatório) – Foto da peça (JPG/PNG/WebP até 10 MB - CA01)
