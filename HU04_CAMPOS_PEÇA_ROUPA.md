@@ -12,9 +12,9 @@
 
 **Identificação e Categorização:**
 - `name` (string, obrigatório) – Nome/título da peça (ex: "Camiseta azul marinho")
-- `category` (enum, obrigatório) – Categoria (TOPS, BOTTOMS, SHOES, ACCESSORIES, FULL_BODY, DRESS)
-- `subcategory` (string, obrigatório) – Parte do corpo (cabeça, superior, inferior, calçado)
-- `sex` (enum, obrigatório - NOVO CA07) – Sexo (MASCULINO, FEMININO, UNISSEX) [alimenta RF18]
+- `category` (enum, obrigatório) – Categoria principal (PARTE_CIMA | PARTE_BAIXO | TENIS | ACESSORIO)
+- `subcategory` (string, obrigatório) – Subcategoria específica (ex: "camiseta", "jaqueta", "calça", "bermuda", "tênis esportivo", "bolsa", "cinto", etc.)
+- `sex` (enum, obrigatório - CA07) – Sexo (MASCULINO, FEMININO, UNISSEX) [alimenta RF18]
 - `brandId` (UUID, opcional) – Marca (referência a Brand)
 
 **Atributos Visuais:**

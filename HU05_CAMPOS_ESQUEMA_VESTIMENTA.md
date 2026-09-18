@@ -29,7 +29,7 @@
   ```
   [{
     wardrobeItemId: UUID,
-    slot: "TOP" | "BOTTOM" | "SHOES" | "ACCESSORIES" | "DRESS" | "FULL_BODY",
+    slot: "TOP" | "BOTTOM" | "SHOES" | "ACCESSORIES",
     zIndex: number,
     positionX: float (0-100%),
     positionY: float (0-100%),
@@ -221,7 +221,7 @@ Cada item dentro do look possui:
 
 | Campo | Tipo | Range | Descrição |
 |-------|------|-------|-----------|
-| `slot` | enum | - | Posição: TOP, BOTTOM, SHOES, ACCESSORIES, DRESS, FULL_BODY |
+| `slot` | enum | - | Posição: TOP (parte cima), BOTTOM (parte baixo), SHOES (tênis), ACCESSORIES (acessório) |
 | `zIndex` | int | 0-1000 | Ordem de sobreposição (peça aparece à frente ou atrás) |
 | `positionX` | float | 0-100 | Posição horizontal em % (0=esquerda, 100=direita) |
 | `positionY` | float | 0-100 | Posição vertical em % (0=topo, 100=base) |
