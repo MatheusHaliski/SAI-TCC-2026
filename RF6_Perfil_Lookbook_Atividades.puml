@@ -29,7 +29,7 @@ start
 :Carregar dados do perfil:\n- Nome\n- Foto\n- Biografia\n- Privacidade;
 :Carregar relacionamento social:\n- Seguindo\n- Não seguindo\n- Solicitação pendente;
 :Calcular contadores:\n- Peças criadas\n- Meus looks (esquemas criados)\n- Peças salvas\n- Looks salvos;
-:Carregar o esquema marcado\ncomo look do dia\n(isOutfitOfTheDay = true);
+:Carregar o registro de\nsaiDailyLooks da data atual\ndo usuário (fonte do look\ndo dia ativo);
 :Verificar autorização para\nvisualizar o conteúdo do perfil;
 
 if (Conteúdo do perfil está acessível?) then (Sim)
@@ -85,113 +85,169 @@ if (Qual ação deseja realizar?) then (Ação social)
 
 elseif (Abas do Lookbook) then (Abas do Lookbook)
 
-  |Usuário|
-  if (Qual aba deseja visualizar?) then (Look do Dia)
+  |Sistema|
+  if (Conteúdo do perfil está acessível?) then (Não)
 
-    :Usuário abre a aba\n"Look do Dia";
+    :Bloquear a entrada nas abas —\nperfil privado sem autorização;
 
-    |Sistema|
-    if (Existe um look do dia ativo?) then (Sim)
-      :Exibir em destaque:\n- Esquema em versão compacta\n- Peças utilizadas\n- Estilos e ocasiões\n- Data de marcação;
+    note right
+      Reaproveita a mesma verificação de
+      acessibilidade feita no início do
+      fluxo. Nenhuma consulta de coleção
+      (Look do Dia, Looks Salvos, Peças
+      Salvas, Minhas Peças, Meus Looks)
+      roda sem essa checagem passar —
+      a autorização é obrigatória para
+      ENTRAR nas abas, e não é repetida
+      individualmente por aba: se o
+      perfil está inacessível, o fluxo
+      termina aqui e nenhuma consulta às
+      peças/esquemas do dono é feita.
+    end note
 
-      note right
-        O Look do Dia é sempre um Esquema
-        de Vestimenta (isOutfitOfTheDay =
-        true). Peça avulsa e DNA de Estilo
-        nunca aparecem nesta aba.
-      end note
-
-      :Somar os contadores sociais (RF19)\ndo esquema: curtidas, comentários,\ncompartilhamentos, remixes e retornos\n(esquema + peças);
-      :Calcular o Engajamento Normalizado\n(E_norm) por percentil frente aos\nesquemas ativos de referência;
-      :Calcular o Alinhamento de Tendência\n(T_norm): compara marca, cor, categoria\ne estilo das peças com o uso global\nativo na plataforma;
-      :Calcular o Hype Score =\n0,65 × E_norm + 0,35 × T_norm;
-      :Classificar o Hype Score em uma\nfaixa (Despretensioso → Ícone\nde Estilo);
-      :Calcular indicadores adicionais:\n- Total de curtidas (esquema + peças)\n- Breakdown por métrica\n- Selo Trendsetter / Style Match\n- Ranking "Top X% da semana"\n- Comparação com o Hype Score do\nlook do dia anterior;
-
-      |Serviço de IA|
-      :IA identifica a métrica mais fraca\ndo breakdown e gera uma sugestão\nde estilo acionável;
-
-      |Sistema|
-      :Exibir o painel "Hype Score":\n- Esquema em versão compacta\n- Barra de percentual do Hype Score\n- Classificação textual\n- Indicadores sociais e selos\n- Sugestão da IA;
-
-      note right
-        Fórmula completa, pesos e faixas de
-        classificação em
-        RF6_HYPE_SCORE_CALCULO.md.
-      end note
-
-    else (Não)
-      :Exibir mensagem incentivando\na marcar um look do dia;
-      :Oferecer atalho para\nselecionar ou criar um esquema;
-    endif
-
-    :Exibir o histórico\nde looks do dia anteriores;
+  else (Sim)
 
     |Usuário|
-    if (Deseja marcar outro esquema?) then (Sim)
-      :Selecionar um esquema\ncriado pelo usuário;
+    if (Qual aba deseja visualizar?) then (Look do Dia)
 
-      note right
-        A lista de seleção só apresenta
-        Esquemas de Vestimenta do próprio
-        usuário — Peças e registros de DNA
-        de Estilo não são elegíveis para
-        "marcar como look do dia".
-      end note
+      :Usuário abre a aba\n"Look do Dia";
 
       |Sistema|
-      :Validar a propriedade\ne a disponibilidade do esquema;
-      :Validar que a entidade selecionada\né do tipo Esquema (Card.tipo =\nESQUEMA, is_DNA = false);
+      if (Existe um look do dia ativo?) then (Sim)
+        :Exibir em destaque:\n- Esquema em versão compacta\n- Peças utilizadas\n- Estilos e ocasiões\n- Data de marcação (saiDailyLooks.date);
 
-      if (Esquema válido?) then (Sim)
-        :Desmarcar o look do dia anterior;
-        :Definir no novo esquema:\nisOutfitOfTheDay = true;
-        :Atualizar o destaque\nda aba "Look do Dia";
-        :Notificar seguidores\nsobre o novo look do dia;
-        :Recalcular o painel Hype Score\npara o novo look marcado;
+        note right
+          O Look do Dia é sempre um Esquema
+          de Vestimenta referenciado por um
+          registro de saiDailyLooks. Peça
+          avulsa e DNA de Estilo nunca
+          aparecem nesta aba.
+        end note
+
+        :Somar os contadores sociais (RF19)\ndo esquema: curtidas, comentários,\ncompartilhamentos e remixes\n(esquema + peças);
+
+        note right
+          "Retornar" (RF19.CA13/CA14) é
+          navegação — abre o esquema de
+          origem a partir de uma peça da
+          lista — não é reconhecimento
+          social de terceiros e não gera
+          contador próprio. Por isso não
+          entra na soma de engajamento.
+          Ver RF6_HYPE_SCORE_CALCULO.md,
+          seção 3.
+        end note
+
+        :Calcular o Engajamento Normalizado\n(E_norm) por percentil frente à\njanela de calibração de 90 dias;
+        :Calcular o Alinhamento de Tendência\n(T_norm): compara marca, cor, categoria\ne estilo das peças com o uso global\nrecente (janela de 30 dias) na\nmesma janela de calibração;
+        :Calcular o Hype Score =\n0,65 × E_norm + 0,35 × T_norm;
+        :Classificar o Hype Score em uma\nfaixa (Despretensioso → Ícone\nde Estilo);
+        :Ranquear o Hype Score dentre os\nesquemas da janela semanal de\ncomparação, obtendo o percentil\nsemanal do score composto;
+        :Calcular indicadores adicionais:\n- Total de curtidas (esquema + peças)\n- Breakdown por métrica\n- Selo Trendsetter / Style Match\n- Ranking "Top X% da semana"\n(percentil semanal do Hype Score,\nnão o Hype Score em si)\n- Comparação com o Hype Score do\nregistro de saiDailyLooks anterior;
+
+        |Serviço de IA|
+        :IA identifica a métrica mais fraca\ndo breakdown e gera uma sugestão\nde estilo acionável;
+
+        |Sistema|
+        :Exibir o painel "Hype Score":\n- Esquema em versão compacta\n- Barra de percentual do Hype Score\n- Classificação textual\n- Indicadores sociais e selos\n- Sugestão da IA;
+
+        note right
+          Fórmula completa, pesos, janelas
+          de tempo e faixas de classificação
+          em RF6_HYPE_SCORE_CALCULO.md.
+        end note
+
       else (Não)
-        :Informar que o esquema\nnão pode ser selecionado;
+        :Exibir mensagem incentivando\na marcar um look do dia;
+        :Oferecer atalho para\nselecionar ou criar um esquema;
       endif
-    else (Não)
-      |Sistema|
-      :Manter o look do dia atual;
-    endif
 
-  else (Looks Salvos / Peças Salvas /\nMinhas Peças / Meus Looks)
+      :Consultar os registros de\nsaiDailyLooks do usuário,\nordenados por data decrescente;
+      :Exibir o histórico\nde looks do dia anteriores;
 
-    |Usuário|
-    if (Qual coleção?) then (Looks Salvos)
-      |Sistema|
-      :Definir fonte da consulta:\nesquemas salvos pelo usuário\n(favoritados de outros usuários);
-    elseif (Peças Salvas) then (Peças Salvas)
-      |Sistema|
-      :Definir fonte da consulta:\npeças salvas pelo usuário\n(favoritadas de outros usuários);
-    elseif (Minhas Peças) then (Minhas Peças)
-      |Sistema|
-      :Definir fonte da consulta:\npeças criadas pelo usuário;
-    else (Meus Looks)
-      |Sistema|
-      :Definir fonte da consulta:\nesquemas criados pelo usuário;
-    endif
+      |Usuário|
+      if (Deseja marcar outro esquema?) then (Sim)
+        :Selecionar um esquema\ncriado pelo usuário;
 
-    :Carregar os itens\nda coleção selecionada;
+        note right
+          A lista de seleção só apresenta
+          Esquemas de Vestimenta do próprio
+          usuário — Peças e registros de DNA
+          de Estilo não são elegíveis para
+          "marcar como look do dia".
+        end note
 
-    |Usuário|
-    if (Deseja aplicar filtros?) then (Sim)
-      :Selecionar filtros:\n- Ocasião\n- Estilo\n- Cor\n- Mercado\n- Marca;
-      |Sistema|
-      :Validar os filtros informados;
-      :Aplicar os filtros\nà coleção selecionada;
-      :Exibir os resultados filtrados\nem formato de grade;
-    else (Não)
-      |Sistema|
-      :Exibir a coleção completa\nem formato de grade;
-    endif
+        |Sistema|
+        :Validar a propriedade\ne a disponibilidade do esquema;
+        :Validar que a entidade selecionada\né do tipo Esquema (Card.tipo =\nESQUEMA, is_DNA = false);
 
-    if (Existem itens na coleção?) then (Sim)
-      :Permitir selecionar um item\npara visualizar seus detalhes;
-    else (Não)
-      :Exibir estado vazio\ncorrespondente à aba;
+        if (Esquema válido?) then (Sim)
+          :Criar ou atualizar o registro em\nsaiDailyLooks para a data de hoje\n(user_id, date, scheme_id,\nsource = "manual"), preservando\nos registros de datas anteriores;
+
+          note right
+            Um flag booleano mutável perde a
+            data e a relação com a seleção
+            anterior — não sustenta o
+            histórico, a comparação com o
+            look do dia anterior nem o
+            feedback datado da HU19. O
+            registro datado (mesmo padrão de
+            docs/autopiloto-architecture.md,
+            saiDailyLooks) é a fonte de
+            verdade; um eventual flag de
+            leitura rápida no esquema é só
+            cache derivado do registro de
+            hoje.
+          end note
+
+          :Atualizar o destaque\nda aba "Look do Dia";
+          :Notificar seguidores\nsobre o novo look do dia;
+          :Recalcular o painel Hype Score\npara o novo look marcado;
+        else (Não)
+          :Informar que o esquema\nnão pode ser selecionado;
+        endif
+      else (Não)
+        |Sistema|
+        :Manter o look do dia atual;
+      endif
+
+    else (Looks Salvos / Peças Salvas /\nMinhas Peças / Meus Looks)
+
+      |Usuário|
+      if (Qual coleção?) then (Looks Salvos)
+        |Sistema|
+        :Definir fonte da consulta:\nesquemas salvos pelo usuário\n(favoritados de outros usuários);
+      elseif (Peças Salvas) then (Peças Salvas)
+        |Sistema|
+        :Definir fonte da consulta:\npeças salvas pelo usuário\n(favoritadas de outros usuários);
+      elseif (Minhas Peças) then (Minhas Peças)
+        |Sistema|
+        :Definir fonte da consulta:\npeças criadas pelo usuário;
+      else (Meus Looks)
+        |Sistema|
+        :Definir fonte da consulta:\nesquemas criados pelo usuário;
+      endif
+
+      :Carregar os itens\nda coleção selecionada;
+
+      |Usuário|
+      if (Deseja aplicar filtros?) then (Sim)
+        :Selecionar filtros:\n- Ocasião\n- Estilo\n- Cor\n- Mercado\n- Marca;
+        |Sistema|
+        :Validar os filtros informados;
+        :Aplicar os filtros\nà coleção selecionada;
+        :Exibir os resultados filtrados\nem formato de grade;
+      else (Não)
+        |Sistema|
+        :Exibir a coleção completa\nem formato de grade;
+      endif
+
+      if (Existem itens na coleção?) then (Sim)
+        :Permitir selecionar um item\npara visualizar seus detalhes;
+      else (Não)
+        :Exibir estado vazio\ncorrespondente à aba;
+      endif
+
     endif
 
   endif
