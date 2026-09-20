@@ -1,0 +1,205 @@
+@startuml RF5_Criar_Look_Atividades_Corrigido
+title RF5 — Criar Look\nFluxo Manual e Geração com IA — Corrigido (seleção de elemento-alvo na Etapa 1)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #52606D
+skinparam activity {
+  BackgroundColor #F8F4FF
+  BorderColor #B695F5
+  FontColor #2D2438
+  DiamondBackgroundColor #FFF5F8
+  DiamondBorderColor #F08DB1
+  StartColor #20A77A
+  EndColor #4B5563
+  BarColor #4B4B4B
+}
+skinparam note {
+  BackgroundColor #FFFDEB
+  BorderColor #D8CE78
+  FontColor #554F24
+}
+
+start
+:Usuário acessa a funcionalidade\n"Criar Look";
+:Etapa 1 — Escolher modo de geração\ne elemento a ser editado;
+
+:Usuário escolhe o modo de geração:\n- Geração manual\n- Geração com IA;
+
+if (Está editando um look existente?) then (Sim)
+  :Sistema carrega o esquema\ne suas peças/slots atuais;
+else (Não)
+  :Sistema cria um esquema\ncom status "rascunho";
+endif
+
+:Sistema exibe o painel de preview\nlateral do card;
+
+if (Qual elemento será editado?) then (Conjunto / Esquema completo)
+  :Sistema destaca (luz, borda\ne realce) a arte do conjunto\nno painel de preview;
+  :Fixar elemento-alvo\n= arte do esquema;
+else (Peça específica)
+  :Usuário seleciona a peça/slot\na ser editada no painel de preview;
+  :Sistema destaca (luz, borda\ne realce) a peça selecionada\nno painel de preview;
+  :Fixar elemento-alvo\n= peça selecionada;
+endif
+
+note right
+  O elemento-alvo fixado nesta etapa
+  permanece o mesmo em todas as etapas
+  seguintes (2 a 5). Ex.: se o alvo é a
+  arte do esquema, a Etapa 4 (arte de
+  background) edita somente essa arte —
+  se o alvo é uma peça específica, a
+  Etapa 4 edita somente aquela peça.
+  Isto elimina a necessidade de um seletor
+  adicional de alvo dentro do Background
+  Studio (RF11) — ver nota na Etapa 4.
+end note
+
+if (Qual é o modo de geração?) then (Manual)
+
+  :Etapa 2 — Selecionar peças manualmente;
+
+  repeat
+    :Usuário seleciona uma peça\npara cada slot do look;
+    :Sistema verifica:\n- Disponibilidade da peça\n- Compatibilidade do slot\n- Duplicidade\n- Regras da composição\n- Até 3 estilos e 3 ocasiões;
+
+    if (Peças compatíveis?) then (Sim)
+      :Sistema adiciona as peças\nao esquema;
+    else (Não)
+      :Sistema informa as incompatibilidades;
+      :Usuário substitui ou remove\nas peças incompatíveis;
+    endif
+  repeat while (Existem incompatibilidades?) is (Sim)
+
+  :Etapa 3 — Revisar composição manual;
+
+  repeat
+    :Sistema apresenta a pré-visualização\ndas peças nos respectivos slots;
+    :Usuário revisa a composição;
+
+    if (Deseja alterar a composição?) then (Sim)
+      :Usuário adiciona, remove\nou substitui peças;
+      :Sistema valida novamente\na composição;
+    else (Não)
+      :Usuário aprova\na composição manual;
+    endif
+  repeat while (Deseja realizar novos ajustes?) is (Sim)
+
+else (IA)
+
+  :Etapa 2 — Descrever intenção do look;
+
+  repeat
+    :Usuário informa:\n- Descrição do look\n- Ocasião\n- Estilos desejados\n- Preferências de cores\n- Outras orientações;
+    :Sistema valida a descrição;
+
+    if (Descrição suficiente?) then (Sim)
+      :Sistema envia a descrição\nao serviço de IA;
+    else (Não)
+      :Sistema solicita informações\nadicionais ao usuário;
+    endif
+  repeat while (Descrição insuficiente?) is (Sim)
+
+  :Etapa 3 — Gerar e revisar sugestão da IA;
+
+  repeat
+    :IA analisa:\n- Descrição do usuário\n- Peças do guarda-roupa\n- Disponibilidade\n- Cores e marcas\n- Estilos e ocasiões;
+    :IA seleciona peças compatíveis\npara os slots do look;
+    :Sistema valida a sugestão gerada;
+
+    if (Sugestão tecnicamente válida?) then (Sim)
+      :Sistema apresenta a sugestão\nao usuário;
+    else (Não)
+      :Sistema solicita nova geração\nao serviço de IA;
+    endif
+  repeat while (Sugestão inválida?) is (Sim)
+
+  repeat
+    if (Qual ação o usuário deseja?) then (Editar peças)
+      :Usuário edita as peças manualmente;
+      :Sistema valida as alterações\nrealizadas pelo usuário;
+
+      while (Alterações válidas?) is (Não)
+        :Sistema informa as incompatibilidades;
+        :Usuário corrige as peças;
+        :Sistema valida novamente\nas alterações;
+      endwhile (Sim)
+
+      :Sistema atualiza\na sugestão apresentada;
+
+    elseif (Nova geração) then (Regenerar)
+      :Sistema solicita nova geração\nao serviço de IA;
+      :IA gera outra composição\ncompatível com a intenção;
+      :Sistema valida e apresenta\na nova sugestão;
+
+    else (Aceitar)
+      :Usuário aprova a composição\nsugerida pela IA;
+    endif
+  repeat while (Composição aprovada?) is (Não)
+
+endif
+
+:Etapa 4 — Configurar a arte de fundo\ndo elemento fixado na Etapa 1;
+:Sistema abre o Background Studio\n(RF11), já restrito ao elemento-alvo\nfixado — peça específica ou\narte do esquema completo;
+
+repeat
+  :Usuário escolhe uma direção visual:\n- Cor sólida\n- Gradiente\n- Prompt\n- Direção recomendada por IA\n- Preset Aura;
+  :Usuário pode aplicar, opcionalmente,\numa camada de material sobre\na direção visual escolhida;
+  :Sistema aplica o resultado apenas\nao elemento-alvo fixado;
+  :Sistema gera uma pré-visualização\ndo card completo;
+  :Usuário revisa:\n- Peças\n- Slots\n- Layout\n- Arte de fundo do elemento-alvo\n- Legibilidade do conteúdo;
+repeat while (Deseja ajustar o background?) is (Sim)
+
+:Usuário confirma a arte de fundo\ndo elemento fixado;
+
+note right
+  Como o elemento-alvo já foi fixado na
+  Etapa 1 (peça específica ou arte do
+  esquema), esta etapa não precisa de um
+  seletor adicional de "o que estou
+  editando" dentro do RF11 — elimina o
+  antigo modo de geração dedicado a
+  "arte das peças" no Background Studio,
+  cuja finalidade já é resolvida aqui.
+end note
+
+note right
+  A cor do container (RF11) separa duas
+  camadas de arte/conteúdo: a externa
+  (fotos + títulos + lista de peças,
+  editável com Preset Aura + Material) e
+  a interna, com cor neutra e distinta da
+  externa — o que melhora a legibilidade
+  do conteúdo do esquema ou da peça
+  dentro do card.
+end note
+
+:Etapa 5 — Revisar, salvar e concluir;
+
+repeat
+  :Sistema apresenta o preview final\ndo card completo;
+  :Sistema valida:\n- Campos obrigatórios\n- Quantidade e ocupação dos slots\n- Compatibilidade das peças\n- Configuração do background\n- Permissões do usuário;
+
+  if (Look válido para conclusão?) then (Sim)
+    :Validação concluída;
+  else (Não)
+    :Sistema apresenta\nas inconsistências encontradas;
+    :Usuário corrige a composição,\nos dados ou o background;
+    :Sistema executa\numa nova validação;
+  endif
+repeat while (Ainda existem inconsistências?) is (Sim)
+
+if (Look será público?) then (Sim)
+  :Sistema define visibilidade pública\ne status "publicado";
+else (Não)
+  :Sistema define visibilidade privada\ne status "salvo";
+endif
+
+:Sistema persiste ou atualiza:\n- Registro em schemes\n- Itens em scheme_items\n- Ordem dos slots\n- Elemento-alvo fixado (Etapa 1)\n- Configuração do background\n- Modo de geração\n- Visibilidade e status;
+:Sistema confirma:\n"Look criado com sucesso";
+:Sistema redireciona o usuário\npara "Looks Salvos";
+stop
+
+@enduml

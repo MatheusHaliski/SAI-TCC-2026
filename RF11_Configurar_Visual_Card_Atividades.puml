@@ -1,0 +1,192 @@
+@startuml RF11_Configurar_Visual_Card_Atividades
+title RF11 — Configurar o Visual do Card\nDiagrama de Atividades — Corrigido (material combinável + Layout & Estilo)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #52606D
+skinparam activity {
+  BackgroundColor #F8F4FF
+  BorderColor #B695F5
+  FontColor #2D2438
+  DiamondBackgroundColor #FFF5F8
+  DiamondBorderColor #F08DB1
+  StartColor #20A77A
+  EndColor #4B5563
+  BarColor #4B4B4B
+}
+skinparam note {
+  BackgroundColor #FFFDEB
+  BorderColor #D8CE78
+  FontColor #554F24
+}
+
+start
+:Usuário acessa o editor\nde configuração visual;
+:Etapa 1 — Escolher\no tipo de card;
+
+if (Qual tipo de card?) then (Peça)
+  :Selecionar uma peça\ndo guarda-roupa;
+  :Carregar imagem e informações\nda peça selecionada;
+elseif (Esquema de vestimenta) then (Esquema)
+  :Selecionar um esquema\nde vestimenta;
+  :Carregar peças, slots\ne informações do esquema;
+else (DNA de Estilo)
+  :Selecionar um registro\nde DNA de Estilo;
+  :Carregar dados, métricas,\ntextos e elementos visuais;
+endif
+
+:Etapa 2 — Organizar\no conteúdo do card;
+:Sistema disponibiliza os slots\npara fotos e textos;
+:Usuário escolhe o layout\ndos elementos;
+:Sistema posiciona fotos e textos\ndentro do container de conteúdo;
+
+:Etapa 3 — Layout & Estilo;
+:Sistema apresenta a biblioteca\nde anatomias de card;
+
+if (Qual escopo do layout?) then (Peça individual)
+  :Sistema apresenta as anatomias\nde peça: Passarela, Etiqueta,\nRaio-X, Bento, Espectro, Recibo;
+else (Conjunto / Esquema)
+  :Sistema apresenta as anatomias\nde conjunto: Lista vertical,\nGrade de peças, Foto hero + lista\nlateral, Passarela, Etiqueta,\nRaio-X, Bento assimétrico,\nEspectro, Recibo;
+endif
+
+:Usuário seleciona\numa anatomia de card;
+:Usuário seleciona a densidade\n(Ampliado ou Compacto);
+:Sistema aplica a anatomia escolhida\nà estrutura de slots do card;
+:Salvar temporariamente\na configuração de layout & estilo;
+
+note right
+  Fonte: anatomias_card_v12.html
+  Cada anatomia define a disposição de
+  foto, textos, lista de peças e metadados.
+  É independente da cor/arte do background
+  configurada na Etapa 4 — trocar de anatomia
+  não descarta a configuração de background,
+  arte com IA ou cor do container já salva.
+end note
+
+repeat
+  :Etapa 4 — Configurar\nos elementos visuais;
+
+  if (Qual elemento deseja configurar?) then (1. Cor ou gradiente)
+    :Selecionar configuração\nde background;
+
+    if (Qual tipo de background?) then (Cor sólida)
+      :Selecionar uma cor;
+      :Aplicar a cor sólida\nao background externo;
+    else (Gradiente)
+      :Selecionar cores\ne direção do gradiente;
+      :Aplicar o gradiente\nao background externo;
+    endif
+
+    :Salvar temporariamente\na configuração do background;
+
+  elseif (2. Arte com IA) then (Arte com IA)
+    :Abrir o painel\n"Arte com IA";
+
+    if (Qual direção visual?) then (Prompt)
+      repeat
+        :Usuário insere\nou edita o prompt;
+        :Sistema apresenta\na prévia do prompt;
+      repeat while (Confirmar envio do prompt?) is (Não)
+
+      fork
+        :IA interpreta\no prompt confirmado;
+      fork again
+        :IA analisa:\n- Histórico do usuário\n- Tendências\n- Popularidade\n- Opções mais utilizadas;
+      end fork
+
+      :IA consolida\nos resultados;
+      :IA gera sugestões visuais\nde imagens e textos;
+      :Sistema exibe\nas sugestões;
+
+      repeat
+        :Usuário revisa e solicita\najustes, quando necessário;
+      repeat while (Confirmar sugestão visual?) is (Não)
+
+    elseif (Direção recomendada) then (Direção visual)
+      :IA analisa o conteúdo,\no estilo e as peças;
+      :IA recomenda\numa direção visual;
+      :Usuário seleciona\na direção recomendada;
+
+    else (Preset Aura)
+      :Sistema apresenta\nos presets Aura;
+      :Usuário seleciona\num preset;
+    endif
+
+    if (Deseja aplicar uma camada\nde material sobre a direção\nvisual escolhida?) then (Sim)
+      :Sistema apresenta\na biblioteca de materiais;
+      :Usuário seleciona\numa camada de material;
+      :Sistema combina o material\ncom a direção visual escolhida\n(prompt, direção recomendada\nou preset Aura);
+    else (Não)
+    endif
+
+    note right
+      Material deixou de ser alternativa a
+      Prompt / Direção recomendada / Preset
+      Aura. Agora é uma camada opcional,
+      aplicável sobre qualquer uma delas —
+      igual já funciona materialLayer no
+      código (independente de background_mode).
+      Ver RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md,
+      seção 3.2, e RF11_PROMPTS_AURA_MATERIAIS.md.
+    end note
+
+    :IA gera a arte\nde background;
+    :Sistema aplica a arte apenas\nao elemento fixado nesta sessão\n(peça, esquema ou DNA de Estilo\ndefinido na Etapa 1 — ou, quando\ninvocado a partir do RF5, o elemento\njá fixado na Etapa 1 do RF5);
+    :Salvar temporariamente\na configuração da arte;
+
+    note right
+      Como o elemento-alvo já é definido na
+      Etapa 1 (deste fluxo ou do RF5, quando
+      invocado a partir de lá), não é necessário
+      um modo de geração dedicado a "arte das
+      peças" dentro desta etapa — o alvo já
+      está resolvido antes de o painel abrir.
+    end note
+
+  else (3. Cor do container)
+    :Abrir o seletor de cor\ndo container de conteúdo;
+    :Sistema destaca o container\ninterno à borda do card;
+    :Usuário seleciona\na cor do container;
+    :Aplicar a cor somente\nao container interno;
+    note right
+      O container contém fotos e textos.
+      A alteração não substitui nem modifica
+      o background externo do card.
+      Uma cor neutra e distinta da externa
+      melhora a legibilidade do conteúdo do
+      esquema/peça — ver nota da Etapa 4 do RF5.
+    end note
+    :Salvar temporariamente\na cor do container;
+  endif
+
+  :Sistema renderiza\nnova pré-visualização;
+  :Exibir o card com:\n- Background externo\n- Borda\n- Container interno\n- Fotos e textos;
+repeat while (Deseja configurar outro elemento visual?) is (Sim)
+
+:Etapa 5 — Consolidar\na composição visual;
+:Salvar temporariamente:\n- Configuração do background\n- Configuração da arte com IA\n(direção visual + material,\nquando combinados)\n- Cor do container\n- Layout dos elementos\n- Anatomia e densidade (Etapa 3);
+:Aplicar o container\ndentro da borda;
+:Manter as fotos e os textos\ndentro do container;
+:Aplicar o layout\naos slots do card;
+
+repeat
+  :Etapa 6 — Revisar a geração\ncom preview do card completo,\nos slots preenchidos e concluir;
+  :Sistema apresenta:\n- Background final\n- Arte com IA, quando utilizada\n- Borda do card\n- Cor do container\n- Fotos e textos\n- Slots preenchidos\n- Anatomia e densidade aplicadas;
+
+  if (Deseja editar o visual das peças?) then (Sim)
+    :Abrir modal de edição\nvisual das peças;
+    :Usuário ajusta\nas cores das peças;
+    :Sistema atualiza\na pré-visualização;
+  else (Não)
+    :Manter o visual atual\ndas peças;
+  endif
+repeat while (Confirmar e concluir o card?) is (Não)
+
+:Persistir:\n- background_config\n- ai_artwork_config (direção + material)\n- content_container_color\n- layout_config (inclui anatomia\ne densidade da Etapa 3)\n- piece_visual_config;
+:Salvar ou atualizar\no card;
+:Exibir confirmação\nde conclusão;
+stop
+
+@enduml
