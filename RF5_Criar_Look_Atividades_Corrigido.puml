@@ -1,5 +1,5 @@
 @startuml RF5_Criar_Look_Atividades_Corrigido
-title RF5 — Criar Look\nFluxo Manual e Geração com IA — Corrigido (seleção de elemento-alvo na Etapa 1)
+title RF5 — Criar Look\nFluxo Manual e Geração com IA — Corrigido (raias de atores + seleção de elemento-alvo na Etapa 1)
 
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
@@ -21,12 +21,13 @@ skinparam note {
   FontColor #554F24
 }
 
+|Usuário|
 start
 :Usuário acessa a funcionalidade\n"Criar Look";
 :Etapa 1 — Escolher modo de geração\ne elemento a ser editado;
-
 :Usuário escolhe o modo de geração:\n- Geração manual\n- Geração com IA;
 
+|Sistema|
 if (Está editando um look existente?) then (Sim)
   :Sistema carrega o esquema\ne suas peças/slots atuais;
 else (Não)
@@ -35,11 +36,14 @@ endif
 
 :Sistema exibe o painel de preview\nlateral do card;
 
+|Usuário|
 if (Qual elemento será editado?) then (Conjunto / Esquema completo)
+  |Sistema|
   :Sistema destaca (luz, borda\ne realce) a arte do conjunto\nno painel de preview;
   :Fixar elemento-alvo\n= arte do esquema;
 else (Peça específica)
   :Usuário seleciona a peça/slot\na ser editada no painel de preview;
+  |Sistema|
   :Sistema destaca (luz, borda\ne realce) a peça selecionada\nno painel de preview;
   :Fixar elemento-alvo\n= peça selecionada;
 endif
@@ -57,31 +61,39 @@ note right
   Studio (RF11) — ver nota na Etapa 4.
 end note
 
+|Usuário|
 if (Qual é o modo de geração?) then (Manual)
 
   :Etapa 2 — Selecionar peças manualmente;
 
   repeat
     :Usuário seleciona uma peça\npara cada slot do look;
+    |Sistema|
     :Sistema verifica:\n- Disponibilidade da peça\n- Compatibilidade do slot\n- Duplicidade\n- Regras da composição\n- Até 3 estilos e 3 ocasiões;
 
     if (Peças compatíveis?) then (Sim)
       :Sistema adiciona as peças\nao esquema;
     else (Não)
       :Sistema informa as incompatibilidades;
+      |Usuário|
       :Usuário substitui ou remove\nas peças incompatíveis;
     endif
+    |Usuário|
   repeat while (Existem incompatibilidades?) is (Sim)
 
   :Etapa 3 — Revisar composição manual;
 
   repeat
+    |Sistema|
     :Sistema apresenta a pré-visualização\ndas peças nos respectivos slots;
+    |Usuário|
     :Usuário revisa a composição;
 
     if (Deseja alterar a composição?) then (Sim)
       :Usuário adiciona, remove\nou substitui peças;
+      |Sistema|
       :Sistema valida novamente\na composição;
+      |Usuário|
     else (Não)
       :Usuário aprova\na composição manual;
     endif
@@ -93,6 +105,7 @@ else (IA)
 
   repeat
     :Usuário informa:\n- Descrição do look\n- Ocasião\n- Estilos desejados\n- Preferências de cores\n- Outras orientações;
+    |Sistema|
     :Sistema valida a descrição;
 
     if (Descrição suficiente?) then (Sim)
@@ -100,13 +113,16 @@ else (IA)
     else (Não)
       :Sistema solicita informações\nadicionais ao usuário;
     endif
+    |Usuário|
   repeat while (Descrição insuficiente?) is (Sim)
 
   :Etapa 3 — Gerar e revisar sugestão da IA;
 
+  |Serviço de IA|
   repeat
     :IA analisa:\n- Descrição do usuário\n- Peças do guarda-roupa\n- Disponibilidade\n- Cores e marcas\n- Estilos e ocasiões;
     :IA seleciona peças compatíveis\npara os slots do look;
+    |Sistema|
     :Sistema valida a sugestão gerada;
 
     if (Sugestão tecnicamente válida?) then (Sim)
@@ -114,25 +130,35 @@ else (IA)
     else (Não)
       :Sistema solicita nova geração\nao serviço de IA;
     endif
+    |Serviço de IA|
   repeat while (Sugestão inválida?) is (Sim)
 
+  |Usuário|
   repeat
     if (Qual ação o usuário deseja?) then (Editar peças)
       :Usuário edita as peças manualmente;
+      |Sistema|
       :Sistema valida as alterações\nrealizadas pelo usuário;
 
       while (Alterações válidas?) is (Não)
         :Sistema informa as incompatibilidades;
+        |Usuário|
         :Usuário corrige as peças;
+        |Sistema|
         :Sistema valida novamente\nas alterações;
       endwhile (Sim)
 
       :Sistema atualiza\na sugestão apresentada;
+      |Usuário|
 
     elseif (Nova geração) then (Regenerar)
+      |Sistema|
       :Sistema solicita nova geração\nao serviço de IA;
+      |Serviço de IA|
       :IA gera outra composição\ncompatível com a intenção;
+      |Sistema|
       :Sistema valida e apresenta\na nova sugestão;
+      |Usuário|
 
     else (Aceitar)
       :Usuário aprova a composição\nsugerida pela IA;
@@ -141,14 +167,18 @@ else (IA)
 
 endif
 
+|Sistema|
 :Etapa 4 — Configurar a arte de fundo\ndo elemento fixado na Etapa 1;
 :Sistema abre o Background Studio\n(RF11), já restrito ao elemento-alvo\nfixado — peça específica ou\narte do esquema completo;
 
+|Usuário|
 repeat
   :Usuário escolhe uma direção visual:\n- Cor sólida\n- Gradiente\n- Prompt\n- Direção recomendada por IA\n- Preset Aura;
   :Usuário pode aplicar, opcionalmente,\numa camada de material sobre\na direção visual escolhida;
+  |Sistema|
   :Sistema aplica o resultado apenas\nao elemento-alvo fixado;
   :Sistema gera uma pré-visualização\ndo card completo;
+  |Usuário|
   :Usuário revisa:\n- Peças\n- Slots\n- Layout\n- Arte de fundo do elemento-alvo\n- Legibilidade do conteúdo;
 repeat while (Deseja ajustar o background?) is (Sim)
 
@@ -176,6 +206,7 @@ note right
   dentro do card.
 end note
 
+|Sistema|
 :Etapa 5 — Revisar, salvar e concluir;
 
 repeat
@@ -186,14 +217,19 @@ repeat
     :Validação concluída;
   else (Não)
     :Sistema apresenta\nas inconsistências encontradas;
+    |Usuário|
     :Usuário corrige a composição,\nos dados ou o background;
+    |Sistema|
     :Sistema executa\numa nova validação;
   endif
 repeat while (Ainda existem inconsistências?) is (Sim)
 
+|Usuário|
 if (Look será público?) then (Sim)
+  |Sistema|
   :Sistema define visibilidade pública\ne status "publicado";
 else (Não)
+  |Sistema|
   :Sistema define visibilidade privada\ne status "salvo";
 endif
 
