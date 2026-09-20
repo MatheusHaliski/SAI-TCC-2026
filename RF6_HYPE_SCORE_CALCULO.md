@@ -9,7 +9,9 @@
 
 ## 1. Contexto
 
-O "Look do Dia" é sempre um **Esquema de Vestimenta** marcado com `isOutfitOfTheDay = true` — nunca uma Peça avulsa nem um registro de DNA de Estilo, os quais não participam desta aba. O painel da aba exibe o esquema em versão compacta mais um conjunto de indicadores sociais, com destaque para o **Hype Score**: um percentual (0–100%) que responde "o quão estiloso este look está sendo percebido, agora, pela comunidade e frente às tendências globais da plataforma".
+O "Look do Dia" é sempre um **Esquema de Vestimenta** — nunca uma Peça avulsa nem um registro de DNA de Estilo, os quais não participam desta aba. A marcação é um **registro datado**, não um flag booleano mutável: cada dia em que o usuário marca (ou a marcação persiste) gera/atualiza um documento em `saiDailyLooks` (mesma coleção descrita em `docs/autopiloto-architecture.md`, com `user_id`, `date`, `scheme_id`; aqui com `source = "manual"` para distinguir de marcações geradas pelo Autopiloto). Um flag booleano isolado no esquema não sustenta o histórico exibido na aba, a comparação com o look do dia anterior, nem o feedback datado da HU19 — por isso o registro datado é a fonte de verdade, e qualquer flag de leitura rápida no esquema é só um cache derivado do registro de hoje.
+
+O painel da aba exibe o esquema em versão compacta mais um conjunto de indicadores sociais, com destaque para o **Hype Score**: um percentual (0–100%) que responde "o quão estiloso este look está sendo percebido, agora, pela comunidade e frente às tendências globais da plataforma".
 
 Dois problemas de design que a fórmula abaixo resolve deliberadamente:
 
@@ -24,23 +26,24 @@ A fórmula por isso combina dois eixos independentes, cada um normalizado por **
 
 ### 2.1 Soma ponderada bruta
 
-$$E_{raw} = 1\!\cdot\!L + 3\!\cdot\!C + 5\!\cdot\!S + 8\!\cdot\!R + 4\!\cdot\!V$$
+$$E_{raw} = 1\!\cdot\!L + 3\!\cdot\!C + 5\!\cdot\!S + 8\!\cdot\!R$$
 
 | Símbolo | Métrica (RF19) | Peso | Por quê |
 |---|---|---|---|
 | `L` | Curtidas — esquema **+** soma das curtidas de todas as peças do esquema | 1 | ação de menor esforço; sinal de base |
 | `C` | Comentários — esquema + peças | 3 | exige digitar algo; engajamento qualificado |
 | `S` | Compartilhamentos (feed interno + rede externa, RF19.CA08/CA09) | 5 | redistribui o conteúdo; sinal de alcance |
-| `R` | Remixes — quantas vezes o esquema/peças foram usados como base por outro usuário | 8 | maior peso: alguém *copiou/adaptou* o look — validação de estilo mais forte que existe |
-| `V` | Retornos ("Retornar") — reconhecimento/reuso do look por terceiros | 4 | entre comentário e share em força de sinal |
+| `R` | Remixes — quantas vezes o esquema/peças foram usados como base por outro usuário (RF19.CA13, contador em `remixes`) | 8 | maior peso: alguém *copiou/adaptou* o look — validação de estilo mais forte que existe |
 
 Estes pesos seguem a mesma lógica usada em fórmulas de taxa de engajamento de redes sociais reais: ações que custam mais esforço ao usuário (comentar, compartilhar, remixar) valem mais que uma curtida passiva.
+
+**Por que "Retornar" não entra na soma.** RF19.CA13/CA14 define *Retornar* como uma ação de **navegação**: a partir de uma peça na lista de um esquema, ela apenas abre o esquema de origem que usou aquela peça — não é reconhecimento nem reuso por terceiros, e não existe (nem faria sentido existir) um contador de "retornos" nos dados do RF19. Tratá-la como sinal de engajamento social contaria cliques comuns de navegação como se fossem endosso — por isso o cálculo usa somente `L`, `C`, `S`, `R`.
 
 ### 2.2 Normalização por percentil
 
 $$E_{norm} = 100 \times \frac{\text{posição de } E_{raw} \text{ em ordem crescente entre os esquemas ativos de referência}}{N}$$
 
-**População de referência:** todos os esquemas públicos com pelo menos 1 interação nos últimos 90 dias (janela móvel, recalculada periodicamente — ver seção 6). Isso mantém `E_norm` sempre em [0, 100] e auto-calibrado: a régua acompanha o crescimento da base de usuários, sem precisar de um "teto" hardcoded que se torna obsoleto.
+**Janela de calibração (população de referência):** todos os esquemas públicos com pelo menos 1 interação nos últimos 90 dias (janela móvel, recalculada periodicamente — ver seção 7). Isso mantém `E_norm` sempre em [0, 100] e auto-calibrado: a régua acompanha o crescimento da base de usuários, sem precisar de um "teto" hardcoded que se torna obsoleto.
 
 ---
 
@@ -48,11 +51,13 @@ $$E_{norm} = 100 \times \frac{\text{posição de } E_{raw} \text{ em ordem cresc
 
 Mede se o usuário está vestindo o que **globalmente** está em uso agora — marca, cor, categoria de peça e estilo/ocasião do esquema.
 
-### 3.1 Fração de uso global por atributo
+### 3.1 Fração de uso global recente por atributo
 
 Para cada atributo `a` (marca, cor, categoria, estilo, ocasião) e cada valor `v` que esse esquema usa:
 
-$$u(a, v) = \frac{\text{nº de usuários ativos com pelo menos um esquema/peça usando } v \text{ no atributo } a}{\text{nº total de usuários ativos}}$$
+$$u(a, v) = \frac{\text{nº de usuários distintos com uma peça/esquema usando } v \text{ no atributo } a, \text{ publicado, editado ou marcado como look do dia nos últimos 30 dias}}{\text{nº total de usuários ativos}}$$
+
+**A janela de recência é sobre o *item*, não sobre o usuário.** Exigir apenas que o usuário dono esteja ativo (sem condição de tempo sobre o próprio uso do valor `v`) faria uma peça comprada há anos, parada no guarda-roupa, contar para sempre a favor da tendência — o acervo acumulado dominaria `Trend_raw` e o resultado deixaria de representar o que está em uso "agora", que é exatamente o que este eixo promete medir. Por isso o numerador conta só usos com **publicação, edição ou marcação como look do dia nos últimos 30 dias** — uma janela mais curta que a de calibração de 90 dias da seção 2.2/3.3 (que define o *tamanho da régua de percentil*, não a *recência do sinal de tendência*; são preocupações independentes).
 
 ### 3.2 Combinação ponderada
 
@@ -70,7 +75,7 @@ $$Trend_{raw} = \frac{\sum_i w_i \cdot u(a_i, v_i)}{\sum_i w_i}$$
 
 $$T_{norm} = 100 \times \frac{\text{posição de } Trend_{raw} \text{ entre os esquemas ativos de referência}}{N}$$
 
-Mesma população de referência do Eixo 1.
+Mesma **janela de calibração** de 90 dias do Eixo 1 (seção 2.2) — essa janela define o tamanho da população usada para ranquear o percentil, e é independente da janela de 30 dias usada dentro de `u(a,v)` para decidir o que conta como uso "recente" de cada atributo.
 
 ---
 
@@ -79,6 +84,20 @@ Mesma população de referência do Eixo 1.
 $$\boxed{HypeScore = 0{,}65 \times E_{norm} + 0{,}35 \times T_{norm}} \quad \in [0, 100]\%$$
 
 **Por que 65/35 e não 50/50:** o Hype Score responde primeiro "a comunidade reagiu a ESTE look" (prova social direta) — isso é o E_norm. O alinhamento de tendência entra como reforço secundário, porque moda não é só conformidade: um look pouco alinhado a tendências pode e deve continuar pontuando alto se tiver engajamento real (ver Selo Trendsetter, seção 5). Por isso `α > β`, mas nenhum dos dois eixos tem peso zero.
+
+### 4.1 Percentil semanal do score composto (necessário para o "Top X%")
+
+**`HypeScore` é uma média ponderada de dois percentis — não é, ele mesmo, um percentil.** `100 − HypeScore` portanto **não** diz quantos looks estão acima deste: uma combinação linear de duas variáveis já normalizadas por percentil não preserva a propriedade de percentil (ex.: `E_norm=90` e `T_norm=10` dá `HypeScore=64,5`, mas isso não significa que 35,5% dos looks pontuam mais alto — a posição real de 64,5 na distribuição dos `HypeScore` de todos os looks pode ser bem diferente).
+
+Para sustentar a alegação "Top X% dos looks **desta semana**" de forma correta:
+
+1. Define-se uma **população semanal de comparação** — todos os esquemas ativos/atualizados nos últimos 7 dias — **distinta** da janela de calibração de 90 dias das seções 2.2/3.3 (aquela só define a escala de `E_norm`/`T_norm`; esta define contra quem o score final é comparado).
+2. Calcula-se `HypeScore` para cada esquema dessa população semanal (usando os `E_norm`/`T_norm` já calibrados pela janela de 90 dias).
+3. Ranqueia-se o `HypeScore` do esquema atual **dentro dessa distribuição semanal**:
+
+$$HypeScorePercentilSemanal = 100 \times \frac{\text{posição do } HypeScore \text{ do esquema entre os } HypeScore \text{ da população semanal}}{N_{semana}}$$
+
+Só esse valor — não o `HypeScore` bruto — pode virar a alegação "Top `100 − HypeScorePercentilSemanal`% dos looks desta semana" (seção 6).
 
 ---
 
@@ -105,15 +124,15 @@ Como os dois eixos já são normalizados por percentil, o `HypeScore` tende a se
 Todos derivam dos mesmos dados já calculados acima — nenhum precisa de fonte nova.
 
 - **Total de curtidas** = `L` (soma das curtidas do esquema + de todas as peças) — exibido como número absoluto ao lado do Hype Score.
-- **Breakdown por métrica** — mini-barras de `L`, `C`, `S`, `R`, `V`, cada uma normalizada por percentil individualmente (mesmo método da seção 2.2, aplicado a cada métrica isolada). Mostra ao usuário *qual* alavanca puxar.
+- **Breakdown por métrica** — mini-barras de `L`, `C`, `S`, `R`, cada uma normalizada por percentil individualmente (mesmo método da seção 2.2, aplicado a cada métrica isolada). Mostra ao usuário *qual* alavanca puxar.
 - **Selo "Trendsetter"** — concedido quando `E_norm ≥ 70` **e** `T_norm ≤ 30`: o usuário está sendo muito bem recebido usando algo que ainda **não** é tendência — ele está criando uma, não seguindo.
 - **Selo "Style Match"** — concedido quando `T_norm ≥ 70`: o usuário está fortemente alinhado com o que está bombando agora na plataforma.
-- **Ranking textual** — "Top `100 − HypeScore`% dos looks desta semana", lido direto do percentil já calculado (sem cálculo extra).
-- **Comparação com o Look do Dia anterior** — `Δ = HypeScore atual − HypeScore do look do dia anterior do mesmo usuário`, exibido como seta ↑ / ↓ / = , incentivando a repetição da marcação diária.
+- **Ranking textual** — "Top `100 − HypeScorePercentilSemanal`% dos looks desta semana" (seção 4.1) — **não** `100 − HypeScore`; o percentil semanal é um cálculo próprio, feito contra a população semanal, não uma releitura do score composto.
+- **Comparação com o Look do Dia anterior** — `Δ = HypeScore de hoje − HypeScore do registro de saiDailyLooks de data imediatamente anterior do mesmo usuário`, exibido como seta ↑ / ↓ / = , incentivando a repetição da marcação diária. Como a marcação é um registro datado (seção 1), "o look anterior" é sempre um documento concreto (`scheme_id` + `date`), nunca uma inferência sobre um flag já sobrescrito.
 - **Sugestão da IA** — o sistema identifica a métrica do breakdown com pior percentil e a `AIArtworkService`/`ContextAnalysisService` (já existentes na arquitetura do RF11) geram uma dica acionável, ex.: *"Seus remixes estão baixos — looks com peças de marca X costumam ser mais remixados nesta faixa de estilo."*
 
 ---
 
 ## 7. Nota de implementação (cadência de cálculo)
 
-Os contadores brutos (`L`, `C`, `S`, `R`, `V`) atualizam em tempo real a cada interação (RF19). Já o **percentil de referência** (posição entre os N esquemas ativos) não precisa — e não deve — ser recalculado a cada interação: um job periódico (ex.: a cada poucas horas, via o mesmo `ContextAnalysisService` que já roda as análises de contexto do RF11) recalcula a distribuição de `E_raw`/`Trend_raw` entre os esquemas de referência e atualiza os limites de percentil usados por `E_norm`/`T_norm`. O Hype Score exibido é sempre recalculado on-demand (contadores atuais × última distribuição de referência), sem exigir reprocessar toda a base a cada abertura da aba.
+Os contadores brutos (`L`, `C`, `S`, `R`) atualizam em tempo real a cada interação (RF19). Já a **janela de calibração** (posição entre os N esquemas de referência, seção 2.2/3.3) e a **janela de recência de tendência** (30 dias, seção 3.1) não precisam — e não devem — ser recalculadas a cada interação: um job periódico (ex.: a cada poucas horas, via o mesmo `ContextAnalysisService` que já roda as análises de contexto do RF11) recalcula a distribuição de `E_raw`/`Trend_raw` entre os esquemas de referência e atualiza os limites de percentil usados por `E_norm`/`T_norm`. Um segundo job, com cadência semanal (ou diária, recalculando sobre uma janela móvel de 7 dias), recalcula a **população semanal de comparação** e a distribuição de `HypeScore` usada para o percentil semanal da seção 4.1 — esse job é independente do de calibração de 90 dias. O Hype Score exibido é sempre recalculado on-demand (contadores atuais × última distribuição de referência), sem exigir reprocessar toda a base a cada abertura da aba.
