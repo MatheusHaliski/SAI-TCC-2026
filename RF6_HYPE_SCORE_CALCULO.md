@@ -11,6 +11,8 @@
 
 O "Look do Dia" é sempre um **Esquema de Vestimenta** — nunca uma Peça avulsa nem um registro de DNA de Estilo, os quais não participam desta aba. A marcação é um **registro datado**, não um flag booleano mutável: cada dia em que o usuário marca (ou a marcação persiste) gera/atualiza um documento em `saiDailyLooks` (mesma coleção descrita em `docs/autopiloto-architecture.md`, com `user_id`, `date`, `scheme_id`; aqui com `source = "manual"` para distinguir de marcações geradas pelo Autopiloto). Um flag booleano isolado no esquema não sustenta o histórico exibido na aba, a comparação com o look do dia anterior, nem o feedback datado da HU19 — por isso o registro datado é a fonte de verdade, e qualquer flag de leitura rápida no esquema é só um cache derivado do registro de hoje.
 
+**Continuidade na virada do dia.** "A marcação persiste" só é verdade na prática se existir um documento para *cada* data em que o look permanece ativo — inclusive quando o usuário não faz nada. Por isso, ao carregar a aba, se não existir registro para a data atual, o sistema busca o registro mais recente anterior e **materializa** um novo documento de hoje copiando `scheme_id`/`source` dele, antes de qualquer outra leitura (ver `RF6_Perfil_Lookbook_Atividades.puml`). Sem esse passo, um look marcado ontem e nunca remarcado desapareceria à meia-noite, mesmo a marcação devendo continuar ativa — a materialização lazy no primeiro acesso do dia resolve isso sem depender de um job agendado (um job em lote continua sendo uma otimização de leitura válida em escala, mas não é necessário para a correção).
+
 O painel da aba exibe o esquema em versão compacta mais um conjunto de indicadores sociais, com destaque para o **Hype Score**: um percentual (0–100%) que responde "o quão estiloso este look está sendo percebido, agora, pela comunidade e frente às tendências globais da plataforma".
 
 Dois problemas de design que a fórmula abaixo resolve deliberadamente:
@@ -93,11 +95,14 @@ Para sustentar a alegação "Top X% dos looks **desta semana**" de forma correta
 
 1. Define-se uma **população semanal de comparação** — todos os esquemas ativos/atualizados nos últimos 7 dias — **distinta** da janela de calibração de 90 dias das seções 2.2/3.3 (aquela só define a escala de `E_norm`/`T_norm`; esta define contra quem o score final é comparado).
 2. Calcula-se `HypeScore` para cada esquema dessa população semanal (usando os `E_norm`/`T_norm` já calibrados pela janela de 90 dias).
-3. Ranqueia-se o `HypeScore` do esquema atual **dentro dessa distribuição semanal**:
+3. Ordena-se a população semanal por `HypeScore` **crescente** e localiza-se `posição` (1-indexada: `posição = 1` é o menor score, `posição = N_semana` é o maior) do esquema atual nessa ordem.
+4. Calcula-se diretamente a **fatia superior inclusiva** — a própria definição de "Top X%" — sem passar por um percentil intermediário que depois precise ser invertido:
 
-$$HypeScorePercentilSemanal = 100 \times \frac{\text{posição do } HypeScore \text{ do esquema entre os } HypeScore \text{ da população semanal}}{N_{semana}}$$
+$$TopPercentSemanal = 100 \times \frac{N_{semana} - posição + 1}{N_{semana}}$$
 
-Só esse valor — não o `HypeScore` bruto — pode virar a alegação "Top `100 − HypeScorePercentilSemanal`% dos looks desta semana" (seção 6).
+**Por que não `100 × posição / N` seguido de `100 − isso`.** Com posição 1-indexada, o item de maior score tem `posição = N_semana`, o que daria percentil ascendente `100 × N_semana / N_semana = 100` e, na inversão ingênua, "Top `100 − 100`% = Top 0%" — uma fatia impossível, já que nenhuma população não vazia coloca um item em 0% de si mesma (o melhor item de N itens está, no mínimo, no Top `100/N`%). A fórmula de `TopPercentSemanal` acima calcula a fatia superior direto, sem essa inversão: para o melhor item (`posição = N_semana`), dá `100 × 1 / N_semana` (ex.: Top 1% em uma população de 100); para o pior item (`posição = 1`), dá `100%` (está, trivialmente, no Top 100% — no fim de todo mundo).
+
+Só `TopPercentSemanal` — não o `HypeScore` bruto, nem um percentil ascendente invertido — pode virar a alegação "Top `TopPercentSemanal`% dos looks desta semana" (seção 6).
 
 ---
 
@@ -127,7 +132,7 @@ Todos derivam dos mesmos dados já calculados acima — nenhum precisa de fonte 
 - **Breakdown por métrica** — mini-barras de `L`, `C`, `S`, `R`, cada uma normalizada por percentil individualmente (mesmo método da seção 2.2, aplicado a cada métrica isolada). Mostra ao usuário *qual* alavanca puxar.
 - **Selo "Trendsetter"** — concedido quando `E_norm ≥ 70` **e** `T_norm ≤ 30`: o usuário está sendo muito bem recebido usando algo que ainda **não** é tendência — ele está criando uma, não seguindo.
 - **Selo "Style Match"** — concedido quando `T_norm ≥ 70`: o usuário está fortemente alinhado com o que está bombando agora na plataforma.
-- **Ranking textual** — "Top `100 − HypeScorePercentilSemanal`% dos looks desta semana" (seção 4.1) — **não** `100 − HypeScore`; o percentil semanal é um cálculo próprio, feito contra a população semanal, não uma releitura do score composto.
+- **Ranking textual** — "Top `TopPercentSemanal`% dos looks desta semana" (seção 4.1) — a fatia superior inclusiva, calculada direto contra a população semanal; **não** é `100 − HypeScore` nem um percentil ascendente invertido.
 - **Comparação com o Look do Dia anterior** — `Δ = HypeScore de hoje − HypeScore do registro de saiDailyLooks de data imediatamente anterior do mesmo usuário`, exibido como seta ↑ / ↓ / = , incentivando a repetição da marcação diária. Como a marcação é um registro datado (seção 1), "o look anterior" é sempre um documento concreto (`scheme_id` + `date`), nunca uma inferência sobre um flag já sobrescrito.
 - **Sugestão da IA** — o sistema identifica a métrica do breakdown com pior percentil e a `AIArtworkService`/`ContextAnalysisService` (já existentes na arquitetura do RF11) geram uma dica acionável, ex.: *"Seus remixes estão baixos — looks com peças de marca X costumam ser mais remixados nesta faixa de estilo."*
 

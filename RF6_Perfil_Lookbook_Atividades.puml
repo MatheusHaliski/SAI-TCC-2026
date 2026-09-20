@@ -29,7 +29,38 @@ start
 :Carregar dados do perfil:\n- Nome\n- Foto\n- Biografia\n- Privacidade;
 :Carregar relacionamento social:\n- Seguindo\n- Não seguindo\n- Solicitação pendente;
 :Calcular contadores:\n- Peças criadas\n- Meus looks (esquemas criados)\n- Peças salvas\n- Looks salvos;
-:Carregar o registro de\nsaiDailyLooks da data atual\ndo usuário (fonte do look\ndo dia ativo);
+:Carregar o registro de\nsaiDailyLooks da data atual\ndo usuário;
+
+if (Existe registro de\nsaiDailyLooks para hoje?) then (Não)
+  :Buscar o registro de\nsaiDailyLooks mais recente\nanterior à data atual;
+
+  if (Existe registro anterior?) then (Sim)
+    :Materializar (criar) o registro\nde hoje copiando scheme_id e\nsource do registro anterior;
+
+    note right
+      Sem esta materialização, um look
+      marcado ontem e nunca "remarcado"
+      não tem documento para a data de
+      hoje: a consulta por data atual
+      volta vazia e o look ativo some
+      após a virada do dia, mesmo que a
+      marcação devesse persistir. Este
+      passo garante que sempre exista
+      um registro datado por dia em que
+      o look permanece ativo — sem
+      depender de um job agendado à
+      meia-noite (embora um job
+      periódico de materialização em
+      lote seja uma otimização de
+      leitura válida em escala, o
+      resultado funcional é o mesmo).
+    end note
+  else (Não)
+    :Nenhum registro disponível —\nusuário nunca marcou um\nlook do dia;
+  endif
+else (Sim)
+endif
+
 :Verificar autorização para\nvisualizar o conteúdo do perfil;
 
 if (Conteúdo do perfil está acessível?) then (Sim)
@@ -142,19 +173,26 @@ elseif (Abas do Lookbook) then (Abas do Lookbook)
         :Calcular o Alinhamento de Tendência\n(T_norm): compara marca, cor, categoria\ne estilo das peças com o uso global\nrecente (janela de 30 dias) na\nmesma janela de calibração;
         :Calcular o Hype Score =\n0,65 × E_norm + 0,35 × T_norm;
         :Classificar o Hype Score em uma\nfaixa (Despretensioso → Ícone\nde Estilo);
-        :Ranquear o Hype Score dentre os\nesquemas da janela semanal de\ncomparação, obtendo o percentil\nsemanal do score composto;
-        :Calcular indicadores adicionais:\n- Total de curtidas (esquema + peças)\n- Breakdown por métrica\n- Selo Trendsetter / Style Match\n- Ranking "Top X% da semana"\n(percentil semanal do Hype Score,\nnão o Hype Score em si)\n- Comparação com o Hype Score do\nregistro de saiDailyLooks anterior;
+        :Ranquear o Hype Score dentre os\nesquemas da janela semanal de\ncomparação, calculando a fatia\nsuperior inclusiva (Top X%) —\nnão um percentil ascendente\ninvertido;
+        :Calcular indicadores adicionais:\n- Total de curtidas (esquema + peças)\n- Breakdown por métrica\n- Selo Trendsetter / Style Match\n- Ranking "Top X% da semana"\n(fatia superior inclusiva,\nnão o Hype Score em si)\n- Comparação com o Hype Score do\nregistro de saiDailyLooks anterior;
 
         |Serviço de IA|
         :IA identifica a métrica mais fraca\ndo breakdown e gera uma sugestão\nde estilo acionável;
 
         |Sistema|
-        :Exibir o painel "Hype Score":\n- Esquema em versão compacta\n- Barra de percentual do Hype Score\n- Classificação textual\n- Indicadores sociais e selos\n- Sugestão da IA;
+        :Selecionar a versão de painel\nconfigurada (preferência do usuário\nou padrão do sistema);
+        :Exibir o painel "Look do Dia"\nna versão selecionada — Hype Score\nsempre presente; demais elementos\nvariam por versão;
 
         note right
           Fórmula completa, pesos, janelas
           de tempo e faixas de classificação
           em RF6_HYPE_SCORE_CALCULO.md.
+          Catálogo de versões de painel
+          (Spotlight Clássico, Passarela,
+          Raio-X do Estilo, Bento do Dia,
+          Editorial Minimal, Coach de
+          Estilo) em
+          RF6_LOOK_DO_DIA_VERSOES_PAINEL.md.
         end note
 
       else (Não)
