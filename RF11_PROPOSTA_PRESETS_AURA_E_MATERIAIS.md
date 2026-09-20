@@ -27,6 +27,8 @@ Dentro de `ModoArteIA`, dois ramos concentram decisão de *conteúdo visual* (em
 
 Este documento propõe o **catálogo de conteúdo** para esses dois ramos — hoje representados no código apenas como esqueleto genérico (`presetAura: String [0..1]`, `material: String [0..1]` em `ConfiguracaoArteIA`).
 
+> **Importante — Material e Preset Aura NÃO são excludentes.** Ver seção 3.3: o usuário pode combinar livremente qualquer preset AURA com qualquer material, à sua escolha. A matriz da seção 5 é apenas a combinação **padrão sugerida pela IA**, não uma restrição de uso.
+
 ---
 
 ## 2. Fundamentação em teoria de moda e design
@@ -57,7 +59,24 @@ Isso **não deve ser confundido** com o ramo `PRESET_AURA` do RF11, que é uma *
 - **Introduz** um catálogo próprio de `PRESET_AURA`, ancorado em arquétipo de moda + paleta sazonal, para o campo `presetAura` de `ConfiguracaoArteIA`.
 - **Reaproveita a infraestrutura técnica** já pronta: os *keyframes* CSS (`aura-heat-pulse`, `aura-vibrant-rotate`, `aura-iconic-shimmer`, `aura-legendary-holo`, `aura-particle-float`) e o padrão `GifGradientPreset` (`type`, `angle`, `stops`, `image?`) já implementados — cada preset abaixo tem uma **versão estática** (aplicada direto ao `background_mode: 'gradient'`) e uma **versão GIF** (mesma paleta + animação), replicando exatamente o toggle que já existe (`dynamicBackground` / "Ative a Aura para animar como GIF").
 
-### 3.2 Catálogo proposto (10 presets)
+### 3.2 Material e Preset Aura são combináveis, não alternativos
+
+Lidos ao pé da letra, os diagramas de Atividades e de Máquina de Estados modelam `ModoArteIA` como **uma escolha única** por geração: "Qual recurso de IA?" abre um leque de ramos mutuamente exclusivos (`Camada de material` **|** `Prompt` **|** `Direção visual` **|** `Preset Aura`), todos convergindo no mesmo `Gerando arte` → `Arte aplicada`. Interpretado assim, escolher `Preset Aura` e escolher `Camada de material` seriam de fato alternativas — como a pergunta original aponta.
+
+**Isso não é como o material já funciona na implementação atual**, e não é como material e cor/mood funcionam em moda real:
+
+- **No código (`app/lib/outfit-card.ts`):** `materialLayer` é um campo **independente** de `background_mode`. `applyFabricMaterialToCard()` só *adiciona* `materialLayer` à config existente — nunca substitui `ai_artwork`, `gradient` ou `solid_color`. Ou seja, hoje já é tecnicamente possível aplicar um material por cima de um artwork gerado por IA (incluindo um preset Aura).
+- **Em teoria têxtil/design de moda:** tecido e direção cromática nunca são "ou/ou" — toda peça tem simultaneamente um tecido (linho, cetim, veludo...) **e** uma paleta/mood. Tratar "Camada de material" como alternativa a "Preset Aura" no seletor de recurso da IA contraria a própria lógica de design que este documento usa para justificar os presets.
+
+**Recomendação:** desacoplar `material` das demais opções de `ModoArteIA` no seletor de "Qual recurso de IA?" — ele deixa de ser um ramo alternativo e passa a ser uma **camada sempre disponível**, aplicável em cima de qualquer resultado de `Prompt`, `Direção visual recomendada` ou `Preset Aura`, exatamente como `materialLayer` já se comporta hoje. Na prática:
+
+- O usuário escolhe **um** preset AURA (ou prompt, ou direção recomendada) para a *cor/gradiente/textura de base* do background.
+- Em seguida, **opcionalmente**, escolhe **um** material da tabela da seção 4 para aplicar como *acabamento de superfície* sobre esse background — combinação livre, sem restrição.
+- A matriz da seção 5 permanece útil, mas só como **sugestão automática** (o que a IA pré-seleciona ao recomendar uma direção visual) — nunca como bloqueio à escolha manual.
+
+Isso não exige nenhuma classe nova: `ConfiguracaoVisual` já tem `ConfiguracaoArteIA` (para o preset/prompt/direção) e `ConfiguracaoContainer`/`materialLayer` como campos irmãos dentro do mesmo agregado — a mudança é apenas de **UX/fluxo** (material sai de dentro do seletor de recurso e vira um passo adicional, sempre visível), não de modelo de dados.
+
+### 3.3 Catálogo proposto (10 presets)
 
 | ID proposto | Nome | Arquétipo de moda | Paleta (teoria) | Estação/ocasião | Versão estática | Versão GIF |
 |---|---|---|---|---|---|---|
@@ -109,7 +128,7 @@ Isso **não deve ser confundido** com o ramo `PRESET_AURA` do RF11, que é uma *
 
 ## 5. Matriz de coerência AURA × Material × Arquétipo
 
-Para a etapa "IA analisa: Histórico do usuário / Tendências / Popularidade / Opções mais utilizadas" (Diagrama de Atividades) e `ContextAnalysisService.analisarCard` (Diagrama de Sequência) recomendarem uma combinação **visualmente coerente**, propõe-se esta matriz de pareamento por padrão (o usuário pode sempre sobrescrever manualmente):
+Para a etapa "IA analisa: Histórico do usuário / Tendências / Popularidade / Opções mais utilizadas" (Diagrama de Atividades) e `ContextAnalysisService.analisarCard` (Diagrama de Sequência) recomendarem uma combinação **visualmente coerente**, propõe-se esta matriz como **default sugerido pela IA** — não como restrição. O usuário pode escolher qualquer preset AURA e qualquer material da seção 4 de forma independente, em qualquer combinação; a IA só usa esta matriz para pré-selecionar algo coerente quando ele não escolhe manualmente.
 
 | Arquétipo | Preset AURA | Material recomendado | Racional |
 |---|---|---|---|
@@ -130,9 +149,9 @@ Essa matriz também resolve a regra de negócio já anotada no diagrama de class
 
 ## 6. Como isso se encaixa no fluxo sem alterar a lógica existente
 
-1. **Diagrama de Atividades / Sequência:** nenhuma etapa nova é criada. `Selecionar uma camada de material` e `Sistema apresenta os presets Aura` continuam existindo; apenas o **conteúdo das listas** exibidas passa a vir deste catálogo.
-2. **Diagrama de Classes:** nenhum atributo novo é necessário — `ConfiguracaoArteIA.material` e `ConfiguracaoArteIA.presetAura` já são `String`, recebendo os `id`s propostos.
-3. **Diagrama de Estados:** os estados `Camada de material`, `Preset Aura selecionado`, `Gerando arte`, `Arte aplicada` permanecem inalterados — o catálogo só preenche a transição `material selecionado` / `preset selecionado`.
+1. **Diagrama de Atividades / Sequência:** as etapas `Selecionar uma camada de material` e `Sistema apresenta os presets Aura` continuam existindo; o **conteúdo das listas** exibidas passa a vir deste catálogo. A única mudança de fluxo (seção 3.2) é que material deixa de ser um ramo alternativo dentro de "Qual recurso de IA?" e passa a ser um passo adicional/opcional, aplicável depois de qualquer recurso escolhido (material + preset Aura, material + prompt, etc.).
+2. **Diagrama de Classes:** nenhum atributo novo é necessário — `ConfiguracaoArteIA.material` e `ConfiguracaoArteIA.presetAura` já são `String [0..1]` cada, ou seja, já são campos independentes e podem estar preenchidos ao mesmo tempo; recebem os `id`s propostos.
+3. **Diagrama de Estados:** os estados `Camada de material` e `Preset Aura selecionado` deixam de ser mutuamente exclusivos sob "Selecionando recurso da IA" — material passa a ser alcançável a partir de qualquer um dos outros ramos, todos ainda convergindo em `Gerando arte` → `Arte aplicada`.
 4. **Diagrama de Componentes:** `AIArtworkService.gerarArte(config)` e `ContextAnalysisService` continuam sendo os únicos pontos de integração; o catálogo pode viver como dado estático (similar a `MATERIAL_PRESETS` e `GIF_GRADIENT_PRESETS` hoje) sem exigir novo componente.
 
 ---
@@ -141,5 +160,5 @@ Essa matriz também resolve a regra de negócio já anotada no diagrama de class
 
 - **10 presets AURA** (estático + GIF cada), ancorados em arquétipos de moda reais e paletas sazonais de teoria da cor — substituindo o vazio atual do campo `presetAura`.
 - **10 materiais** ancorados em fibra/construção têxtil real — substituindo nomes não-têxteis (`lego_material`, `water_material`) por tecidos existentes na indústria da moda, com parâmetros técnicos prontos para os campos já existentes em `FabricMaterialConfig`.
-- **Matriz de coerência** ligando arquétipo → preset → material, para orientar a recomendação automática da IA (`recommendVisualDirection`) de forma consistente nos três tipos de card (Peça, Esquema, DNA de Estilo).
-- **Zero mudança estrutural** nos diagramas: tudo se encaixa nos campos e estados já modelados em RF11.
+- **Matriz de coerência** ligando arquétipo → preset → material, usada apenas como **sugestão padrão da IA** (`recommendVisualDirection`) — o usuário sempre pode combinar qualquer preset AURA com qualquer material manualmente (seção 3.2).
+- **Mudança mínima de fluxo:** material deixa de ser alternativa a Preset Aura/Prompt/Direção recomendada dentro de "Qual recurso de IA?" e passa a ser uma camada adicional aplicável por cima de qualquer um deles — sem novos atributos ou classes, só desacoplando uma decisão de UX.
