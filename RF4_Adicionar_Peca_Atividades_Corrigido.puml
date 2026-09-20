@@ -1,0 +1,211 @@
+@startuml RF4_Adicionar_Peca_Atividades_Corrigido
+title RF4 — Adicionar Peça ao Guarda-Roupa\nDetecção com IA, Foto Opcional e Tratamento de Falhas — Corrigido
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #52606D
+skinparam activity {
+  BackgroundColor #F8F4FF
+  BorderColor #B695F5
+  FontColor #2D2438
+  DiamondBackgroundColor #FFF5F8
+  DiamondBorderColor #F08DB1
+  StartColor #20A77A
+  EndColor #4B5563
+}
+skinparam note {
+  BackgroundColor #FFFDEB
+  BorderColor #D8CE78
+  FontColor #554F24
+}
+
+|Usuário|
+start
+:Etapa 1 — Acessar\n"Adicionar Nova Peça";
+:Etapa 2 — Selecionar e enviar\nfotografias (opcional);
+
+|Sistema|
+if (Usuário enviou ao menos uma foto?) then (Sim)
+
+  :Validar individualmente:\n- Formato JPG, PNG ou WebP\n- Tamanho máximo de 10 MB\n- Arquivo legível\n- Presença de imagem;
+
+  if (Existe pelo menos uma foto válida?) then (Sim)
+
+    if (Existem fotos inválidas no lote?) then (Sim)
+      :Rejeitar somente\nos arquivos inválidos;
+      :Informar o nome de cada arquivo\ne o motivo da rejeição;
+      note right
+        RF4.CA01
+        Arquivos inválidos não devem gerar rascunhos.
+      end note
+    else (Não)
+      :Manter todas as fotos enviadas;
+    endif
+
+  else (Não)
+    :Recusar o envio;
+    :Apresentar mensagem clara\nsobre formato, tamanho ou arquivo inválido;
+    note right: RF4.CA01
+    stop
+  endif
+
+else (Não — sem fotos)
+  :Registrar peça sem\nfotografia de origem;
+  note right
+    RF4.CA07 — Upload opcional
+    O cadastro pode prosseguir sem foto.
+    A imagem padrão é definida mais
+    adiante, a partir da subcategoria
+    informada no formulário (Etapa 4/6).
+  end note
+endif
+
+:Etapa 3 — Criar um rascunho\npara cada foto válida\n(ou um único rascunho, quando\no cadastro é feito sem foto);
+note right
+  RF4.CA05 — Cadastro em lote
+end note
+
+while (Existem rascunhos pendentes?) is (Sim)
+
+  :Selecionar o próximo rascunho;
+
+  if (Rascunho possui fotografia?) then (Sim)
+
+    |Serviço de IA|
+    :Enviar a imagem para\no serviço de análise;
+    :IA tenta identificar:\n- Categoria\n- Subcategoria\n- Tipo da peça\n- Cores predominantes\n- Materiais\n- Marca, quando identificável\n- Índices de confiança;
+
+    if (Serviço de IA respondeu?) then (Sim)
+      :Registrar o resultado\nretornado pela IA;
+
+      if (Confiança igual ou superior ao limite?) then (Sim)
+        |Sistema|
+        :Etapa 4 — Pré-preencher formulário:\n- Categoria\n- Subcategoria\n- Tipo da peça\n- Cores\n- Materiais\n- Marca identificada;
+        note right
+          RF4.CA02
+          Todos os campos permanecem editáveis.
+        end note
+      else (Não)
+        |Sistema|
+        :Etapa 4 — Apresentar formulário\nsem preenchimento automático;
+        :Informar que a confiança\nda análise foi insuficiente;
+        note right
+          RF4.CA03
+          A baixa confiança não bloqueia o cadastro.
+        end note
+      endif
+
+    else (Timeout ou erro)
+      |Sistema|
+      :Registrar indisponibilidade\nou falha da análise;
+      :Etapa 4 — Apresentar formulário\npara preenchimento manual;
+      :Informar que a análise automática\nnão está disponível;
+    endif
+
+  else (Não)
+    |Sistema|
+    :Etapa 4 — Apresentar formulário\nsem preenchimento automático\n(sem imagem para análise);
+    :Informar que categoria,\nsubcategoria, tipo e cores\ndevem ser selecionados manualmente;
+  endif
+
+  repeat
+    |Usuário|
+    :Etapa 5 — Revisar e editar:\n- Nome\n- Categoria\n- Subcategoria (obrigatória)\n- Tipo da peça\n- Cores\n- Materiais\n- Marca\n- Estilo — máximo de 2 valores\n- Ocasião — máximo de 2 valores;
+    :Solicitar salvamento da peça;
+
+    |Sistema|
+    :Validar campos obrigatórios\ne regras do cadastro;
+
+    if (Existem campos inválidos?) then (Sim)
+      :Destacar os campos\nque precisam de correção;
+    else (Não)
+      :Aceitar os dados\ninformados pelo usuário;
+    endif
+  repeat while (Existem campos inválidos?) is (Sim)
+
+  |Sistema|
+  if (Rascunho possui fotografia\nenviada pelo usuário?) then (Sim)
+
+    |Processamento de imagem|
+    :Etapa 6 — Solicitar\nremoção do fundo;
+
+    if (Serviço de remoção disponível?) then (Sim)
+      :Processar a imagem;
+
+      if (Remoção concluída?) then (Sim)
+        :Salvar imagem\ncom fundo removido;
+      else (Não)
+        :Manter a imagem original;
+        :Enfileirar tentativa\nde reprocessamento;
+        note right: RF4.CA06
+      endif
+
+    else (Não)
+      :Manter a imagem original;
+      :Enfileirar tentativa\nde reprocessamento;
+      note right: RF4.CA06
+    endif
+
+    |Sistema|
+    :Marcar imagem como\nfoto enviada pelo usuário\n(is_default_image = false);
+
+  else (Não)
+    |Sistema|
+    :Etapa 6 — Selecionar o asset padrão\ncorrespondente à subcategoria\ninformada, dentre os 59 desenhos\noficiais ilustrados do FashionAI;
+    :Aplicar o asset padrão\ncomo imagem processada da peça;
+    :Marcar imagem como\nasset padrão\n(is_default_image = true);
+    note right
+      RF4.CA08 — Foto padrão por subcategoria
+      Biblioteca fixa de 59 assets oficiais
+      (um desenho por subcategoria de peça).
+      Caso a subcategoria seja alterada depois,
+      o asset padrão é atualizado de acordo —
+      apenas quando is_default_image = true.
+    end note
+  endif
+
+  |Sistema|
+  :Etapa 7 — Persistir cadastro:\n- wardrobe_items\n- wardrobe_item_colors\n- wardrobe_item_materials\n- Referência da marca\n- URL da imagem original (quando houver)\n- URL da imagem processada ou do asset padrão\n- is_default_image\n- Status do processamento;
+
+  :Etapa 8 — Registrar inferência:\n- Resultado da IA (quando executada)\n- Índices de confiança\n- Modelo utilizado\n- Data e hora\n- Status da análise;
+  note right: RF24.CA16
+
+  :Etapa 9 — Disponibilizar peça\nno guarda-roupa;
+  note right: RF4.CA04
+
+  :Marcar rascunho como concluído;
+
+endwhile (Não)
+
+|Usuário|
+:Visualizar as peças adicionadas\nao guarda-roupa;
+
+repeat
+  :Abrir o card ampliado\nde uma peça (Peça — Ampliado);
+
+  if (Deseja adicionar ou substituir\na fotografia da peça?) then (Sim)
+    :Fazer upload de uma nova fotografia\npelo formulário de edição da peça;
+    :Marcar a fotografia enviada\ncomo foto oficial da peça;
+
+    |Processamento de imagem|
+    :Solicitar remoção de fundo\nda nova fotografia;
+
+    |Sistema|
+    :Atualizar image_url\ne is_default_image = false;
+    :Propagar a nova foto para\nos cards de RF5 (Criar Look)\ne RF11 (Configurar Visual)\nque referenciam esta peça;
+    note right
+      RF4.CA09
+      A foto configurada para o card em
+      RF5/RF11 passa a vir do upload;
+      se nenhum upload existir, permanece
+      o asset padrão por subcategoria.
+    end note
+  else (Não)
+    :Manter o asset padrão\nou a foto atual da peça;
+  endif
+repeat while (Deseja revisar a foto\nde outra peça?) is (Sim)
+
+stop
+
+@enduml
