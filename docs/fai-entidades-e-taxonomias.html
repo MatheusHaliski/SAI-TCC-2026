@@ -263,6 +263,7 @@
       <a href="#style">Style</a>
       <a href="#cores">Cores</a>
       <a href="#tamanhos">Tamanhos</a>
+      <a href="#estado">Estado</a>
       <a href="#divergencias">Divergências</a>
     </nav>
   </div>
@@ -343,11 +344,13 @@
           <tr><td><code>color</code></td><td>enum</td><td class="req">sim</td><td>Paleta com amostras (§07) — cor dominante</td></tr>
           <tr><td><code>material</code></td><td>enum</td><td class="req">sim</td><td>Seletor de 7 materiais (§05)</td></tr>
           <tr><td><code>size</code></td><td>enum</td><td class="req">sim</td><td>Seletor por sistema de tamanho (§08)</td></tr>
+          <tr><td><code>market</code></td><td>enum</td><td class="req">sim</td><td>Seletor único de mercado, estação × gênero (§05)</td></tr>
           <tr><td><code>occasion</code></td><td>string[]</td><td class="req">sim</td><td>Multisseleção, <b>máx. 2</b> (§06)</td></tr>
           <tr><td><code>style</code></td><td>string[]</td><td class="req">sim</td><td>Multisseleção, <b>máx. 2</b> (§06)</td></tr>
           <tr><td><code>price</code></td><td>float</td><td class="req">sim</td><td>Campo monetário em USD</td></tr>
           <tr><td><code>seals</code></td><td>string[]</td><td class="req">sugerido</td><td>Selos sugeridos pela IA, <b>máx. 2</b> (§05)</td></tr>
           <tr><td><code>imageUrl</code></td><td>URL</td><td class="req">sim</td><td>Upload JPG/PNG/WebP até 10 MB</td></tr>
+          <tr><td><code>disponivel</code></td><td>boolean</td><td class="req">sim</td><td>Botão “Marcar como indisponível” no modal de editar peça (§10)</td></tr>
         </tbody>
       </table>
     </div>
@@ -410,6 +413,8 @@
           <tr><td><code>items</code></td><td>SchemeItem[]</td><td class="req">≥ 1</td><td>Slots do look (§09)</td></tr>
           <tr><td><code>visibility</code></td><td>enum</td><td class="req">sim</td><td>Três níveis (§09)</td></tr>
           <tr><td><code>status</code></td><td>enum</td><td class="req">sim</td><td>Rascunho, publicado ou arquivado (§09)</td></tr>
+          <tr><td><code>look_do_dia</code></td><td>boolean</td><td class="req">sim</td><td>Marca o look do dia — exclusivo do esquema (§10)</td></tr>
+          <tr><td><code>disponivel</code></td><td>boolean</td><td class="req">sim</td><td>Botão “Marcar como indisponível” no modal de editar esquema (§10)</td></tr>
         </tbody>
       </table>
     </div>
@@ -486,6 +491,19 @@
   <div class="wrap">
     <div class="sec-head"><span class="sec-num">05</span><h2>Demais listas da peça</h2></div>
     <p class="sec-sub">Enumerações restantes da entidade de peça, na ordem em que aparecem no formulário e no card.</p>
+
+    <h3><span class="code">market</span> Mercado <span class="count" id="mktCount"></span></h3>
+    <p style="font-size:13px;color:var(--muted);margin:-4px 0 10px">
+      Enum composto: cada valor é o cruzamento de uma estação com um gênero. Seletor único e obrigatório.
+    </p>
+    <div class="tw" style="margin-bottom:12px">
+      <table id="mktTable">
+        <thead><tr><th>Estação \ Gênero</th><th>Masculino</th><th>Feminino</th><th>Unissex</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="mktChips"></div>
+
     <div id="enumsPeca"></div>
   </div>
 </section>
@@ -542,10 +560,56 @@
   </div>
 </section>
 
-<!-- ============ 10. DIVERGÊNCIAS ============ -->
+<!-- ============ 10. ESTADO ============ -->
+<section id="estado">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">10</span><h2>Booleanos de estado</h2></div>
+    <p class="sec-sub">
+      Dois campos booleanos que não são atributos descritivos da peça ou do look: são estados que o
+      usuário liga e desliga depois do cadastro, e que mudam onde o item aparece na interface.
+    </p>
+
+    <h3><span class="code">disponivel</span> <span class="count">peça e esquema</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Aspecto</th><th>Definição</th></tr></thead>
+        <tbody>
+          <tr><td>Tipo</td><td><code>boolean</code>, padrão <code>true</code> — todo item nasce disponível</td></tr>
+          <tr><td>Entidades</td><td>Peça de roupa <b>e</b> esquema de vestimenta</td></tr>
+          <tr><td>Controle</td><td>Botão <b>“Marcar como indisponível”</b> dentro do modal de editar peça / editar esquema. Quando o item já está indisponível, o botão inverte para “Marcar como disponível”.</td></tr>
+          <tr><td>Efeito na navegação</td><td>Alimenta as sub-abas <b>Disponível</b> e <b>Indisponível</b> dentro das abas <b>Meus Looks</b> e <b>Meus Esquemas</b>. Cada item aparece em exatamente uma das duas sub-abas.</td></tr>
+          <tr><td>Efeito no card</td><td>Item indisponível recebe o scrim de indisponível sobre a imagem (pranchas da Coleção D).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span class="code">look_do_dia</span> <span class="count">só esquema</span> <span class="limit e">exclusivo do esquema</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Aspecto</th><th>Definição</th></tr></thead>
+        <tbody>
+          <tr><td>Tipo</td><td><code>boolean</code>, padrão <code>false</code></td></tr>
+          <tr><td>Entidades</td><td>Somente o esquema de vestimenta. A peça de roupa <b>não</b> possui este campo.</td></tr>
+          <tr><td>Controle</td><td>Marcação no card e no modal do esquema</td></tr>
+          <tr><td>Efeito</td><td>Destaca o look escolhido para o dia corrente</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <b>Duas perguntas em aberto sobre <span class="code">look_do_dia</span>.</b>
+      Primeira: é exclusivo, isto é, marcar um look desmarca o anterior? Se sim, o campo é na prática uma
+      referência única por usuário, e não um booleano por esquema. Segunda: ele expira sozinho na virada
+      do dia? Sem uma dessas duas regras, o acervo acumula vários “looks do dia” antigos marcados ao mesmo
+      tempo.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11. DIVERGÊNCIAS ============ -->
 <section id="divergencias">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">10</span><h2>Divergências entre as fontes</h2></div>
+    <div class="sec-head"><span class="sec-num">11</span><h2>Divergências entre as fontes</h2></div>
     <p class="sec-sub">
       Pontos em que o card do Trello e o PDF de taxonomias não coincidem. Em todos eles esta página adotou
       o PDF, que é a versão 1.0 do documento funcional — mas a decisão precisa ser confirmada e refletida
@@ -594,6 +658,26 @@
           <tr>
             <td>Cores e tamanhos</td>
             <td>Nenhuma das duas fontes define a lista. As listas de §07 e §08 são propostas desta consolidação e precisam de aprovação do time.</td>
+          </tr>
+          <tr>
+            <td><code>market</code> contra <code>marketId</code></td>
+            <td>O card HU-RF4 trata mercado como FK para uma tabela <code>Market</code>; a definição adotada aqui é um enum fechado de 12 valores. São modelagens incompatíveis — o enum dispensa a tabela, mas impede cadastrar um mercado novo sem alterar o código.</td>
+          </tr>
+          <tr>
+            <td><code>market</code> contra <code>season</code> do esquema</td>
+            <td>A peça passa a carregar estação dentro de <code>market</code>, enquanto o esquema tem <code>season</code> isolado. Vale confirmar se são o mesmo conceito com dois formatos ou se a estação da peça é de fato mercado de venda, não de uso.</td>
+          </tr>
+          <tr>
+            <td><code>disponivel</code> contra <code>availability_status</code></td>
+            <td>O card HU-RF4 já define <code>availability_status</code> com três valores (<code>AVAILABLE</code> · <code>UNAVAILABLE</code> · <code>ARCHIVED</code>). O booleano <code>disponivel</code> cobre os dois primeiros e deixa “arquivada” sem representação. Os dois campos não podem coexistir sem regra de sincronia: ou o booleano substitui o enum e “arquivada” vira outro campo, ou a UI grava no enum e apenas exibe um botão de duas posições.</td>
+          </tr>
+          <tr>
+            <td>Nome das abas</td>
+            <td>As sub-abas Disponível / Indisponível foram especificadas sob “Meus Looks” e “Meus Esquemas”, mas o HU-RF6 chama a tela de <b>Perfil Lookbook</b>, com as abas <b>Closet Digital</b> (peças) e <b>Looks Salvos</b> (esquemas). Como <code>disponivel</code> vale para as duas entidades, é preciso fixar um único par de nomes.</td>
+          </tr>
+          <tr>
+            <td>Escopo de <code>look_do_dia</code></td>
+            <td>Falta definir exclusividade por usuário e expiração diária — ver §10.</td>
           </tr>
         </tbody>
       </table>
@@ -711,6 +795,11 @@
     { group: "Tamanho único", note: "Disponível em todas as categorias. Padrão para a maioria dos acessórios.",
       items: [["one_size","Único"]] }
   ];
+
+  /* market = produto cartesiano estação × gênero, montado a partir das duas listas
+     que já são oficiais nesta página, para não abrir uma terceira lista de estações. */
+  var MKT_SEASONS = [["spring","Primavera"],["summer","Verão"],["autumn","Outono"],["winter","Inverno"]];
+  var MKT_GENDERS = [["male","Masculino"],["female","Feminino"],["unisex","Unissex"]];
 
   var ENUMS_PECA = [
     { field: "sex", title: "Sexo da peça", ui: "Seletor de três opções", req: "obrigatório",
@@ -864,6 +953,27 @@
       target.appendChild(chipList(d.items));
     });
   }
+  /* ---------------- render: market ---------------- */
+
+  var MARKETS = [];
+  MKT_SEASONS.forEach(function (s) {
+    MKT_GENDERS.forEach(function (g) {
+      MARKETS.push([s[0] + "_" + g[0], s[1] + " · " + g[1]]);
+    });
+  });
+
+  var mktBody = document.querySelector("#mktTable tbody");
+  MKT_SEASONS.forEach(function (s) {
+    var tr = el("tr");
+    tr.appendChild(el("td", null, "<b>" + esc(s[1]) + "</b>"));
+    MKT_GENDERS.forEach(function (g) {
+      tr.appendChild(el("td", null, "<code>" + esc(s[0] + "_" + g[0]) + "</code>"));
+    });
+    mktBody.appendChild(tr);
+  });
+  document.getElementById("mktCount").textContent = MARKETS.length + " valores";
+  document.getElementById("mktChips").appendChild(chipList(MARKETS));
+
   renderEnums(document.getElementById("enumsPeca"), ENUMS_PECA, "p");
   renderEnums(document.getElementById("enumsEsquema"), ENUMS_ESQUEMA, "e");
 
@@ -877,7 +987,8 @@
     [OCCASIONS.length, "occasions"],
     [STYLES.length, "styles"],
     [totalCores, "cores"],
-    [sizeTotal, "tamanhos"]
+    [sizeTotal, "tamanhos"],
+    [MARKETS.length, "markets"]
   ];
   var statsBox = document.getElementById("stats");
   stats.forEach(function (s) {
