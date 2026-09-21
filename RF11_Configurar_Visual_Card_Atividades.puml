@@ -99,6 +99,23 @@ note right
   IA ou cor do container já salva.
 end note
 
+note right
+  anatomias_card_v13.html formaliza o
+  "container do esquema": borda interna
+  que separa, dentro do card, o chrome
+  social do post (autor, data, curtidas —
+  fora) do ClothesScheme em si (fundo,
+  peças, título, selos, preço, descrição —
+  dentro). É estrutura base das 3 anatomias
+  de Esquema (Lista vertical, Grade de
+  peças, Foto hero + lista lateral) — não
+  se aplica a Peça, que é outra entidade.
+  A Etapa 4 decide o PREENCHIMENTO desse
+  container (ver regra de auto-ativação
+  em "2. Arte com IA" e "3. Cor do
+  container", abaixo).
+end note
+
 |Usuário|
 repeat
   :Etapa 4 — Configurar\nos elementos visuais;
@@ -197,14 +214,50 @@ repeat
       está resolvido antes de o painel abrir.
     end note
 
+    if (Skin ativo do card pertence\nà família editorial fina\n(Atelier, Spread ou Índice)?) then (Sim)
+      if (A arte aplicada usa Prompt,\nDireção recomendada, Preset Aura\nou Material?) then (Sim)
+        |Sistema|
+        :Auto-ativar o container de\nconteúdo, travado na cor nativa\ndo skin — não editável pela arte;
+        :Restringir a arte com IA à\nfaixa/moldura externa ao container\n— efeito de passe-partout;
+
+        note right
+          Skins editoriais finos (tipografia
+          delicada, pouca moldura própria) e
+          artes exuberantes (Concrete Neon,
+          Chrome Iridescent, materiais texturizados)
+          competem pelo mesmo espaço e prejudicam
+          a legibilidade quando o texto fica direto
+          sobre a arte. Skins com moldura própria
+          (Trading, FAI Max, Stub, Specimen) não
+          disparam esta regra — já isolam conteúdo
+          por design. Ver
+          RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md.
+        end note
+      else (Não)
+      endif
+    else (Não)
+    endif
+
     |Usuário|
 
   else (3. Cor do container)
     :Abrir o seletor de cor\ndo container de conteúdo;
     |Sistema|
     :Sistema destaca o container\ninterno à borda do card;
-    |Usuário|
-    :Usuário seleciona\na cor do container;
+
+    if (Container foi auto-ativado\npela regra skin editorial +\narte exuberante?) then (Sim)
+      :Pré-preencher com a cor nativa\ndo skin e avisar que foi\ntravada automaticamente;
+      |Usuário|
+      if (Deseja usar uma cor\ncustomizada mesmo assim?) then (Sim)
+        :Usuário seleciona\na cor do container;
+      else (Não)
+        :Manter a cor nativa\ndo skin;
+      endif
+    else (Não)
+      |Usuário|
+      :Usuário seleciona\na cor do container;
+    endif
+
     |Sistema|
     :Aplicar a cor somente\nao container interno;
     note right
@@ -214,6 +267,10 @@ repeat
       Uma cor neutra e distinta da externa
       melhora a legibilidade do conteúdo do
       esquema/peça — ver nota da Etapa 4 do RF5.
+      Quando auto-ativado (acima), a trava é
+      um default seguro, não uma restrição
+      definitiva — o usuário sempre pode optar
+      por uma cor customizada.
     end note
     :Salvar temporariamente\na cor do container;
     |Usuário|
