@@ -214,28 +214,34 @@ repeat
       está resolvido antes de o painel abrir.
     end note
 
-    if (Skin ativo do card pertence\nà família editorial fina\n(Atelier, Spread ou Índice)?) then (Sim)
-      if (A arte aplicada usa Prompt,\nDireção recomendada, Preset Aura\nou Material?) then (Sim)
-        |Sistema|
-        :Auto-ativar o container de\nconteúdo, travado na cor nativa\ndo skin — não editável pela arte;
-        :Restringir a arte com IA à\nfaixa/moldura externa ao container\n— efeito de passe-partout;
+    if (Tipo de card é Esquema —\núnica entidade com container\ndo esquema (v13)?) then (Sim)
+      if (Skin ativo do card pertence\nà família editorial fina\n(Atelier, Spread ou Índice)?) then (Sim)
+        if (A arte aplicada usa Prompt,\nDireção recomendada, Preset Aura\nou Material?) then (Sim)
+          |Sistema|
+          :Auto-ativar o container de\nconteúdo, travado na cor nativa\ndo skin — não editável pela arte;
+          :Registrar a origem do container\ncomo "auto"\n(ConfiguracaoContainer.origem = AUTO);
+          :Restringir a arte com IA à\nfaixa/moldura externa ao container\n— efeito de passe-partout;
 
-        note right
-          Skins editoriais finos (tipografia
-          delicada, pouca moldura própria) e
-          artes exuberantes (Concrete Neon,
-          Chrome Iridescent, materiais texturizados)
-          competem pelo mesmo espaço e prejudicam
-          a legibilidade quando o texto fica direto
-          sobre a arte. Skins com moldura própria
-          (Trading, FAI Max, Stub, Specimen) não
-          disparam esta regra — já isolam conteúdo
-          por design. Ver
-          RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md.
-        end note
+          note right
+            Skins editoriais finos (tipografia
+            delicada, pouca moldura própria) e
+            artes exuberantes (Concrete Neon,
+            Chrome Iridescent, materiais texturizados)
+            competem pelo mesmo espaço e prejudicam
+            a legibilidade quando o texto fica direto
+            sobre a arte. Skins com moldura própria
+            (Trading, FAI Max, Stub, Specimen) não
+            disparam esta regra — já isolam conteúdo
+            por design. Peça e DNA de Estilo nunca
+            disparam esta regra: não têm container
+            do esquema (v13) para auto-ativar. Ver
+            RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md.
+          end note
+        else (Não)
+        endif
       else (Não)
       endif
-    else (Não)
+    else (Não — Peça ou DNA de Estilo)
     endif
 
     |Usuário|
@@ -245,17 +251,30 @@ repeat
     |Sistema|
     :Sistema destaca o container\ninterno à borda do card;
 
-    if (Container foi auto-ativado\npela regra skin editorial +\narte exuberante?) then (Sim)
+    if (ConfiguracaoContainer.origem\njá persistida é "manual"\n— override anterior deste usuário?) then (Sim)
+      |Usuário|
+      :Usuário seleciona\na cor do container;
+      |Sistema|
+      :Manter a origem do container\ncomo "manual";
+
+    elseif (Gatilho de auto-ativação está\nsatisfeito agora — Esquema + skin\neditorial fino + arte exuberante?) then (Sim)
       :Pré-preencher com a cor nativa\ndo skin e avisar que foi\ntravada automaticamente;
       |Usuário|
       if (Deseja usar uma cor\ncustomizada mesmo assim?) then (Sim)
         :Usuário seleciona\na cor do container;
+        |Sistema|
+        :Registrar a origem do container\ncomo "manual" (override);
       else (Não)
         :Manter a cor nativa\ndo skin;
+        |Sistema|
+        :Manter a origem do container\ncomo "auto";
       endif
+
     else (Não)
       |Usuário|
       :Usuário seleciona\na cor do container;
+      |Sistema|
+      :Registrar a origem do container\ncomo "manual";
     endif
 
     |Sistema|
@@ -267,12 +286,16 @@ repeat
       Uma cor neutra e distinta da externa
       melhora a legibilidade do conteúdo do
       esquema/peça — ver nota da Etapa 4 do RF5.
-      Quando auto-ativado (acima), a trava é
-      um default seguro, não uma restrição
-      definitiva — o usuário sempre pode optar
-      por uma cor customizada.
+      A origem (auto/manual) é persistida junto
+      com a cor, não só derivada na hora: uma
+      escolha manual do usuário nunca é
+      silenciosamente sobrescrita ao reabrir o
+      editor, mesmo que o gatilho automático
+      continue satisfeito. Só um valor com
+      origem "auto" é recalculado quando o skin
+      ou a arte mudam depois.
     end note
-    :Salvar temporariamente\na cor do container;
+    :Salvar temporariamente:\n- Cor do container\n- Origem do container (auto/manual);
     |Usuário|
   endif
 
