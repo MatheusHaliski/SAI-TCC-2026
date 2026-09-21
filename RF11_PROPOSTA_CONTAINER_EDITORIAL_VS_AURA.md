@@ -34,13 +34,17 @@ Isso já existia parcialmente no RF11 como "cor do container" (Etapa 4, opção 
 
 ## 3. A regra proposta
 
-**Container de conteúdo passa a ter três estados, não dois:**
+**Container de conteúdo passa a ter uma cor e uma origem, não só uma cor.** A origem tem três valores possíveis:
 
-| Estado | Quando | Cor do container |
+| Origem | Quando | Cor do container |
 |---|---|---|
-| `manual` | Usuário escolheu explicitamente (fluxo atual, inalterado) | A cor escolhida |
-| `auto` *(novo)* | Skin ativo é da família editorial fina **e** a arte aplicada veio de Prompt, Direção recomendada, Preset Aura ou Material | Travada na cor nativa do skin |
-| `desligado` | Nenhum dos dois acima | Sem preenchimento próprio (comportamento herdado do background) |
+| `manual` | Usuário escolheu explicitamente — seja porque o gatilho automático nunca disparou, seja porque escolheu "usar cor customizada mesmo assim" sobre um valor auto-ativado | A cor escolhida, nunca sobrescrita automaticamente depois |
+| `auto` *(novo)* | Gatilho da seção 3.2 satisfeito e o usuário não sobrepôs manualmente | Travada na cor nativa do skin; recalculada se skin ou arte mudarem, **enquanto a origem continuar `auto`** |
+| `desligado` | Gatilho nunca disparou e usuário nunca escolheu manualmente | Sem preenchimento próprio (comportamento herdado do background) |
+
+A origem é o que faz o estado ser **persistente e não recalculado a cada abertura do editor** — ver seção 3.5.
+
+*(Nota: a tabela lista três **origens** possíveis — `manual`, `auto`, `desligado` — não três estados de UI; a cor efetivamente aplicada é sempre um único valor, e a origem só decide como e quando ela é recalculada.)*
 
 ### 3.1 Classificação de família de skin
 
@@ -53,12 +57,19 @@ Isso já existia parcialmente no RF11 como "cor do container" (Etapa 4, opção 
 
 ```
 autoAtivarContainer =
-  familia(skinAtivo) === 'editorial_fina'
-  AND ConfiguracaoArteIA.modo ∈ { PROMPT, DIRECAO_VISUAL, PRESET_AURA }
-     OR materialLayer.type !== 'none'
+  tipoDeCard === ESQUEMA
+  AND familia(skinAtivo) === 'editorial_fina'
+  AND (
+    ConfiguracaoArteIA.modo ∈ { PROMPT, DIRECAO_VISUAL, PRESET_AURA }
+    OR materialLayer.type !== 'none'
+  )
 ```
 
-Cor sólida/gradiente escolhida manualmente (Etapa 4, opção 1) **não** dispara a regra — é inerentemente mais controlada (o usuário escolhe o hex exato) e não é o alvo da reclamação original ("desenhos exorbitantes tipo aura").
+Três condições, todas obrigatórias (note os parênteses em torno da alternativa modo/material — sem eles, `AND` tem precedência maior que `OR` e a expressão vira `(tipo AND skin AND modo) OR material`, que dispara o container para **qualquer** material em **qualquer** skin, inclusive Trading/FAI Max/Stub/Specimen, contradizendo a seção 3.1):
+
+1. **`tipoDeCard === ESQUEMA`** — Peça e DNA de Estilo não têm container do esquema (v13); testar isso aqui evita instruir uma implementação a criar/modificar um container que não existe para essas entidades.
+2. **Skin editorial fina** — seção 3.1.
+3. **Arte exuberante** — Prompt, Direção recomendada, Preset Aura **ou** Material. Cor sólida/gradiente escolhida manualmente (Etapa 4, opção 1) **não** dispara a regra — é inerentemente mais controlada (o usuário escolhe o hex exato) e não é o alvo da reclamação original ("desenhos exorbitantes tipo aura").
 
 ### 3.3 O que acontece quando ativado
 
@@ -72,14 +83,24 @@ Alternativa descartada: quando skin fino + preset exuberante, simplesmente **blo
 - Tira controle do usuário sem necessidade — o efeito passe-partout resolve o conflito sem remover a opção.
 - O usuário pode *querer* exatamente esse contraste (arte ousada emoldurando um painel editorial limpo) — é um resultado legítimo, só precisa da separação estrutural para funcionar.
 
+### 3.5 Persistência da origem (por que a cor sozinha não basta)
+
+Guardar só a cor final não sustenta as três origens da tabela da seção 3:
+
+- Se o usuário escolhe uma cor customizada **enquanto o gatilho continua satisfeito**, e o sistema deriva `auto` de novo a cada abertura do editor (em vez de ler uma origem persistida), a escolha customizada é perdida: a próxima abertura volta a classificar o container como automático e pré-preenche a cor nativa do skin por cima.
+- Depois que skin ou arte mudam, uma cor auto-persistida fica indistinguível de uma cor manual — sem a origem, não há como saber se é seguro recalcular ou se sobrescreveria uma escolha deliberada.
+
+Por isso `ConfiguracaoContainer` ganha um campo de origem (`auto | manual`), persistido junto com a cor. A leitura, ao reabrir "3. Cor do container", passa a ser: **origem já persistida como `manual`? Respeita — nunca reavalia o gatilho.** Só quando a origem ainda não é `manual` (nunca houve override) é que o gatilho da seção 3.2 é avaliado.
+
 ---
 
 ## 4. Mapeamento para o modelo de dados existente
 
-Nenhum campo novo é necessário — só uma nova combinação de valores nos campos já existentes:
+Um campo novo é necessário — a proveniência não pode ser só derivada em tempo de leitura (seção 3.5):
 
-- `ConfiguracaoContainer.cor` (RF11, diagrama de classes) ganha o estado derivado `auto`, calculado a partir de `skinAtivo` + `ConfiguracaoArteIA.modo` + `materialLayer.type` — não é um campo persistido novo, é uma regra de apresentação sobre campos que já existem.
-- `CardSkinId` (`app/lib/outfit-card.ts`) ganha uma tabela de classificação `SKIN_VISUAL_FAMILY: Record<CardSkinId, 'fine' | 'framed'>` — dado estático, sem mudança de schema.
+- **Novo:** `ConfiguracaoContainer.origem: 'auto' | 'manual'`, persistido junto com `ConfiguracaoContainer.cor` (RF11, diagrama de classes). É o único campo novo desta proposta.
+- `CardSkinId` (`app/lib/outfit-card.ts`) ganha uma tabela de classificação estática `SKIN_VISUAL_FAMILY: Record<CardSkinId, 'fine' | 'framed'>` — dado estático, sem mudança de schema.
+- O gatilho da seção 3.2 (`tipoDeCard`, `familia(skinAtivo)`, `ConfiguracaoArteIA.modo`, `materialLayer.type`) usa só campos já existentes — não precisa de novo estado além de `origem`.
 - O efeito "passe-partout" é só CSS: a arte já ocupa o background do card (`OutfitBackgroundConfig`); o container de conteúdo já é uma camada por cima (`ConfiguracaoContainer`) — a regra apenas decide, automaticamente, o preenchimento dessa camada em vez de deixá-la vazia/manual.
 
 ---
