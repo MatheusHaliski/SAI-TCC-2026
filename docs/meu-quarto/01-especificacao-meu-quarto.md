@@ -151,7 +151,7 @@ Diagrama: [`RF33_Vista-me_Atividades.puml`](RF33_Vista-me_Atividades.puml).
 
 ### 2.3 Integridade do Look do Dia
 
-O Look do Dia é **sempre um Esquema** (`RF6_HYPE_SCORE_CALCULO.md` §1). Por isso, "Usar este look" com um look que ainda não existe como esquema faz duas coisas: (a) cria o esquema com `origin = "smart_mirror"` ou `"vista_me"`, com a visibilidade padrão do perfil (RF3.CA12); (b) registra `saiDailyLooks` com `source = "vista_me"`. Nunca se registra um Look do Dia apontando para uma composição sem esquema.
+O Look do Dia é **sempre um Esquema** (`RF6_HYPE_SCORE_CALCULO.md` §1). Por isso, "Usar este look" com um look que ainda não existe como esquema faz duas coisas: (a) cria o esquema com `origin = "smart_mirror"` (montado à mão no espelho) ou `"vista_me"` (sugerido pela IA), com a visibilidade padrão do perfil (RF3.CA12); (b) registra `saiDailyLooks` com `source` **igual ao `origin` do look**. Um look montado à mão nunca é registrado como `vista_me`: isso distorceria as métricas de uso da IA e acionaria indevidamente a regra de pontos exclusiva do Vista-me (RF35 §5.2). Se o usuário partir de uma sugestão do Vista-me e trocar peças à mão no espelho, o look continua `vista_me`, porque a origem é a sugestão. Nunca se registra um Look do Dia apontando para uma composição sem esquema.
 
 ### 2.4 Entrega para o Criar Look (RF5)
 
@@ -413,6 +413,7 @@ Cada elemento é **Molde** (forma fixa, com medidas e pontos de encaixe) + **Aca
 | `saiFaiPointsRules` | `action_code`, `points`, `daily_cap`, `active` |
 | `saiFaiPointsLedger` | `user_id`, `delta`, `action_code`, `ref_type`, `ref_id`, `idempotency_key` (único), `created_at` |
 | `saiInventoryScoreSnapshots` | `user_id`, `period` (dia/mês), `score`, `dimensions{}`, `eligible`, `computed_at` |
+| `saiWardrobeAvailabilityLog` | `wardrobe_item_id`, `user_id`, `available`, `changed_at` (histórico de transições do RF31, base da população de exposição da Utilização em [`02`](02-inventory-score-calculo.md) §3.3) |
 | `saiUserAchievements` | `user_id`, `achievement_code`, `granted_at` (único por par) |
 | `saiRankingOptIns` | `user_id`, `opted_in`, `share_city`, `updated_at` |
 

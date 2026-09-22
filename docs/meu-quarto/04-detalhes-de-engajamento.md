@@ -68,7 +68,7 @@ Se só couber uma parte, são estes:
 
 | ID | Detalhe | Regra verificável | RF | Fase |
 |---|---|---|---|---|
-| DET-G01 | **Álbum de Combinações** | em Destaques, mostra "Você descobriu X% das combinações possíveis". As combinações válidas ([`02`](02-inventory-score-calculo.md) §3.4) ainda não montadas aparecem como silhuetas cinza, e tocar numa delas leva a composição ao espelho. É calculado sobre grupos de ocasião para não enumerar todas as triplas | RF34, RF33 | 2 |
+| DET-G01 | **Álbum de Combinações** | em Destaques, mostra "Você descobriu X% das combinações possíveis". As combinações válidas ([`02`](02-inventory-score-calculo.md) §3.4) ainda não montadas aparecem como silhuetas cinza, e tocar numa delas leva a composição ao espelho. É calculado por máscara de ocasiões, sem contar duas vezes a mesma combinação ([`02`](02-inventory-score-calculo.md) §7) | RF34, RF33 | 2 |
 | DET-G02 | **Copilot com corpo** | no quarto, o Copilot é representado por um busto de costura no canto, que vira quando o usuário fala e aponta a posição citada na resposta. Sem rosto humano | RF10, RF32 | 2 |
 | DET-G03 | **Conquistas secretas** | conquistas que não aparecem na lista até serem obtidas: Monocromático (look de uma cor só), Chanel (usar "Tira uma coisa"), Sexta Casual, Madrugada (Vista-me entre 0 h e 5 h). Ao desbloquear, a lista mostra a conquista com a data | RF34 | 3 |
 | DET-G04 | **Modo foto** | o quarto tem modo foto com 4 enquadramentos pré-definidos, profundidade de campo e 3 filtros. A exportação sai sem a interface | RF32 | 3 |
