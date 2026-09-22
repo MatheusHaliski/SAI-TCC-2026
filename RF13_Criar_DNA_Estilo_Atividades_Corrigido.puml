@@ -76,9 +76,26 @@ if (Qual é o modo de geração?) then (Manual)
   :Etapa 2 — Selecionar esquemas manualmente;
 
   repeat
-    :Usuário seleciona um esquema\nde vestimenta para cada célula\ndo DNA (2 a 6 células);
+    :Sistema lista esquemas elegíveis:\nsomente ClothesScheme com\nuserId = usuário atual (sub-aba\n"Meus Esquemas", RF6) — exclui\n"Looks Salvos" (SavedItem de\noutros usuários);
+    :Usuário seleciona um esquema\nde vestimenta para cada célula\ndo DNA (2 a 6 células) dentre\nos elegíveis;
     |Sistema|
     :Sistema verifica:\n- Disponibilidade do esquema\n- Duplicidade dentro do DNA\n- Regras da composição\n- Até 3 estilos e 3 ocasiões (síntese);
+
+    note right
+      **Correção (mesma da sessão que
+      atualizou RF13-atividades-v3.puml,
+      2026-09-21).** "Looks Salvos" são
+      esquemas públicos de outros usuários,
+      favoritados via "Adicionar ao
+      guarda-roupa" (RF19) — ficam como
+      SavedItem (bookmark), nunca viram
+      ClothesScheme próprio. Para usar o
+      esquema de outro usuário em um DNA
+      novo, o caminho é Remixar (RF7), que
+      clona o esquema para "Meus Esquemas"
+      — só então ele entra no pool
+      selecionável aqui.
+    end note
 
     if (Esquemas compatíveis?) then (Sim)
       :Sistema adiciona os esquemas\nàs células do DNA;
@@ -129,7 +146,19 @@ else (IA)
 
   |Serviço de IA|
   repeat
-    :IA analisa:\n- Esquemas salvos em "Looks Salvos" (RF6)\n- Disponibilidade dos esquemas\n- Marcas, cores e selos predominantes\n- Estilos e ocasiões\n- Narrativa escolhida;
+    :IA analisa:\n- Esquemas de "Meus Esquemas" (RF6)\n— userId = usuário atual, nunca\n"Looks Salvos" de terceiros\n- Disponibilidade dos esquemas\n- Marcas, cores e selos predominantes\n- Estilos e ocasiões\n- Narrativa escolhida;
+
+    note right
+      **Correção (mesma da sessão que
+      atualizou RF13-atividades-v3.puml,
+      2026-09-21).** Versão anterior deste
+      passo citava "Looks Salvos" como
+      fonte — estava errado, pela mesma
+      razão do modo manual acima: Looks
+      Salvos são esquemas de terceiros
+      (SavedItem), nunca elegíveis para
+      compor um DNA que não é deles.
+    end note
     :IA seleciona esquemas de vestimenta\ncompatíveis para as células do DNA;
     |Sistema|
     :Sistema valida a sugestão gerada;
