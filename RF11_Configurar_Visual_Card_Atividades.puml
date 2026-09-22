@@ -318,29 +318,54 @@ repeat
 
     if (Qual direção visual?) then (Prompt)
       repeat
-        :Usuário insere\nou edita o prompt;
+        :Usuário digita ou edita o texto\ndescrevendo o elemento desejado\n(ex.: "fundo azul sólido",\n"gradiente rosa para lilás",\n"textura de linho natural",\n"aura estilo alfaiataria", "paisagem\nurbana à noite com neon");
+
+        |Serviço de IA|
+        fork
+          :IA interpreta o texto digitado\ne classifica a intenção:\n- Cor sólida\n- Gradiente\n- Preset Aura equivalente\n- Material/textura equivalente\n- Arte livre gerada por IA;
+        fork again
+          :IA analisa:\n- Histórico do usuário\n- Tendências\n- Popularidade\n- Opções mais utilizadas;
+        end fork
+        :IA consolida a interpretação\ne gera o resultado equivalente\nao tipo de intenção classificado;
+
         |Sistema|
-        :Sistema apresenta\na prévia do prompt;
+        :Sistema aplica o resultado\ndiretamente à pré-visualização\ndo elemento-alvo fixado;
+        :Sistema atualiza o preview do\ncard em tempo real, refletindo\no resultado do texto digitado;
+
         |Usuário|
-      repeat while (Confirmar envio do prompt?) is (Não)
+        :Usuário visualiza o\npreview atualizado;
+      repeat while (Deseja ajustar\no texto do prompt?) is (Sim)
 
-      |Serviço de IA|
-      fork
-        :IA interpreta\no prompt confirmado;
-      fork again
-        :IA analisa:\n- Histórico do usuário\n- Tendências\n- Popularidade\n- Opções mais utilizadas;
-      end fork
-
-      :IA consolida\nos resultados;
-      :IA gera sugestões visuais\nde imagens e textos;
-
-      |Sistema|
-      :Sistema exibe\nas sugestões;
-
-      |Usuário|
-      repeat
-        :Usuário revisa e solicita\najustes, quando necessário;
-      repeat while (Confirmar sugestão visual?) is (Não)
+      note right
+        O prompt é uma interface universal:
+        tudo que as opções estruturadas
+        produzem — cor sólida e gradiente
+        ("1. Cor ou gradiente"), Preset Aura
+        (catálogo) e Material (catálogo) —
+        também é alcançável descrevendo em
+        texto aqui. A IA classifica a
+        intenção do texto digitado e aplica o
+        resultado equivalente (cor, gradiente,
+        preset ou textura) sem exigir que o
+        usuário troque de opção — as opções
+        estruturadas continuam existindo como
+        atalhos rápidos e catálogos
+        navegáveis, não como o único caminho
+        para esses resultados. A atualização
+        do preview acontece a cada pausa na
+        digitação ou confirmação de um
+        trecho — não a cada caractere — para
+        não sobrecarregar o Serviço de IA.
+        Diferente da "Direção recomendada"
+        (ramo abaixo), um resultado via prompt
+        equivalente a um preset recomendado
+        NÃO marca o container como
+        obrigatório — a obrigatoriedade
+        (Etapa 4) é restrita ao ato explícito
+        de aplicar a direção recomendada da
+        IA, não a qualquer texto que produza
+        um resultado visualmente parecido.
+      end note
 
     elseif (Direção recomendada) then (Direção visual)
       |Serviço de IA|
