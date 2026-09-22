@@ -1,5 +1,5 @@
 @startuml RF11_Configurar_Visual_Card_Atividades
-title RF11 — Configurar o Visual do Card\nDiagrama de Atividades — Corrigido (Layout & Estilo com todas as variações + Container & Cor como etapa própria)
+title RF11 — Configurar o Visual do Card\nDiagrama de Atividades — Corrigido (Layout & Estilo com todas as variações + Container & Cor como etapa própria\n+ container obrigatório e travado quando a Direção recomendada é aplicada)
 
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
@@ -158,12 +158,53 @@ endif
 note right
   A escolha de anatomia é sempre decidida
   pelo esquema/DNA — uma peça nunca escolhe
-  a própria anatomia nesta etapa. É
-  independente da cor/arte do background
-  configurada na Etapa 5 — trocar de
-  anatomia não descarta a configuração de
-  background, arte com IA ou cor do
-  container já salva.
+  a própria anatomia nesta etapa.
+end note
+
+|Sistema|
+:Mecanismo de sobreposição — Layout & Estilo\n(Etapa 3) e Arte com IA (Etapa 5) são\ncamadas independentes;
+
+note right
+  A anatomia/layout escolhida nesta Etapa 3
+  (Lista vertical, Passarela, Ampliado do
+  DNA etc.) e a arte de background
+  configurada na Etapa 5 nunca se excluem —
+  qualquer uma das combinações de Arte com
+  IA pode ser sobreposta a qualquer
+  layout/estilo já selecionado aqui, sem
+  restrição de compatibilidade:
+  - Cor sólida
+  - Gradiente
+  - Prompt
+  - Preset Aura (sozinho)
+  - Material (sozinho)
+  - Preset Aura + Material (combinados)
+  - Direção recomendada (sozinha)
+  - Direção recomendada + Material
+
+  Trocar de anatomia depois não descarta a
+  configuração de background, arte com IA
+  ou cor do container já salva — e trocar a
+  arte com IA depois não descarta a
+  anatomia/layout escolhida aqui. São
+  independentes nos dois sentidos.
+
+  A única regra que atravessa essa
+  sobreposição é a obrigatoriedade do
+  container: se a combinação aplicada em
+  algum momento na Etapa 5 incluir a
+  "Direção recomendada" (o preset
+  recomendado pela IA), o container vira
+  obrigatório (Etapa 4) — travado na cor
+  nativa do skin ativo no momento,
+  independentemente de qual layout/anatomia
+  estiver selecionado nesta Etapa 3. Nas
+  demais combinações da lista acima
+  (nenhuma delas é "Direção recomendada"),
+  o container permanece opcional,
+  qualquer que seja o layout escolhido. Ver
+  RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
+  seções 3.2 e 3.6.
 end note
 
 |Sistema|
@@ -192,47 +233,52 @@ if (Container existe\npara esta configuração?) then (Sim)
     :Usuário seleciona\na cor do container;
     |Sistema|
     :Registrar a origem do container\ncomo "manual"\n(ConfiguracaoContainer.origem = MANUAL);
-  else (Não — deixar\no sistema decidir)
-    :Sistema mantém a cor do container\ncomo pendente (padrão neutro por ora);
+  else (Não — deixar\nsem cor definida por ora)
+    :Sistema mantém a cor do container\ncom um padrão neutro, sem origem\ndefinida;
     |Sistema|
-    :Registrar a origem do container\ncomo "auto — pendente"\n(ConfiguracaoContainer.origem = AUTO,\naguardando a Etapa 5);
+    :Manter a origem do container\nindefinida\n(ConfiguracaoContainer.origem = undefined);
 
     note right
-      A regra de auto-ativação (container
-      travado na cor nativa do skin quando
-      o skin é editorial fino — Atelier,
-      Spread ou Índice — e a arte aplicada
-      é exuberante) só pode ser avaliada
-      depois que a arte é escolhida, na
-      Etapa 5 — que ainda não aconteceu
-      neste ponto do fluxo. Por isso, quando
-      o usuário não define a cor agora, o
-      container fica com um padrão neutro
-      temporário e a decisão automática só
-      se concretiza ao configurar a Arte com
-      IA na Etapa 5. Restrita a cards do tipo
-      Esquema — DNA de Estilo ainda não tem
-      um catálogo de skins equivalente; ver
+      Fora da "Direção recomendada" (Etapa 5,
+      "2. Arte com IA"), o container NÃO se
+      auto-ativa mais por combinação de skin
+      e arte — nos demais casos (Preset Aura,
+      Material, Aura + Material, Cor sólida,
+      Gradiente), a cor do container
+      permanece opcional e sob controle total
+      do usuário: fica neutra/indefinida até
+      que ele a defina, sem nenhuma
+      reavaliação automática por skin ou
+      arte. Restrita a cards do tipo Esquema —
+      DNA de Estilo ainda não tem um catálogo
+      de skins equivalente; ver
       RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
-      seção 5 (escopo).
+      seção 5 (escopo). A única exceção
+      permanece a "Direção recomendada": se
+      o usuário a aplicar em algum momento na
+      Etapa 5, o container passa a
+      "obrigatório" e travado na cor nativa
+      do skin — inclusive sobrescrevendo uma
+      cor manual já registrada aqui.
     end note
   endif
 
-  :Aplicar a cor (ou o padrão\ntemporário) somente\nao container interno;
-  :Salvar temporariamente:\n- Cor do container\n- Origem do container\n(manual / auto-pendente);
+  :Aplicar a cor (ou o padrão\nneutro) somente ao\ncontainer interno;
+  :Salvar temporariamente:\n- Cor do container\n- Origem do container\n(manual / indefinida);
 
   note right
     O container contém fotos e textos.
     A alteração não substitui nem modifica
     o background externo do card. A origem
-    (manual/auto) é persistida junto com a
-    cor — uma escolha manual do usuário
-    nunca é silenciosamente sobrescrita ao
-    reabrir o editor, mesmo que o gatilho
-    automático da Etapa 5 fique satisfeito
-    depois. Só um valor com origem "auto"
-    é recalculado quando o skin ou a arte
-    mudam.
+    (manual/indefinida) é persistida junto
+    com a cor — uma escolha manual do
+    usuário nunca é silenciosamente
+    sobrescrita ao reabrir o editor. A única
+    exceção é a "Direção recomendada" (Etapa
+    5), que pode substituir qualquer origem
+    por "obrigatório" — não é silenciosa,
+    é consequência direta de uma ação
+    explícita do usuário.
   end note
 
 else (Não)
@@ -243,6 +289,14 @@ endif
 |Usuário|
 repeat
   :Etapa 5 — Configurar\nos elementos visuais;
+
+  note right
+    Qualquer combinação escolhida aqui
+    (opções 1 e 2 abaixo) se sobrepõe ao
+    layout/anatomia já definido na Etapa 3,
+    sem restrição — ver o mecanismo de
+    sobreposição logo após a Etapa 3.
+  end note
 
   if (Qual elemento deseja configurar?) then (1. Cor ou gradiente)
     :Selecionar configuração\nde background;
@@ -291,9 +345,41 @@ repeat
     elseif (Direção recomendada) then (Direção visual)
       |Serviço de IA|
       :IA analisa o conteúdo,\no estilo e as peças;
-      :IA recomenda\numa direção visual;
+      :IA recomenda\numa direção visual\n(preset Aura + material, conforme\na matriz de coerência da seção 5\nde RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md);
       |Usuário|
       :Usuário seleciona\na direção recomendada;
+
+      |Sistema|
+      if (Container existe para\neste card (Etapa 4)?) then (Sim)
+        :Marcar o container como obrigatório\n(ConfiguracaoContainer.obrigatorio = true);
+        :Confirmar a origem do container\ncomo "auto"\n(ConfiguracaoContainer.origem = AUTO);
+
+        note right
+          Aplicar a direção recomendada torna o
+          container obrigatório e travado na cor
+          nativa do skin — independentemente da
+          família do skin (editorial fina ou com
+          moldura própria) e mesmo que a origem já
+          estivesse "manual" (Etapa 4 ou uma
+          reabertura anterior de "3. Cor do
+          container"). Diferente da ativação reativa
+          de "3. Cor do container", este gatilho é um
+          ato explícito do usuário — aplicar a
+          recomendação da IA — por isso pode
+          substituir uma escolha manual anterior sem
+          violar a regra de nunca sobrescrever
+          silenciosamente (não é silencioso: é
+          consequência direta da ação escolhida). Uma
+          vez obrigatório, nenhuma sobreposição futura
+          de Arte com IA — outro Preset Aura, um novo
+          Material — desativa o container; ver o
+          bloco de verificação reativa logo abaixo e
+          a opção "3. Cor do container" no loop
+          desta etapa.
+        end note
+      else (Não — este card\nnão tem container)
+      endif
+      |Usuário|
 
     else (Preset Aura)
       |Sistema|
@@ -339,37 +425,50 @@ repeat
       painel abrir.
     end note
 
-    if (Container existe para este card\n(Etapa 4) e a origem ainda é\n"auto — pendente"?) then (Sim)
-      if (Skin ativo do card pertence\nà família editorial fina\n(Atelier, Spread ou Índice)?) then (Sim)
-        if (A arte aplicada usa Prompt,\nDireção recomendada, Preset Aura\nou Material?) then (Sim)
-          |Sistema|
-          :Auto-ativar o container de\nconteúdo, travado na cor nativa\ndo skin — não editável pela arte;
-          :Confirmar a origem do container\ncomo "auto"\n(ConfiguracaoContainer.origem = AUTO);
-          :Restringir a arte com IA à\nfaixa/moldura externa ao container\n— efeito de passe-partout;
+    if (Container existe\npara este card (Etapa 4)?) then (Sim)
+      if (ConfiguracaoContainer.obrigatorio\njá é true — travado por uma\ndireção recomendada anterior?) then (Sim)
+        |Sistema|
+        :Reaplicar o container travado\nna cor nativa do skin — não\neditável, independentemente\nda arte ou do skin atuais;
+        :Restringir a arte com IA à\nfaixa/moldura externa ao container\n— efeito de passe-partout;
 
-          note right
-            Skins editoriais finos (tipografia
-            delicada, pouca moldura própria) e
-            artes exuberantes (Concrete Neon,
-            Chrome Iridescent, materiais texturizados)
-            competem pelo mesmo espaço e prejudicam
-            a legibilidade quando o texto fica direto
-            sobre a arte. Skins com moldura própria
-            (Trading, FAI Max, Stub, Specimen) não
-            disparam esta regra — já isolam conteúdo
-            por design. Esta verificação só roda
-            quando a Etapa 4 deixou a origem como
-            "auto — pendente"; um valor "manual" da
-            Etapa 4 nunca é sobrescrito aqui. Ver
-            RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md.
-          end note
-        else (Não)
-          :Manter o padrão neutro\ntemporário da Etapa 4;
-        endif
-      else (Não)
-        :Manter o padrão neutro\ntemporário da Etapa 4;
+        note right
+          O container obrigatório nunca é
+          reavaliado por skin, arte ou material —
+          uma vez travado por uma direção
+          recomendada (ver ramo "Direção
+          recomendada" acima), permanece ativo em
+          toda sobreposição futura de Arte com IA:
+          trocar de Preset Aura, aplicar um novo
+          Material, ou trocar de skin. Só uma
+          mudança de anatomia para uma sem
+          container do esquema desativa (regra de
+          existência estrutural, Etapa 3/4) — nunca
+          uma sobreposição de arte.
+        end note
+
+      else (Não — ainda não\nfoi travado)
+        :Manter o container como está —\ncor manual já registrada, ou\npadrão neutro/indefinido, sem\nnenhum pré-preenchimento automático;
+
+        note right
+          Prompt, Preset Aura, Material (isolado
+          ou combinado com qualquer uma das
+          anteriores), Cor sólida e Gradiente não
+          disparam mais nenhuma auto-ativação do
+          container, independentemente da família
+          do skin ativo (editorial fina ou com
+          moldura própria). A cor do container
+          nesses casos é sempre uma escolha
+          opcional do usuário — via Etapa 4 ou
+          reabrindo "3. Cor do container" — nunca
+          um pré-preenchimento automático. Só a
+          "Direção recomendada" (ramo acima) torna
+          o container obrigatório. Ver
+          RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
+          seção 3.2 (retirada como gatilho
+          automático) e seção 3.6.
+        end note
       endif
-    else (Não — sem container,\nou origem já é "manual")
+    else (Não — sem container\npara este card/anatomia)
     endif
 
     |Usuário|
@@ -382,35 +481,51 @@ repeat
       |Sistema|
       :Sistema destaca o container\ninterno à borda do card;
 
-      if (ConfiguracaoContainer.origem\njá persistida é "manual"\n— override anterior deste usuário?) then (Sim)
+      if (ConfiguracaoContainer.obrigatorio\né true — travado por uma\ndireção recomendada aplicada?) then (Sim)
+        |Sistema|
+        :Informar que o container é\nobrigatório nesta configuração —\ntravado na cor nativa do skin,\nnão customizável enquanto a\ndireção recomendada estiver aplicada;
+        :Manter a cor nativa do skin\ne a origem "auto";
+
+        note right
+          A única forma de sair do container
+          obrigatório é trocar a direção visual da
+          Arte com IA para Prompt ou Preset Aura
+          escolhido manualmente (não a direção
+          recomendada) — isso não reseta
+          `obrigatorio` sozinho, mas remove o
+          gatilho que o mantém relevante em telas
+          futuras deste mesmo fluxo de edição. Uma
+          política de "resetar obrigatorio" fica
+          fora do escopo desta proposta.
+        end note
+
+      elseif (ConfiguracaoContainer.origem\njá persistida é "manual"\n— escolha anterior deste usuário?) then (Sim)
         |Usuário|
         :Usuário seleciona\na cor do container;
         |Sistema|
         :Manter a origem do container\ncomo "manual";
 
-      elseif (Gatilho de auto-ativação está\nsatisfeito agora — Esquema + skin\neditorial fino + arte exuberante?) then (Sim)
-        :Pré-preencher com a cor nativa\ndo skin e avisar que foi\ntravada automaticamente;
-        |Usuário|
-        if (Deseja usar uma cor\ncustomizada mesmo assim?) then (Sim)
-          :Usuário seleciona\na cor do container;
-          |Sistema|
-          :Registrar a origem do container\ncomo "manual" (override);
-        else (Não)
-          :Manter a cor nativa\ndo skin;
-          |Sistema|
-          :Manter a origem do container\ncomo "auto";
-        endif
-
-      else (Não)
+      else (Não — origem\nindefinida)
         |Usuário|
         :Usuário seleciona\na cor do container;
         |Sistema|
         :Registrar a origem do container\ncomo "manual";
+
+        note right
+          Nenhuma pré-seleção automática ocorre
+          aqui fora da "Direção recomendada" (ramo
+          já tratado acima): o seletor abre neutro,
+          sem cor nativa do skin pré-preenchida —
+          Preset Aura, Material, Aura + Material,
+          Cor sólida e Gradiente nunca sugerem uma
+          cor de container sozinhos, mesmo sobre um
+          skin editorial fino.
+        end note
       endif
 
       |Sistema|
       :Aplicar a cor somente\nao container interno;
-      :Salvar temporariamente:\n- Cor do container\n- Origem do container (auto/manual);
+      :Salvar temporariamente:\n- Cor do container\n- Origem do container\n(manual / auto-obrigatório)\n- Obrigatoriedade do container;
     endif
     |Usuário|
   endif
@@ -434,7 +549,7 @@ end note
 
 |Sistema|
 :Etapa 6 — Consolidar\na composição visual;
-:Salvar temporariamente:\n- Configuração do background\n- Configuração da arte com IA\n(direção visual + material,\nquando combinados)\n- Cor e origem do container\n(Etapa 4, quando aplicável)\n- Layout dos elementos\n- Anatomia e densidade (Etapa 3);
+:Salvar temporariamente:\n- Configuração do background\n- Configuração da arte com IA\n(direção visual + material,\nquando combinados)\n- Cor, origem e obrigatoriedade\ndo container (Etapa 4, quando\naplicável)\n- Layout dos elementos\n- Anatomia e densidade (Etapa 3);
 :Aplicar o container\ndentro da borda, quando existir;
 :Manter as fotos e os textos\ndentro do container ou, na\nausência dele, no card;
 :Aplicar o layout\naos slots do card;
@@ -448,7 +563,7 @@ repeat
 repeat while (Confirmar e concluir o card?) is (Não)
 
 |Sistema|
-:Persistir:\n- background_config (do elemento-alvo)\n- ai_artwork_config (do elemento-alvo,\ndireção + material)\n- content_container_color (do elemento-alvo,\nquando aplicável)\n- content_container_origem\n(manual/auto, quando aplicável)\n- layout_config (inclui anatomia\ne densidade da Etapa 3);
+:Persistir:\n- background_config (do elemento-alvo)\n- ai_artwork_config (do elemento-alvo,\ndireção + material)\n- content_container_color (do elemento-alvo,\nquando aplicável)\n- content_container_origem\n(manual/auto, quando aplicável)\n- content_container_obrigatorio\n(Boolean, quando aplicável)\n- layout_config (inclui anatomia\ne densidade da Etapa 3);
 :Salvar ou atualizar\no card;
 :Exibir confirmação\nde conclusão;
 stop
