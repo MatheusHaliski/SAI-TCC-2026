@@ -158,12 +158,53 @@ endif
 note right
   A escolha de anatomia é sempre decidida
   pelo esquema/DNA — uma peça nunca escolhe
-  a própria anatomia nesta etapa. É
-  independente da cor/arte do background
-  configurada na Etapa 5 — trocar de
-  anatomia não descarta a configuração de
-  background, arte com IA ou cor do
-  container já salva.
+  a própria anatomia nesta etapa.
+end note
+
+|Sistema|
+:Mecanismo de sobreposição — Layout & Estilo\n(Etapa 3) e Arte com IA (Etapa 5) são\ncamadas independentes;
+
+note right
+  A anatomia/layout escolhida nesta Etapa 3
+  (Lista vertical, Passarela, Ampliado do
+  DNA etc.) e a arte de background
+  configurada na Etapa 5 nunca se excluem —
+  qualquer uma das combinações de Arte com
+  IA pode ser sobreposta a qualquer
+  layout/estilo já selecionado aqui, sem
+  restrição de compatibilidade:
+  - Cor sólida
+  - Gradiente
+  - Prompt
+  - Preset Aura (sozinho)
+  - Material (sozinho)
+  - Preset Aura + Material (combinados)
+  - Direção recomendada (sozinha)
+  - Direção recomendada + Material
+
+  Trocar de anatomia depois não descarta a
+  configuração de background, arte com IA
+  ou cor do container já salva — e trocar a
+  arte com IA depois não descarta a
+  anatomia/layout escolhida aqui. São
+  independentes nos dois sentidos.
+
+  A única regra que atravessa essa
+  sobreposição é a obrigatoriedade do
+  container: se a combinação aplicada em
+  algum momento na Etapa 5 incluir a
+  "Direção recomendada" (o preset
+  recomendado pela IA), o container vira
+  obrigatório (Etapa 4) — travado na cor
+  nativa do skin ativo no momento,
+  independentemente de qual layout/anatomia
+  estiver selecionado nesta Etapa 3. Nas
+  demais combinações da lista acima
+  (nenhuma delas é "Direção recomendada"),
+  o container permanece opcional,
+  qualquer que seja o layout escolhido. Ver
+  RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
+  seções 3.2 e 3.6.
 end note
 
 |Sistema|
@@ -248,6 +289,14 @@ endif
 |Usuário|
 repeat
   :Etapa 5 — Configurar\nos elementos visuais;
+
+  note right
+    Qualquer combinação escolhida aqui
+    (opções 1 e 2 abaixo) se sobrepõe ao
+    layout/anatomia já definido na Etapa 3,
+    sem restrição — ver o mecanismo de
+    sobreposição logo após a Etapa 3.
+  end note
 
   if (Qual elemento deseja configurar?) then (1. Cor ou gradiente)
     :Selecionar configuração\nde background;
