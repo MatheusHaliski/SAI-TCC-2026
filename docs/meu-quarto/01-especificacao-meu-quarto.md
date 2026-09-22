@@ -1,11 +1,11 @@
-# Meu Guarda-Roupa: Grade · Meu Quarto · Destaques + Copilot Contextual
+# Meu Guarda-Roupa: Grade · Meu Quarto · Destaques · Desafios + Copilot Contextual
 
 **Projeto:** FashionAI (SAI-TCC-2026)
 **Status:** proposta de especificação (v0.3), para revisão do time
-**Requisitos novos:** RF32 (Meu Quarto) · RF33 (Smart Mirror e Vista-me) · RF34 (Destaques do Meu Inventário) · RF35 (FAI Points e progressão do quarto)
+**Requisitos novos:** RF32 (Meu Quarto) · RF33 (Smart Mirror e Vista-me) · RF34 (Destaques do Meu Inventário) · RF35 (FAI Points e progressão do quarto) · RF36 (Desafios & Games, em [`03-desafios-e-games.md`](03-desafios-e-games.md))
 **Requisito estendido:** RF10 (Copilot), que ganha os CAs RF10.CA08 em diante
 **Depende de:** RF4, RF5, RF6, RF13, RF16, RF19, RF24, RF31
-**Documentos irmãos:** [`02-inventory-score-calculo.md`](02-inventory-score-calculo.md) · [`RF33_Vista-me_Atividades.puml`](RF33_Vista-me_Atividades.puml)
+**Documentos irmãos:** [`02-inventory-score-calculo.md`](02-inventory-score-calculo.md) · [`03-desafios-e-games.md`](03-desafios-e-games.md) · [`04-detalhes-de-engajamento.md`](04-detalhes-de-engajamento.md) · [`RF33_Vista-me_Atividades.puml`](RF33_Vista-me_Atividades.puml)
 
 > **Numeração.** Segue a política de [`02-rf-reestruturados-e-criterios-aceite.md`](../novo-projeto/02-rf-reestruturados-e-criterios-aceite.md) §1: nenhum número é reciclado. Os RFs novos começam no RF32, o próximo número livre. O Copilot não ganha número novo: é o RF10, que recebe CAs adicionais.
 
@@ -32,15 +32,16 @@ Todo CA de RF32, RF33 e RF34 precisa passar nesse teste. A gamificação (RF35) 
 MEU GUARDA-ROUPA
 ├── Grade        → ENCONTRAR   (pesquisar, filtrar, administrar muitas peças)
 ├── Meu Quarto   → INTERAGIR   (espacial, visual, montar looks no espelho)
-└── Destaques    → ENTENDER E EVOLUIR (score, evolução, conquistas, rankings)
+├── Destaques    → ENTENDER E EVOLUIR (score, evolução, conquistas, rankings)
+└── Desafios     → AGIR        (metas solo, em equipe, em duelo e da comunidade, RF36)
           ▲
-          └── FashionAI Copilot: transversal às três visões
+          └── FashionAI Copilot: transversal às quatro visões
                  ↓ consulta
    Inventory Score · DNA de Estilo · Histórico · Look do Dia · Criar Look
    Aura · Hype Score · FAI Points · Maison · Rede Social
 ```
 
-A **Grade** continua sendo a visão padrão para busca e administração, porque ninguém deve precisar navegar num ambiente 3D para achar uma camiseta. As três visões compartilham **o mesmo estado** (filtros, seleção, disponibilidade), então uma peça encontrada na Grade pode ser **"Mostrada no quarto"** (RF32.CA09).
+A **Grade** continua sendo a visão padrão para busca e administração, porque ninguém deve precisar navegar num ambiente 3D para achar uma camiseta. As visões compartilham **o mesmo estado** (filtros, seleção, disponibilidade), então uma peça encontrada na Grade pode ser **"Mostrada no quarto"** (RF32.CA09).
 
 ### 0.3 Dois indicadores que não se misturam
 
@@ -427,6 +428,8 @@ O `saiDailyLooks.source` ganha os valores `"vista_me"` e `"smart_mirror"`, e o e
 | **2 — Inteligência** | Vista-me com localização, Copilot contextual (ferramentas §3.2), Destaques com Inventory Score, Seus Destaques e evolução mensal | ✅ |
 | **3 — Gamificação** | FAI Points (ledger), níveis com funções, loja com moldes/acabamentos e "Provar no meu quarto", conquistas, estados visuais completos | recompensa por cima |
 | **4 — Comunidade** | rankings com opt-in, Room Tour, drops, Colabs Maison, diagnóstico com sugestão de compra (§3.3) | recompensa por cima |
+
+A sub-aba **Desafios** (RF36) entra nas fases 3 e 4, com o detalhamento em [`03-desafios-e-games.md`](03-desafios-e-games.md) §10. Os detalhes de engajamento têm fase própria, item a item, em [`04-detalhes-de-engajamento.md`](04-detalhes-de-engajamento.md).
 
 ---
 
