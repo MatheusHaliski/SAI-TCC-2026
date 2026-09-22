@@ -1,5 +1,5 @@
 @startuml RF23_Configuracoes_Atividades
-title RF23 — Configurações\nConta, Privacidade, Aparência (Estúdio de Interface — cores, modais, menu lateral, botões), Idioma, Seus dados
+title RF23 — Configurações\nConta (dado sensível vs. não sensível), Privacidade (consentimentos por finalidade), Aparência\n(preferências + Estúdio de Interface), Idioma, Seus dados (exportação vs. exclusão)
 
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
@@ -31,21 +31,105 @@ start
 |Usuário|
 if (Qual seção?) then (Conta)
 
-  :Usuário edita e-mail,\nnome de usuário, biografia;
-  |Sistema|
-  :Sistema valida e salva\n(princípio da exatidão, LGPD);
+  if (Qual dado deseja editar?) then (Dado sensível\n— e-mail, CPF ou data\nde nascimento)
+
+    :Usuário informa a senha\natual (reautenticação);
+    |Sistema|
+    if (Senha correta?) then (Sim)
+      if (O dado editado\né o e-mail?) then (Sim)
+        :Sistema marca o novo e-mail\ncomo "pendente_confirmação" —\no e-mail atual permanece ativo\npara login até a confirmação;
+        :Sistema envia um aviso de\nsegurança ao e-mail antigo,\ninformando a tentativa de troca;
+        :Sistema envia um link de\nconfirmação ao novo e-mail;
+
+        note right
+          RF3.CA01/CA02 — e-mail é dado
+          sensível: nunca é validado e salvo
+          imediatamente como nome de usuário
+          ou biografia. Reautenticar por
+          senha não troca o e-mail sozinho —
+          o novo e-mail só substitui o atual
+          depois que o usuário confirma pelo
+          link recebido nele; o aviso ao
+          e-mail antigo é obrigatório e
+          independente dessa confirmação.
+        end note
+      else (Não — CPF ou\ndata de nascimento)
+        :Sistema valida e persiste\no dado sensível;
+      endif
+    else (Não)
+      :Sistema recusa a alteração\ne informa senha incorreta;
+    endif
+
+  else (Dado não sensível\n— nome de usuário, @,\nbio, avatar, foto de capa)
+
+    :Usuário edita o campo;
+    |Sistema|
+    :Sistema valida e salva\nimediatamente, sem exigir\nreautenticação (RF23.CA03);
+
+    if (O campo editado\né o @?) then (Sim, e já\nestá em uso)
+      :Sistema recusa e sugere\nalternativas disponíveis\n(RF23.CA04);
+    else (Não, ou @ disponível)
+      :Sistema confirma a\nalteração;
+    endif
+
+  endif
 
 elseif (Privacidade) then (Privacidade)
 
   :Usuário alterna visibilidade\ndo perfil, autenticação de\ndois fatores e preferências\nde notificação granulares\n(ver RNF10);
+
   |Sistema|
-  :Sistema salva as preferências\nde privacidade e notificação;
+  :Sistema apresenta os controles\nde consentimento de dados —\num controle por finalidade\n(RF3.CA20): anúncios,\nreconhecimento facial, histórico\nde localização, compartilhamento\ncom parceiros;
+
+  note right
+    Cada controle nasce desmarcado
+    (RF3.CA19/CA22 — Privacy by Default:
+    a conta nasce no estado mais
+    protetivo e o aceite exige ação
+    afirmativa do usuário, nunca
+    pré-marcado). A revogação usa o mesmo
+    controle, no mesmo lugar e com o
+    mesmo número de cliques da concessão
+    (RF3.CA21) — não existe uma tela
+    separada só para revogar.
+  end note
+
+  |Usuário|
+  :Usuário concede ou revoga\ncada consentimento\nindividualmente;
+
+  |Sistema|
+  :Sistema salva as preferências\nde privacidade, notificação e\nconsentimento — cada concessão\nou revogação é registrada com\ndata/hora (RF3.CA06);
 
 elseif (Aparência) then (Aparência)
 
-  :Usuário alterna Modo\nescuro/claro;
   |Sistema|
-  :Sistema aplica o tema de\nluminosidade (claro/escuro)\n— eixo independente da\npersonalização de cores abaixo;
+  :Sistema apresenta as\npreferências de aparência e\nacessibilidade (RF23.CA01, CA05):\ntema, densidade da grade,\ntamanho de fonte, alto contraste\ne redução de animações;
+
+  |Usuário|
+  :Usuário seleciona o tema —\nClaro, Escuro ou Sistema\n(acompanha a preferência do\nsistema operacional);
+  :Usuário seleciona a densidade\nda grade — Compacta, Padrão\nou Confortável;
+  :Usuário seleciona o tamanho\nda fonte — Pequena, Padrão,\nGrande ou Extra grande;
+  :Usuário ativa, opcionalmente,\nAlto contraste e/ou Reduzir\nanimações;
+
+  |Sistema|
+  :Sistema aplica as preferências\nimediatamente em todas as telas\n(RF23.CA02, CA05) e as salva —\npersistem entre dispositivos;
+
+  note right
+    Tema, densidade, fonte, alto contraste
+    e redução de animações são eixos
+    independentes da personalização de
+    cores/modais/menu/botões abaixo — um
+    usuário com Alto contraste ativo ainda
+    pode escolher qualquer paleta do
+    Estúdio de Interface, sujeita à
+    checagem de contraste já descrita ali.
+    "Sistema" (tema) é o único valor que
+    não é uma preferência fixa — ele
+    reavalia a preferência do SO a cada
+    carregamento, mas a ESCOLHA de usar
+    "Sistema" em vez de Claro/Escuro é ela
+    própria persistida (RF23.CA02).
+  end note
 
   |Usuário|
   :Usuário abre "Personalizar\na interface" (Estúdio de\nInterface);
@@ -73,21 +157,28 @@ elseif (Aparência) then (Aparência)
           legibilidade (WCAG AA). Não existe
           "cor solta": mesmo o acento
           customizado é registrado sobre uma
-          paleta-base identificada.
+          paleta-base identificada — mesmo
+          padrão de proveniência usado para
+          cor customizada em "2. Modais",
+          abaixo.
         end note
       endif
 
       |Sistema|
       :Sistema aplica a paleta\n(e o acento, quando\ncustomizado) às variáveis de\ntema: --color-bg, --color-\nsurface, --color-primary,\n--color-accent, --color-text;
-      :Registrar a origem da cor\n(interfaceThemeId da paleta\nmapeada + acento customizado,\nquando houver);
+      :Registrar a origem da cor —\ninterfaceThemeId da paleta\nmapeada e, quando o acento for\ncustomizado, também o valor\nhex do acento;
 
     elseif (2. Modais) then (Modais)
 
-      :Sistema apresenta as opções\nde fundo do modal: Cor sólida\n(paleta ativa), Gradiente\n(catálogo compartilhado com\no RF11) ou Imagem/textura\n(catálogo de assets de\ninterface);
+      :Sistema apresenta as opções\nde fundo do modal: Cor sólida\n(paleta ativa ou customizada),\nGradiente (catálogo\ncompartilhado com o RF11) ou\nImagem/textura (catálogo de\nassets de interface);
 
       |Usuário|
       if (Qual tipo de fundo?) then (Cor sólida)
-        :Usuário seleciona uma cor\nda paleta ativa (Etapa 1\ndeste loop) ou uma cor\ncustomizada;
+        if (Qual origem da cor?) then (Paleta mapeada)
+          :Usuário seleciona uma cor\nda paleta ativa (Etapa 1\ndeste loop);
+        else (Cor customizada)
+          :Usuário escolhe uma cor\ncustomizada para o fundo\ndo modal;
+        endif
       elseif (Gradiente) then (Gradiente)
         :Usuário seleciona um\ngradiente do catálogo\nGRADIENT_PRESETS (mesmo\ncatálogo já usado no RF11);
         note right
@@ -110,7 +201,7 @@ elseif (Aparência) then (Aparência)
 
       |Sistema|
       :Sistema aplica o fundo\nescolhido a todos os modais\ndo sistema;
-      :Registrar a origem do fundo\ndo modal — ID da paleta,\ndo gradiente ou do asset,\nnunca um valor solto;
+      :Registrar a origem do fundo\ndo modal — ID da paleta, do\ngradiente ou do asset; quando\na cor for customizada, registrar\ntambém o valor hex da cor junto\ncom o ID da paleta-base que ela\nsobrepõe, nunca um valor solto\nsem proveniência;
 
     elseif (3. Menu de navegação lateral) then (Menu lateral)
 
@@ -150,26 +241,33 @@ elseif (Aparência) then (Aparência)
 
   |Sistema|
   :Sistema aplica as escolhas\nem toda a aplicação, fora\nda pré-visualização;
-  :Salvar InterfaceThemeConfig\ndo usuário — cores, modal,\nmenu lateral e botões, cada\num com a origem (ID mapeado)\nda escolha, nunca um valor\nsolto;
+  :Salvar InterfaceThemeConfig\ndo usuário — cores, modal,\nmenu lateral e botões, cada\num com a origem (ID mapeado)\nda escolha e, quando houver cor\ncustomizada, também o valor\nhex dela — nunca um valor solto\nsem proveniência;
 
   note right
     "Devidamente identificadas e mapeadas"
     (requisito original): nenhuma escolha
     desta etapa grava um valor solto (hex
-    cru, URL de imagem arbitrária, número de
-    raio de canto arbitrário) sem também
-    gravar de qual catálogo e de qual ID ela
-    veio — InterfaceColorPalette,
-    GRADIENT_PRESETS (catálogo compartilhado
-    com o RF11, não duplicado),
-    InterfaceImageAsset e InterfaceShapePreset.
-    Isso permite: (a) auditar ou migrar temas
-    quando um catálogo muda de versão; (b)
-    uma futura tela "Meus temas" listar temas
-    salvos pelo nome do preset, não por um
-    valor de cor ilegível; (c) reaproveitar o
-    mesmo catálogo de gradientes do RF11 sem
-    duplicar a lista, mantendo os dois
+    cru sem paleta-base associada, URL de
+    imagem arbitrária, número de raio de
+    canto arbitrário) sem também gravar de
+    qual catálogo e de qual ID ela veio —
+    InterfaceColorPalette, GRADIENT_PRESETS
+    (catálogo compartilhado com o RF11, não
+    duplicado), InterfaceImageAsset e
+    InterfaceShapePreset. Uma cor
+    customizada (acento ou fundo de modal)
+    é a única exceção controlada: ela grava
+    o valor hex JUNTO com o ID da
+    paleta-base que sobrepõe, nunca sozinha
+    — preservando proveniência mesmo para
+    valores fora do catálogo. Isso permite:
+    (a) auditar ou migrar temas quando um
+    catálogo muda de versão; (b) uma futura
+    tela "Meus temas" listar temas salvos
+    pelo nome do preset, não por um valor
+    de cor ilegível; (c) reaproveitar o
+    mesmo catálogo de gradientes do RF11
+    sem duplicar a lista, mantendo os dois
     sistemas (arte de cards e tema da
     interface) consistentes entre si.
   end note
@@ -178,13 +276,37 @@ elseif (Idioma) then (Idioma)
 
   :Usuário seleciona o idioma\nda interface (pt/es/…);
   |Sistema|
-  :Sistema aplica a tradução;
+  :Sistema aplica a tradução\nimediatamente;
+  :Salvar a preferência de idioma\ndo usuário — persiste entre\ndispositivos (RF23.CA02);
 
 else (Seus dados)
 
-  :Usuário solicita exportação\nou exclusão dos próprios dados;
-  |Sistema|
-  :Sistema confirma e processa\nconforme os direitos do\ntitular (LGPD, Art. 18);
+  |Usuário|
+  if (Exportar ou excluir\nos dados?) then (Exportar dados)
+
+    :Usuário solicita a\nexportação dos dados;
+    |Sistema|
+    :Sistema gera um arquivo em\nformato legível por máquina\n(JSON) com perfil, guarda-roupa,\nesquemas e DNA de Estilo\n(RF3.CA04, CA24);
+    :Sistema disponibiliza o\narquivo por um link expirável;
+    :Sistema notifica o usuário\nquando o link estiver pronto;
+
+  else (Excluir a conta)
+
+    :Usuário solicita a\nexclusão da conta;
+    |Sistema|
+    :Sistema apresenta a\nconfirmação em duas etapas\n(zona de risco);
+
+    |Usuário|
+    if (Confirma a exclusão\nnas duas etapas?) then (Sim)
+      |Sistema|
+      :Sistema torna a conta\nimediatamente invisível na\nrede social;
+      :Sistema inicia a carência\nde 30 dias antes da eliminação\ndefinitiva (RF3.CA05);
+      :Sistema notifica o usuário\nsobre o prazo de carência e\ncomo cancelar a exclusão\ndentro desse período;
+    else (Não)
+      :Sistema cancela a\nsolicitação de exclusão;
+    endif
+
+  endif
 
 endif
 

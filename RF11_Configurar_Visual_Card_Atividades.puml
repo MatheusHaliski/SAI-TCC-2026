@@ -317,16 +317,21 @@ repeat
     else (Borda do elemento)
       :Selecionar a cor da borda\ndo elemento-alvo fixado na\nEtapa 1 do RF5/RF13 — esquema\nou peça;
       |Sistema|
-      :Aplicar a cor escolhida à\nborda do elemento-alvo —\nsempre arredondada, 2px de\nespessura (regra fixa, não\nconfigurável pelo usuário);
+      :Aplicar a cor escolhida à\nborda do elemento-alvo —\nsempre arredondada com 12px\nde raio, 2px de espessura\n(regra fixa, não configurável\npelo usuário);
       :Salvar temporariamente a\ncor da borda do elemento-alvo;
 
       note right
-        Espessura (2px) e formato
-        (arredondado) da borda são
+        Espessura (2px) e raio de
+        arredondamento (12px) da borda são
         constantes de design — iguais para
         todo elemento (Esquema ou Peça),
-        qualquer skin ou anatomia. Só a COR
-        é configurável aqui. Diferente da
+        qualquer skin ou anatomia. Um raio
+        fixo evita que renderizadores
+        diferentes (web, mobile) escolham
+        valores incompatíveis para o que é,
+        por definição, uma constante do
+        sistema, não uma escolha por card.
+        Só a COR é configurável aqui. Diferente da
         "3. Cor do container" (mais abaixo
         neste loop): a borda delimita o
         CARD inteiro — a borda externa já
@@ -603,7 +608,7 @@ end note
 |Sistema|
 :Etapa 6 — Consolidar\na composição visual;
 :Salvar temporariamente:\n- Configuração do background\n- Cor da borda do card\n(elemento-alvo)\n- Configuração da arte com IA\n(direção visual + material,\nquando combinados)\n- Cor, origem e obrigatoriedade\ndo container (Etapa 4, quando\naplicável)\n- Layout dos elementos\n- Anatomia e densidade (Etapa 3);
-:Aplicar a borda arredondada\nde 2px na cor configurada\n(ou na cor padrão, quando não\nconfigurada) ao redor do card;
+:Aplicar a borda arredondada\n(12px de raio, 2px de\nespessura) na cor configurada\n(ou na cor padrão, quando não\nconfigurada) ao redor do card;
 :Aplicar o container\ndentro da borda, quando existir;
 :Manter as fotos e os textos\ndentro do container ou, na\nausência dele, no card;
 :Aplicar o layout\naos slots do card;
@@ -617,7 +622,7 @@ repeat
 repeat while (Confirmar e concluir o card?) is (Não)
 
 |Sistema|
-:Persistir:\n- background_config (do elemento-alvo)\n- border_color (do elemento-alvo —\nborder_radius e border_width\nsão constantes de sistema,\nnão persistidas por card)\n- ai_artwork_config (do elemento-alvo,\ndireção + material)\n- content_container_color (do elemento-alvo,\nquando aplicável)\n- content_container_origem\n(manual/auto, quando aplicável)\n- content_container_obrigatorio\n(Boolean, quando aplicável)\n- layout_config (inclui anatomia\ne densidade da Etapa 3);
+:Persistir:\n- background_config (do elemento-alvo)\n- border_color (do elemento-alvo —\nborder_radius = 12px e\nborder_width = 2px são\nconstantes de sistema, fixas\npara todo card, não persistidas\nindividualmente)\n- ai_artwork_config (do elemento-alvo,\ndireção + material)\n- content_container_color (do elemento-alvo,\nquando aplicável)\n- content_container_origem\n(manual/auto, quando aplicável)\n- content_container_obrigatorio\n(Boolean, quando aplicável)\n- layout_config (inclui anatomia\ne densidade da Etapa 3);
 :Salvar ou atualizar\no card;
 :Exibir confirmação\nde conclusão;
 stop
