@@ -38,97 +38,90 @@ Isso já existia parcialmente no RF11 como "cor do container" (Etapa 4, opção 
 
 | Origem | Quando | Cor do container |
 |---|---|---|
-| `manual` | Usuário escolheu explicitamente — seja porque o gatilho automático nunca disparou, seja porque escolheu "usar cor customizada mesmo assim" sobre um valor auto-ativado | A cor escolhida, nunca sobrescrita automaticamente depois |
-| `auto` *(novo)* | Gatilho da seção 3.2 satisfeito e o usuário não sobrepôs manualmente | Travada na cor nativa do skin; recalculada se skin ou arte mudarem, **enquanto a origem continuar `auto`** |
-| `desligado` | Gatilho nunca disparou e usuário nunca escolheu manualmente | Sem preenchimento próprio (comportamento herdado do background) |
+| `indefinida` *(padrão)* | Nenhuma decisão foi tomada ainda — nem o usuário definiu manualmente, nem a "Direção recomendada" foi aplicada | Sem preenchimento próprio (padrão neutro, herdado do background) |
+| `manual` | Usuário escolheu explicitamente, a qualquer momento (Etapa 4 ou reabrindo "3. Cor do container") | A cor escolhida, nunca sobrescrita automaticamente depois — **exceto** pela "Direção recomendada" (ver seção 3.6) |
+| `auto` | A "Direção recomendada" foi aplicada — **único gatilho de ativação automática** desta proposta | Travada na cor nativa do skin ativo no momento; nunca recalculada depois (ver `obrigatorio`, seção 3.6) |
 
 A origem é o que faz o estado ser **persistente e não recalculado a cada abertura do editor** — ver seção 3.5.
 
-*(Nota: a tabela lista três **origens** possíveis — `manual`, `auto`, `desligado` — não três estados de UI; a cor efetivamente aplicada é sempre um único valor, e a origem só decide como e quando ela é recalculada.)*
+Além da origem, `ConfiguracaoContainer` ganha um segundo campo, sempre acoplado a `origem = 'auto'`: `obrigatorio: Boolean`. Toda vez que `origem` é `'auto'` nesta proposta, `obrigatorio` é `true` — não existe mais um estado "auto, mas ainda reversível" (ver seção 3.6 para o histórico dessa decisão).
 
-Além da origem, `ConfiguracaoContainer` ganha um segundo campo, ortogonal: `obrigatorio: Boolean`. A origem decide **quem escreveu a cor** (usuário ou sistema); `obrigatorio` decide **se essa decisão pode ser desfeita depois** por uma sobreposição futura de arte. Ver seção 3.6.
-
-### 3.1 Classificação de família de skin
+### 3.1 Classificação de família de skin (referência, não gatilho)
 
 | Família | Skins | Motivo |
 |---|---|---|
 | **Editorial fina** | Atelier, Spread, Índice | Tipografia delicada, hairlines, pouca/nenhuma moldura própria — conteúdo fica exposto direto sobre o que estiver atrás |
 | **Framed / com moldura própria** | Trading, FAI Max, Stub, Specimen | Já têm chrome grosso, decoração ou moldura dupla que absorve arte exuberante por design |
 
-### 3.2 Gatilho
+Esta classificação **não aciona mais nada automaticamente** (ver seção 3.2) — fica documentada aqui porque explica a motivação original do problema (seção 1) e porque pode ser reaproveitada no futuro para um aviso não-bloqueante na UI ("esta combinação pode reduzir a legibilidade"), sem reintroduzir uma trava automática.
 
-```
-autoAtivarContainer =
-  tipoDeCard === ESQUEMA
-  AND familia(skinAtivo) === 'editorial_fina'
-  AND (
-    ConfiguracaoArteIA.modo ∈ { PROMPT, DIRECAO_VISUAL, PRESET_AURA }
-    OR materialLayer.type !== 'none'
-  )
-```
+### 3.2 Gatilho por família de skin — retirado
 
-Três condições, todas obrigatórias (note os parênteses em torno da alternativa modo/material — sem eles, `AND` tem precedência maior que `OR` e a expressão vira `(tipo AND skin AND modo) OR material`, que dispara o container para **qualquer** material em **qualquer** skin, inclusive Trading/FAI Max/Stub/Specimen, contradizendo a seção 3.1):
+Uma versão anterior desta proposta auto-ativava o container sempre que `tipoDeCard === ESQUEMA AND familia(skinAtivo) === 'editorial_fina' AND (arte exuberante OU material aplicado)`, com a origem `auto` sendo **recalculada a cada mudança de skin ou arte** enquanto o usuário não sobrepusesse manualmente.
 
-1. **`tipoDeCard === ESQUEMA`** — Peça e DNA de Estilo não têm container do esquema (v13); testar isso aqui evita instruir uma implementação a criar/modificar um container que não existe para essas entidades.
-2. **Skin editorial fina** — seção 3.1.
-3. **Arte exuberante** — Prompt, Direção recomendada, Preset Aura **ou** Material. Cor sólida/gradiente escolhida manualmente (Etapa 4, opção 1) **não** dispara a regra — é inerentemente mais controlada (o usuário escolhe o hex exato) e não é o alvo da reclamação original ("desenhos exorbitantes tipo aura").
+**Essa reativação automática foi removida.** Decisão de produto: fora da "Direção recomendada" (seção 3.6), o container é sempre **opcional e sob controle total do usuário** — Preset Aura (sozinho), Material (sozinho), Aura + Material (combinados), Cor sólida e Gradiente nunca pré-selecionam ou travam a cor do container, **mesmo sobre um skin editorial fino**. O usuário decide se quer usar o container e qual cor, via Etapa 4 ou reabrindo "3. Cor do container" — sem nenhum valor sugerido automaticamente por trás.
 
-### 3.3 O que acontece quando ativado
+Motivo: a auto-ativação reativa por skin+arte gerava uma trava "surpresa" para qualquer combinação exuberante, mesmo quando o usuário não pediu nenhuma recomendação — bastava escolher manualmente um Preset Aura vistoso num skin fino. Restringir a proteção automática a um único gatilho explícito (aplicar a recomendação da IA) torna o comportamento mais previsível: **o container só vira decisão do sistema quando o próprio sistema decidiu a arte.**
 
-- **Dentro do container:** cor nativa do skin (Atelier → branco puro; Spread → neutro claro; Índice → branco + borda), travada — a arte com IA não pode pintar por trás do título/descrição/peças.
+### 3.3 O que acontece quando o container é obrigatório (único caso automático)
+
+- **Dentro do container:** cor nativa do skin ativo no momento em que a "Direção recomendada" foi aplicada (Atelier → branco puro; Spread → neutro claro; Índice → branco + borda; qualquer skin framed → sua própria cor nativa), travada — a arte com IA não pode pintar por trás do título/descrição/peças.
 - **Fora do container, dentro da borda do card:** a arte com IA continua rodando livre — vira efeito de **passe-partout** (moldura/paspatur), como uma moldura de quadro: a arte exuberante emoldura o painel de conteúdo, em vez de competir com ele.
-- **A trava é um default, não uma restrição definitiva.** O usuário pode abrir "3. Cor do container" e escolher "usar cor customizada mesmo assim" a qualquer momento — a regra evita o resultado ruim por padrão, sem impedir uma escolha deliberada.
+- **Não há escape hatch.** Diferente de uma versão anterior desta proposta, não existe mais "usar cor customizada mesmo assim" — ver seção 3.6, efeito 4. A única saída é trocar a direção visual da Arte com IA para algo que não seja a "Direção recomendada".
+
+Nos demais casos (Preset Aura, Material, Aura + Material, Cor sólida, Gradiente), nada disto se aplica: o container mantém a cor que o usuário deixou (manual) ou permanece neutro/indefinido.
 
 ### 3.4 Por que não desligar a Aura, em vez de conter o texto
 
-Alternativa descartada: quando skin fino + preset exuberante, simplesmente **bloquear** a escolha do preset Aura. Rejeitada porque:
+Alternativa descartada: quando a "Direção recomendada" resulta numa combinação exuberante, simplesmente **bloquear** a arte em vez de proteger o texto com um container. Rejeitada porque:
 - Tira controle do usuário sem necessidade — o efeito passe-partout resolve o conflito sem remover a opção.
-- O usuário pode *querer* exatamente esse contraste (arte ousada emoldurando um painel editorial limpo) — é um resultado legítimo, só precisa da separação estrutural para funcionar.
+- O usuário pode *querer* exatamente esse contraste (arte ousada emoldurando um painel editorial limpo) — é um resultado legítimo; só precisa da separação estrutural para funcionar.
 
 ### 3.5 Persistência da origem (por que a cor sozinha não basta)
 
 Guardar só a cor final não sustenta as três origens da tabela da seção 3:
 
-- Se o usuário escolhe uma cor customizada **enquanto o gatilho continua satisfeito**, e o sistema deriva `auto` de novo a cada abertura do editor (em vez de ler uma origem persistida), a escolha customizada é perdida: a próxima abertura volta a classificar o container como automático e pré-preenche a cor nativa do skin por cima.
-- Depois que skin ou arte mudam, uma cor auto-persistida fica indistinguível de uma cor manual — sem a origem, não há como saber se é seguro recalcular ou se sobrescreveria uma escolha deliberada.
+- Sem uma origem persistida, não há como distinguir uma cor `manual` (escolha deliberada do usuário) de uma cor `indefinida` que por acaso coincide com o padrão neutro.
+- Depois que a "Direção recomendada" trava o container (`origem = 'auto'`, `obrigatorio = true`), essa informação precisa sobreviver a reaberturas do editor e a sobreposições futuras de arte — sem persistência, o sistema não teria como saber que aquela cor não deve mais ser tratada como editável.
 
-Por isso `ConfiguracaoContainer` ganha um campo de origem (`auto | manual`), persistido junto com a cor. A leitura, ao reabrir "3. Cor do container", passa a ser: **origem já persistida como `manual`? Respeita — nunca reavalia o gatilho.** Só quando a origem ainda não é `manual` (nunca houve override) é que o gatilho da seção 3.2 é avaliado.
+Por isso `ConfiguracaoContainer` ganha os campos `origem` (`indefinida | manual | auto`) e `obrigatorio` (Boolean), persistidos junto com a cor. A leitura, ao reabrir "3. Cor do container", passa a ser: **`obrigatorio` é `true`? Informa que está travado, não oferece edição. Senão, `origem` já é `manual`? Usuário edita livremente. Senão, seletor abre neutro, sem nenhuma sugestão.**
 
-### 3.6 Container obrigatório: quando a Direção recomendada é aplicada
+### 3.6 Por que `auto` virou sempre obrigatório (histórico da decisão)
 
-A ativação da seção 3.2 é **reativa** — ela é recalculada a cada mudança de skin ou de arte enquanto a origem permanecer `auto`, o que significa que ela pode **desligar** se o usuário depois trocar para um skin com moldura própria ou para uma arte não-exuberante. Isso é intencional para o caso geral (a regra deve refletir o estado atual, não um estado passado), mas cria um buraco específico: quando a IA já recomendou uma combinação Preset Aura + Material curada (seção 5 de `RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md`, `recommendVisualDirection`), essa combinação foi desenhada para precisar da separação do container — deixar essa proteção reversível por qualquer sobreposição futura (`+AURA`, `+material`) contradiz o motivo de ela ter sido recomendada.
+Uma versão anterior desta proposta tratava `auto` como reversível — recalculado a cada mudança de skin ou arte (seção 3.2, agora retirada), com um `obrigatorio: Boolean` adicional só para o caso específico da "Direção recomendada", que travava permanentemente. Com a retirada do gatilho reativo (seção 3.2), **`auto` só tem uma origem possível agora — a "Direção recomendada" — então `origem = 'auto'` e `obrigatorio = true` sempre andam juntos**, sem cenário remanescente em que um exista sem o outro.
 
 ```
 aplicarDirecaoRecomendada() ⇒
   SE containerExisteParaEsteCard(tipoDeCard, anatomiaEscolhida):
-    ConfiguracaoContainer.obrigatorio = true
     ConfiguracaoContainer.origem = 'auto'
+    ConfiguracaoContainer.obrigatorio = true
     // cor travada na cor nativa do skin ativo no momento
 ```
 
-Efeitos de `obrigatorio = true`, em ordem de precedência sobre as demais regras desta proposta:
+Efeitos, em ordem de precedência sobre as demais regras desta proposta:
 
-1. **Bypassa a família do skin.** Diferente do gatilho da seção 3.2 (que só dispara para skins `editorial_fina`), o container obrigatório trava a cor nativa do skin **atual, seja qual for sua família** — inclusive Trading, FAI Max, Stub ou Specimen.
-2. **Sobrescreve uma origem `manual` anterior.** É a única exceção à regra desta seção ("uma escolha manual nunca é sobrescrita silenciosamente") — não é silenciosa porque é consequência direta de uma ação explícita do usuário (aplicar a direção recomendada), não de uma reavaliação de fundo.
-3. **Não é recalculado por sobreposições futuras.** Trocar de Preset Aura manualmente (`+AURA`), aplicar ou trocar um Material (`+material`), ou mesmo trocar de skin, **não desativam** `obrigatorio` nem destravam a cor. A verificação reativa da seção 3.2 continua rodando a cada sobreposição, mas só é alcançada quando `obrigatorio` ainda é `false`.
-4. **Bloqueia o escape hatch de "3. Cor do container".** A opção "usar cor customizada mesmo assim" (seção 3.3) deixa de existir enquanto `obrigatorio = true` — reabrir o seletor de cor do container apenas informa que ele está travado.
+1. **Independe da família do skin.** Aplica-se sobre qualquer skin ativo — inclusive Trading, FAI Max, Stub ou Specimen, que nunca disparariam a antiga regra da seção 3.2.
+2. **Sobrescreve uma origem `manual` anterior.** É a única exceção à regra da seção 3.5 ("uma escolha manual nunca é sobrescrita silenciosamente") — não é silenciosa porque é consequência direta de uma ação explícita do usuário (aplicar a direção recomendada), não de uma reavaliação de fundo.
+3. **Não é recalculado por sobreposições futuras.** Trocar de Preset Aura manualmente (`+AURA`), aplicar ou trocar um Material (`+material`), ou mesmo trocar de skin, **não desativam** `obrigatorio` nem destravam a cor — não há mais nenhuma verificação reativa que pudesse fazer isso (seção 3.2).
+4. **Não tem escape hatch.** Diferente do comportamento reativo já retirado, não existe "usar cor customizada mesmo assim" — reabrir o seletor de cor do container apenas informa que ele está travado.
 5. **Não existe reset automático.** `obrigatorio` é um flag de uma via (`false → true`) dentro desta proposta — reavaliar se algum fluxo deveria zerá-lo (ex.: remover a arte gerada pela direção recomendada) fica fora de escopo aqui.
+
+Mantemos os dois campos (`origem` e `obrigatorio`) em vez de colapsar em um único booleano porque `origem` já distinguia `manual` de "não escolhido", e um único campo perderia essa distinção — `obrigatorio` documenta explicitamente *por que* aquele valor `auto` não pode ser editado, o que também deixa a intenção clara para quem ler o modelo de dados sem o contexto desta proposta.
 
 ---
 
 ## 4. Mapeamento para o modelo de dados existente
 
-Dois campos novos são necessários — a proveniência não pode ser só derivada em tempo de leitura (seção 3.5), e a obrigatoriedade não pode ser só inferida da origem (seção 3.6: um valor `auto` pode ou não ser obrigatório — a distinção é exatamente o que faz a diferença entre "reativo, pode desligar" e "travado, nunca desliga"):
+Dois campos novos são necessários:
 
-- **Novo:** `ConfiguracaoContainer.origem: 'auto' | 'manual'`, persistido junto com `ConfiguracaoContainer.cor` (RF11, diagrama de classes).
-- **Novo:** `ConfiguracaoContainer.obrigatorio: Boolean` (default `false`), persistido junto com `origem` e `cor`. Setado para `true` apenas por `aplicarDirecaoRecomendada()` (seção 3.6); nunca lido/gravado pelo gatilho reativo da seção 3.2, que continua operando só sobre `origem`.
-- `CardSkinId` (`app/lib/outfit-card.ts`) ganha uma tabela de classificação estática `SKIN_VISUAL_FAMILY: Record<CardSkinId, 'fine' | 'framed'>` — dado estático, sem mudança de schema.
-- O gatilho da seção 3.2 (`tipoDeCard`, `familia(skinAtivo)`, `ConfiguracaoArteIA.modo`, `materialLayer.type`) usa só campos já existentes — não precisa de novo estado além de `origem`. `obrigatorio` é consultado **antes** dele (seção 3.6), como um curto-circuito.
-- O efeito "passe-partout" é só CSS: a arte já ocupa o background do card (`OutfitBackgroundConfig`); o container de conteúdo já é uma camada por cima (`ConfiguracaoContainer`) — a regra apenas decide, automaticamente, o preenchimento dessa camada em vez de deixá-la vazia/manual.
+- **Novo:** `ConfiguracaoContainer.origem: 'indefinida' | 'manual' | 'auto'`, persistido junto com `ConfiguracaoContainer.cor` (RF11, diagrama de classes).
+- **Novo:** `ConfiguracaoContainer.obrigatorio: Boolean` (default `false`), persistido junto com `origem` e `cor`. Setado para `true` apenas por `aplicarDirecaoRecomendada()` (seção 3.6) — sempre em conjunto com `origem = 'auto'`.
+- `CardSkinId` (`app/lib/outfit-card.ts`) **não** precisa mais de uma tabela de classificação `SKIN_VISUAL_FAMILY` para esta proposta — a família de skin (seção 3.1) deixou de ser lida por qualquer gatilho automático. Fica registrada só como documentação; implementar essa tabela é opcional e fora de escopo aqui.
+- O efeito "passe-partout" é só CSS: a arte já ocupa o background do card (`OutfitBackgroundConfig`); o container de conteúdo já é uma camada por cima (`ConfiguracaoContainer`) — a regra apenas decide, automaticamente, o preenchimento dessa camada em vez de deixá-la vazia/manual, e só faz isso quando `aplicarDirecaoRecomendada()` roda.
 
 ---
 
 ## 5. Escopo
 
-- Aplica-se apenas a cards de **Esquema** (a única entidade que tem "container do esquema" formalizado na v13; Peça não tem esse elemento de anatomia).
+- Aplica-se apenas a cards de **Esquema** (a única entidade que tem "container do esquema" formalizado na v13; Peça não tem esse elemento de anatomia). Para DNA de Estilo, o container (v2 do documento de anatomia do DNA) sempre existe estruturalmente, independente de skin — esta proposta não introduz nenhum comportamento automático adicional para DNA além do que já é estrutural.
 - A escolha do skin ativo (Atelier/Spread/.../Specimen) ainda não está modelada no `.puml` do RF11 — é uma feature já existente no código (`selectedCardSkin`/`onSelectSkin`), documentada separadamente em `RF11_PROMPTS_SKINS_CARD.md`. Esta proposta assume o skin como um estado já definido antes de entrar em "Arte com IA", sem modelar sua própria seleção aqui.
