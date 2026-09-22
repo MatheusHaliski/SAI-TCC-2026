@@ -1,5 +1,5 @@
 @startuml RF11_Configurar_Visual_Card_Atividades
-title RF11 — Configurar o Visual do Card\nDiagrama de Atividades — Corrigido (raias, tipo automático, Layout & Estilo só em Esquema)
+title RF11 — Configurar o Visual do Card\nDiagrama de Atividades — Corrigido (Layout & Estilo com todas as variações + Container & Cor como etapa própria)
 
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
@@ -44,7 +44,7 @@ note right
   da entidade carregada (Card.tipo e/ou
   is_DNA), reaproveitando a mesma lógica
   em todos os pontos de entrada (RF4,
-  RF5, DNA de Estilo).
+  RF5, RF13).
 end note
 
 |Usuário|
@@ -59,20 +59,96 @@ end note
 |Sistema|
 :Sistema posiciona fotos e textos\ndentro do container de conteúdo;
 
-if (Tipo de card é Esquema?) then (Sim)
+if (Tipo de card) then (Esquema)
 
   :Etapa 3 — Layout & Estilo;
-  :Sistema apresenta a biblioteca\nde anatomias de conjunto: Lista\nvertical, Grade de peças, Foto hero\n+ lista lateral, Passarela, Etiqueta,\nRaio-X, Bento assimétrico, Espectro,\nRecibo;
+  :Sistema apresenta a biblioteca completa\nde anatomias de conjunto\n(fonte: anatomias_card_v13.html,\nSeções A, B e C);
 
   |Usuário|
-  :Usuário seleciona\numa anatomia de card;
-  :Usuário seleciona a densidade\n(Ampliado ou Compacto);
+  if (Qual anatomia de base\n(Seção A)?) then (Lista vertical)
+    :Selecionar densidade;
+    :Opções — Lista vertical:\n- Ampliado (com container do esquema)\n- Preview comprimido ampliado\n(sem container);
+  elseif (Grade de peças) then (Grade de peças)
+    :Selecionar densidade;
+    :Opções — Grade de peças:\n- Ampliado (com container do esquema)\n- Preview comprimido ampliado\n(sem container);
+  elseif (Foto hero + lista lateral) then (Foto hero + lista lateral)
+    :Selecionar densidade;
+    :Opções — Foto hero + lista lateral:\n- Ampliado (com container do esquema)\n- Preview comprimido ampliado\n(sem container);
+  else (Anatomia elaborada — Seção B)
+    if (Qual anatomia elaborada?) then (Passarela)
+      :Selecionar densidade:\n- Ampliado\n- Compacto\n(ambas com container do esquema);
+    elseif (Etiqueta) then (Etiqueta)
+      :Selecionar densidade:\n- Ampliado\n- Compacto\n(ambas com container do esquema);
+    elseif (Raio-X) then (Raio-X)
+      :Selecionar densidade:\n- Ampliado\n- Compacto\n(ambas com container do esquema);
+    elseif (Bento assimétrico) then (Bento assimétrico)
+      :Selecionar densidade:\n- Ampliado\n- Compacto — interativo\n(ambas com container do esquema);
+    elseif (Espectro) then (Espectro)
+      :Selecionar densidade:\n- Ampliado\n- Compacto\n(ambas com container do esquema);
+    else (Recibo)
+      :Selecionar densidade:\n- Ampliado\n- Compacto\n(ambas com container do esquema);
+    endif
+  endif
 
   |Sistema|
-  :Sistema aplica a anatomia escolhida\nà estrutura de slots do esquema\ne a cada peça contida nele (ex.:\n"Passarela" aplica a variante\n"Passarela — peça" a cada item\nda lista lateral/trilho);
+  :Sistema aplica a anatomia e a densidade\nescolhidas à estrutura de slots do esquema\ne, automaticamente, a variante\ncorrespondente da Seção C a cada peça\ncontida nele (ex.: "Passarela" aplica\n"Passarela — peça" a cada item da\nlista lateral/trilho);
+  :Salvar temporariamente\na configuração de layout & estilo\n(anatomia + densidade);
+
+  note right
+    Seção C não é uma escolha manual — é
+    derivada automaticamente pela anatomia
+    da Seção B escolhida acima, seguindo a
+    regra de cada uma: Passarela e Raio-X
+    graduam a intensidade por curtidas da
+    peça (peça mais curtida recebe o
+    tratamento máximo, a menos curtida o
+    mínimo); Etiqueta e Recibo graduam por
+    faixa de preço (comum/premium); Bento e
+    Espectro colapsam para uma versão fixa
+    de peça única. O usuário nunca escolhe
+    a variante de peça diretamente.
+  end note
+
+elseif (DNA de Estilo) then (DNA de Estilo)
+
+  :Etapa 3 — Layout & Estilo;
+  :Sistema apresenta a biblioteca de\nanatomias do card de DNA de Estilo\n(fonte: anatomia_cards_DNA_v2.html,\nSeção A — 4 anatomias base, mesmo\ncabeçalho/rodapé, diferem em como\na lista de esquemas referenciados\né organizada);
+
+  |Usuário|
+  if (Qual anatomia de base?) then (Ampliado)
+    :Lista de esquemas em coluna única,\nhero principal em destaque;
+  elseif (Em grade) then (Em grade)
+    :Esquemas referenciados\nem grade de células;
+  elseif (Na horizontal) then (Na horizontal)
+    :Esquemas em trilho horizontal,\nrótulo por marca predominante;
+  else (Na lateral)
+    :Hero interativo + lista lateral\nrolável (até 6 esquemas), clique\ntroca a foto/rótulo do hero;
+  endif
+
+  |Sistema|
+  :Sistema aplica a anatomia escolhida\nà estrutura de células do DNA\n(container do esquema — v2 do\ndocumento de anatomia do DNA —\nsempre presente nas 4 anatomias);
   :Salvar temporariamente\na configuração de layout & estilo;
 
-else (Não — Peça ou DNA de Estilo)
+  note right
+    As 8 variações de narrativa (Linha do
+    tempo, Momentos marcantes, Primeira
+    vez, Favoritos, Por ocasião,
+    Constelação de estilo, Paleta
+    dominante, Marcas favoritas — Seção B
+    de anatomia_cards_DNA_v2.html) NÃO são
+    escolhidas aqui: são específicas da
+    Etapa 4 do fluxo de criação do RF13
+    ("Layout & Peças"), ativas só quando o
+    elemento-alvo fixado é o Conjunto DNA
+    completo. Esta Etapa 3 do RF11 resolve
+    a anatomia de BASE do card de DNA,
+    reaproveitada em qualquer lugar em que
+    ele apareça (perfil, grades, busca) —
+    não só durante a criação. Ver RF13,
+    Etapa 4.
+  end note
+
+else (Peça)
 
   :Etapa 3 não se aplica\na este tipo de card;
   :Sistema usa a anatomia oficial\njá implementada para peça avulsa\n(Peça — Ampliado/Compacto/Foto)\nou, quando a peça pertence a um\nesquema, herda a anatomia definida\npor esse esquema;
@@ -80,45 +156,93 @@ else (Não — Peça ou DNA de Estilo)
 endif
 
 note right
-  Fonte: anatomias_card_v12.html
-  A escolha de anatomia (Passarela,
-  Etiqueta, Raio-X, Bento, Espectro,
-  Recibo...) é sempre decidida pelo
-  esquema de vestimenta — uma peça
-  nunca escolhe a própria anatomia
-  nesta etapa. Quando pertence a um
-  esquema, ela recebe a variação
-  correspondente ("<Anatomia> — peça");
-  quando é um card avulso, usa a
-  anatomia oficial já implementada
-  (Seção A de anatomias_card_v12.html).
-  É independente da cor/arte do
-  background configurada na Etapa 4 —
-  trocar de anatomia não descarta a
-  configuração de background, arte com
-  IA ou cor do container já salva.
+  A escolha de anatomia é sempre decidida
+  pelo esquema/DNA — uma peça nunca escolhe
+  a própria anatomia nesta etapa. É
+  independente da cor/arte do background
+  configurada na Etapa 5 — trocar de
+  anatomia não descarta a configuração de
+  background, arte com IA ou cor do
+  container já salva.
 end note
 
-note right
-  anatomias_card_v13.html formaliza o
-  "container do esquema": borda interna
-  que separa, dentro do card, o chrome
-  social do post (autor, data, curtidas —
-  fora) do ClothesScheme em si (fundo,
-  peças, título, selos, preço, descrição —
-  dentro). É estrutura base das 3 anatomias
-  de Esquema (Lista vertical, Grade de
-  peças, Foto hero + lista lateral) — não
-  se aplica a Peça, que é outra entidade.
-  A Etapa 4 decide o PREENCHIMENTO desse
-  container (ver regra de auto-ativação
-  em "2. Arte com IA" e "3. Cor do
-  container", abaixo).
-end note
+|Sistema|
+if (Tipo de card) then (Esquema)
+  if (Anatomia escolhida tem\ncontainer do esquema (v13)?) then (Sim)
+    :Container existe para esta\nanatomia — habilitar Etapa 4;
+  else (Não — Seção A em\ndensidade Preview comprimido)
+    :Container não existe\npara esta anatomia/densidade;
+  endif
+elseif (DNA de Estilo) then (DNA de Estilo)
+  :Container sempre existe —\nas 4 anatomias da Seção A do\ndocumento de DNA incluem container\n(v2 do documento de anatomia do DNA);
+else (Peça)
+  :Container não existe —\nPeça nunca tem container do\nesquema/DNA;
+endif
+
+if (Container existe\npara esta configuração?) then (Sim)
+
+  |Usuário|
+  :Etapa 4 — Incluir Container\n& Definir Cor;
+
+  |Sistema|
+  :Sistema destaca o container\ninterno à borda do card,\nseparando-o do chrome social do post;
+
+  |Usuário|
+  if (Deseja definir a cor\nagora, manualmente?) then (Sim)
+    :Usuário seleciona\na cor do container;
+    |Sistema|
+    :Registrar a origem do container\ncomo "manual"\n(ConfiguracaoContainer.origem = MANUAL);
+  else (Não — deixar\no sistema decidir)
+    :Sistema mantém a cor do container\ncomo pendente (padrão neutro por ora);
+    |Sistema|
+    :Registrar a origem do container\ncomo "auto — pendente"\n(ConfiguracaoContainer.origem = AUTO,\naguardando a Etapa 5);
+
+    note right
+      A regra de auto-ativação (container
+      travado na cor nativa do skin quando
+      o skin é editorial fino — Atelier,
+      Spread ou Índice — e a arte aplicada
+      é exuberante) só pode ser avaliada
+      depois que a arte é escolhida, na
+      Etapa 5 — que ainda não aconteceu
+      neste ponto do fluxo. Por isso, quando
+      o usuário não define a cor agora, o
+      container fica com um padrão neutro
+      temporário e a decisão automática só
+      se concretiza ao configurar a Arte com
+      IA na Etapa 5. Restrita a cards do tipo
+      Esquema — DNA de Estilo ainda não tem
+      um catálogo de skins equivalente; ver
+      RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
+      seção 5 (escopo).
+    end note
+  endif
+
+  :Aplicar a cor (ou o padrão\ntemporário) somente\nao container interno;
+  :Salvar temporariamente:\n- Cor do container\n- Origem do container\n(manual / auto-pendente);
+
+  note right
+    O container contém fotos e textos.
+    A alteração não substitui nem modifica
+    o background externo do card. A origem
+    (manual/auto) é persistida junto com a
+    cor — uma escolha manual do usuário
+    nunca é silenciosamente sobrescrita ao
+    reabrir o editor, mesmo que o gatilho
+    automático da Etapa 5 fique satisfeito
+    depois. Só um valor com origem "auto"
+    é recalculado quando o skin ou a arte
+    mudam.
+  end note
+
+else (Não)
+  |Sistema|
+  :Etapa 4 não se aplica —\neste tipo/anatomia de card\nnão tem container;
+endif
 
 |Usuário|
 repeat
-  :Etapa 4 — Configurar\nos elementos visuais;
+  :Etapa 5 — Configurar\nos elementos visuais;
 
   if (Qual elemento deseja configurar?) then (1. Cor ou gradiente)
     :Selecionar configuração\nde background;
@@ -202,24 +326,25 @@ repeat
     |Serviço de IA|
     :IA gera a arte\nde background;
     |Sistema|
-    :Sistema aplica a arte apenas\nao elemento fixado nesta sessão\n(peça, esquema ou DNA de Estilo\nidentificado na Etapa 1 — ou, quando\ninvocado a partir do RF5, o elemento\njá fixado na Etapa 1 do RF5);
+    :Sistema aplica a arte apenas\nao elemento fixado nesta sessão\n(peça, esquema ou DNA de Estilo\nidentificado na Etapa 1 — ou, quando\ninvocado a partir do RF5/RF13, o\nelemento já fixado na Etapa 1 de lá);
     :Salvar temporariamente\na configuração da arte;
 
     note right
       Como o elemento-alvo já é definido na
-      Etapa 1 (deste fluxo ou do RF5, quando
-      invocado a partir de lá), não é necessário
-      um modo de geração dedicado a "arte das
-      peças" dentro desta etapa — o alvo já
-      está resolvido antes de o painel abrir.
+      Etapa 1 (deste fluxo ou do RF5/RF13,
+      quando invocado a partir de lá), não é
+      necessário um modo de geração dedicado
+      a "arte das peças" dentro desta etapa —
+      o alvo já está resolvido antes de o
+      painel abrir.
     end note
 
-    if (Tipo de card é Esquema —\núnica entidade com container\ndo esquema (v13)?) then (Sim)
+    if (Container existe para este card\n(Etapa 4) e a origem ainda é\n"auto — pendente"?) then (Sim)
       if (Skin ativo do card pertence\nà família editorial fina\n(Atelier, Spread ou Índice)?) then (Sim)
         if (A arte aplicada usa Prompt,\nDireção recomendada, Preset Aura\nou Material?) then (Sim)
           |Sistema|
           :Auto-ativar o container de\nconteúdo, travado na cor nativa\ndo skin — não editável pela arte;
-          :Registrar a origem do container\ncomo "auto"\n(ConfiguracaoContainer.origem = AUTO);
+          :Confirmar a origem do container\ncomo "auto"\n(ConfiguracaoContainer.origem = AUTO);
           :Restringir a arte com IA à\nfaixa/moldura externa ao container\n— efeito de passe-partout;
 
           note right
@@ -232,118 +357,98 @@ repeat
             sobre a arte. Skins com moldura própria
             (Trading, FAI Max, Stub, Specimen) não
             disparam esta regra — já isolam conteúdo
-            por design. Peça e DNA de Estilo nunca
-            disparam esta regra: não têm container
-            do esquema (v13) para auto-ativar. Ver
+            por design. Esta verificação só roda
+            quando a Etapa 4 deixou a origem como
+            "auto — pendente"; um valor "manual" da
+            Etapa 4 nunca é sobrescrito aqui. Ver
             RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md.
           end note
         else (Não)
+          :Manter o padrão neutro\ntemporário da Etapa 4;
         endif
       else (Não)
+        :Manter o padrão neutro\ntemporário da Etapa 4;
       endif
-    else (Não — Peça ou DNA de Estilo)
+    else (Não — sem container,\nou origem já é "manual")
     endif
 
     |Usuário|
 
   else (3. Cor do container)
-    :Abrir o seletor de cor\ndo container de conteúdo;
-    |Sistema|
-    :Sistema destaca o container\ninterno à borda do card;
-
-    if (ConfiguracaoContainer.origem\njá persistida é "manual"\n— override anterior deste usuário?) then (Sim)
-      |Usuário|
-      :Usuário seleciona\na cor do container;
+    if (Etapa 4 se aplica a\neste card?) then (Não)
+      :Informar que este tipo/anatomia\nde card não tem container;
+    else (Sim)
+      :Reabrir o seletor de cor\ndo container — mesma configuração\niniciada na Etapa 4;
       |Sistema|
-      :Manter a origem do container\ncomo "manual";
+      :Sistema destaca o container\ninterno à borda do card;
 
-    elseif (Gatilho de auto-ativação está\nsatisfeito agora — Esquema + skin\neditorial fino + arte exuberante?) then (Sim)
-      :Pré-preencher com a cor nativa\ndo skin e avisar que foi\ntravada automaticamente;
-      |Usuário|
-      if (Deseja usar uma cor\ncustomizada mesmo assim?) then (Sim)
+      if (ConfiguracaoContainer.origem\njá persistida é "manual"\n— override anterior deste usuário?) then (Sim)
+        |Usuário|
         :Usuário seleciona\na cor do container;
         |Sistema|
-        :Registrar a origem do container\ncomo "manual" (override);
+        :Manter a origem do container\ncomo "manual";
+
+      elseif (Gatilho de auto-ativação está\nsatisfeito agora — Esquema + skin\neditorial fino + arte exuberante?) then (Sim)
+        :Pré-preencher com a cor nativa\ndo skin e avisar que foi\ntravada automaticamente;
+        |Usuário|
+        if (Deseja usar uma cor\ncustomizada mesmo assim?) then (Sim)
+          :Usuário seleciona\na cor do container;
+          |Sistema|
+          :Registrar a origem do container\ncomo "manual" (override);
+        else (Não)
+          :Manter a cor nativa\ndo skin;
+          |Sistema|
+          :Manter a origem do container\ncomo "auto";
+        endif
+
       else (Não)
-        :Manter a cor nativa\ndo skin;
+        |Usuário|
+        :Usuário seleciona\na cor do container;
         |Sistema|
-        :Manter a origem do container\ncomo "auto";
+        :Registrar a origem do container\ncomo "manual";
       endif
 
-    else (Não)
-      |Usuário|
-      :Usuário seleciona\na cor do container;
       |Sistema|
-      :Registrar a origem do container\ncomo "manual";
+      :Aplicar a cor somente\nao container interno;
+      :Salvar temporariamente:\n- Cor do container\n- Origem do container (auto/manual);
     endif
-
-    |Sistema|
-    :Aplicar a cor somente\nao container interno;
-    note right
-      O container contém fotos e textos.
-      A alteração não substitui nem modifica
-      o background externo do card.
-      Uma cor neutra e distinta da externa
-      melhora a legibilidade do conteúdo do
-      esquema/peça — ver nota da Etapa 4 do RF5.
-      A origem (auto/manual) é persistida junto
-      com a cor, não só derivada na hora: uma
-      escolha manual do usuário nunca é
-      silenciosamente sobrescrita ao reabrir o
-      editor, mesmo que o gatilho automático
-      continue satisfeito. Só um valor com
-      origem "auto" é recalculado quando o skin
-      ou a arte mudam depois.
-    end note
-    :Salvar temporariamente:\n- Cor do container\n- Origem do container (auto/manual);
     |Usuário|
   endif
 
   |Sistema|
   :Sistema renderiza\nnova pré-visualização;
-  :Exibir o card com:\n- Background externo\n- Borda\n- Container interno\n- Fotos e textos;
+  :Exibir o card com:\n- Background externo\n- Borda\n- Container interno, quando existir\n- Fotos e textos;
   |Usuário|
 repeat while (Deseja configurar outro elemento visual?) is (Sim)
 
 note right
   Este loop também é o caminho de reedição
   quando o elemento-alvo fixado (Etapa 1 do
-  RF5) é uma peça específica: reabrir "Cor ou
-  gradiente" / "Arte com IA" / "Cor do
-  container" já reconfigura o visual daquela
-  peça. Por isso não existe mais um modal
-  dedicado de "editar visual das peças" na
-  Etapa 6 — este loop já cobre o cenário.
+  RF5/RF13) é uma peça ou esquema específico:
+  reabrir "Cor ou gradiente" / "Arte com IA" /
+  "Cor do container" já reconfigura o visual
+  daquele elemento. Por isso não existe mais um
+  modal dedicado de "editar visual das peças"
+  na Etapa 7 — este loop já cobre o cenário.
 end note
 
 |Sistema|
-:Etapa 5 — Consolidar\na composição visual;
-:Salvar temporariamente:\n- Configuração do background\n- Configuração da arte com IA\n(direção visual + material,\nquando combinados)\n- Cor do container\n- Layout dos elementos\n- Anatomia e densidade (Etapa 3,\nquando aplicável);
-:Aplicar o container\ndentro da borda;
-:Manter as fotos e os textos\ndentro do container;
+:Etapa 6 — Consolidar\na composição visual;
+:Salvar temporariamente:\n- Configuração do background\n- Configuração da arte com IA\n(direção visual + material,\nquando combinados)\n- Cor e origem do container\n(Etapa 4, quando aplicável)\n- Layout dos elementos\n- Anatomia e densidade (Etapa 3);
+:Aplicar o container\ndentro da borda, quando existir;
+:Manter as fotos e os textos\ndentro do container ou, na\nausência dele, no card;
 :Aplicar o layout\naos slots do card;
 
 |Usuário|
 repeat
-  :Etapa 6 — Revisar a geração\ncom preview do card completo,\nos slots preenchidos e concluir;
+  :Etapa 7 — Revisar a geração\ncom preview do card completo,\nos slots preenchidos e concluir;
   |Sistema|
-  :Sistema apresenta:\n- Background final\n- Arte com IA, quando utilizada\n- Borda do card\n- Cor do container\n- Fotos e textos\n- Slots preenchidos\n- Anatomia e densidade aplicadas,\nquando o tipo de card é Esquema;
+  :Sistema apresenta:\n- Background final\n- Arte com IA, quando utilizada\n- Borda do card\n- Cor do container, quando existir\n- Fotos e textos\n- Slots preenchidos\n- Anatomia e densidade aplicadas;
   |Usuário|
 repeat while (Confirmar e concluir o card?) is (Não)
 
-note right
-  Não há mais um gateway "Deseja editar o
-  visual das peças?" nesta etapa. Com a
-  fixação de elemento-alvo (RF5, Etapa 1),
-  reeditar uma peça específica é voltar ao
-  loop "Deseja configurar outro elemento
-  visual?" da Etapa 4 — que já reabre "Cor
-  ou gradiente" / "Arte com IA" / "Cor do
-  container" para o elemento fixado.
-end note
-
 |Sistema|
-:Persistir:\n- background_config (do elemento-alvo)\n- ai_artwork_config (do elemento-alvo,\ndireção + material)\n- content_container_color (do elemento-alvo)\n- layout_config (inclui anatomia\ne densidade da Etapa 3, quando\no tipo de card é Esquema);
+:Persistir:\n- background_config (do elemento-alvo)\n- ai_artwork_config (do elemento-alvo,\ndireção + material)\n- content_container_color (do elemento-alvo,\nquando aplicável)\n- content_container_origem\n(manual/auto, quando aplicável)\n- layout_config (inclui anatomia\ne densidade da Etapa 3);
 :Salvar ou atualizar\no card;
 :Exibir confirmação\nde conclusão;
 stop
