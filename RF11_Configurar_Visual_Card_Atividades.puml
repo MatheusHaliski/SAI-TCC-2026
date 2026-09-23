@@ -179,6 +179,9 @@ note right
   - Preset Aura (sozinho)
   - Material (sozinho)
   - Preset Aura + Material (combinados)
+  - Mosaico Aura com material (Preset Aura
+    com os 12 materiais sobre o fundo GIF
+    do material escolhido)
   - Direção recomendada (sozinha)
   - Direção recomendada + Material
 
@@ -461,8 +464,21 @@ repeat
       :Sistema apresenta\na biblioteca de materiais;
       |Usuário|
       :Usuário seleciona\numa camada de material;
-      |Sistema|
-      :Sistema combina o material\ncom a direção visual escolhida\n(prompt, direção recomendada\nou preset Aura);
+      if (A direção visual escolhida\né um Preset Aura?) then (Sim)
+        |Sistema|
+        :Sistema apresenta as duas opções\nde Preset Aura com material;
+        |Usuário|
+        if (Como aplicar o preset\ncom o material?) then (Imagem única)
+          :Usuário escolhe a imagem única —\no material aplicado ao preset,\nna versão GIF do preset;
+        else (Mosaico Aura com material)
+          :Usuário escolhe o mosaico —\nos 12 materiais aplicados ao preset,\nsobre o fundo GIF do material\nescolhido;
+        endif
+        |Sistema|
+        :Sistema registra a variante do preset,\no material e o formato escolhido\n(asset Pxx_Myy do catálogo P×M);
+      else (Não — Prompt ou\nDireção recomendada)
+        |Sistema|
+        :Sistema combina o material\ncom a direção visual escolhida\n(prompt ou direção recomendada);
+      endif
     else (Não)
     endif
 
@@ -475,10 +491,25 @@ repeat
       código (independente de background_mode).
       Ver markdowns/RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md,
       seção 3.2, e markdowns/RF11_PROMPTS_AURA_MATERIAIS.md.
+
+      Mosaico Aura com material: mais uma
+      opção de Preset Aura + material, ao lado
+      da imagem única. Os dois formatos vêm
+      prontos do catálogo P×M (18 variantes
+      × 12 materiais), por isso não passam
+      pela geração por IA abaixo. Prompt e
+      Direção recomendada não têm mosaico.
+      Ver markdowns/RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md,
+      seção 7.
     end note
 
-    |Serviço de IA|
-    :IA gera a arte\nde background;
+    if (A arte vem do catálogo P×M?\n(Preset Aura + material:\nimagem única ou mosaico)) then (Sim)
+      |Sistema|
+      :Sistema carrega o asset Pxx_Myy\nno formato escolhido — MP4 em loop\n+ quadro estático —, sem nova\ngeração por IA;
+    else (Não)
+      |Serviço de IA|
+      :IA gera a arte\nde background;
+    endif
     |Sistema|
     :Sistema aplica a arte apenas\nao elemento fixado nesta sessão\n(peça, esquema ou DNA de Estilo\nidentificado na Etapa 1 — ou, quando\ninvocado a partir do RF5/RF13, o\nelemento já fixado na Etapa 1 de lá);
     :Salvar temporariamente\na configuração da arte;

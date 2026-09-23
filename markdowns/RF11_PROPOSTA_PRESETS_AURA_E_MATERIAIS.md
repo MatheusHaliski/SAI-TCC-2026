@@ -2,7 +2,7 @@
 
 **Projeto:** FashionAI (SAI-TCC-2026)
 **Requisito Funcional:** RF11 — Configurar o Visual do Card (Background Studio)
-**Escopo:** Sub-fluxo **Arte com IA** → ramos `Direção visual recomendada → Preset Aura` e `Camada de material`
+**Escopo:** Sub-fluxo **Arte com IA** → ramos `Direção visual recomendada → Preset Aura` e `Camada de material`, e a nova opção **Mosaico Aura com material** (seção 7)
 **Base analisada:** `RF11-atividades.pdf`, `RF11-classes.pdf`, `RF11-componentes.pdf`, `RF11-maquinadeestados.pdf`, `RF11-sequencia.pdf`
 
 ---
@@ -149,16 +149,131 @@ Essa matriz também resolve a regra de negócio já anotada no diagrama de class
 
 ## 6. Como isso se encaixa no fluxo sem alterar a lógica existente
 
-1. **Diagrama de Atividades / Sequência:** as etapas `Selecionar uma camada de material` e `Sistema apresenta os presets Aura` continuam existindo; o **conteúdo das listas** exibidas passa a vir deste catálogo. A única mudança de fluxo (seção 3.2) é que material deixa de ser um ramo alternativo dentro de "Qual recurso de IA?" e passa a ser um passo adicional/opcional, aplicável depois de qualquer recurso escolhido (material + preset Aura, material + prompt, etc.).
-2. **Diagrama de Classes:** nenhum atributo novo é necessário — `ConfiguracaoArteIA.material` e `ConfiguracaoArteIA.presetAura` já são `String [0..1]` cada, ou seja, já são campos independentes e podem estar preenchidos ao mesmo tempo; recebem os `id`s propostos.
-3. **Diagrama de Estados:** os estados `Camada de material` e `Preset Aura selecionado` deixam de ser mutuamente exclusivos sob "Selecionando recurso da IA" — material passa a ser alcançável a partir de qualquer um dos outros ramos, todos ainda convergindo em `Gerando arte` → `Arte aplicada`.
-4. **Diagrama de Componentes:** `AIArtworkService.gerarArte(config)` e `ContextAnalysisService` continuam sendo os únicos pontos de integração; o catálogo pode viver como dado estático (similar a `MATERIAL_PRESETS` e `GIF_GRADIENT_PRESETS` hoje) sem exigir novo componente.
+1. **Diagrama de Atividades / Sequência:** as etapas `Selecionar uma camada de material` e `Sistema apresenta os presets Aura` continuam existindo; o **conteúdo das listas** exibidas passa a vir deste catálogo. A única mudança de fluxo (seção 3.2) é que material deixa de ser um ramo alternativo dentro de "Qual recurso de IA?" e passa a ser um passo adicional/opcional, aplicável depois de qualquer recurso escolhido (material + preset Aura, material + prompt, etc.). A seção 7 acrescenta, só no ramo Preset Aura + material, a escolha entre **imagem única** e **Mosaico Aura com material**, servidas pelo catálogo P×M sem nova geração por IA.
+2. **Diagrama de Classes:** nenhum atributo novo é necessário — `ConfiguracaoArteIA.material` e `ConfiguracaoArteIA.presetAura` já são `String [0..1]` cada, ou seja, já são campos independentes e podem estar preenchidos ao mesmo tempo; recebem os `id`s propostos. A opção de mosaico (seção 7.6) acrescenta dois campos opcionais: `varianteVisual` e `formatoAura`.
+3. **Diagrama de Estados:** os estados `Camada de material` e `Preset Aura selecionado` deixam de ser mutuamente exclusivos sob "Selecionando recurso da IA" — material passa a ser alcançável a partir de qualquer um dos outros ramos, todos ainda convergindo em `Gerando arte` → `Arte aplicada`. Com a seção 7, Preset Aura + material passa por `EscolhendoFormatoAura` (imagem única ou mosaico) e vai direto a `Arte aplicada`, sem `Gerando arte`.
+4. **Diagrama de Componentes:** `AIArtworkService.gerarArte(config)` e `ContextAnalysisService` continuam sendo os únicos pontos de integração; o catálogo pode viver como dado estático (similar a `MATERIAL_PRESETS` e `GIF_GRADIENT_PRESETS` hoje) sem exigir novo componente. Os assets P×M da seção 7.3 (imagem única e mosaico) ficam em storage/CDN, endereçados pelo código `Pxx_Myy`.
 
 ---
 
-## 7. Resumo executivo
+## 7. Proposta C — Mosaico Aura com material (nova opção de Preset Aura)
+
+### 7.1 O que muda
+
+Hoje, escolher um Preset Aura e aplicar uma camada de material produz **uma única arte**: o preset com aquele material (na versão GIF da seção 3.3, quando `dynamicBackground` está ativo). Esta proposta acrescenta **mais uma opção** nesse mesmo ponto do fluxo — o **Mosaico Aura com material**:
+
+| Opção (Preset Aura + material) | O que vai para o background do card |
+|---|---|
+| **Imagem única** (já existente) | Uma imagem do preset com o material escolhido aplicado, animada com a versão GIF do preset (seção 3.3) |
+| **Mosaico Aura com material** (nova) | A variante visual do preset com **os 12 materiais aplicados** — uma grade em que cada painel é o preset com um material — sobre o **fundo GIF do material escolhido**, em opacidade suave por baixo da composição: aparece nos vãos e margens da grade e, de leve (7–15%), através dos painéis, "respirando" (2× por loop) e com um brilho que atravessa o material (1× por loop) |
+
+Na imagem única, o material escolhido é o protagonista. No mosaico, o preset aparece em toda a sua gama de materiais e o material escolhido vira a textura de fundo que amarra a composição.
+
+![Imagem única × Mosaico Aura com material — P17 Chrome Iridescent + M03 Couro Cognac](RF11_MOSAICO_EXEMPLO.jpg)
+
+### 7.2 Onde entra no fluxo (Arte com IA)
+
+1. O usuário escolhe **Preset Aura** e a variante visual do preset (P01–P18, seção 7.4).
+2. "Deseja aplicar uma camada de material?" → **Sim** → escolhe o material (M01–M12, seção 7.5).
+3. **Nova escolha, só no ramo Preset Aura:** aplicar como **Imagem única** ou como **Mosaico Aura com material**.
+4. O sistema carrega o asset `Pxx_Myy` do catálogo P×M, no formato escolhido — **sem nova geração por IA**, porque as 216 combinações de cada formato já existem prontas (seção 7.3).
+5. O restante do fluxo não muda: a arte é aplicada só ao elemento-alvo e salva temporariamente.
+
+- **Prompt e Direção recomendada** continuam com a camada de material combinada pela IA e não têm a opção de mosaico — só o Preset Aura tem a composição conhecida de antemão para montar a grade.
+- **Preset Aura sem material** continua como hoje.
+- **Container:** o mosaico é uma combinação Preset Aura + Material e segue exatamente a mesma regra de container dessas combinações (`RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md`). Por ser uma arte densa (12 painéis), a interface pode **sugerir** ativar o container em cards de Esquema, sem torná-lo obrigatório.
+
+Diagramas atualizados:
+
+| Diagrama | Mudança |
+|---|---|
+| `RF11_Configurar_Visual_Card_Atividades.puml` | Ramo Preset Aura + material ganha a escolha "Imagem única × Mosaico Aura com material"; "IA gera a arte" vira condicional: asset do catálogo P×M × geração por IA; o mosaico entra na lista de combinações de sobreposição |
+| `RF11-maquinadeestados-v2.puml` | Novo estado `EscolhendoFormatoAura` (criação e edição), que leva direto a `Confirmado` com o asset do catálogo |
+| `RF11-sequencia-v2.puml` | Trecho `opt` com o Catálogo AURA P×M: pedir o asset `Pxx_Myy` no formato escolhido, sem passar pelo gerador de IA |
+
+### 7.3 Catálogo de assets P×M
+
+| Formato | Quantidade | Conteúdo | Especificação |
+|---|---|---|---|
+| Imagem única | 18 × 12 = 216 | Uma imagem do preset com o material aplicado, com o efeito GIF do preset | MP4 H.264, ~560–800 px de largura (P08 vertical, 616×1938), 30 fps, 8 s em loop |
+| Mosaico Aura com material | 18 × 12 = 216 | Grade do preset com os 12 materiais sobre o fundo GIF do material escolhido | MP4 H.264, 1080 px de largura, 24 fps, 8 s em loop |
+| Quadro estático | 1 por asset | Primeiro quadro do vídeo — versão estática e `poster` | JPG/WebP |
+
+- **Nomes:** uma pasta por preset e um arquivo por material — `Pxx - <Preset>/Pxx_Myy - <Preset> GIF + <Material>.mp4` (ex.: `P17 - Chrome Iridescent/P17_M03 - Chrome Iridescent GIF + Couro Cognac.mp4`). O código `Pxx_Myy` + o formato identificam o asset.
+- **Reprodução:** `<video autoplay muted loop playsinline poster="…">`. O último quadro emenda no primeiro, então o loop não tem salto.
+- **Prompt:** cada mosaico corresponde ao prompt de vídeo da seção 6 de `RF11_PROMPTS_AURA_MATERIAIS.md`.
+
+### 7.4 Presets P01–P18 → preset AURA
+
+As 18 grades de referência são **variantes visuais** dos 10 presets AURA da seção 3.3. Alguns presets têm mais de uma variante:
+
+| Código | Preset AURA (`id`) | Variante visual |
+|---|---|---|
+| P01 | Tailored Steel (`aura_alfaiataria`) | Pares de peças em cabides sobre fundo cinza-claro |
+| P02 | Editorial Ivory (`aura_editorial_mono`) | Pedestais de still-life com objetos drapeados |
+| P03 | Petal Bloom (`aura_romantico_petala`) | Close-ups têxteis com pétalas flutuando |
+| P04 | Terracotta Dune (`aura_boemio_terracota`) | Dunas de tecido ao pôr do sol |
+| P05 | Concrete Neon (`aura_streetwear_neon`) | Painéis com faixas diagonais em relevo |
+| P06 | Performance Pulse (`aura_esportivo_performance`) | Feixes de luz em X sobre fundos texturizados |
+| P07 | Raw Linen (`aura_natural_organico`) | Texturas têxteis e paisagens em névoa |
+| P08 | Terracotta Dune (`aura_boemio_terracota`) | Moldura com 4 painéis verticais de deserto |
+| P09 | Raw Linen (`aura_natural_organico`) | Amostras quadradas com gotas sobre fundo branco |
+| P10 | Midnight Spotlight (`aura_glam_noite`) | Tecidos flutuando em estúdio escuro |
+| P11 | Chrome Iridescent (`aura_avantgarde_cromo`) | Tecidos lilás e violeta holográficos sobre preto |
+| P12 | Concrete Neon (`aura_streetwear_neon`) | Colagem glitch ciano e magenta |
+| P13 | Midnight Spotlight (`aura_glam_noite`) | Palcos com passarela e holofotes |
+| P14 | Ivy Library (`aura_dark_academia`) | Biblioteca com escrivaninha e luminária |
+| P15 | Raw Linen (`aura_natural_organico`) | Detalhes de interiores: estofado, cortinas, móveis |
+| P16 | Terracotta Dune (`aura_boemio_terracota`) | Painéis têxteis ornamentais com dunas |
+| P17 | Chrome Iridescent (`aura_avantgarde_cromo`) | Amostras de tecido com curvas cromadas |
+| P18 | Ivy Library (`aura_dark_academia`) | A mesma biblioteca em vários tratamentos de cor |
+
+"Sistema apresenta os presets Aura" passa a listar as 18 variantes, agrupadas pelos 10 presets.
+
+### 7.5 Materiais M01–M12 → catálogo da seção 4.2
+
+| Código | Material | `id` na seção 4.2 |
+|---|---|---|
+| M01 | Herringbone | `la_fria_alfaiataria` |
+| M02 | Seda Cetim | `cetim_liquido` |
+| M03 | Couro Cognac | `couro_nappa` |
+| M04 | Veludo Esmeralda | `veludo_profundo` |
+| M05 | Burlap/Linho | `linho_natural` |
+| M06 | Malha Canelada | `malha_canelada` |
+| M07 | Nylon Ripstop | novo: `nylon_ripstop` |
+| M08 | Organza Chiffon | `organza_translucida` |
+| M09 | Brocado Jacquard | novo: `brocado_jacquard` |
+| M10 | Índigo Denim | `denim_selvagem` |
+| M11 | Lã Tweed | `tweed_boucle` |
+| M12 | Laminado Metálico | `laminado_metalico` |
+
+As grades de referência usam dois materiais que não estão entre os 10 da seção 4.2. Proposta: acrescentá-los ao catálogo, com parâmetros sugeridos para `FabricMaterialConfig`:
+
+| ID proposto | Nome / construção | Caimento & acabamento | `density` | `threadDirection` | `threadThickness` | `embossIntensity` | `finish` | Arquétipo / ocasião |
+|---|---|---|---|---|---|---|---|---|
+| `nylon_ripstop` | Nylon ripstop (trama fechada com reforço em losango) | Leve e técnico, relevo em losango, escuro | 85 | cross | 1.4 | 45 | satin | Streetwear técnico, esportivo |
+| `brocado_jacquard` | Brocado jacquard (damasco com fio metálico) | Encorpado, floral em relevo, brilho no fio dourado | 110 | cross | 2.2 | 65 | satin | Glam de noite, dark academia |
+
+### 7.6 Impacto no modelo de dados
+
+- `ModoArteIA` **não muda**: o mosaico é uma opção dentro de `PRESET_AURA` + material, não um modo novo.
+- `ConfiguracaoArteIA.presetAura` e `ConfiguracaoArteIA.material` continuam como estão e recebem os `id`s das seções 3.3 e 4.2 (+ os dois novos da 7.5).
+- Novo `ConfiguracaoArteIA.varianteVisual: String [0..1]` — o código `Pxx`. É necessário porque um mesmo preset AURA tem mais de uma variante (Terracotta Dune = P04, P08, P16), e o asset só é identificado por variante + material (`Pxx_Myy`).
+- Novo `ConfiguracaoArteIA.formatoAura: FormatoAura [0..1]`, com `FormatoAura = IMAGEM_UNICA | MOSAICO` — preenchido só quando `presetAura` e `material` estão preenchidos.
+- No elemento-alvo, o vídeo em loop vai para um novo `backgroundVideoUrl: URL [0..1]`, e o quadro estático para o `backgroundImageUrl` que já existe.
+
+### 7.7 Notas sobre a primeira versão do catálogo
+
+- **P08 tem 4 painéis, não 12.** O mosaico do P08 mostra os 4 painéis de deserto sobre o fundo do material escolhido. Nas imagens únicas do P08, os 12 materiais foram aplicados à duna de tecido do painel 1, em perspectiva, com a mesma luz de pôr do sol.
+- **12 células das grades de referência não mostravam o material** (ex.: bolhas holográficas no P11, cortinas lisas no P14). Nas imagens únicas dessas combinações, o material foi aplicado mantendo a luz, as dobras e a composição da célula.
+- Os assets desta primeira versão foram montados a partir das grades de referência, sem um modelo de vídeo. Os prompts da seção 6 de `RF11_PROMPTS_AURA_MATERIAIS.md` servem para regerá-los num gerador de vídeo mantendo os mesmos códigos.
+
+---
+
+## 8. Resumo executivo
 
 - **10 presets AURA** (estático + GIF cada), ancorados em arquétipos de moda reais e paletas sazonais de teoria da cor — substituindo o vazio atual do campo `presetAura`.
 - **10 materiais** ancorados em fibra/construção têxtil real — substituindo nomes não-têxteis (`lego_material`, `water_material`) por tecidos existentes na indústria da moda, com parâmetros técnicos prontos para os campos já existentes em `FabricMaterialConfig`.
 - **Matriz de coerência** ligando arquétipo → preset → material, usada apenas como **sugestão padrão da IA** (`recommendVisualDirection`) — o usuário sempre pode combinar qualquer preset AURA com qualquer material manualmente (seção 3.2).
 - **Mudança mínima de fluxo:** material deixa de ser alternativa a Preset Aura/Prompt/Direção recomendada dentro de "Qual recurso de IA?" e passa a ser uma camada adicional aplicável por cima de qualquer um deles — sem novos atributos ou classes, só desacoplando uma decisão de UX.
+- **Mosaico Aura com material (seção 7):** mais uma opção no ramo Preset Aura + material — além da imagem única, o usuário pode aplicar o mosaico com os 12 materiais sobre o fundo GIF do material escolhido. As 216 combinações de cada formato vêm prontas do catálogo P×M, sem nova geração por IA.

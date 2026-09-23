@@ -1,0 +1,58 @@
+@startuml RF11_MaquinaDeEstados_v2
+title Background Studio — modo de sessão\ncompartilhado por RF11, RF9 (CA6)
+skinparam backgroundColor #FFFFFF
+skinparam state {
+  BackgroundColor #F4F2EF
+  BorderColor #4A4852
+  ArrowColor #4A4852
+}
+
+[*] --> Fechado
+
+Fechado --> DetectandoModo : App chama abrir(origem, item)
+
+state DetectandoModo <<choice>>
+DetectandoModo --> ModoCriacao : origem = Etapa 4\ndo RF5/RF13
+DetectandoModo --> ModoEdicao : origem = botão\n"Editar arte de fundo"\ndo RF9 (CA6)
+
+state ModoCriacao {
+  [*] --> EscolhendoDirecao
+  EscolhendoDirecao --> GerandoIA : direção usa IA
+  GerandoIA --> RevisandoResultado
+  RevisandoResultado --> GerandoIA : usuário pede\nnova geração
+  RevisandoResultado --> Confirmado : usuário aprova
+  EscolhendoDirecao --> Confirmado : direção não-IA\n(cor/gradiente/preset)
+  EscolhendoDirecao --> EscolhendoFormatoAura : preset Aura +\ncamada de material
+  EscolhendoFormatoAura --> Confirmado : imagem única ou\nMosaico Aura com material\n(asset Pxx_Myy do catálogo P×M)
+  EscolhendoFormatoAura --> EscolhendoDirecao : volta
+}
+ModoCriacao --> Fechado : Confirmado —\nretorna ao fluxo,\nsegue para Etapa 5
+
+state ModoEdicao {
+  [*] --> EscolhendoDirecaoEd
+  EscolhendoDirecaoEd --> GerandoIAEd : direção usa IA
+  GerandoIAEd --> RevisandoResultadoEd
+  RevisandoResultadoEd --> ConfirmadoEd : usuário aprova
+  EscolhendoDirecaoEd --> ConfirmadoEd : direção não-IA
+  EscolhendoDirecaoEd --> EscolhendoFormatoAuraEd : preset Aura +\ncamada de material
+  EscolhendoFormatoAuraEd --> ConfirmadoEd : imagem única ou\nMosaico Aura com material
+  EscolhendoFormatoAuraEd --> EscolhendoDirecaoEd : volta
+}
+ModoEdicao --> Fechado : ConfirmadoEd —\naplica direto ao item,\nfecha modal, volta ao RF9\n(sem etapas seguintes)
+
+note left of ModoCriacao
+  EscolhendoFormatoAura — markdowns/RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md, seção 7:
+  com Preset Aura + material, o usuário
+  escolhe imagem única ou Mosaico Aura
+  com material (os 12 materiais aplicados
+  ao preset, sobre o fundo GIF do material
+  escolhido). Os dois vêm prontos do
+  catálogo P×M — não passam por GerandoIA.
+end note
+
+note right of ModoEdicao
+  CA6 do RF9: este é o modal
+  standalone — nunca reabre as
+  Etapas 1/2/3/5 do RF5/RF13.
+end note
+@enduml
