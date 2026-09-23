@@ -30,6 +30,20 @@ O time pediu fundir RFs em CAs de outros RFs. Existem duas formas de fazer isso:
 
 **Regra:** números de RF nunca são reciclados. RFs novos recebem o próximo número livre (a partir de **RF24**).
 
+> ⚠️ **Revisão da política (decisão do time, 2026-09-23): RF absorvido não existe mais, e o número fica livre.**
+>
+> Os números RF25 a RF29, absorvidos conforme a §2, foram reaproveitados pelos requisitos novos do Meu Guarda-Roupa (`docs/meu-quarto/`):
+>
+> | Número | Antes (absorvido em) | Agora |
+> |---|---|---|
+> | RF25 | Configurações de conta e segurança (RF3.CA11–CA14) | **Meu Quarto** |
+> | RF26 | Receber e gerenciar notificações (RF3.CA15–CA18) | **Smart Mirror e Vista-me** |
+> | RF27 | Perfil de marca (RF1.CA06–CA08) | **Destaques do Meu Inventário** |
+> | RF28 | Perfil de celebridade (RF1.CA09–CA10) | **FAI Points e progressão do quarto** |
+> | RF29 | Página de Looks Salvos (RF6.CA09–CA13) | **Desafios & Games** |
+>
+> **Consequência prática:** em material anterior a esta data (HUs, atas, versões prévias do PDF, histórico do Trello), RF25–RF29 ainda significam os requisitos absorvidos da coluna "Antes" e devem ser lidos pelos CAs indicados. RF30 não foi reaproveitado, porque seu conteúdo não está documentado no repositório. O próximo número livre para requisitos novos é o **RF32**.
+
 ---
 
 ## 2. Mapa de absorção (o que o time pediu)
