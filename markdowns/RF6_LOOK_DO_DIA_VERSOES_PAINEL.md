@@ -3,7 +3,9 @@
 **Projeto:** FashionAI (SAI-TCC-2026)
 **Requisito Funcional:** RF6 — Perfil Lookbook (aba "Look do Dia")
 **Complementa:** `RF6_Perfil_Lookbook_Atividades.puml`, `RF6_HYPE_SCORE_CALCULO.md`
-**Base de vocabulário visual:** `anatomias_card_v12.html` (mesmo catálogo de anatomias já usado no RF11, seção "Layout & Estilo")
+**Base de vocabulário visual:** `anatomias_card_v13.html` (mesmo catálogo de anatomias já usado no RF11, seção "Layout & Estilo") — documento oficial de modelagem de parâmetros de dimensões/anatomia de card do projeto, na raiz do repositório.
+
+> **Correção desta rodada.** Uma rodada anterior desta revisão havia marcado a citação a `anatomias_card_v12.html` como referência a um arquivo inexistente e reescrito as seções 2.2–2.4 como "propostas sem componente para reaproveitar". Isso estava errado: `anatomias_card_v13.html` é o documento oficial de modelagem de anatomia de card do projeto — só não estava, até esta rodada, commitado neste repositório (agora está, na raiz, corrigindo também o número de versão de v12 para v13). As classes `.runway-*`/`.rail-passarela`, `.xray-*` e `.bento-*` citadas abaixo existem de fato nesse arquivo.
 
 ---
 
@@ -30,7 +32,7 @@ Layout seguro e legível, recomendado como padrão para todo usuário novo.
 
 ### 2.2 Passarela
 
-Reaproveita o componente de passarela do RF11 (`.runway-*`/`.rail-passarela` de `anatomias_card_v12.html`): esquema apresentado como "em destaque no palco", com luz de holofote.
+Reaproveita o componente de passarela do RF11 (`.runway-*`/`.rail-passarela` de `anatomias_card_v13.html`): esquema apresentado como "em destaque no palco", com luz de holofote.
 
 - Esquema em destaque grande, com efeito de spotlight (gradiente radial sobre fundo escuro).
 - Hype Score como **termômetro vertical** ao lado do esquema (não barra horizontal) — reforça a metáfora de "quão alto" o look está.
@@ -40,7 +42,7 @@ Reaproveita o componente de passarela do RF11 (`.runway-*`/`.rail-passarela` de 
 
 ### 2.3 Raio-X do Estilo
 
-Reaproveita o componente de scanner/callout do RF11 (`.xray-*`).
+Reaproveita o componente de scanner/callout do RF11 (`.xray-*` de `anatomias_card_v13.html`).
 
 - Esquema central com linhas de callout coloridas apontando para cada peça, mostrando a contribuição individual daquela peça ao total de curtidas/comentários.
 - Mini radar/gráfico dos componentes do Engajamento Normalizado (curtidas, comentários, shares, remixes) lado a lado com o Alinhamento de Tendência detalhado por atributo (marca, cor, estilo, ocasião).
@@ -49,7 +51,7 @@ Reaproveita o componente de scanner/callout do RF11 (`.xray-*`).
 
 ### 2.4 Bento do Dia
 
-Reaproveita o grid assimétrico interativo do RF11 (`.bento-*`).
+Reaproveita o grid assimétrico interativo do RF11 (`.bento-*` de `anatomias_card_v13.html`).
 
 - Bloco grande fixo: esquema + Hype Score.
 - 2–3 blocos menores, reordenáveis pelo usuário (mesmo padrão do seletor interativo do Bento no RF11), cada um mostrando **um** destes: selo conquistado, comparação com o look do dia anterior (Δ ↑/↓/=), sugestão da IA, ou ranking semanal (Top X%, seção 4.1 do doc de cálculo).

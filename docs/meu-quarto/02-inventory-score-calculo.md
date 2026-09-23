@@ -3,7 +3,7 @@
 **Projeto:** FashionAI (SAI-TCC-2026)
 **Requisito Funcional:** RF29 — Destaques do Meu Inventário
 **Complementa:** [`01-especificacao-meu-quarto.md`](01-especificacao-meu-quarto.md) §4
-**Indicador irmão (não misturar):** Hype Score, em [`RF6_HYPE_SCORE_CALCULO.md`](../../RF6_HYPE_SCORE_CALCULO.md)
+**Indicador irmão (não misturar):** Hype Score, em [`RF6_HYPE_SCORE_CALCULO.md`](../../markdowns/RF6_HYPE_SCORE_CALCULO.md)
 
 ---
 
@@ -192,7 +192,7 @@ O ranking é o único lugar que usa percentil. A posição de cada usuário é c
 
 $$\text{Top}\% = 100 \times \frac{N_{seg} - \text{posição} + 1}{N_{seg}}$$
 
-(mesma construção da fatia superior inclusiva do `RF6_HYPE_SCORE_CALCULO.md` §4.1, com a posição em ordem crescente e 1-indexada).
+(mesma construção da fatia superior inclusiva do `markdowns/RF6_HYPE_SCORE_CALCULO.md` §4.1, com a posição em ordem crescente e 1-indexada).
 
 | Ranking | Chave de ordenação |
 |---|---|
@@ -209,13 +209,5 @@ Cidade só com consentimento explícito e só exibida para grupos com ≥ 50 par
 
 - **On-demand** ao abrir Destaques, com cache de 1 h por usuário. As entradas são dados do próprio usuário, então o custo é proporcional a $n$.
 - **Snapshot diário** em `saiInventoryScoreSnapshots` (base para a evolução mensal, o Rising Wardrobe e as conquistas).
-- **Job de ranking** a cada poucas horas: materializa as posições por segmento, com a mesma lógica de job periódico descrita no `RF6_HYPE_SCORE_CALCULO.md` §7.
-- A contagem de combinações válidas (§3.4) enumerando triplas é $O(|upper| \cdot |lower| \cdot |shoes|)$. **Não** otimizar contando por grupo de ocasião, somando os grupos: uma tripla com 3 ocasiões em comum seria contada 3 vezes e poderia passar sozinha do limiar $\text{Conect} \ge 3$, mesmo sendo um único look. A otimização correta agrupa por **máscara de ocasiões**:
-  1. As tags de ocasião de cada peça são normalizadas para as 5 ocasiões de referência (§3.2) e viram uma máscara de bits $\mu(p) \in \{1, \dots, 31\}$ (peças sem ocasião ficam de fora, §3.4).
-  2. Cada tipo de peça é agrupado por máscara: $L_\beta$ = inferiores com máscara $\beta$, $S_\gamma$ = calçados com máscara $\gamma$.
-  3. Para uma peça superior $u$ com máscara $\alpha$:
-     $$\text{comb}(u) = \sum_{\beta, \gamma \,:\, \alpha \wedge \beta \wedge \gamma \ne 0} |L_\beta| \cdot |S_\gamma|$$
-     Cada par físico (inferior, calçado) tem **exatamente uma** máscara de cada, então cai em um único termo da soma e é contado uma vez só, qualquer que seja o número de ocasiões em comum.
-  4. Para inferiores e calçados, o mesmo com os papéis trocados. Para vestidos: $\text{comb}(d) = \sum_{\gamma : \alpha \wedge \gamma \ne 0} |S_\gamma|$, e o calçado soma as duas formas (com peças superiores e inferiores, e com vestidos).
-
-  O custo fica em $O(n + 31^3)$, independente do tamanho do acervo.
+- **Job de ranking** a cada poucas horas: materializa as posições por segmento, com a mesma lógica de job periódico descrita no `markdowns/RF6_HYPE_SCORE_CALCULO.md` §7.
+- A contagem de combinações válidas (§3.4) é $O(|upper| \cdot |lower| \cdot |shoes|)$. Para acervos grandes, contar por grupos de ocasião em vez de enumerar triplas: dentro de um grupo, o número de combinações de uma peça superior é $|lower_g| \cdot |shoes_g|$.

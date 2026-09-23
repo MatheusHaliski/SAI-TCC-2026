@@ -643,7 +643,7 @@ interface AuroraGamingProfile {
 
 ### 10.1 Extensão do Pipeline Existente
 
-O pipeline de ingestão de peças (Stages A-D do `DRESS_TESTER_PIPELINE_OUTLINE.md`) ganha uma Stage E:
+O pipeline de ingestão de peças (Stages A-D do `markdowns/DRESS_TESTER_PIPELINE_OUTLINE.md`) ganha uma Stage E:
 
 **Stage E — Mapeamento AURORA**
 1. A partir do modelo `.glb` gerado na Stage C, identificar zonas anatômicas da peça

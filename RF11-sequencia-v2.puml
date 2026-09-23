@@ -1,0 +1,57 @@
+@startuml RF11_Sequencia_v2
+title RF11 — Background Studio (v2) — detecção de modo criação vs. edição
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ArrowColor #4A4852
+  LifeLineBorderColor #CBC6BE
+  ParticipantBackgroundColor #F4F2EF
+  ParticipantBorderColor #4A4852
+}
+actor Usuário as U
+participant "App" as App
+participant "Background Studio Service" as BG
+participant "Background Generator (IA)" as AI
+participant "Catálogo AURA P×M\n(storage/CDN)" as Cat
+participant "Scheme/DNA/\nWardrobe Service" as Svc
+
+App -> BG: abrir(origem, itemAlvo)
+alt origem = Etapa 4 do RF5/RF13
+  BG -> BG: modo = CRIACAO\n(acoplado ao fluxo, restrito\nao elemento-alvo da Etapa 1)
+else origem = RF9 (CA6)
+  BG -> BG: modo = EDICAO\n(standalone, restrito ao\nitem aberto no RF9)
+end
+
+U -> App: escolhe direção visual\n(cor/gradiente/prompt/IA/preset)
+U -> App: aplica camada de material (opcional)
+
+opt preset Aura + camada de material (markdowns/RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md, seção 7)
+  U -> App: escolhe o formato: imagem única\nou Mosaico Aura com material
+  App -> BG: carregarAssetAura(Pxx, Myy, formato)
+  BG -> Cat: asset Pxx_Myy\n(IMAGEM_UNICA | MOSAICO)
+  Cat --> BG: MP4 em loop + quadro estático
+  BG --> App: apresenta a arte\n(sem geração por IA)
+end
+
+opt direção usa IA
+  App -> BG: gerar(prompt/recomendação)
+  BG -> AI: gerar arte(elementoAlvo, direção)
+  AI --> BG: arte gerada
+  BG --> App: apresenta para revisão
+  opt usuário não aprova
+    U -> App: solicita nova geração
+    App -> BG: gerar novamente
+    BG -> AI: gerar arte (retry)
+  end
+end
+
+U -> App: confirma arte de fundo
+App -> BG: salvar()
+BG -> Svc: gravar backgroundColor/\nGradient/ImageUrl\n(+ VideoUrl, Pxx_Myy e formato\nquando a arte vem do catálogo P×M)
+
+alt modo = CRIACAO
+  BG --> App: retorna ao fluxo,\nsegue para Etapa 5
+else modo = EDICAO
+  BG -> Svc: aplicar diretamente\nao item, sem etapas seguintes
+  BG --> App: fecha modal,\nretorna ao RF9
+end
+@enduml

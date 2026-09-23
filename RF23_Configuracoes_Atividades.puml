@@ -1,0 +1,193 @@
+@startuml RF23_Configuracoes_Atividades
+title RF23 — Configurações\nConta, Privacidade, Aparência (Estúdio de Interface — cores, modais, menu lateral, botões), Idioma, Seus dados
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #52606D
+skinparam activity {
+  BackgroundColor #F8F4FF
+  BorderColor #B695F5
+  FontColor #2D2438
+  DiamondBackgroundColor #FFF5F8
+  DiamondBorderColor #F08DB1
+  StartColor #20A77A
+  EndColor #4B5563
+  BarColor #4B4B4B
+}
+skinparam note {
+  BackgroundColor #FFFDEB
+  BorderColor #D8CE78
+  FontColor #554F24
+}
+
+|Usuário|
+start
+:Usuário abre "Configurações"\nno menu lateral esquerdo;
+
+|Sistema|
+:Sistema exibe o menu com\n5 seções: Conta, Privacidade,\nAparência, Idioma, Seus dados;
+
+|Usuário|
+if (Qual seção?) then (Conta)
+
+  :Usuário edita e-mail,\nnome de usuário, biografia;
+  |Sistema|
+  :Sistema valida e salva\n(princípio da exatidão, LGPD);
+
+elseif (Privacidade) then (Privacidade)
+
+  :Usuário alterna visibilidade\ndo perfil, autenticação de\ndois fatores e preferências\nde notificação granulares\n(ver RNF10);
+  |Sistema|
+  :Sistema salva as preferências\nde privacidade e notificação;
+
+elseif (Aparência) then (Aparência)
+
+  :Usuário alterna Modo\nescuro/claro;
+  |Sistema|
+  :Sistema aplica o tema de\nluminosidade (claro/escuro)\n— eixo independente da\npersonalização de cores abaixo;
+
+  |Usuário|
+  :Usuário abre "Personalizar\na interface" (Estúdio de\nInterface);
+
+  |Sistema|
+  :Sistema apresenta os 4\nelementos de interface\npersonalizáveis: Cores da\ninterface, Modais, Menu de\nnavegação lateral, Botões;
+
+  |Usuário|
+  repeat
+    if (Qual elemento de interface\ndeseja personalizar?) then (1. Cores da interface)
+
+      :Sistema apresenta a\nbiblioteca de paletas mapeadas\n(InterfaceColorPalette);
+
+      |Usuário|
+      if (Qual origem da cor?) then (Paleta mapeada)
+        :Usuário seleciona uma\npaleta da biblioteca (ex.:\nNeutro Claro, Grafite Escuro,\nEditorial Quente, Slate Frio,\nLaranja FAI, Monocromático);
+      else (Acento customizado)
+        :Usuário escolhe uma cor\nde acento customizada;
+        note right
+          A cor customizada substitui só o
+          acento (--color-accent) da paleta
+          ativa — fundo, superfície e texto
+          continuam vindo da paleta mapeada,
+          para preservar contraste e
+          legibilidade (WCAG AA). Não existe
+          "cor solta": mesmo o acento
+          customizado é registrado sobre uma
+          paleta-base identificada.
+        end note
+      endif
+
+      |Sistema|
+      :Sistema aplica a paleta\n(e o acento, quando\ncustomizado) às variáveis de\ntema: --color-bg, --color-\nsurface, --color-primary,\n--color-accent, --color-text;
+      :Registrar a origem da cor\n(interfaceThemeId da paleta\nmapeada + acento customizado,\nquando houver);
+
+    elseif (2. Modais) then (Modais)
+
+      :Sistema apresenta as opções\nde fundo do modal: Cor sólida\n(paleta ativa), Gradiente\n(catálogo compartilhado com\no RF11) ou Imagem/textura\n(catálogo de assets de\ninterface);
+
+      |Usuário|
+      if (Qual tipo de fundo?) then (Cor sólida)
+        :Usuário seleciona uma cor\nda paleta ativa (Etapa 1\ndeste loop) ou uma cor\ncustomizada;
+      elseif (Gradiente) then (Gradiente)
+        :Usuário seleciona um\ngradiente do catálogo\nGRADIENT_PRESETS (mesmo\ncatálogo já usado no RF11);
+        note right
+          Reaproveita `GRADIENT_PRESETS`
+          (`app/lib/fashion-ai/background-
+          studio/constants.ts`), já usado
+          pelo Background Studio do RF11 —
+          nenhum catálogo de gradiente novo é
+          criado só para a interface; os
+          mesmos 8 presets nomeados (Deep
+          Violet Gradient, Emerald Glow,
+          Silver Mist, Sunset Editorial,
+          Luxury Warm Fade, Blue-to-Green
+          Premium, Night Runway, Graphite
+          Pulse) ficam disponíveis aqui.
+        end note
+      else (Imagem/textura)
+        :Usuário seleciona um asset\nde textura mapeado\n(InterfaceImageAsset — ex.:\nPaper Grain, Subtle Noise,\nLinen Texture, Grid Lines);
+      endif
+
+      |Sistema|
+      :Sistema aplica o fundo\nescolhido a todos os modais\ndo sistema;
+      :Registrar a origem do fundo\ndo modal — ID da paleta,\ndo gradiente ou do asset,\nnunca um valor solto;
+
+    elseif (3. Menu de navegação lateral) then (Menu lateral)
+
+      :Sistema apresenta as opções\npara o menu lateral: cor de\nfundo (paleta ativa), destaque\ndo item ativo (cor sólida ou\ngradiente) e forma dos itens/\nícones (catálogo de geometrias);
+
+      |Usuário|
+      :Usuário seleciona a cor de\nfundo do menu (paleta ativa\nou acento customizado);
+      :Usuário seleciona o destaque\ndo item ativo — cor sólida\nda paleta ou gradiente do\ncatálogo compartilhado com\no RF11;
+      :Usuário seleciona a forma\ndos itens/ícones — catálogo\nde geometrias mapeadas\n(InterfaceShapePreset: Cantos\nretos, Cantos suaves 8px,\nPílula/totalmente arredondado);
+
+      |Sistema|
+      :Sistema aplica as três\nescolhas ao menu de\nnavegação lateral;
+      :Registrar a origem de cada\nescolha (cor/gradiente/forma)\npor ID mapeado;
+
+    else (4. Botões)
+
+      :Sistema apresenta as opções\npara botões: preenchimento\n(cor sólida da paleta ou\ngradiente do catálogo) e forma\n(mesmo catálogo de geometrias\ndo menu lateral);
+
+      |Usuário|
+      :Usuário seleciona o\npreenchimento do botão\nprimário — cor sólida ou\ngradiente do catálogo\ncompartilhado com o RF11;
+      :Usuário seleciona a forma\ndo botão — catálogo de\ngeometrias mapeadas\n(InterfaceShapePreset);
+
+      |Sistema|
+      :Sistema aplica as escolhas\naos botões primário e\nsecundário do sistema;
+      :Registrar a origem de cada\nescolha (cor/gradiente/forma)\npor ID mapeado;
+
+    endif
+
+    |Sistema|
+    :Sistema renderiza uma\npré-visualização ao vivo dos\n4 elementos de interface\njuntos (cores, modal, menu\nlateral, botões), isolada do\nrestante da aplicação;
+
+    |Usuário|
+    :Usuário avalia o resultado\nna pré-visualização;
+  repeat while (Deseja personalizar\noutro elemento de interface?) is (Sim)
+
+  :Usuário confirma a\npersonalização da interface;
+
+  |Sistema|
+  :Sistema aplica as escolhas\nem toda a aplicação, fora\nda pré-visualização;
+  :Salvar InterfaceThemeConfig\ndo usuário — cores, modal,\nmenu lateral e botões, cada\num com a origem (ID mapeado)\nda escolha, nunca um valor\nsolto;
+
+  note right
+    "Devidamente identificadas e mapeadas"
+    (requisito original): nenhuma escolha
+    desta etapa grava um valor solto (hex
+    cru, URL de imagem arbitrária, número de
+    raio de canto arbitrário) sem também
+    gravar de qual catálogo e de qual ID ela
+    veio — InterfaceColorPalette,
+    GRADIENT_PRESETS (catálogo compartilhado
+    com o RF11, não duplicado),
+    InterfaceImageAsset e InterfaceShapePreset.
+    Isso permite: (a) auditar ou migrar temas
+    quando um catálogo muda de versão; (b)
+    uma futura tela "Meus temas" listar temas
+    salvos pelo nome do preset, não por um
+    valor de cor ilegível; (c) reaproveitar o
+    mesmo catálogo de gradientes do RF11 sem
+    duplicar a lista, mantendo os dois
+    sistemas (arte de cards e tema da
+    interface) consistentes entre si.
+  end note
+
+elseif (Idioma) then (Idioma)
+
+  :Usuário seleciona o idioma\nda interface (pt/es/…);
+  |Sistema|
+  :Sistema aplica a tradução;
+
+else (Seus dados)
+
+  :Usuário solicita exportação\nou exclusão dos próprios dados;
+  |Sistema|
+  :Sistema confirma e processa\nconforme os direitos do\ntitular (LGPD, Art. 18);
+
+endif
+
+stop
+
+@enduml

@@ -1,5 +1,5 @@
 @startuml RF5_Criar_Look_Atividades_Corrigido
-title RF5 — Criar Look\nFluxo Manual e Geração com IA — Corrigido (raias de atores + seleção de elemento-alvo na Etapa 1)
+title RF5 — Criar Look\nFluxo Manual e Geração com IA — Corrigido (raias de atores, elemento-alvo na Etapa 1\ne nova Etapa 4 — escolher e aplicar skin do card ao rascunho)
 
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
@@ -51,14 +51,15 @@ endif
 note right
   O elemento-alvo fixado nesta etapa
   permanece o mesmo em todas as etapas
-  seguintes (2 a 5). Ex.: se o alvo é a
-  arte do esquema, a Etapa 4 (arte de
-  background) edita somente essa arte —
-  se o alvo é uma peça específica, a
-  Etapa 4 edita somente aquela peça.
-  Isto elimina a necessidade de um seletor
-  adicional de alvo dentro do Background
-  Studio (RF11) — ver nota na Etapa 4.
+  seguintes (2 a 6). Ex.: se o alvo é a
+  arte do esquema, a Etapa 4 (skin) e a
+  Etapa 5 (arte de background) editam
+  somente esse alvo — se o alvo é uma
+  peça específica, ambas editam somente
+  aquela peça. Isto elimina a necessidade
+  de um seletor adicional de alvo dentro
+  do Background Studio (RF11) — ver nota
+  na Etapa 5.
 end note
 
 |Usuário|
@@ -168,7 +169,53 @@ else (IA)
 endif
 
 |Sistema|
-:Etapa 4 — Configurar a arte de fundo\ndo elemento fixado na Etapa 1;
+:Etapa 4 — Escolher e aplicar\na skin do card ao elemento\nfixado na Etapa 1;
+:Sistema apresenta os 7 skins\ndisponíveis (Atelier, Spread,\nÍndice, Trading, FAI Max, Stub,\nSpecimen), cada um com o\nthumbnail de referência gerado\npor IA (markdowns/RF11_PROMPTS_SKINS_CARD.md);
+
+|Usuário|
+repeat
+  :Usuário seleciona um skin\nno seletor;
+  |Sistema|
+  :Sistema aplica o skin ao\nelemento-alvo fixado — renderizado\npelo componente React real do skin\n(ex.: CardAtelier.tsx), nunca pela\nimagem de referência do seletor;
+  :Sistema atualiza a\npré-visualização do rascunho\nno painel lateral, refletindo a\ntipografia, a moldura e a decoração\ndo skin escolhido sobre os dados\nreais já preenchidos até aqui;
+  |Usuário|
+  :Usuário avalia o resultado\nno preview;
+repeat while (Deseja trocar\nde skin?) is (Sim)
+
+:Usuário confirma o skin\nescolhido para o elemento-alvo;
+|Sistema|
+:Salvar temporariamente\nselectedCardSkin do\nelemento-alvo fixado;
+
+note right
+  O thumbnail de referência (gerado por
+  IA, ver markdowns/RF11_PROMPTS_SKINS_CARD.md,
+  seção 1) é só uma prévia estática no
+  seletor — o card ao vivo no painel de
+  preview sempre usa o componente real
+  do skin, com os dados reais do
+  rascunho (fotos, peças, nomes já
+  preenchidos nas Etapas 2/3). Skin é
+  independente da anatomia (RF11, Etapa
+  3 — Layout & Estilo) e da arte de
+  fundo (Etapa 5 deste fluxo, que abre
+  o Background Studio do RF11): skin
+  decide tipografia/moldura/
+  decoração; anatomia decide onde cada
+  informação fica; arte de fundo decide
+  cor/textura/imagem do background. As
+  três camadas convivem sem se excluir —
+  mesmo princípio do mecanismo de
+  sobreposição já formalizado no RF11.
+  `selectedCardSkin`/`onSelectSkin` já
+  existem no código
+  (`OutfitBackgroundStudioModal`,
+  `PremiumSelections.tsx`); esta etapa é
+  a primeira vez que a escolha de skin é
+  modelada num diagrama de atividades.
+end note
+
+|Sistema|
+:Etapa 5 — Configurar a arte de fundo\ndo elemento fixado na Etapa 1;
 :Sistema abre o Background Studio\n(RF11), já restrito ao elemento-alvo\nfixado — peça específica ou\narte do esquema completo;
 
 |Usuário|
@@ -207,7 +254,7 @@ note right
 end note
 
 |Sistema|
-:Etapa 5 — Revisar, salvar e concluir;
+:Etapa 6 — Revisar, salvar e concluir;
 
 repeat
   :Sistema apresenta o preview final\ndo card completo;
@@ -233,7 +280,7 @@ else (Não)
   :Sistema define visibilidade privada\ne status "salvo";
 endif
 
-:Sistema persiste ou atualiza:\n- Registro em schemes\n- Itens em scheme_items\n- Ordem dos slots\n- Elemento-alvo fixado (Etapa 1)\n- Configuração do background\n- Modo de geração\n- Visibilidade e status;
+:Sistema persiste ou atualiza:\n- Registro em schemes\n- Itens em scheme_items\n- Ordem dos slots\n- Elemento-alvo fixado (Etapa 1)\n- selectedCardSkin (Etapa 4)\n- Configuração do background\n- Modo de geração\n- Visibilidade e status;
 :Sistema confirma:\n"Look criado com sucesso";
 :Sistema redireciona o usuário\npara "Looks Salvos";
 stop

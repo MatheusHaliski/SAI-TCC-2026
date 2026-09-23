@@ -27,14 +27,32 @@ export interface DailyLook {
 
 const DAILY_LOOKS_COLLECTION = 'saiDailyLooks';
 
+/**
+ * Deterministic per-user/date document id. Firestore has no equivalent to a
+ * SQL (user_id, look_date) unique constraint, so the id itself is what
+ * prevents two concurrent writes from creating duplicate documents for the
+ * same user on the same day.
+ */
+function buildDailyLookId(userId: string, date: string): string {
+  return `${userId}_${date}`;
+}
+
 export class DailyLooksRepository extends BaseRepository {
+  /**
+   * Upserts the daily look for (user_id, date) using a deterministic
+   * document id instead of Firestore's random-id .add(). Two concurrent
+   * calls for the same user/date converge on the same document — one
+   * write wins, but no duplicate "current look" or history row is ever
+   * created (the race that .add() with random ids could not prevent).
+   */
   async create(
     input: Omit<DailyLook, 'daily_look_id' | 'feedback' | 'feedback_at' | 'created_at'> & { title?: string; scheme_items?: DailyLookItem[] },
   ): Promise<DailyLook> {
     const now = new Date().toISOString();
     const payload = { ...input, feedback: null, feedback_at: null, created_at: now };
-    const ref = await this.db.collection(DAILY_LOOKS_COLLECTION).add(payload);
-    return { daily_look_id: ref.id, ...payload };
+    const id = buildDailyLookId(input.user_id, input.date);
+    await this.db.collection(DAILY_LOOKS_COLLECTION).doc(id).set(payload);
+    return { daily_look_id: id, ...payload };
   }
 
   async findById(dailyLookId: string): Promise<DailyLook | null> {

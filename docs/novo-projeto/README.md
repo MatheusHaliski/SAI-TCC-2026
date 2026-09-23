@@ -27,5 +27,5 @@ Para evitar duas versões do mesmo requisito saindo de sincronia:
 | Requisito | Dono documental |
 |---|---|
 | **RF20 · RF21** (vínculo, selos, promoções) | [`docs/rf20-rf21-vinculo-marca-celebridade.md`](../rf20-rf21-vinculo-marca-celebridade.md) — 23 CAs. O documento 02 **só aponta** para lá |
-| **RF13** (DNA de Estilo) | `HU20.md` — enquanto a decisão 5 não for tomada |
+| **RF13** (DNA de Estilo) | `markdowns/HU20.md` — enquanto a decisão 5 não for tomada |
 | Demais RFs | `02-rf-reestruturados-e-criterios-aceite.md` |
