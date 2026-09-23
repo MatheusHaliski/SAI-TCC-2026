@@ -433,7 +433,7 @@ Estes três pontos **não estão** no documento autoritativo e precisam entrar n
 | ID | Dado que | Quando | Então |
 |---|---|---|---|
 | RF31.CA01 | usuário vê um card de esquema ou peça no seu acervo | aciona **favoritar** | o item é marcado como favorito e o estado é refletido em todas as telas que exibem aquele card |
-| RF31.CA02 | usuário marca um item como **indisponível** | confirma | o item deixa de ser oferecido na criação de looks (RF5) e no Copilot (RF10), permanecendo visível no acervo com marcação própria |
+| RF31.CA02 | usuário marca um item como **indisponível** | confirma | o item deixa de ser oferecido na criação de looks (RF5), no Copilot (RF10) e no Vista-me (RF28), permanecendo visível no acervo com marcação própria |
 | RF31.CA03 | usuário marca um item como **disponível** | confirma | o item volta a ser elegível para composição |
 | RF31.CA04 | usuário aciona o filtro **todos**, no header da lista (não no card) | confirma | a lista exibe favoritos, disponíveis e indisponíveis sem distinção |
 | RF31.CA05 | um filtro está ativo | usuário navega para o detalhe e volta | o filtro permanece aplicado |

@@ -185,7 +185,7 @@ O `CreateMySchemeView` passa a ler essa chave, preencher os slots e removê-la d
 | RF28.CA08 | usuário aciona Vista-me com um pedido em linguagem natural | a IA responde | o look sugerido usa só peças elegíveis (§2.2 passo 2), respeita a peça âncora quando houver e aparece montado no espelho |
 | RF28.CA09 | uma sugestão do Vista-me contém um ID fora do conjunto elegível | a resposta é validada no servidor | a sugestão é descartada, nunca exibida, e o evento é registrado (**RF24**, **RNF5**) |
 | RF28.CA10 | sugestão do Vista-me exibida | o espelho é montado | as posições de cada peça acendem no ambiente e a legenda mostra "{peça} — {endereço}" |
-| RF28.CA11 | usuário aciona "Usar este look" | confirma | sistema cria o esquema se necessário e registra o Look do Dia com `source = "vista_me"` (§2.3) |
+| RF28.CA11 | usuário aciona "Usar este look" | confirma | sistema cria o esquema se necessário e registra o Look do Dia com `source` igual ao `origin` do look (`"vista_me"` ou `"smart_mirror"`) (§2.3) |
 | RF28.CA12 | usuário aciona "Trocar uma peça" num slot | a IA responde | aparecem até 3 alternativas para aquele slot, mantendo as demais peças |
 | RF28.CA13 | usuário pede outra sugestão | a IA responde | a nova composição não repete nenhuma composição já mostrada na sessão (**RF10.CA03**) |
 | RF28.CA14 | guarda-roupa sem peça superior nem vestido disponível | aciona Vista-me | sistema explica a limitação e oferece o cadastro (RF4) (**RF10.CA04**) |
