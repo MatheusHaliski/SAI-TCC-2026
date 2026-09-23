@@ -294,35 +294,42 @@ export default function OutfitCard({ data, variant = 'default', actions = [], on
           </button>
         ) : null}
 
-        {showContext && variant !== 'compact' ? (
-          <div className="flex flex-col gap-3 rounded-2xl border border-white/14 bg-black/18 p-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* RF6.CA11 / RF19 — rodapé social presente em ambas as variantes (compacta e completa). */}
+        {showContext ? (
+          <div
+            className={`flex flex-col gap-2 rounded-2xl border border-white/14 bg-black/18 sm:flex-row sm:items-center sm:justify-between ${variant === 'compact' ? 'p-2.5' : 'gap-3 p-3'}`}
+            aria-label="Interações sociais do esquema"
+          >
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-white/16 bg-white/10 px-3 py-1.5 text-xs font-black text-white">
+              <span className={`rounded-full border border-white/16 bg-white/10 font-black text-white ${variant === 'compact' ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'}`}>
                 {localLikes} curtidas
               </span>
-              <span className="rounded-full border border-white/16 bg-white/10 px-3 py-1.5 text-xs font-black text-white">
-                Score {scoreLabel || 'FAI'}
-              </span>
+              {variant !== 'compact' ? (
+                <span className="rounded-full border border-white/16 bg-white/10 px-3 py-1.5 text-xs font-black text-white">
+                  Score {scoreLabel || 'FAI'}
+                </span>
+              ) : null}
             </div>
-            <div className="grid grid-cols-3 gap-2 sm:min-w-[330px]">
+            <div className={`grid grid-cols-3 gap-2 ${variant === 'compact' ? 'sm:min-w-[260px]' : 'sm:min-w-[330px]'}`}>
               <button
                 type="button"
                 onClick={handleToggleLike}
-                className="rounded-xl border border-white/18 bg-white/12 px-3 py-2 text-xs font-black text-white transition hover:bg-white/18"
+                aria-pressed={liked}
+                className={`rounded-xl border border-white/18 bg-white/12 font-black text-white transition hover:bg-white/18 ${variant === 'compact' ? 'px-2 py-1.5 text-[11px]' : 'px-3 py-2 text-xs'}`}
               >
                 {liked ? 'Curtido' : 'Curtir'}
               </button>
               <button
                 type="button"
                 onClick={handleShare}
-                className="rounded-xl border border-white/18 bg-white/12 px-3 py-2 text-xs font-black text-white transition hover:bg-white/18"
+                className={`rounded-xl border border-white/18 bg-white/12 font-black text-white transition hover:bg-white/18 ${variant === 'compact' ? 'px-2 py-1.5 text-[11px]' : 'px-3 py-2 text-xs'}`}
               >
                 {shareStatus || 'Compartilhar'}
               </button>
               <button
                 type="button"
                 onClick={handleRemix}
-                className="rounded-xl border border-violet-200/25 bg-violet-500/20 px-3 py-2 text-xs font-black text-violet-50 transition hover:bg-violet-500/28"
+                className={`rounded-xl border border-violet-200/25 bg-violet-500/20 font-black text-violet-50 transition hover:bg-violet-500/28 ${variant === 'compact' ? 'px-2 py-1.5 text-[11px]' : 'px-3 py-2 text-xs'}`}
               >
                 Remixar
               </button>

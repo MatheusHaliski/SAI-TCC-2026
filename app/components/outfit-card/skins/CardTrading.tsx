@@ -13,8 +13,8 @@ export default function CardTrading({ data, showHero = true }: CardTradingProps)
     <div
       className="relative flex flex-col overflow-hidden bg-neutral-900"
       style={{
-        width: 360,
-        minHeight: 560,
+        width: 'var(--sai-card-width, 360px)',
+        minHeight: 'var(--sai-card-min-height, 560px)',
         padding: 6,
         fontFamily: 'Inter, "Segoe UI", Arial, sans-serif',
         border: '2px solid #e5e7eb',

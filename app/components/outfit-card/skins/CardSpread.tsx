@@ -18,7 +18,7 @@ export default function CardSpread({ data, showHero = true }: CardSpreadProps) {
   return (
     <div
       className="relative flex flex-col overflow-hidden bg-neutral-50"
-      style={{ width: 360, minHeight: 560, fontFamily: 'Inter, "Segoe UI", Arial, sans-serif' }}
+      style={{ width: 'var(--sai-card-width, 360px)', minHeight: 'var(--sai-card-min-height, 560px)', fontFamily: 'Inter, "Segoe UI", Arial, sans-serif' }}
     >
       {/* Hero 16:9 full-bleed */}
       {showHero && (

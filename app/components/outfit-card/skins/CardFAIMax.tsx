@@ -14,8 +14,8 @@ export default function CardFAIMax({ data, showHero = true }: CardFAIMaxProps) {
     <div
       className="relative flex flex-col overflow-hidden bg-black"
       style={{
-        width: 360,
-        minHeight: 560,
+        width: 'var(--sai-card-width, 360px)',
+        minHeight: 'var(--sai-card-min-height, 560px)',
         border: '8px solid #f97316',
         boxSizing: 'border-box',
         fontFamily: 'var(--font-sharetech), "Share Tech Mono", monospace',

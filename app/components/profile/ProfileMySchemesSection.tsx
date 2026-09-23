@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
+import SubTabs from '@/app/components/shared/SubTabs';
+import { useSectionFilter } from '@/app/components/profile/useSectionFilter';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import OutfitExportModal from '@/app/components/profile/OutfitExportModal';
 import { OutfitCardData, OutfitBackgroundConfig } from '@/app/lib/outfit-card';
@@ -51,6 +53,9 @@ function parseBackground(description?: string | null): OutfitBackgroundConfig | 
     return undefined;
   }
 }
+
+// RF6.CA10 — chave do filtro de ocasião (header da lista).
+const getSchemeOccasion = (scheme: Scheme) => scheme.occasion;
 
 const buildData = (scheme: Scheme): OutfitCardData => {
   const pieces = Array.isArray(scheme.pieces)
@@ -102,7 +107,12 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
       .finally(() => setLoadingSchemes(false));
   }, [schemes.length, userId]);
 
-  const cards = useMemo(() => loadedSchemes.map((scheme) => ({ scheme, data: buildData(scheme) })), [loadedSchemes]);
+  // RF6.CA10 / RF31.CA04 — filtro de ocasião no header da lista, persistido ao voltar do detalhe.
+  const occasionFilter = useSectionFilter(loadedSchemes, getSchemeOccasion, 'sai-lookbook-filter:my-schemes');
+  const cards = useMemo(
+    () => occasionFilter.filtered.map((scheme) => ({ scheme, data: buildData(scheme) })),
+    [occasionFilter.filtered],
+  );
 
   // RF28: cycle visibility público → seguidores → privado → público, persisting
   // each change via PATCH /api/schemes/[id]. Optimistic update with revert on error.
@@ -135,7 +145,20 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
 
   return (
     <>
-      <SectionBlock title="Meus Esquemas" subtitle="Cards de look criados por você com visualização premium compacta.">
+      <SectionBlock
+        title={`Meus Esquemas (${loadedSchemes.length})`}
+        subtitle="Cards de look criados por você com visualização premium compacta."
+        action={
+          <SubTabs
+            variant="filter"
+            size="sm"
+            ariaLabel="Filtrar meus esquemas por ocasião"
+            items={occasionFilter.options}
+            activeKey={occasionFilter.selected}
+            onChange={occasionFilter.setSelected}
+          />
+        }
+      >
         <div className="mt-4 grid gap-5 lg:grid-cols-2">
           {cards.map(({ scheme, data }) => (
             <OutfitCard
@@ -151,7 +174,15 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
               ]}
             />
           ))}
-          {!cards.length ? <p className="text-sm text-white/80">{loadingSchemes ? 'Carregando esquemas...' : 'Nenhum esquema criado ainda.'}</p> : null}
+          {!cards.length ? (
+            <p className="text-sm text-white/80">
+              {loadingSchemes
+                ? 'Carregando esquemas...'
+                : loadedSchemes.length
+                  ? 'Nenhum esquema para a ocasião selecionada.'
+                  : 'Nenhum esquema criado ainda.'}
+            </p>
+          ) : null}
         </div>
       </SectionBlock>
 

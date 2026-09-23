@@ -15,7 +15,7 @@ export default function CardAtelier({ data, showHero = true }: CardAtelierProps)
   return (
     <div
       className="relative flex flex-col overflow-hidden bg-white"
-      style={{ width: 360, minHeight: 560, fontFamily: 'Inter, "Segoe UI", Arial, sans-serif' }}
+      style={{ width: 'var(--sai-card-width, 360px)', minHeight: 'var(--sai-card-min-height, 560px)', fontFamily: 'Inter, "Segoe UI", Arial, sans-serif' }}
     >
       {/* Eyebrow */}
       <div className="flex items-center justify-between border-b border-neutral-100 px-6 pt-5 pb-3">

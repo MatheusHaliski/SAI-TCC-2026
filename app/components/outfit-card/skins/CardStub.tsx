@@ -47,8 +47,8 @@ export default function CardStub({ data, showHero = true }: CardStubProps) {
     <div
       className="relative flex flex-col overflow-hidden"
       style={{
-        width: 360,
-        minHeight: 560,
+        width: 'var(--sai-card-width, 360px)',
+        minHeight: 'var(--sai-card-min-height, 560px)',
         backgroundColor: '#faf7f0',
         fontFamily: 'var(--font-sharetech), "Share Tech Mono", monospace',
       }}

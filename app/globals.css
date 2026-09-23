@@ -45,6 +45,9 @@
   --secondary-foreground: #ffffff;
   --ring: rgba(124,58,237,0.4);
   --radius: 0.75rem;
+  /* RNF9 — dimensões exatas dos cards de esquema (skins exportáveis): um único ponto de verdade. */
+  --sai-card-width: 360px;
+  --sai-card-min-height: 560px;
   --shadow-sm: 0 1px 4px rgba(0,0,0,0.07);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
   --shadow-lg: 0 8px 30px rgba(0,0,0,0.13);
