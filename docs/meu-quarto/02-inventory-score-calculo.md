@@ -1,7 +1,7 @@
-# RF34 — FAI Inventory Score: cálculo, elegibilidade e antifraude
+# RF29 — FAI Inventory Score: cálculo, elegibilidade e antifraude
 
 **Projeto:** FashionAI (SAI-TCC-2026)
-**Requisito Funcional:** RF34 — Destaques do Meu Inventário
+**Requisito Funcional:** RF29 — Destaques do Meu Inventário
 **Complementa:** [`01-especificacao-meu-quarto.md`](01-especificacao-meu-quarto.md) §4
 **Indicador irmão (não misturar):** Hype Score, em [`RF6_HYPE_SCORE_CALCULO.md`](../../markdowns/RF6_HYPE_SCORE_CALCULO.md)
 
@@ -32,7 +32,7 @@ O percentil entra **só no ranking** (§6).
 
 Todas as dimensões são **razões, médias ou entropias normalizadas**, nunca contagens absolutas. O número de peças entra num único lugar, o **fator de confiança** $k$ (§4), que satura em 20 peças. Acima de 20 peças, o volume **não vale nada**.
 
-Teste de regressão obrigatório (RF34.CA03): 30 peças completas, diversas e usadas > 500 peças sem dados e sem uso. Estimativa com as regras do §3:
+Teste de regressão obrigatório (RF29.CA03): 30 peças completas, diversas e usadas > 500 peças sem dados e sem uso. Estimativa com as regras do §3:
 
 | Dimensão | 30 peças bem curadas | 500 peças só com categoria, sem uso |
 |---|---|---|
@@ -135,7 +135,7 @@ $$I = 100 \times \Big(0{,}5 \times \cos(\vec c_{inv}, \vec c_{DNA}) + 0{,}5 \tim
 - $\vec c$ = distribuição de cores (paleta de 5 cores do DNA contra a distribuição de cores de $A$, com as cores agrupadas em famílias).
 - $\vec s$ = distribuição de estilos (arquétipo do DNA expandido em tags contra as tags de estilo de $A$).
 
-**Sem DNA gerado, $I$ é omitida** e os pesos das outras dimensões são renormalizados (RF34.CA04). Só a Camada 1 entra: a Identidade de Vida (Camada 2) nunca é usada no score (**RNF6**).
+**Sem DNA gerado, $I$ é omitida** e os pesos das outras dimensões são renormalizados (RF29.CA04). Só a Camada 1 entra: a Identidade de Vida (Camada 2) nunca é usada no score (**RNF6**).
 
 ---
 
@@ -158,7 +158,7 @@ $$\boxed{\text{InventoryScore} = \operatorname{round}\big(S_{bruto} \times k\big
 
 **Por que Catalogação e Utilização pesam mais:** são as duas dimensões que mais melhoram o próprio FashionAI (dados melhores → sugestões melhores) e as mais diretamente sob controle do usuário.
 
-**Por que $k$ existe:** sem ele, 3 peças perfeitas dariam 1000. O fator exige um guarda-roupa mínimo para a nota ser representativa e deixa de agir a partir de 20 peças. **Elegibilidade:** o score é exibido a partir de 10 peças (RF34.CA02, mesmo limiar do RF13.CA01). Entre 10 e 19 peças, a interface mostra o $k$ ("sua nota cresce até 20 peças").
+**Por que $k$ existe:** sem ele, 3 peças perfeitas dariam 1000. O fator exige um guarda-roupa mínimo para a nota ser representativa e deixa de agir a partir de 20 peças. **Elegibilidade:** o score é exibido a partir de 10 peças (RF29.CA02, mesmo limiar do RF13.CA01). Entre 10 e 19 peças, a interface mostra o $k$ ("sua nota cresce até 20 peças").
 
 ### 4.1 Faixas
 
@@ -188,7 +188,7 @@ $$\boxed{\text{InventoryScore} = \operatorname{round}\big(S_{bruto} \times k\big
 
 ## 6. Rankings
 
-O ranking é o único lugar que usa percentil. A posição de cada usuário é calculada **dentro do segmento** entre os participantes com opt-in (RF34.CA08):
+O ranking é o único lugar que usa percentil. A posição de cada usuário é calculada **dentro do segmento** entre os participantes com opt-in (RF29.CA08):
 
 $$\text{Top}\% = 100 \times \frac{N_{seg} - \text{posição} + 1}{N_{seg}}$$
 

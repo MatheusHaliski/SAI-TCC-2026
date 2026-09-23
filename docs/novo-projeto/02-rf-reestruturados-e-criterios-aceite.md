@@ -30,6 +30,24 @@ O time pediu fundir RFs em CAs de outros RFs. Existem duas formas de fazer isso:
 
 **Regra:** números de RF nunca são reciclados. RFs novos recebem o próximo número livre (a partir de **RF24**).
 
+> ⚠️ **Revisão da política (decisão do time, 2026-09-23): RF absorvido não existe mais, e o número fica livre.**
+>
+> Situação dos números a partir do RF24, conferida no board do Trello em 2026-09-23:
+>
+> | Número | Antes | Agora |
+> |---|---|---|
+> | RF24 | Recuperar senha, logout, sessões (absorvido em RF3) | Usar a IA do sistema |
+> | RF25 | Configurações de conta e segurança (absorvido em RF3.CA11–CA14) | Criar e editar selo de marca ou celebridade (card e HU já no Trello) |
+> | RF26 | Receber e gerenciar notificações (absorvido em RF3.CA15–CA18) | Explorador Global (card e HU já no Trello) |
+> | RF27 | Perfil de marca (absorvido em RF1.CA06–CA08) | **Meu Quarto** (`docs/meu-quarto/`) |
+> | RF28 | Perfil de celebridade (absorvido em RF1.CA09–CA10) | **Smart Mirror e Vista-me** |
+> | RF29 | Página de Looks Salvos (absorvido em RF6.CA09–CA13) | **Destaques do Meu Inventário** |
+> | RF30 | sem card no board | **FAI Points e progressão do quarto** |
+> | RF31 | — | Filtros de estado do acervo (desmembrado do RF19) |
+> | RF32 | — | **Desafios & Games** |
+>
+> **Consequência prática:** em material anterior a esta data (HUs, atas, versões prévias do PDF, histórico do Trello), RF25–RF29 ainda significam os requisitos absorvidos da coluna "Antes" e devem ser lidos pelos CAs indicados. O card do RF22 no Trello, por exemplo, ainda cita "RF28 (as celebridades precisam estar cadastradas)" no sentido antigo, que hoje é o RF1.CA09–CA10. O próximo número livre para requisitos novos é o **RF33**.
+
 ---
 
 ## 2. Mapa de absorção (o que o time pediu)
@@ -415,7 +433,7 @@ Estes três pontos **não estão** no documento autoritativo e precisam entrar n
 | ID | Dado que | Quando | Então |
 |---|---|---|---|
 | RF31.CA01 | usuário vê um card de esquema ou peça no seu acervo | aciona **favoritar** | o item é marcado como favorito e o estado é refletido em todas as telas que exibem aquele card |
-| RF31.CA02 | usuário marca um item como **indisponível** | confirma | o item deixa de ser oferecido na criação de looks (RF5) e no Copilot (RF10), permanecendo visível no acervo com marcação própria |
+| RF31.CA02 | usuário marca um item como **indisponível** | confirma | o item deixa de ser oferecido na criação de looks (RF5), no Copilot (RF10) e no Vista-me (RF28), permanecendo visível no acervo com marcação própria |
 | RF31.CA03 | usuário marca um item como **disponível** | confirma | o item volta a ser elegível para composição |
 | RF31.CA04 | usuário aciona o filtro **todos**, no header da lista (não no card) | confirma | a lista exibe favoritos, disponíveis e indisponíveis sem distinção |
 | RF31.CA05 | um filtro está ativo | usuário navega para o detalhe e volta | o filtro permanece aplicado |
