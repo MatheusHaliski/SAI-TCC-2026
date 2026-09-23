@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import SectionBlock from '@/app/components/shared/SectionBlock';
+import SubTabs from '@/app/components/shared/SubTabs';
+import { useSectionFilter } from '@/app/components/profile/useSectionFilter';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import OutfitExportModal from '@/app/components/profile/OutfitExportModal';
 import { OutfitCardData, OutfitBackgroundConfig } from '@/app/lib/outfit-card';
@@ -45,6 +47,10 @@ interface SavedScheme {
 interface ProfileSavedSchemesSectionProps {
   userId: string;
 }
+
+// RF6.CA10 — chave do filtro de ocasião (header da lista).
+const getSavedOccasion = (scheme: SavedScheme) => scheme.occasion;
+const NO_SCHEMES: SavedScheme[] = [];
 
 // Parses outfitBackground from the scheme.description JSON field (same logic as ExploreSchemeView)
 function parseBackground(description?: string | null): OutfitBackgroundConfig | undefined {
@@ -238,27 +244,44 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
     }
   };
 
+  // RF6.CA10 / RF31.CA04 — filtro de ocasião no header da lista, persistido ao voltar do detalhe.
+  const occasionFilter = useSectionFilter(favoriteSchemes ?? NO_SCHEMES, getSavedOccasion, 'sai-lookbook-filter:saved-schemes');
+
   // Show loading state until favorites are resolved; then show only actual saved (favorited) cards
   const cards = useMemo(() => {
     if (favoriteSchemes === null) return null; // still loading
-    return favoriteSchemes.map((scheme) => ({ scheme, data: toData(scheme) }));
-  }, [favoriteSchemes]);
+    return occasionFilter.filtered.map((scheme) => ({ scheme, data: toData(scheme) }));
+  }, [favoriteSchemes, occasionFilter.filtered]);
 
   return (
     <>
-      <SectionBlock title="Inspirações" subtitle="Looks de outros criadores que você salvou. As peças NÃO são copiadas para o seu guarda-roupa — use “Tenho peças parecidas” para encontrar itens equivalentes no seu closet.">
+      <SectionBlock
+        title={`Looks Salvos (${favoriteSchemes?.length ?? 0})`}
+        subtitle="Inspirações: looks de outros criadores que você salvou. As peças NÃO são copiadas para o seu guarda-roupa — use “Tenho peças parecidas” para encontrar itens equivalentes no seu closet."
+        action={
+          <SubTabs
+            variant="filter"
+            size="sm"
+            ariaLabel="Filtrar looks salvos por ocasião"
+            items={occasionFilter.options}
+            activeKey={occasionFilter.selected}
+            onChange={occasionFilter.setSelected}
+          />
+        }
+      >
         {remixError ? (
           <p className="mt-3 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">{remixError}</p>
         ) : null}
-        <div className="mt-4 grid justify-items-center gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,900px),1fr))]">
+        {/* RNF9 / RF6.CA09 — mesma grade e mesmo formato compacto da aba “Meus Esquemas”. */}
+        <div className="mt-4 grid gap-5 lg:grid-cols-2">
           {cards === null ? (
             <p className="text-sm text-white/60">Carregando esquemas salvos…</p>
           ) : cards.length ? (
             cards.map(({ scheme, data }) => (
-              <div key={scheme.scheme_id} className="w-full max-w-[980px]">
+              <div key={scheme.scheme_id} className="w-full">
                 <OutfitCard
                   data={data}
-                  variant="default"
+                  variant="compact"
                   actions={[
                     { label: 'Abrir', onClick: () => setRemixedScheme(scheme), tone: 'accent' },
                     { label: '🔎 Tenho peças parecidas', onClick: () => void handleSimilar(scheme), tone: 'accent' },
@@ -274,7 +297,11 @@ export default function ProfileSavedSchemesSection({ userId }: ProfileSavedSchem
               </div>
             ))
           ) : (
-            <p className="text-sm text-white/80">Nenhuma inspiração salva ainda. Favorite looks públicos da comunidade para guardá-los aqui.</p>
+            <p className="text-sm text-white/80">
+              {favoriteSchemes?.length
+                ? 'Nenhum look salvo para a ocasião selecionada.'
+                : 'Nenhuma inspiração salva ainda. Favorite looks públicos da comunidade para guardá-los aqui.'}
+            </p>
           )}
         </div>
       </SectionBlock>

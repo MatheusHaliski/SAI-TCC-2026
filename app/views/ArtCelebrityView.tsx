@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
+import SubTabs, { type SubTabItem } from '@/app/components/shared/SubTabs';
 
 /**
  * Art Celebrity — feed of verified celebrity profiles whose looks carry an exclusive
@@ -160,6 +161,8 @@ const PremiumSeal = ({ small }: { small?: boolean }) => (
 
 export default function ArtCelebrityView() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // RF22 — filtro de eras das publicações da celebridade (sub-abas no header da lista).
+  const [eraFilter, setEraFilter] = useState<Record<string, string>>({});
   const [follows, setFollows] = useState<FollowMap>({});
   const [isPortuguese, setIsPortuguese] = useState(true);
 
@@ -204,6 +207,15 @@ export default function ArtCelebrityView() {
   if (selected) {
     const isFollowing = Boolean(follows[selected.id]);
     const followers = followerCountFor(selected);
+    // RF22 — sub-abas de era derivadas das próprias publicações (sem chamada à API).
+    const eraCounts = selected.featured.reduce<Map<string, number>>((acc, scheme) => acc.set(scheme.era, (acc.get(scheme.era) ?? 0) + 1), new Map());
+    const eraOptions: SubTabItem[] = [
+      { key: 'todos', label: isPortuguese ? 'Todas as eras' : 'All eras', count: selected.featured.length },
+      ...Array.from(eraCounts.entries()).map(([era, count]) => ({ key: era, label: era, count })),
+    ];
+    const requestedEra = eraFilter[selected.id] ?? 'todos';
+    const activeEra = eraOptions.some((option) => option.key === requestedEra) ? requestedEra : 'todos';
+    const visibleFeatured = activeEra === 'todos' ? selected.featured : selected.featured.filter((scheme) => scheme.era === activeEra);
     return (
       <div className="space-y-6">
         <PageHeader
@@ -278,11 +290,21 @@ export default function ArtCelebrityView() {
 
         {/* Premium-seal featured schemes */}
         <SectionBlock
-          title={isPortuguese ? 'Esquemas em destaque · Selo Premium' : 'Featured schemes · Premium Seal'}
+          title={isPortuguese ? `Esquemas em destaque · Selo Premium (${visibleFeatured.length})` : `Featured schemes · Premium Seal (${visibleFeatured.length})`}
           subtitle={isPortuguese ? `Looks consagrados por ${selected.name} com o selo exclusivo da celebridade.` : `Looks consecrated by ${selected.name} with the exclusive celebrity seal.`}
+          action={
+            <SubTabs
+              variant="filter"
+              size="sm"
+              ariaLabel={isPortuguese ? 'Filtrar esquemas por era' : 'Filter schemes by era'}
+              items={eraOptions}
+              activeKey={activeEra}
+              onChange={(key) => setEraFilter((prev) => ({ ...prev, [selected.id]: key }))}
+            />
+          }
         >
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {selected.featured.map((scheme) => (
+            {visibleFeatured.map((scheme) => (
               <article
                 key={scheme.id}
                 aria-label={`Esquema ${scheme.title}`}

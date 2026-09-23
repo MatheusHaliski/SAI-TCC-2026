@@ -156,7 +156,12 @@ export default function ProfileView() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-      <ProfileContextMenu selectedSection={selectedSection} onSelectSection={updateSection} allowedSections={allowedSections} />
+      <ProfileContextMenu
+        selectedSection={selectedSection}
+        onSelectSection={updateSection}
+        allowedSections={allowedSections}
+        counts={{ wardrobe: wardrobeItems.length, 'my-schemes': schemes.length, 'my-posts': posts.length }}
+      />
 
       <div className="space-y-6">
         <PageHeader title={isOwnerView ? 'Profile' : `Creator Profile`} subtitle={isOwnerView ? 'Premium creator hub for wardrobe, schemes, publishing, and account controls.' : 'Public creator profile view.'} />

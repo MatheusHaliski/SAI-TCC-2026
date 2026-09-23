@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '@/app/components/shell/PageHeader';
 import SectionBlock from '@/app/components/shared/SectionBlock';
+import SubTabs from '@/app/components/shared/SubTabs';
 import BrandBadge from '@/app/components/outfit-card/BrandBadge';
 import { resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
 
@@ -437,23 +438,14 @@ function BrandPanel({ brand, onClose }: { brand: BrandData; onClose: () => void 
         </div>
       )}
 
-      {/* Tab nav */}
-      <div className="flex flex-wrap gap-2">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-              activeTab === tab.key
-                ? 'border-cyan-400/70 bg-cyan-500/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.18)]'
-                : 'border-white/20 bg-white/5 text-white/60 hover:border-white/35 hover:text-white'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* RF14 — sub-abas do perfil da marca no padrão único de sub-abas (SubTabs). */}
+      <SubTabs
+        variant="tabs"
+        ariaLabel={`Seções do perfil da marca ${brand.name}`}
+        items={TABS.map((tab) => ({ key: tab.key, label: tab.label }))}
+        activeKey={activeTab}
+        onChange={(key) => setActiveTab(key as typeof activeTab)}
+      />
 
       {/* TAB: Perfil */}
       {activeTab === 'perfil' && profile && (

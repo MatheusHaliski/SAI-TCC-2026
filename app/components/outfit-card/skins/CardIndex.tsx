@@ -26,7 +26,7 @@ export default function CardIndex({ data, showHero = true }: CardIndexProps) {
   return (
     <div
       className="relative flex flex-col overflow-hidden border border-neutral-300 bg-white"
-      style={{ width: 360, minHeight: 560, fontFamily: 'Inter, "Segoe UI", Arial, sans-serif' }}
+      style={{ width: 'var(--sai-card-width, 360px)', minHeight: 'var(--sai-card-min-height, 560px)', fontFamily: 'Inter, "Segoe UI", Arial, sans-serif' }}
     >
       {/* Badge header */}
       <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-3">
