@@ -28,32 +28,50 @@ start
 :Usuário escolhe o modo de geração:\n- Geração manual\n- Geração com IA;
 
 |Sistema|
-if (Está editando um DNA existente?) then (Sim)
+if (Está editando um DNA existente\ncom ao menos uma célula\npreenchida?) then (Sim)
   :Sistema carrega o DNAScheme\ne suas células/esquemas atuais;
-else (Não)
-  :Sistema cria um DNAScheme\ncom status "rascunho";
-endif
 
-:Sistema exibe o painel de preview\nlateral do card;
+  :Sistema exibe o painel de preview\nlateral do card;
 
-|Usuário|
-if (Qual elemento será editado?) then (Conjunto DNA completo)
+  |Usuário|
+  if (Qual elemento será editado?) then (Conjunto DNA completo)
+    |Sistema|
+    :Sistema destaca (luz, borda\ne realce) a arte do conjunto\nDNA no painel de preview;
+    :Fixar elemento-alvo\n= arte do conjunto DNA;
+  else (Esquema de vestimenta específico)
+    :Usuário seleciona, no painel de preview,\num esquema de vestimenta (ClothesScheme)\njá presente no DNA;
+    |Sistema|
+    :Sistema destaca (luz, borda\ne realce) o esquema selecionado\nno painel de preview;
+    :Fixar elemento-alvo\n= esquema de vestimenta selecionado;
+
+    note right
+      Diferença central para o RF5: aqui o
+      elemento-alvo "peça específica" do RF5
+      vira **esquema de vestimenta específico**
+      — um ClothesScheme inteiro, já publicado
+      no Perfil Lookbook (RF6), não uma peça
+      solta do guarda-roupa.
+    end note
+  endif
+else (Não — DNA novo\nou ainda sem células)
+  :Sistema cria um DNAScheme\ncom status "rascunho"\n(quando ainda não existia);
+  :Sistema exibe o painel de preview\nlateral do card;
   |Sistema|
-  :Sistema destaca (luz, borda\ne realce) a arte do conjunto\nDNA no painel de preview;
   :Fixar elemento-alvo\n= arte do conjunto DNA;
-else (Esquema de vestimenta específico)
-  :Usuário seleciona, no painel de preview,\num esquema de vestimenta (ClothesScheme)\njá presente no DNA — ou recém-adicionado;
-  |Sistema|
-  :Sistema destaca (luz, borda\ne realce) o esquema selecionado\nno painel de preview;
-  :Fixar elemento-alvo\n= esquema de vestimenta selecionado;
 
   note right
-    Diferença central para o RF5: aqui o
-    elemento-alvo "peça específica" do RF5
-    vira **esquema de vestimenta específico**
-    — um ClothesScheme inteiro, já publicado
-    no Perfil Lookbook (RF6), não uma peça
-    solta do guarda-roupa.
+    Um DNA sem células ainda não tem
+    nenhum ClothesScheme para apontar como
+    alvo — a opção "Esquema de vestimenta
+    específico" não é oferecida aqui, só
+    "Conjunto DNA completo": não há escolha
+    a fazer. Depois que a Etapa 2/3
+    (seleção manual ou geração por IA)
+    preencher ao menos uma célula, uma
+    edição futura deste mesmo DNA passa a
+    oferecer o elemento-alvo "esquema
+    específico" normalmente (ramo "Sim"
+    acima).
   end note
 endif
 
@@ -291,6 +309,21 @@ else (Não — esquema específico)
     :Sistema duplica o esquema —\ncria um novo ClothesScheme\n(isDuplicate = true, sourceSchemeId = original);
     :Sistema aplica a nova anatomia,\ncontainer e arte de fundo\nsomente à cópia;
     :Sistema referencia, dentro do DNA,\na cópia derivada — o esquema original\nem RF6 permanece intocado;
+    :Reatribuir elemento-alvo\n= cópia derivada (novo ClothesScheme);
+
+    note right
+      Sem este passo, o elemento-alvo fixado
+      na Etapa 1 continua apontando para o
+      esquema original — o loop de "Arte de
+      fundo" logo abaixo (escolha de cor,
+      gradiente, prompt, direção recomendada
+      ou preset Aura) aplicaria o resultado
+      ao esquema publicado, exatamente o que
+      o usuário pediu para evitar ao escolher
+      "Não". Reatribuir o alvo aqui garante
+      que toda configuração visual restante
+      desta etapa afete só a cópia isolada.
+    end note
   endif
 
 endif

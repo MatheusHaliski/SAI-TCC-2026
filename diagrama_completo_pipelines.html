@@ -287,7 +287,7 @@
         </div>
 
         <div class="diagram-container">
-            <svg id="diagram"></svg>
+            <div id="diagram"></div>
         </div>
 
         <div class="legend">
@@ -363,7 +363,7 @@
         <div class="footer">
             <p>📄 Diagrama PlantUML renderizado com Kroki | 🏗️ Arquitetura Poliglota FashionAI (SAI-TCC-2026)</p>
             <p style="margin-top: 10px; font-size: 0.85em;">
-                Documentação: ANALISE_RF4_Flat_Lay_Pipeline.md | ANALISE_RF18_Provador_Virtual_2D.md | RFC_COMPLETE_ARCHITECTURE_RF4_RF18.md
+                Documentação: markdowns/ANALISE_RF4_Flat_Lay_Pipeline.md | markdowns/ANALISE_RF18_Provador_Virtual_2D.md | markdowns/RFC_COMPLETE_ARCHITECTURE_RF4_RF18.md
             </p>
         </div>
     </div>
@@ -535,13 +535,31 @@ Scheme "1" -- "0..*" Asset
         }
 
         function loadDiagram() {
-            const encoded = btoa(plantUmlCode);
-            const url = `https://kroki.io/plantuml/svg/${encoded}`;
+            // Kroki's GET endpoint requires the diagram source to be raw-deflate
+            // compressed and then base64url-encoded — plain btoa() (as used
+            // before) is not that encoding and Kroki rejects it. The POST
+            // endpoint accepts the raw, unencoded diagram source directly and
+            // avoids needing a deflate implementation in the browser.
+            const url = 'https://kroki.io/plantuml/svg';
 
-            fetch(url)
-                .then(response => response.text())
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: plantUmlCode,
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Kroki respondeu ${response.status}`);
+                    }
+                    return response.text();
+                })
                 .then(data => {
                     const diagramContainer = document.getElementById('diagram');
+                    // #diagram is a plain <div>, not an <svg> — assigning the
+                    // returned <svg>...</svg> document as innerHTML here makes
+                    // it the container's own child, instead of nesting an SVG
+                    // inside another SVG element (which browsers give a tiny
+                    // default viewport, clipping the whole diagram).
                     diagramContainer.innerHTML = data;
                     diagramContainer.style.display = 'block';
                 })
@@ -580,7 +598,7 @@ Scheme "1" -- "0..*" Asset
         }
 
         function downloadDiagram() {
-            const svg = document.getElementById('diagram');
+            const svg = document.querySelector('#diagram svg');
             if (!svg) {
                 alert('Diagrama ainda não foi carregado');
                 return;

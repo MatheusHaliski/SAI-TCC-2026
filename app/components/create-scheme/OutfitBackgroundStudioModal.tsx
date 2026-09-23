@@ -31,6 +31,7 @@ import { MATERIAL_PRESETS, applyFabricMaterialToCard, buildFabricPresetConfig, t
 import PremiumSelections from '@/app/components/studio/PremiumSelections';
 import PieceStyleEditorPanel from '@/app/components/create-scheme/PieceStyleEditorPanel';
 import type { CardSkinId, OutfitPiece } from '@/app/lib/outfit-card';
+import { getSkinById } from '@/app/components/outfit-card/skins/skinRegistry';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
 type GeometryFamily = 'arrows' | 'waves' | 'diamond' | 'mesh' | 'circles' | 'triangles' | 'stars' | 'flowers' | 'beams' | 'panels' | 'mixed';
@@ -2237,7 +2238,10 @@ export default function OutfitBackgroundStudioModal({
     outfitBackground: draft,
     pieceListFormat: pieceListFormat ?? previewCardData.pieceListFormat,
     displayOptions: cardDisplayOptions ?? previewCardData.displayOptions,
+    cardSkin: selectedCardSkin ?? previewCardData.cardSkin,
   };
+
+  const ActiveSkin = selectedCardSkin ? getSkinById(selectedCardSkin).Component : null;
 
   const dominantColor =
     draft.background_mode === 'solid'
@@ -3476,11 +3480,19 @@ export default function OutfitBackgroundStudioModal({
 
           <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4 lg:sticky lg:top-4 lg:h-fit' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
             <p className="text-xs uppercase tracking-[0.12em] text-white/65">Pré-visualização</p>
-            <div className="mx-auto w-full max-w-[832px] overflow-visible pb-[40%]">
-              <div style={{ width: '76.923%', margin: '0 auto', transform: 'scale(1.3, 1.4)', transformOrigin: 'top center' }}>
-                <OutfitCard data={previewData} variant="default" />
+            {ActiveSkin ? (
+              <div className="mx-auto flex w-full justify-center overflow-visible">
+                <div className="origin-top scale-[0.82] sm:scale-100">
+                  <ActiveSkin data={previewData} />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="mx-auto w-full max-w-[832px] overflow-visible pb-[40%]">
+                <div style={{ width: '76.923%', margin: '0 auto', transform: 'scale(1.3, 1.4)', transformOrigin: 'top center' }}>
+                  <OutfitCard data={previewData} variant="default" />
+                </div>
+              </div>
+            )}
             <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/85">
               <p>Contrast recommendation: <span className="font-semibold">Use {recommendTextTone} text/icons</span>.</p>
               {shouldShowContrastWarning ? <p className="mt-1 text-amber-200">Warning: high-luminance solid background may reduce metadata readability.</p> : null}

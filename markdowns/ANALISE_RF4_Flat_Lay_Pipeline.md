@@ -223,8 +223,26 @@ export class GarmentPhotoService {
         returnConfidence: true
       })
 
-    // Stage 2: Cloudinary Transformations
-    const uploadResult = await this.cloudinary.uploader.upload(removedBg, {
+    // Stage 2: Local Color Normalization
+    const normalized = await this.normalizeColors(removedBg)
+
+    // Stage 3: Flat Lay Composition
+    const composed = await this.composeAsTemplate(normalized, {
+      backgroundColor: '#FFFFFF',
+      padding: 50,
+      resolution: 1024
+    })
+
+    // Stage 4: Quality Validation — scores the same buffer that gets uploaded
+    // and returned below, not an earlier, unnormalized/uncomposed stage.
+    const qualityScore = await this.validateQuality(composed)
+
+    // Stage 5: Cloudinary upload of the fully processed image. Uploading
+    // `removedBg` here (an earlier draft of this pipeline) would return a
+    // URL to the background-removed-but-unnormalized image, while
+    // `qualityScore` above validates `composed` — a different image than the
+    // one the user actually receives.
+    const uploadResult = await this.cloudinary.uploader.upload(composed, {
       folder: `garments/${garmentId}`,
       format: 'png',
       transformation: [
@@ -233,19 +251,6 @@ export class GarmentPhotoService {
         { fetch_format: 'auto' }
       ]
     })
-
-    // Stage 3: Local Color Normalization
-    const normalized = await this.normalizeColors(removedBg)
-
-    // Stage 4: Flat Lay Composition
-    const composed = await this.composeAsTemplate(normalized, {
-      backgroundColor: '#FFFFFF',
-      padding: 50,
-      resolution: 1024
-    })
-
-    // Stage 5: Quality Validation
-    const qualityScore = await this.validateQuality(composed)
 
     const processingTime = Date.now() - startTime
 

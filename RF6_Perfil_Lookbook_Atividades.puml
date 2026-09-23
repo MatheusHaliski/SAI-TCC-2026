@@ -29,42 +29,126 @@ start
 :Carregar dados do perfil:\n- Nome\n- Foto\n- Biografia\n- Privacidade;
 :Carregar relacionamento social:\n- Seguindo\n- Não seguindo\n- Solicitação pendente;
 :Calcular contadores:\n- Peças criadas\n- Meus looks (esquemas criados)\n- Peças salvas\n- Looks salvos;
-:Carregar o registro de\nsaiDailyLooks da data atual\ndo usuário;
-
-if (Existe registro de\nsaiDailyLooks para hoje?) then (Não)
-  :Buscar o registro de\nsaiDailyLooks mais recente\nanterior à data atual;
-
-  if (Existe registro anterior?) then (Sim)
-    :Materializar (criar) o registro\nde hoje copiando scheme_id e\nsource do registro anterior;
-
-    note right
-      Sem esta materialização, um look
-      marcado ontem e nunca "remarcado"
-      não tem documento para a data de
-      hoje: a consulta por data atual
-      volta vazia e o look ativo some
-      após a virada do dia, mesmo que a
-      marcação devesse persistir. Este
-      passo garante que sempre exista
-      um registro datado por dia em que
-      o look permanece ativo — sem
-      depender de um job agendado à
-      meia-noite (embora um job
-      periódico de materialização em
-      lote seja uma otimização de
-      leitura válida em escala, o
-      resultado funcional é o mesmo).
-    end note
-  else (Não)
-    :Nenhum registro disponível —\nusuário nunca marcou um\nlook do dia;
-  endif
-else (Sim)
-endif
-
 :Verificar autorização para\nvisualizar o conteúdo do perfil;
 
 if (Conteúdo do perfil está acessível?) then (Sim)
   :Exibir cabeçalho, contadores,\nações sociais e abas;
+
+  if (O visitante autenticado é o\npróprio dono do perfil?) then (Sim)
+    :Carregar o registro de\nsaiDailyLooks da data atual\ndo dono (leitura/escrita própria);
+
+    if (Existe registro de\nsaiDailyLooks para hoje?) then (Não)
+      :Buscar o registro de\nsaiDailyLooks mais recente\nanterior à data atual;
+
+      if (Existe registro anterior E sua\ndata é exatamente ontem?) then (Sim)
+        :Materializar (criar) o registro\nde hoje copiando scheme_id do\nregistro anterior, com\nsource = "carried_over";
+
+        note right
+          Sem esta materialização, um look
+          marcado ontem e nunca "remarcado"
+          não tem documento para a data de
+          hoje: a consulta por data atual
+          volta vazia e o look ativo some
+          após a virada do dia, mesmo que a
+          marcação devesse persistir por
+          mais um dia. Este passo garante
+          que exista um registro datado
+          para o dia imediatamente seguinte
+          a uma marcação (manual ou já
+          carregada) — sem depender de um
+          job agendado à meia-noite.
+
+          **Limitado a um único dia de
+          propagação (correção desta
+          rodada).** A busca exige que o
+          registro anterior seja de ontem,
+          não "o mais recente, seja qual
+          for a data" — sem este limite, a
+          cada visita ao perfil o sistema
+          materializaria um novo registro
+          de hoje a partir do último
+          encontrado, ainda que ele tivesse
+          semanas de idade, encadeando
+          indefinidamente e tornando
+          impossível o usuário voltar a
+          "não ter look do dia registrado"
+          depois da primeira marcação —
+          contradizendo HU19, Critério 3
+          ("Feedback sem look do dia
+          registrado"), fabricando entradas
+          no histórico datado, e expondo
+          prompts de avaliação (HU19) para
+          looks que o usuário não usou nem
+          escolheu naquele dia. `source =
+          "carried_over"` (em vez de copiar
+          o `source` do registro anterior)
+          marca explicitamente que este
+          registro específico não veio de
+          uma ação do usuário hoje —
+          diferencia de `source = "manual"`
+          (linha da Etapa "marcar outro
+          esquema", abaixo) para quem
+          consumir o histórico depois.
+
+          **Restrito ao dono autenticado
+          (correção desta rodada).** As
+          regras do Firestore para
+          `saiDailyLooks` só permitem
+          `create`/`update` quando
+          `request.auth.uid ==
+          user_id` do documento — um
+          visitante nunca conseguiria
+          completar esta escrita mesmo
+          sem esta restrição explícita no
+          diagrama. Sem o gate acima, uma
+          implementação com SDK admin
+          (que ignora as regras do
+          Firestore) poderia materializar
+          — e assim alterar — o histórico
+          datado do dono só porque
+          alguém visitou o perfil dele;
+          este passo nunca roda para um
+          visitante, dono ou não.
+        end note
+      else (Não)
+        :Nenhum registro disponível —\nusuário nunca marcou um look do\ndia, ou o último registro é de\nhá dois dias ou mais (a\npropagação não alcança);
+      endif
+    else (Sim)
+    endif
+  else (Não — visitante,\nnão é o dono)
+    :Ler o registro de saiDailyLooks\nda data atual do dono, quando\nexistir, via caminho server-side\ncom filtro de visibilidade —\nnunca uma leitura direta do\ncliente;
+
+    note right
+      As regras do Firestore para
+      `saiDailyLooks` restringem leitura
+      a `request.auth.uid == user_id`
+      do documento — um visitante
+      autenticado (mesmo seguidor
+      aprovado de um perfil de
+      seguidores, já autorizado pelo
+      gate acima) não consegue ler o
+      documento de outra pessoa
+      diretamente pelo SDK do cliente.
+      RF6.CA08 (perfil público) precisa
+      de uma rota server-side
+      (equivalente a
+      `SchemesService.getSchemeDetailsForViewer`,
+      já usado para esquemas) que
+      aplique a mesma regra de
+      visibilidade e devolva o
+      registro do dono ao visitante
+      autorizado — sem essa rota, a aba
+      "Look do Dia" de um perfil de
+      terceiros nunca carrega, mesmo
+      após o gate de acessibilidade
+      acima já ter passado. Este
+      caminho nunca escreve/materializa
+      — só lê o que já existe (ramo
+      "Sim" acima trata a
+      materialização, restrita ao
+      dono).
+    end note
+  endif
 else (Não)
   :Exibir informações públicas\ne indicar "Perfil privado";
   :Ocultar peças, esquemas\ne conteúdos restritos;
@@ -165,7 +249,7 @@ elseif (Abas do Lookbook) then (Abas do Lookbook)
           social de terceiros e não gera
           contador próprio. Por isso não
           entra na soma de engajamento.
-          Ver RF6_HYPE_SCORE_CALCULO.md,
+          Ver markdowns/RF6_HYPE_SCORE_CALCULO.md,
           seção 3.
         end note
 
@@ -186,13 +270,13 @@ elseif (Abas do Lookbook) then (Abas do Lookbook)
         note right
           Fórmula completa, pesos, janelas
           de tempo e faixas de classificação
-          em RF6_HYPE_SCORE_CALCULO.md.
+          em markdowns/RF6_HYPE_SCORE_CALCULO.md.
           Catálogo de versões de painel
           (Spotlight Clássico, Passarela,
           Raio-X do Estilo, Bento do Dia,
           Editorial Minimal, Coach de
           Estilo) em
-          RF6_LOOK_DO_DIA_VERSOES_PAINEL.md.
+          markdowns/RF6_LOOK_DO_DIA_VERSOES_PAINEL.md.
         end note
 
       else (Não)

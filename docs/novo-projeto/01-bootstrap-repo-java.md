@@ -8,7 +8,7 @@
 |---|---|---|
 | Especificação completa (3 Objetivos, É/Não É, Visão, Atores, RF, HU, Modelo de dados, UML) | `docs/especificacao-fai-social-network.md` | Base textual do novo README e do domínio |
 | SRS e Especificação em PDF | `FAI_SRS_Rede_Social.pdf`, `FAI_Social_Network_Especificacao_TCC.pdf` | Anexos do TCC |
-| Histórias de Usuário 01–20 | `HU01.md` … `HU20.md` | HU20 = DNA de Estilo; HU17 = Autopiloto |
+| Histórias de Usuário 01–20 | `markdowns/HU01.md` … `markdowns/HU20.md` | HU20 = DNA de Estilo; HU17 = Autopiloto. **Correção desta rodada:** estes arquivos são a versão histórica/local — a fonte canônica dos Critérios de Aceite hoje é a checklist "Critérios de Aceite" de cada card **HU-RF1…HU-RF26** no Product Backlog do Trello (regra explícita de `02-rf-reestruturados-e-criterios-aceite.md` §0: um CA vive em um único lugar). Não há ainda card HU-RF para RF31–RF36 (§1.3) — nascem só em texto neste repositório. |
 | UML — casos de uso da rede social | `docs/uml-casos-rede-social.md` | Diagramas de caso de uso (parte 3) |
 | UML — atores e atividades principais | `docs/uml-actors-main-activities.md`, `docs/main-activity-workflows.md` | Base dos diagramas de atividade (Etapa 8) |
 | UML — casos, ER e classes | `docs/uml-casos-er-classes.md`, `docs/relational-entity-diagrams-activities.md` | Modelo de classes JPA |
@@ -17,7 +17,8 @@
 | Arquitetura de persistência poliglota | `docs/arquitetura-persistencia-poliglota.md` | **Base direta da decisão MySQL + NoSQL** |
 | Migração Firestore → MySQL | `docs/migracao-firestore-mysql.md`, `db/`, `migrations/` | Esquema relacional de partida |
 | Vínculo marca/celebridade por selo | `docs/rf20-rf21-vinculo-marca-celebridade.md` | RF20/RF21 |
-| Board Trello | *TCC 2026 (Fashion AI)* — listas RF (30 cards), RNF (8 cards), Product Backlog, 4 Sprints | Requisitos e cronograma |
+| **Meu Quarto, Vista-me, Destaques, Desafios & Games** *(novo, ver §1.3)* | `docs/meu-quarto/01-especificacao-meu-quarto.md`, `02-inventory-score-calculo.md`, `03-desafios-e-games.md`, `04-detalhes-de-engajamento.md`, `RF33_Vista-me_Atividades.puml` | RF32–RF36, extensão de RF10 |
+| Board Trello | *TCC 2026 (Fashion AI)* — listas RF (**27 cards** — 26 RF + 1 de rastreabilidade, atualizado desta rodada; era 30 antes da absorção de RF27–RF29), RNF (**12 cards**, atualizado desta rodada; era 8), Product Backlog (cards HU-RF1–HU-RF26), 4 Sprints | Requisitos e cronograma |
 
 ### 1.2 Insumos que **faltam** e precisam ser depositados antes da Etapa 6/7
 
@@ -32,6 +33,20 @@
 | Artefato de modelagem UML **parte 3** | anexo do board | Etapa 7 (esquema de vestimenta e peças) |
 
 Enquanto não chegarem, os CAs de RF6, RF13 e RF23 no documento `02-…` foram escritos a partir de HU20, HU05, HU12 e dos documentos de design de card já versionados — devem ser **revalidados** contra as aulas.
+
+---
+
+### 1.3 Requisitos e numeração — o que mudou desde a última atualização deste documento
+
+**Política de numeração (`02-rf-reestruturados-e-criterios-aceite.md` §1): números de RF nunca são reciclados.** RFs absorvidos ficam `[ABSORVIDO em RFx]` e arquivados; RFs novos recebem o próximo número livre. Isso já explicava `RF24` (motor de IA, número reaproveitado) e a criação de `RF31`. Desde então:
+
+- **RF31 — Filtros de estado do acervo** (favoritar/disponível/indisponível/todos, desmembrado de RF19) já estava coberto por `02-rf-reestruturados-e-criterios-aceite.md`, mas não constava na lista de RF cobertos pela seção 4 deste documento (corrigido abaixo).
+- **RF32–RF36 são novos**, especificados em `docs/meu-quarto/` (§1.1): **RF32** Meu Quarto, **RF33** Smart Mirror e Vista-me (`RF33_Vista-me_Atividades.puml`), **RF34** Destaques do Meu Inventário, **RF35** FAI Points e progressão do quarto, **RF36** Desafios & Games (`03-desafios-e-games.md`). Nenhum é redenominação de um RF existente — todos usam número novo, seguindo a política acima.
+- **RF10 (Copilot) foi estendido**, não renumerado — ganha os CAs `RF10.CA08` em diante para o Copilot contextual do Meu Quarto.
+- **Nenhum destes seis (RF31–RF36) tem card HU-RF correspondente no Trello ainda** — o Product Backlog vai só até `HU-RF26`. Enquanto isso não for criado, os Critérios de Aceite de RF31–RF36 vivem só nos arquivos-fonte listados acima (não na checklist do Trello, como a regra de `02-…` §0 exige para os demais RFs).
+- **Contagem de cards do board Trello mudou** (tabela da seção 1.1): a lista *Requisitos Funcionais* caiu de 30 para 27 cards (absorção de RF27–RF29 em RF1/RF6, já arquivados) e a lista *RNF* cresceu de 8 para 12 cards (RNF9–RNF12 são adições mais recentes: dimensões de card, notificações via chrome, tratamento de upload, diretrizes de promoção de selo).
+
+**Ação para quem for atualizar a seção 4 (prompt de bootstrap) ou o documento `02-…`:** tratar RF31–RF36 como requisitos reais e numerados, não como rascunho — mas sinalizar ao time que os CAs precisam de um card HU-RF antes de serem considerados "canônicos" pela própria regra do projeto.
 
 ---
 
@@ -74,6 +89,14 @@ Enquanto não chegarem, os CAs de RF6, RF13 e RF23 no documento `02-…` foram e
 | `pipeline_jobs` (3D) | **MySQL** (estado) + fila | Máquina de estados auditável |
 
 **Regra de ouro:** o MySQL é a única fonte da verdade. Cassandra, Redis e OpenSearch são **projeções derivadas**, alimentadas por eventos de domínio — nunca donos independentes do mesmo dado.
+
+> **Gap encontrado nesta rodada — `schemes` está incompleta para o RF11/RF5 atuais.** `db/schema.sql` (a base de partida citada na seção 1.1) modela `schemes` só com `title`, `description`, `creation_mode`, `style`, `occasion`, `visibility`, `community_indexed`, `cover_image_url` — sem nenhuma coluna para o Background Studio (RF11) nem para a seleção de skin (RF5, Etapa 4 nova). Os documentos-fonte já existentes neste repositório (`markdowns/RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md`, `RF11_Configurar_Visual_Card_Atividades.puml`, `RF5_Criar_Look_Atividades_Corrigido.puml`) especificam campos que a Tarefa 2 da seção 4 precisa incluir na entidade `Scheme` e que `V1__baseline.sql` (Flyway) precisa criar, sem equivalente hoje em `db/schema.sql`:
+> - `background_config` — cor sólida, gradiente, arte de IA (armazenamento JSON/embedded; ver `OutfitBackgroundConfig` no front-end atual)
+> - `border_color` — cor da borda do card (2px, arredondada — constantes de raio/espessura não são colunas)
+> - `content_container_color`, `content_container_origem` (`INDEFINIDA` | `MANUAL` | `AUTO`), `content_container_obrigatorio` (Boolean) — o container do esquema (v13) e a regra de trava automática ao aplicar a "Direção recomendada" (RF11)
+> - `card_skin` (`ATELIER` | `SPREAD` | `INDEX` | `TRADING` | `FAI_MAX` | `STUB` | `SPECIMEN`) — skin de card escolhido na nova Etapa 4 do RF5
+>
+> `daily_looks`, por outro lado, **já está correta**: `UNIQUE KEY uq_daily_looks_user_date (user_id, look_date)` evita duplicidade de "look do dia" por usuário/data — o equivalente Firestore do repositório antigo (`saiDailyLooks`, sem essa restrição) tinha essa lacuna, corrigida separadamente nesta mesma rodada.
 
 ### 2.2 Estrutura de módulos Maven proposta
 
@@ -215,6 +238,9 @@ descartado por dívida técnica e por risco de credenciais expostas.
 - docs/novo-projeto/02-rf-reestruturados-e-criterios-aceite.md → RF1–RF23, RF24, RF31 e ~150 critérios de aceite
 - docs/novo-projeto/03-rf24-ia-e-servicos-externos.md → capacidades de IA e provedores
 - docs/novo-projeto/05-diagramas-atividade.md   → fluxos por RF
+- docs/meu-quarto/*.md, RF33_Vista-me_Atividades.puml → RF32–RF36 (novo — Meu Quarto, Smart
+  Mirror/Vista-me, Destaques do Inventário, FAI Points, Desafios & Games), extensão de RF10.
+  CAs ainda não têm card HU-RF no Trello — vivem só nestes arquivos (ver 01, seção 1.3).
 
 ## Stack obrigatória
 Java 21, Spring Boot 3.3, Spring Data JPA + Hibernate 6, MySQL 8 como fonte da
@@ -237,6 +263,14 @@ Notification, StyleDna, Photo, PipelineJob.
 Regras: sem relacionamento EAGER; toda coleção paginada; @Version onde houver
 escrita concorrente; campos pessoais sensíveis com converter AES-GCM (RNF3);
 metadados de criação/alteração via @EntityListeners.
+Atenção: db/schema.sql NÃO tem colunas para o Background Studio (RF11) nem para
+skin de card (RF5) — Scheme precisa ganhar backgroundConfig, borderColor,
+contentContainerColor, contentContainerOrigem (INDEFINIDA|MANUAL|AUTO),
+contentContainerObrigatorio (Boolean) e cardSkin (ATELIER|SPREAD|INDEX|TRADING|
+FAI_MAX|STUB|SPECIMEN), conforme markdowns/RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md e
+RF11_Configurar_Visual_Card_Atividades.puml (ver documento 01, seção 2.1).
+Para RF32–RF36 (Meu Quarto), modele as entidades a partir de docs/meu-quarto/ só
+quando essas tarefas entrarem na Tarefa 4 — não são pré-requisito das Tarefas 1–3.
 
 ## Tarefa 3b — Auditoria (RNF5)
 Atenção: @EntityListeners(AuditingEntityListener.class) NÃO satisfaz o RNF5. Ele
@@ -266,6 +300,10 @@ Para cada RF, um caso de uso em fai-application, um controller em fai-web e test
 que verificam os CAs correspondentes do documento 02. Ordem: RF1, RF2, RF3, RF4,
 RF6, RF5, RF9, RF31, RF8, RF19, RF17, RF10/RF24, RF13, RF14/RF20, RF22/RF21,
 RF11, RF12, RF15, RF18, RF23, RF16.
+RF32–RF36 (Meu Quarto — docs/meu-quarto/) ficam por último, depois de RF16: são
+os mais novos do backlog, dependem de RF4/RF5/RF6/RF13/RF16/RF19/RF24/RF31 já
+estarem prontos, e ainda não têm CA canônico em card HU-RF do Trello — trate como
+pendentes de validação com o time antes de fatiar, não como parte fixa da ordem.
 
 ## Tarefa 5 — IA
 Uma porta AiProviderPort em fai-application e adaptadores em

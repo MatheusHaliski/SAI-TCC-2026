@@ -67,7 +67,7 @@ Motivo: a auto-ativação reativa por skin+arte gerava uma trava "surpresa" para
 
 - **Dentro do container:** cor nativa do skin ativo no momento em que a "Direção recomendada" foi aplicada (Atelier → branco puro; Spread → neutro claro; Índice → branco + borda; qualquer skin framed → sua própria cor nativa), travada — a arte com IA não pode pintar por trás do título/descrição/peças.
 - **Fora do container, dentro da borda do card:** a arte com IA continua rodando livre — vira efeito de **passe-partout** (moldura/paspatur), como uma moldura de quadro: a arte exuberante emoldura o painel de conteúdo, em vez de competir com ele.
-- **Não há escape hatch.** Diferente de uma versão anterior desta proposta, não existe mais "usar cor customizada mesmo assim" — ver seção 3.6, efeito 4. A única saída é trocar a direção visual da Arte com IA para algo que não seja a "Direção recomendada".
+- **Não há escape hatch.** Diferente de uma versão anterior desta proposta, não existe mais "usar cor customizada mesmo assim" — ver seção 3.6, efeito 4. Trocar a direção visual da Arte com IA para algo que não seja a "Direção recomendada" impede o gatilho de disparar de novo, mas **não reverte** o que já foi travado para este esquema — não há, dentro deste fluxo, nenhuma ação que desfaça `obrigatorio` uma vez que ele vira `true` (seção 3.6, efeito 5).
 
 Nos demais casos (Preset Aura, Material, Aura + Material, Cor sólida, Gradiente), nada disto se aplica: o container mantém a cor que o usuário deixou (manual) ou permanece neutro/indefinido.
 
