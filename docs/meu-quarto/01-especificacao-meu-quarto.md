@@ -47,7 +47,7 @@ A **Grade** continua sendo a visão padrão para busca e administração, porque
 
 | Indicador | Pergunta que responde | Método de normalização |
 |---|---|---|
-| **Hype Score** (RF6, [`RF6_HYPE_SCORE_CALCULO.md`](../../RF6_HYPE_SCORE_CALCULO.md)) | "Qual é a minha relevância social?" | percentil contra a comunidade |
+| **Hype Score** (RF6, [`RF6_HYPE_SCORE_CALCULO.md`](../../markdowns/RF6_HYPE_SCORE_CALCULO.md)) | "Qual é a minha relevância social?" | percentil contra a comunidade |
 | **FAI Inventory Score** (RF34) | "Quão desenvolvido, versátil e bem utilizado é o meu guarda-roupa?" | **rubrica absoluta**: depende só do próprio guarda-roupa. O percentil entra apenas no ranking |
 
 Por que a rubrica é absoluta: se o Inventory Score fosse um percentil, a nota de um usuário cairia quando outros melhorassem, mesmo sem ele mudar nada. Isso contradiz a promessa de "melhorar usando melhor o que você já tem". O ranking (RF34.CA08) é o único lugar em que há comparação entre usuários.
@@ -151,7 +151,7 @@ Diagrama: [`RF33_Vista-me_Atividades.puml`](RF33_Vista-me_Atividades.puml).
 
 ### 2.3 Integridade do Look do Dia
 
-O Look do Dia é **sempre um Esquema** (`RF6_HYPE_SCORE_CALCULO.md` §1). Por isso, "Usar este look" com um look que ainda não existe como esquema faz duas coisas: (a) cria o esquema com `origin = "smart_mirror"` ou `"vista_me"`, com a visibilidade padrão do perfil (RF3.CA12); (b) registra `saiDailyLooks` com `source = "vista_me"`. Nunca se registra um Look do Dia apontando para uma composição sem esquema.
+O Look do Dia é **sempre um Esquema** (`markdowns/RF6_HYPE_SCORE_CALCULO.md` §1). Por isso, "Usar este look" com um look que ainda não existe como esquema faz duas coisas: (a) cria o esquema com `origin = "smart_mirror"` ou `"vista_me"`, com a visibilidade padrão do perfil (RF3.CA12); (b) registra `saiDailyLooks` com `source = "vista_me"`. Nunca se registra um Look do Dia apontando para uma composição sem esquema.
 
 ### 2.4 Entrega para o Criar Look (RF5)
 

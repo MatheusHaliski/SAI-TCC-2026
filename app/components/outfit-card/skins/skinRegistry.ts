@@ -4,6 +4,8 @@ import CardSpread from './CardSpread';
 import CardIndex from './CardIndex';
 import CardTrading from './CardTrading';
 import CardFAIMax from './CardFAIMax';
+import CardStub from './CardStub';
+import CardSpecimen from './CardSpecimen';
 
 export type SkinEntry = {
   id: CardSkinId;
@@ -48,6 +50,20 @@ export const SKIN_REGISTRY: SkinEntry[] = [
     labelEn: 'FAI Max',
     Component: CardFAIMax,
     thumbHint: 'Maximalista laranja FAI',
+  },
+  {
+    id: 'stub',
+    labelPt: 'Stub',
+    labelEn: 'Stub',
+    Component: CardStub,
+    thumbHint: 'Estilo ingresso editorial',
+  },
+  {
+    id: 'specimen',
+    labelPt: 'Specimen',
+    labelEn: 'Specimen',
+    Component: CardSpecimen,
+    thumbHint: 'Ficha visual de coleção',
   },
 ];
 

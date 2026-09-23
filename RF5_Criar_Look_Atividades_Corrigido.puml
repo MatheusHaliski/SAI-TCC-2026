@@ -170,7 +170,7 @@ endif
 
 |Sistema|
 :Etapa 4 — Escolher e aplicar\na skin do card ao elemento\nfixado na Etapa 1;
-:Sistema apresenta os 7 skins\ndisponíveis (Atelier, Spread,\nÍndice, Trading, FAI Max, Stub,\nSpecimen), cada um com o\nthumbnail de referência gerado\npor IA (RF11_PROMPTS_SKINS_CARD.md);
+:Sistema apresenta os 7 skins\ndisponíveis (Atelier, Spread,\nÍndice, Trading, FAI Max, Stub,\nSpecimen), cada um com o\nthumbnail de referência gerado\npor IA (markdowns/RF11_PROMPTS_SKINS_CARD.md);
 
 |Usuário|
 repeat
@@ -188,7 +188,7 @@ repeat while (Deseja trocar\nde skin?) is (Sim)
 
 note right
   O thumbnail de referência (gerado por
-  IA, ver RF11_PROMPTS_SKINS_CARD.md,
+  IA, ver markdowns/RF11_PROMPTS_SKINS_CARD.md,
   seção 1) é só uma prévia estática no
   seletor — o card ao vivo no painel de
   preview sempre usa o componente real

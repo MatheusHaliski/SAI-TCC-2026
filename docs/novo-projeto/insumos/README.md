@@ -35,7 +35,7 @@ Há duas definições incompatíveis do RF13 circulando, e o time precisa escolh
 
 | Fonte | Definição |
 |---|---|
-| **HU20** (`HU20.md`, versionada) | Cartão de identidade gerado por IA: arquétipo, paleta cromática, padrão de silhueta, índice de ousadia, peça ícone + Identidade de Vida declarada + Frase de Identidade |
+| **HU20** (`markdowns/HU20.md`, versionada) | Cartão de identidade gerado por IA: arquétipo, paleta cromática, padrão de silhueta, índice de ousadia, peça ícone + Identidade de Vida declarada + Frase de Identidade |
 | **Aula "DNA de Estilo — Mosaico de Eras"** + artefato das pranchas | Nova **tipologia de publicação**: 2 a 6 esquemas já criados se fundem num card-retrato, com flag `isDNAdeEstilo`, campo `mosaicLayout` e rótulo de era por célula |
 
 Os CAs de RF13 no documento `02` foram escritos **a partir da HU20**. Se a definição de mosaico

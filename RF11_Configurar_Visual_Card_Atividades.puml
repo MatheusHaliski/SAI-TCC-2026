@@ -191,20 +191,26 @@ note right
 
   A única regra que atravessa essa
   sobreposição é a obrigatoriedade do
-  container: se a combinação aplicada em
+  container, restrita a cards do tipo
+  Esquema: se a combinação aplicada em
   algum momento na Etapa 5 incluir a
   "Direção recomendada" (o preset
-  recomendado pela IA), o container vira
-  obrigatório (Etapa 4) — travado na cor
-  nativa do skin ativo no momento,
-  independentemente de qual layout/anatomia
-  estiver selecionado nesta Etapa 3. Nas
-  demais combinações da lista acima
-  (nenhuma delas é "Direção recomendada"),
-  o container permanece opcional,
-  qualquer que seja o layout escolhido. Ver
-  RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
-  seções 3.2 e 3.6.
+  recomendado pela IA), o container de um
+  Esquema vira obrigatório (Etapa 4) —
+  travado na cor nativa do skin ativo no
+  momento, independentemente de qual
+  layout/anatomia estiver selecionado nesta
+  Etapa 3. Nas demais combinações da lista
+  acima (nenhuma delas é "Direção
+  recomendada"), o container permanece
+  opcional, qualquer que seja o layout
+  escolhido. DNA de Estilo nunca fica
+  obrigatório por esta regra — seu
+  container (sempre presente
+  estruturalmente) não tem o mesmo catálogo
+  de skins, e Peça não tem container. Ver
+  markdowns/RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
+  seções 3.2, 3.6 e 5 (escopo).
 end note
 
 |Sistema|
@@ -236,7 +242,7 @@ if (Container existe\npara esta configuração?) then (Sim)
   else (Não — deixar\nsem cor definida por ora)
     :Sistema mantém a cor do container\ncom um padrão neutro, sem origem\ndefinida;
     |Sistema|
-    :Manter a origem do container\nindefinida\n(ConfiguracaoContainer.origem = undefined);
+    :Manter a origem do container\nindefinida\n(ConfiguracaoContainer.origem = INDEFINIDA);
 
     note right
       Fora da "Direção recomendada" (Etapa 5,
@@ -252,7 +258,7 @@ if (Container existe\npara esta configuração?) then (Sim)
       arte. Restrita a cards do tipo Esquema —
       DNA de Estilo ainda não tem um catálogo
       de skins equivalente; ver
-      RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
+      markdowns/RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
       seção 5 (escopo). A única exceção
       permanece a "Direção recomendada": se
       o usuário a aplicar em algum momento na
@@ -398,12 +404,12 @@ repeat
     elseif (Direção recomendada) then (Direção visual)
       |Serviço de IA|
       :IA analisa o conteúdo,\no estilo e as peças;
-      :IA recomenda\numa direção visual\n(preset Aura + material, conforme\na matriz de coerência da seção 5\nde RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md);
+      :IA recomenda\numa direção visual\n(preset Aura + material, conforme\na matriz de coerência da seção 5\nde markdowns/RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md);
       |Usuário|
       :Usuário seleciona\na direção recomendada;
 
       |Sistema|
-      if (Container existe para\neste card (Etapa 4)?) then (Sim)
+      if (Tipo de card é Esquema E\nContainer existe para\neste card (Etapa 4)?) then (Sim)
         :Marcar o container como obrigatório\n(ConfiguracaoContainer.obrigatorio = true);
         :Confirmar a origem do container\ncomo "auto"\n(ConfiguracaoContainer.origem = AUTO);
 
@@ -428,9 +434,18 @@ repeat
           Material — desativa o container; ver o
           bloco de verificação reativa logo abaixo e
           a opção "3. Cor do container" no loop
-          desta etapa.
+          desta etapa. Restrito a Esquema: o container
+          do DNA de Estilo sempre existe
+          estruturalmente (Etapa 3/4 acima), mas essa
+          existência estrutural não é o mesmo gatilho
+          — a Direção recomendada nunca marca
+          `obrigatorio` para um card de DNA de Estilo,
+          por mais que ele "tenha container" na
+          checagem de existência. Ver
+          markdowns/RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
+          seção 5.
         end note
-      else (Não — este card\nnão tem container)
+      else (Não — este card não tem\ncontainer, ou não é Esquema)
       endif
       |Usuário|
 
@@ -458,8 +473,8 @@ repeat
       aplicável sobre qualquer uma delas —
       igual já funciona materialLayer no
       código (independente de background_mode).
-      Ver RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md,
-      seção 3.2, e RF11_PROMPTS_AURA_MATERIAIS.md.
+      Ver markdowns/RF11_PROPOSTA_PRESETS_AURA_E_MATERIAIS.md,
+      seção 3.2, e markdowns/RF11_PROMPTS_AURA_MATERIAIS.md.
     end note
 
     |Serviço de IA|
@@ -516,7 +531,7 @@ repeat
           um pré-preenchimento automático. Só a
           "Direção recomendada" (ramo acima) torna
           o container obrigatório. Ver
-          RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
+          markdowns/RF11_PROPOSTA_CONTAINER_EDITORIAL_VS_AURA.md,
           seção 3.2 (retirada como gatilho
           automático) e seção 3.6.
         end note
@@ -540,16 +555,19 @@ repeat
         :Manter a cor nativa do skin\ne a origem "auto";
 
         note right
-          A única forma de sair do container
-          obrigatório é trocar a direção visual da
-          Arte com IA para Prompt ou Preset Aura
-          escolhido manualmente (não a direção
-          recomendada) — isso não reseta
-          `obrigatorio` sozinho, mas remove o
-          gatilho que o mantém relevante em telas
-          futuras deste mesmo fluxo de edição. Uma
-          política de "resetar obrigatorio" fica
-          fora do escopo desta proposta.
+          Trocar a direção visual da Arte com IA para
+          Prompt ou Preset Aura escolhido manualmente
+          impede que o gatilho dispare de novo — mas
+          não destrava o que já foi travado.
+          `obrigatorio` é um flag de uma via
+          (false → true) e nunca é resetado
+          automaticamente (RF11_PROPOSTA_CONTAINER_
+          EDITORIAL_VS_AURA.md, seção 3.6, efeito 5).
+          Reabrir "3. Cor do container" continua
+          informando que está travado mesmo depois da
+          troca — não existe, dentro deste fluxo,
+          nenhuma ação que reverta `obrigatorio` para
+          este esquema uma vez que ele vira `true`.
         end note
 
       elseif (ConfiguracaoContainer.origem\njá persistida é "manual"\n— escolha anterior deste usuário?) then (Sim)
@@ -617,7 +635,7 @@ repeat
 repeat while (Confirmar e concluir o card?) is (Não)
 
 |Sistema|
-:Persistir:\n- background_config (do elemento-alvo)\n- border_color (do elemento-alvo —\nborder_radius e border_width\nsão constantes de sistema,\nnão persistidas por card)\n- ai_artwork_config (do elemento-alvo,\ndireção + material)\n- content_container_color (do elemento-alvo,\nquando aplicável)\n- content_container_origem\n(manual/auto, quando aplicável)\n- content_container_obrigatorio\n(Boolean, quando aplicável)\n- layout_config (inclui anatomia\ne densidade da Etapa 3);
+:Persistir:\n- background_config (do elemento-alvo)\n- border_color (do elemento-alvo —\nborder_radius e border_width\nsão constantes de sistema,\nnão persistidas por card)\n- ai_artwork_config (do elemento-alvo,\ndireção + material)\n- content_container_color (do elemento-alvo,\nquando aplicável)\n- content_container_origem\n(indefinida/manual/auto, quando aplicável)\n- content_container_obrigatorio\n(Boolean, quando aplicável)\n- layout_config (inclui anatomia\ne densidade da Etapa 3);
 :Salvar ou atualizar\no card;
 :Exibir confirmação\nde conclusão;
 stop

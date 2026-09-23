@@ -3,7 +3,7 @@
 **Projeto:** FashionAI (SAI-TCC-2026)
 **Requisito Funcional:** RF34 — Destaques do Meu Inventário
 **Complementa:** [`01-especificacao-meu-quarto.md`](01-especificacao-meu-quarto.md) §4
-**Indicador irmão (não misturar):** Hype Score, em [`RF6_HYPE_SCORE_CALCULO.md`](../../RF6_HYPE_SCORE_CALCULO.md)
+**Indicador irmão (não misturar):** Hype Score, em [`RF6_HYPE_SCORE_CALCULO.md`](../../markdowns/RF6_HYPE_SCORE_CALCULO.md)
 
 ---
 
@@ -181,7 +181,7 @@ O ranking é o único lugar que usa percentil. A posição de cada usuário é c
 
 $$\text{Top}\% = 100 \times \frac{N_{seg} - \text{posição} + 1}{N_{seg}}$$
 
-(mesma construção da fatia superior inclusiva do `RF6_HYPE_SCORE_CALCULO.md` §4.1, com a posição em ordem crescente e 1-indexada).
+(mesma construção da fatia superior inclusiva do `markdowns/RF6_HYPE_SCORE_CALCULO.md` §4.1, com a posição em ordem crescente e 1-indexada).
 
 | Ranking | Chave de ordenação |
 |---|---|
@@ -198,5 +198,5 @@ Cidade só com consentimento explícito e só exibida para grupos com ≥ 50 par
 
 - **On-demand** ao abrir Destaques, com cache de 1 h por usuário. As entradas são dados do próprio usuário, então o custo é proporcional a $n$.
 - **Snapshot diário** em `saiInventoryScoreSnapshots` (base para a evolução mensal, o Rising Wardrobe e as conquistas).
-- **Job de ranking** a cada poucas horas: materializa as posições por segmento, com a mesma lógica de job periódico descrita no `RF6_HYPE_SCORE_CALCULO.md` §7.
+- **Job de ranking** a cada poucas horas: materializa as posições por segmento, com a mesma lógica de job periódico descrita no `markdowns/RF6_HYPE_SCORE_CALCULO.md` §7.
 - A contagem de combinações válidas (§3.4) é $O(|upper| \cdot |lower| \cdot |shoes|)$. Para acervos grandes, contar por grupos de ocasião em vez de enumerar triplas: dentro de um grupo, o número de combinações de uma peça superior é $|lower_g| \cdot |shoes_g|$.

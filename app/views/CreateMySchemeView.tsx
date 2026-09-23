@@ -18,6 +18,7 @@ import { OutfitInterpretResponse, OutfitInterpretationResult } from '@/app/backe
 import { mapAiInterpretationToManualForm } from '@/app/lib/outfit-ai-mapping';
 import { OUTFIT_PIECE_OPTIONS, OutfitSlotKey, SLOT_TYPE_ALIASES } from '@/app/lib/outfit-piece-options';
 import {
+  CardSkinId,
   OutfitBackgroundConfig,
   OutfitCardDisplayOptions,
   OutfitCardData,
@@ -27,6 +28,7 @@ import {
   buildOutfitDescriptionRich,
   resolveBrandLogoUrlByName,
 } from '@/app/lib/outfit-card';
+import { DEFAULT_CARD_SKIN, updateCardSkin } from '@/app/lib/outfits/cardSkin';
 
 type Brand = { brand_id: string; name: string; logo_url?: string | null };
 type SchemePieceSnapshot = {
@@ -139,6 +141,7 @@ export default function CreateMySchemeView() {
   const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [outfitBackgroundConfig, setOutfitBackgroundConfig] = useState<OutfitBackgroundConfig>(DEFAULT_BACKGROUND_CONFIG);
   const [pieceListFormat, setPieceListFormat] = useState<OutfitPieceListFormat>('grid-2');
+  const [selectedCardSkin, setSelectedCardSkin] = useState<CardSkinId>(DEFAULT_CARD_SKIN);
   const [cardDisplayOptions, setCardDisplayOptions] = useState<OutfitCardDisplayOptions>({
     contentPanelColor: 'rgba(2,6,23,0.72)',
     displayMode: 'complete',
@@ -358,6 +361,7 @@ export default function CreateMySchemeView() {
       titleFontFamily,
       pieceListFormat,
       displayOptions: cardDisplayOptions,
+      cardSkin: selectedCardSkin,
     };
   };
 
@@ -437,11 +441,22 @@ export default function CreateMySchemeView() {
         }),
       });
 
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; scheme?: { scheme_id?: string } }
+        | null;
 
       if (!response.ok) {
         setAlertMessage(payload?.error || 'Unable to save scheme. Please try again.');
         return false;
+      }
+
+      const savedSchemeId = payload?.scheme?.scheme_id;
+      if (savedSchemeId) {
+        try {
+          await updateCardSkin(savedSchemeId, selectedCardSkin);
+        } catch {
+          // Card skin is a secondary preference; the scheme itself saved successfully.
+        }
       }
 
       setAlertMessage('Scheme saved successfully.');
@@ -885,6 +900,8 @@ export default function CreateMySchemeView() {
       previewCardData={buildGeneratedOutfitCardData()}
       pieceListFormat={pieceListFormat}
       onSelectPieceListFormat={setPieceListFormat}
+      selectedCardSkin={selectedCardSkin}
+      onSelectSkin={setSelectedCardSkin}
       cardDisplayOptions={cardDisplayOptions}
       onChangeCardDisplayOptions={setCardDisplayOptions}
       onChangePieces={(nextPieces) => {
