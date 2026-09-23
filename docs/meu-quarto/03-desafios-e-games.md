@@ -3,7 +3,7 @@
 **Projeto:** FashionAI (SAI-TCC-2026)
 **Status:** proposta de especificação (v0.1), para revisão do time
 **Requisito novo:** RF32 (número livre, conforme [`02-rf-reestruturados-e-criterios-aceite.md`](../novo-projeto/02-rf-reestruturados-e-criterios-aceite.md) §1)
-**Depende de:** RF5, RF6, RF8, RF19, RF27, RF28, RF29, RF30
+**Depende de:** RF5, RF6, RF8, RF17, RF19, RF27, RF28, RF29, RF30
 **Documentos irmãos:** [`01-especificacao-meu-quarto.md`](01-especificacao-meu-quarto.md) · [`02-inventory-score-calculo.md`](02-inventory-score-calculo.md) · [`04-detalhes-de-engajamento.md`](04-detalhes-de-engajamento.md)
 
 ---
@@ -140,13 +140,13 @@ O progresso **vem dos dados do sistema**, nunca de uma autodeclaração "eu fiz"
 | Copilot (RF10) | conhece os desafios ativos. Se a regra do 10×10 estiver ativa, o Vista-me só sugere as 10 peças escolhidas |
 | FAI Points (RF30) | recompensa na conclusão. Em Equipe, dividida **igualmente** entre quem terminou como membro, dentro dos limites diários |
 | The Runway (RF19) | Batalha na Passarela e Desafio do Dia têm feed próprio, com votação às cegas |
-| Seguir (RF8) | convites só para quem o usuário segue ou para quem usou a Chave do Quarto |
+| Seguir (RF17) | convites só para quem o usuário segue ou para quem usou a Chave do Quarto |
 
 ---
 
 ## 6. Interação social mínima no MVP
 
-Equipes e duelos têm **reações** (6 emojis fixos) e **bilhetes** (textos curtos de uma lista de frases prontas mais 1 campo livre de até 80 caracteres, moderado pelo RF15/RF16). **Não há chat livre no MVP:** o peso de moderação de um chat não cabe no escopo do TCC.
+Equipes e duelos têm **reações** (6 emojis fixos) e **bilhetes** (textos curtos de uma lista de frases prontas mais 1 campo livre de até 80 caracteres, com as mesmas regras dos comentários do RF19: limite e recusa de texto inválido (RF19.CA06) e exclusão pelo autor (RF19.CA05). **Não há chat livre no MVP:** o catálogo atual não tem um RF de moderação de conteúdo, e o peso de moderar um chat não cabe no escopo do TCC.
 
 ---
 
@@ -163,7 +163,7 @@ Qualquer usuário pode propor uma regra ("uma semana só com peças herdadas") a
 | RF32.CA01 | usuário em Meu Guarda-Roupa | abre a sub-aba Desafios | vê o catálogo com os modos disponíveis por desafio, a dimensão do score que cada um melhora, a duração e a recompensa (§2.1) |
 | RF32.CA02 | desafio que não aceita um modo (tabela §2) | o card é exibido | o modo não disponível não aparece como opção |
 | RF32.CA03 | usuário escolhe o modo Solo | confirma os parâmetros | o desafio entra direto no estado `ativo` |
-| RF32.CA04 | usuário escolhe Equipe ou Duelo | envia convites | só pode convidar quem segue (RF8) ou quem usou a Chave do Quarto. O desafio fica `aguardando` por até 48 h |
+| RF32.CA04 | usuário escolhe Equipe ou Duelo | envia convites | só pode convidar quem segue (RF17) ou quem usou a Chave do Quarto. O desafio fica `aguardando` por até 48 h |
 | RF32.CA05 | prazo de aceite encerrado sem o mínimo de participantes | o prazo vence | o desafio vai para `expirado`, sem penalidade para ninguém |
 | RF32.CA06 | usuário com 3 desafios ativos | tenta iniciar ou aceitar outro | o sistema informa o limite e oferece encerrar um dos ativos |
 | RF32.CA07 | desafio cooperativo com metas proporcionais | o progresso é calculado | o progresso da equipe é a média das frações das metas individuais. Nenhum valor absoluto de peças é exibido para os colegas |
@@ -175,7 +175,7 @@ Qualquer usuário pode propor uma regra ("uma semana só com peças herdadas") a
 | RF32.CA13 | desafio ativo com representação no quarto (§5) | o usuário abre Meu Quarto | o elemento visual do desafio aparece no ambiente e some quando o desafio termina |
 | RF32.CA14 | desafio com regra de conjunto de peças (10×10, Temporada Cápsula) ativo | o usuário aciona o Vista-me ou o Copilot | as sugestões usam só as peças permitidas pela regra, e o Copilot avisa que está respeitando o desafio |
 | RF32.CA15 | Destaques exibe o Inventory Score | a dimensão mais fraca está abaixo de 70 | a aba sugere até 2 desafios que melhoram essa dimensão |
-| RF32.CA16 | bilhete com texto livre em equipe ou duelo | é enviado | passa pela moderação (RF15/RF16) e tem no máximo 80 caracteres. Não existe chat livre |
+| RF32.CA16 | bilhete com texto livre em equipe ou duelo | é enviado | segue as regras dos comentários do RF19 (RF19.CA05–CA06) e tem no máximo 80 caracteres. Não existe chat livre |
 | RF32.CA17 | Desafio do Dia | o usuário conclui | o resultado é exibido como grade de emoji compartilhável, sem expor as peças nem o acervo |
 
 ---
