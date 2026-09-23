@@ -413,6 +413,7 @@ Cada elemento é **Molde** (forma fixa, com medidas e pontos de encaixe) + **Aca
 | `saiFaiPointsRules` | `action_code`, `points`, `daily_cap`, `active` |
 | `saiFaiPointsLedger` | `user_id`, `delta`, `action_code`, `ref_type`, `ref_id`, `idempotency_key` (único), `created_at` |
 | `saiInventoryScoreSnapshots` | `user_id`, `period` (dia/mês), `score`, `dimensions{}`, `eligible`, `computed_at` |
+| `saiWardrobeAvailabilityLog` | `wardrobe_item_id`, `user_id`, `available`, `changed_at` (histórico de transições do RF31, base da população de exposição da Utilização em [`02`](02-inventory-score-calculo.md) §3.3) |
 | `saiUserAchievements` | `user_id`, `achievement_code`, `granted_at` (único por par) |
 | `saiRankingOptIns` | `user_id`, `opted_in`, `share_city`, `updated_at` |
 

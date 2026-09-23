@@ -85,9 +85,16 @@ $\text{Cob}_{ocasião}$ é a fração das ocasiões de referência (faculdade/tr
 
 ### 3.3 Utilização ($U$)
 
-$$U = 100 \times \frac{|\{p \in A : \text{usada nos últimos 90 dias}\}|}{|A|}$$
+A Utilização **não** usa o conjunto $A$ do instante do cálculo. Se usasse, bastaria marcar as peças paradas como indisponíveis logo antes do recálculo para tirá-las do numerador e do denominador ao mesmo tempo, inflando $U$. Por isso ela usa uma **população de exposição** na janela de 90 dias:
 
-"Usada" = participou de um esquema criado ou editado na janela, ou de um Look do Dia registrado na janela (`saiDailyLooks`). Cada peça conta **no máximo uma vez por dia** (§5).
+$$E = \{p \in P : p \text{ esteve disponível por } \ge 7 \text{ dias da janela}\}$$
+
+$$U = \begin{cases} 100 \times \dfrac{|\{p \in E : \text{usada na janela}\}|}{|E|} & \text{se } |E| > 0 \\[2mm] 0 & \text{se } |E| = 0 \end{cases}$$
+
+- **Exposição:** os dias de disponibilidade saem do histórico de transições de disponibilidade (RF31), que precisa ser registrado com data (`saiWardrobeAvailabilityLog`: `wardrobe_item_id`, `available`, `changed_at`). Uma peça marcada como indisponível ontem, depois de 80 dias disponível, continua em $E$ e continua contando como não usada.
+- **Mínimo de 7 dias:** evita que uma peça cadastrada na véspera do recálculo pese como se tivesse tido a janela inteira para ser usada.
+- **$E$ vazio vale 0**, e não omite a dimensão. Omitir abriria o caminho inverso: marcar tudo como indisponível para tirar $U$ da média.
+- **"Usada"** = participou de um esquema criado ou editado na janela, ou de um Look do Dia registrado na janela (`saiDailyLooks`). Cada peça conta **no máximo uma vez por dia** (§5).
 
 ### 3.4 Versatilidade ($V$)
 
@@ -112,8 +119,12 @@ $$O = 100 \times \Big(0{,}5 \times \text{Coer} + 0{,}3 \times \text{Rot} + 0{,}2
 
 $$R = 100 \times \Big(0{,}5 \times \text{Resg} + 0{,}5 \times \text{Inéd}\Big)$$
 
-- $\text{Resg}$ = taxa de resgate nos últimos 90 dias: peças que estavam esquecidas (60+ dias sem uso) e voltaram a um look, divididas por (esquecidas no início da janela + resgatadas). Se o denominador for 0 (nenhuma peça esquecida), $\text{Resg} = 1$: não ter peças esquecidas não é defeito.
-- $\text{Inéd}$ = fração dos looks da janela que contêm **ao menos um par de peças nunca combinado antes**.
+- $\text{Resg}$ = taxa de resgate nos últimos 90 dias, sobre as **oportunidades distintas de resgate**:
+
+  $$F = F_0 \cup F_{jan}, \qquad \text{Resg} = \frac{|\{p \in F : p \text{ voltou a um look depois de ficar esquecida}\}|}{|F|}$$
+
+  em que $F_0$ = peças esquecidas (60+ dias sem uso) no início da janela e $F_{jan}$ = peças que ficaram esquecidas durante a janela. Cada peça entra **uma vez só** no denominador: somar "esquecidas no início" com "resgatadas" contaria duas vezes as resgatadas de $F_0$ (resgatar todas as 10 esquecidas daria $10/(10+10) = 0{,}5$ em vez de $1$). Como toda peça resgatada pertence a $F$, $\text{Resg} \in [0, 1]$. Se $F = \varnothing$ (nenhuma peça esquecida), $\text{Resg} = 1$: não ter peças esquecidas não é defeito.
+- $\text{Inéd}$ = fração dos looks da janela que contêm **ao menos um par de peças nunca combinado antes**. Se não houver looks na janela, $\text{Inéd} = 0$, pelo mesmo motivo do $\text{Conc}$ (§3.4): sem looks não há evidência de descoberta. É o caso comum do primeiro uso, e ele precisa dar um valor definido.
 
 ### 3.7 Identidade ($I$)
 
@@ -170,7 +181,7 @@ $$\boxed{\text{InventoryScore} = \operatorname{round}\big(S_{bruto} \times k\big
 | Preencher campos com lixo | $C$ | as tags precisam ser coerentes com a detecção da IA no RF4. Um campo divergente com confiança alta da IA conta como 50% |
 | Cadastrar muitas peças genéricas | $C$, $D$ | as dimensões são médias e razões. Volume puxa a média para baixo, não para cima |
 | Criar looks descartáveis para "usar" peças | $U$, $R$ | cada peça conta 1×/dia. Um look precisa ter ≥ 2 peças e sobreviver 24 h (esquema apagado antes disso não conta) |
-| Alternar disponível/indisponível | $O$, $U$ | o denominador de $U$ usa a disponibilidade média da janela, não a do instante |
+| Alternar disponível/indisponível | $O$, $U$ | $U$ usa a população de exposição $E$ da janela (§3.3), não o conjunto disponível no instante do cálculo. Marcar uma peça como indisponível não a tira do denominador |
 | Reorganizar o quarto em ciclos | $O$ | $O$ mede o estado, não a quantidade de mudanças. Reorganizar não pontua de novo |
 
 ---
