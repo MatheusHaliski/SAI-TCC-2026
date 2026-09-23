@@ -32,17 +32,21 @@ O time pediu fundir RFs em CAs de outros RFs. Existem duas formas de fazer isso:
 
 > ⚠️ **Revisão da política (decisão do time, 2026-09-23): RF absorvido não existe mais, e o número fica livre.**
 >
-> Os números RF25 a RF29, absorvidos conforme a §2, foram reaproveitados pelos requisitos novos do Meu Guarda-Roupa (`docs/meu-quarto/`):
+> Situação dos números a partir do RF24, conferida no board do Trello em 2026-09-23:
 >
-> | Número | Antes (absorvido em) | Agora |
+> | Número | Antes | Agora |
 > |---|---|---|
-> | RF25 | Configurações de conta e segurança (RF3.CA11–CA14) | **Meu Quarto** |
-> | RF26 | Receber e gerenciar notificações (RF3.CA15–CA18) | **Smart Mirror e Vista-me** |
-> | RF27 | Perfil de marca (RF1.CA06–CA08) | **Destaques do Meu Inventário** |
-> | RF28 | Perfil de celebridade (RF1.CA09–CA10) | **FAI Points e progressão do quarto** |
-> | RF29 | Página de Looks Salvos (RF6.CA09–CA13) | **Desafios & Games** |
+> | RF24 | Recuperar senha, logout, sessões (absorvido em RF3) | Usar a IA do sistema |
+> | RF25 | Configurações de conta e segurança (absorvido em RF3.CA11–CA14) | Criar e editar selo de marca ou celebridade (card e HU já no Trello) |
+> | RF26 | Receber e gerenciar notificações (absorvido em RF3.CA15–CA18) | Explorador Global (card e HU já no Trello) |
+> | RF27 | Perfil de marca (absorvido em RF1.CA06–CA08) | **Meu Quarto** (`docs/meu-quarto/`) |
+> | RF28 | Perfil de celebridade (absorvido em RF1.CA09–CA10) | **Smart Mirror e Vista-me** |
+> | RF29 | Página de Looks Salvos (absorvido em RF6.CA09–CA13) | **Destaques do Meu Inventário** |
+> | RF30 | sem card no board | **FAI Points e progressão do quarto** |
+> | RF31 | — | Filtros de estado do acervo (desmembrado do RF19) |
+> | RF32 | — | **Desafios & Games** |
 >
-> **Consequência prática:** em material anterior a esta data (HUs, atas, versões prévias do PDF, histórico do Trello), RF25–RF29 ainda significam os requisitos absorvidos da coluna "Antes" e devem ser lidos pelos CAs indicados. RF30 não foi reaproveitado, porque seu conteúdo não está documentado no repositório. O próximo número livre para requisitos novos é o **RF32**.
+> **Consequência prática:** em material anterior a esta data (HUs, atas, versões prévias do PDF, histórico do Trello), RF25–RF29 ainda significam os requisitos absorvidos da coluna "Antes" e devem ser lidos pelos CAs indicados. O card do RF22 no Trello, por exemplo, ainda cita "RF28 (as celebridades precisam estar cadastradas)" no sentido antigo, que hoje é o RF1.CA09–CA10. O próximo número livre para requisitos novos é o **RF33**.
 
 ---
 

@@ -2,12 +2,12 @@
 
 **Projeto:** FashionAI (SAI-TCC-2026)
 **Status:** proposta de especificação (v0.3), para revisão do time
-**Requisitos novos:** RF25 (Meu Quarto) · RF26 (Smart Mirror e Vista-me) · RF27 (Destaques do Meu Inventário) · RF28 (FAI Points e progressão do quarto) · RF29 (Desafios & Games, em [`03-desafios-e-games.md`](03-desafios-e-games.md))
+**Requisitos novos:** RF27 (Meu Quarto) · RF28 (Smart Mirror e Vista-me) · RF29 (Destaques do Meu Inventário) · RF30 (FAI Points e progressão do quarto) · RF32 (Desafios & Games, em [`03-desafios-e-games.md`](03-desafios-e-games.md))
 **Requisito estendido:** RF10 (Copilot), que ganha os CAs RF10.CA08 em diante
 **Depende de:** RF4, RF5, RF6, RF13, RF16, RF19, RF24, RF31
-**Documentos irmãos:** [`02-inventory-score-calculo.md`](02-inventory-score-calculo.md) · [`03-desafios-e-games.md`](03-desafios-e-games.md) · [`04-detalhes-de-engajamento.md`](04-detalhes-de-engajamento.md) · [`RF26_Vista-me_Atividades.puml`](RF26_Vista-me_Atividades.puml)
+**Documentos irmãos:** [`02-inventory-score-calculo.md`](02-inventory-score-calculo.md) · [`03-desafios-e-games.md`](03-desafios-e-games.md) · [`04-detalhes-de-engajamento.md`](04-detalhes-de-engajamento.md) · [`RF28_Vista-me_Atividades.puml`](RF28_Vista-me_Atividades.puml)
 
-> **Numeração.** Segue a política de [`02-rf-reestruturados-e-criterios-aceite.md`](../novo-projeto/02-rf-reestruturados-e-criterios-aceite.md) §1: números de RF absorvido ficam livres e são reaproveitados (decisão do time de 2026-09-23, registrada no §1). Os RFs novos ocupam os números dos absorvidos RF25 a RF29, na ordem. O Copilot não ganha número novo: é o RF10, que recebe CAs adicionais.
+> **Numeração.** Segue a política de [`02-rf-reestruturados-e-criterios-aceite.md`](../novo-projeto/02-rf-reestruturados-e-criterios-aceite.md) §1: números de RF absorvido ficam livres e são reaproveitados (decisão do time de 2026-09-23, registrada no §1). Os RFs novos ocupam os números livres RF27, RF28, RF29, RF30 e RF32 (RF25 e RF26 já foram reaproveitados pelo time no Trello; RF31 é o filtro de estado do acervo). O Copilot não ganha número novo: é o RF10, que recebe CAs adicionais.
 
 ---
 
@@ -19,7 +19,7 @@
 
 > **Se removermos completamente os FAI Points e as recompensas, estas funcionalidades ainda resolvem algum problema do usuário?**
 
-Todo CA de RF25, RF26 e RF27 precisa passar nesse teste. A gamificação (RF28) só **recompensa** o uso de algo que já tem valor sozinho. Consequências normativas:
+Todo CA de RF27, RF28 e RF29 precisa passar nesse teste. A gamificação (RF30) só **recompensa** o uso de algo que já tem valor sozinho. Consequências normativas:
 
 1. **Cadastrar peças nunca é bloqueado**, em nenhum nível e por nenhum saldo.
 2. O Smart Mirror, o Vista-me, o Copilot e a localização de peças ficam disponíveis **desde o nível inicial**.
@@ -33,7 +33,7 @@ MEU GUARDA-ROUPA
 ├── Grade        → ENCONTRAR   (pesquisar, filtrar, administrar muitas peças)
 ├── Meu Quarto   → INTERAGIR   (espacial, visual, montar looks no espelho)
 ├── Destaques    → ENTENDER E EVOLUIR (score, evolução, conquistas, rankings)
-└── Desafios     → AGIR        (metas solo, em equipe, em duelo e da comunidade, RF29)
+└── Desafios     → AGIR        (metas solo, em equipe, em duelo e da comunidade, RF32)
           ▲
           └── FashionAI Copilot: transversal às quatro visões
                  ↓ consulta
@@ -41,20 +41,20 @@ MEU GUARDA-ROUPA
    Aura · Hype Score · FAI Points · Maison · Rede Social
 ```
 
-A **Grade** continua sendo a visão padrão para busca e administração, porque ninguém deve precisar navegar num ambiente 3D para achar uma camiseta. As visões compartilham **o mesmo estado** (filtros, seleção, disponibilidade), então uma peça encontrada na Grade pode ser **"Mostrada no quarto"** (RF25.CA09).
+A **Grade** continua sendo a visão padrão para busca e administração, porque ninguém deve precisar navegar num ambiente 3D para achar uma camiseta. As visões compartilham **o mesmo estado** (filtros, seleção, disponibilidade), então uma peça encontrada na Grade pode ser **"Mostrada no quarto"** (RF27.CA09).
 
 ### 0.3 Dois indicadores que não se misturam
 
 | Indicador | Pergunta que responde | Método de normalização |
 |---|---|---|
 | **Hype Score** (RF6, [`RF6_HYPE_SCORE_CALCULO.md`](../../RF6_HYPE_SCORE_CALCULO.md)) | "Qual é a minha relevância social?" | percentil contra a comunidade |
-| **FAI Inventory Score** (RF27) | "Quão desenvolvido, versátil e bem utilizado é o meu guarda-roupa?" | **rubrica absoluta**: depende só do próprio guarda-roupa. O percentil entra apenas no ranking |
+| **FAI Inventory Score** (RF29) | "Quão desenvolvido, versátil e bem utilizado é o meu guarda-roupa?" | **rubrica absoluta**: depende só do próprio guarda-roupa. O percentil entra apenas no ranking |
 
-Por que a rubrica é absoluta: se o Inventory Score fosse um percentil, a nota de um usuário cairia quando outros melhorassem, mesmo sem ele mudar nada. Isso contradiz a promessa de "melhorar usando melhor o que você já tem". O ranking (RF27.CA08) é o único lugar em que há comparação entre usuários.
+Por que a rubrica é absoluta: se o Inventory Score fosse um percentil, a nota de um usuário cairia quando outros melhorassem, mesmo sem ele mudar nada. Isso contradiz a promessa de "melhorar usando melhor o que você já tem". O ranking (RF29.CA08) é o único lugar em que há comparação entre usuários.
 
 ---
 
-## 1. RF25 — Meu Quarto (visualização espacial do guarda-roupa)
+## 1. RF27 — Meu Quarto (visualização espacial do guarda-roupa)
 
 ### 1.1 O móvel inicial: FAI Origem
 
@@ -78,7 +78,7 @@ Por que a rubrica é absoluta: se o Inventory Score fosse um percentil, a nota d
   Branco fosco · puxador cava · logo FAI gravado
 ```
 
-O FAI Origem é bonito, mas propositalmente simples: a evolução (RF28) tem que ser perceptível.
+O FAI Origem é bonito, mas propositalmente simples: a evolução (RF30) tem que ser perceptível.
 
 **Endereçamento.** Toda posição tem um endereço estável e legível, usado pelo Copilot e pelo Vista-me:
 
@@ -102,28 +102,28 @@ O FAI Origem é bonito, mas propositalmente simples: a evolução (RF28) tem que
 | Esquema salvo (RF5/RF6) | Caixa de Look no maleiro, com o outfit card na frente |
 | Para vender | pequena arara com etiqueta de preço |
 | Look do Dia (RF6) | montado no Smart Mirror |
-| Marco do Inventory Score (RF27) | luzes do closet acendem e aparece uma animação de conquista no espelho |
+| Marco do Inventory Score (RF29) | luzes do closet acendem e aparece uma animação de conquista no espelho |
 | Capacidade excedida | peças extras na **Cadeira** do quarto (só visual, nunca bloqueia) |
 
 ### 1.3 Critérios de aceitação
 
 | ID | Dado que | Quando | Então |
 |---|---|---|---|
-| RF25.CA01 | usuário autenticado em Meu Guarda-Roupa | alterna para "Meu Quarto" | sistema renderiza o quarto com o móvel do nível atual e todas as peças do acervo em posições endereçadas (§1.1) |
-| RF25.CA02 | peça recém-cadastrada (RF4) | o cadastro é concluído | a peça recebe uma posição automática coerente com o tipo (superior → porta, inferior → gaveta da categoria, calçado → base/sapateira), sem ação do usuário |
-| RF25.CA03 | usuário no quarto | toca numa porta ou gaveta | o elemento abre com animação e exibe as peças daquela posição. Tocar numa peça abre o modal de peça já existente |
-| RF25.CA04 | usuário no modo Organizar | move uma peça para outra posição ou renomeia uma gaveta | a nova posição/categoria é persistida e refletida na Grade, no Copilot e no Vista-me |
-| RF25.CA05 | usuário aciona "Organizar com IA" | confirma a prévia | sistema propõe categorias de gaveta e redistribuição, mostra a prévia antes de aplicar e permite desfazer |
-| RF25.CA06 | peça com estado esquecida, indisponível, favorita, ícone ou à venda | o quarto é renderizado | a peça aparece com a representação da tabela §1.2 |
-| RF25.CA07 | mais peças do que posições no nível atual | o usuário cadastra outra peça | o cadastro é concluído normalmente e a peça excedente aparece na Cadeira. **Nenhum cadastro é bloqueado** |
-| RF25.CA08 | dispositivo sem WebGL ou com desempenho abaixo do mínimo | abre Meu Quarto | sistema usa o modo 2.5D estático com as mesmas interações, sem erro (**RNF7**) |
-| RF25.CA09 | usuário encontra uma peça na Grade | aciona "Mostrar no quarto" | sistema alterna para Meu Quarto, enquadra a câmera na posição e a destaca com iluminação |
-| RF25.CA10 | leitor de tela ativo ou preferência por lista | navega pelo quarto | toda posição tem rótulo acessível ("Gaveta 4, Jeans, 6 peças") e existe uma alternativa em lista com as mesmas ações |
-| RF25.CA11 | a câmera do quarto | é manipulada | rotação e zoom ficam limitados a um enquadramento 3/4 editorial. Não existe câmera livre |
+| RF27.CA01 | usuário autenticado em Meu Guarda-Roupa | alterna para "Meu Quarto" | sistema renderiza o quarto com o móvel do nível atual e todas as peças do acervo em posições endereçadas (§1.1) |
+| RF27.CA02 | peça recém-cadastrada (RF4) | o cadastro é concluído | a peça recebe uma posição automática coerente com o tipo (superior → porta, inferior → gaveta da categoria, calçado → base/sapateira), sem ação do usuário |
+| RF27.CA03 | usuário no quarto | toca numa porta ou gaveta | o elemento abre com animação e exibe as peças daquela posição. Tocar numa peça abre o modal de peça já existente |
+| RF27.CA04 | usuário no modo Organizar | move uma peça para outra posição ou renomeia uma gaveta | a nova posição/categoria é persistida e refletida na Grade, no Copilot e no Vista-me |
+| RF27.CA05 | usuário aciona "Organizar com IA" | confirma a prévia | sistema propõe categorias de gaveta e redistribuição, mostra a prévia antes de aplicar e permite desfazer |
+| RF27.CA06 | peça com estado esquecida, indisponível, favorita, ícone ou à venda | o quarto é renderizado | a peça aparece com a representação da tabela §1.2 |
+| RF27.CA07 | mais peças do que posições no nível atual | o usuário cadastra outra peça | o cadastro é concluído normalmente e a peça excedente aparece na Cadeira. **Nenhum cadastro é bloqueado** |
+| RF27.CA08 | dispositivo sem WebGL ou com desempenho abaixo do mínimo | abre Meu Quarto | sistema usa o modo 2.5D estático com as mesmas interações, sem erro (**RNF7**) |
+| RF27.CA09 | usuário encontra uma peça na Grade | aciona "Mostrar no quarto" | sistema alterna para Meu Quarto, enquadra a câmera na posição e a destaca com iluminação |
+| RF27.CA10 | leitor de tela ativo ou preferência por lista | navega pelo quarto | toda posição tem rótulo acessível ("Gaveta 4, Jeans, 6 peças") e existe uma alternativa em lista com as mesmas ações |
+| RF27.CA11 | a câmera do quarto | é manipulada | rotação e zoom ficam limitados a um enquadramento 3/4 editorial. Não existe câmera livre |
 
 ---
 
-## 2. RF26 — Smart Mirror e "Vista-me"
+## 2. RF28 — Smart Mirror e "Vista-me"
 
 O espelho é o **centro da experiência**. Ele não duplica o Criar Look (RF5): é mais uma interface para iniciá-lo.
 
@@ -140,18 +140,18 @@ Fluxo de referência: abrir uma gaveta → pegar uma calça → arrastar para o 
 Botão **✨ Vista-me** no espelho. O pedido é em linguagem natural, por texto ou voz: *"Vou para a faculdade"*, *"Tenho uma apresentação hoje"*, *"Quero algo confortável"*, *"Quero usar esta jaqueta"*, *"Está frio hoje"*.
 
 1. **Interpretação** (RF24): o pedido vira `{ occasion, mood, anchor_item_ids[], constraints[] }`. *"Quero usar esta jaqueta"* com a jaqueta em foco vira uma âncora obrigatória.
-2. **Elegibilidade:** só peças **disponíveis** (RF31.CA02) e da estação ativa (RF28, Penthouse). Cesto, à venda e fora de estação ficam de fora.
+2. **Elegibilidade:** só peças **disponíveis** (RF31.CA02) e da estação ativa (RF30, Penthouse). Cesto, à venda e fora de estação ficam de fora.
 3. **Geração:** reaproveita `ClaudeAutopilotService.generateCombinations` (`app/backend/services/ClaudeAutopilotService.ts`), que já combina ocasião, humor e clima sobre o guarda-roupa. A mudança é aceitar a âncora e as restrições.
 4. **Validação anti-alucinação:** todo `wardrobe_item_id` devolvido tem que estar no conjunto elegível. Uma sugestão com ID fora dele é descartada inteira.
 5. **Localização:** cada peça é resolvida para o endereço do §1.1. As posições **acendem em sequência** e aparece a legenda:
    `Camisa branca — Porta 2` · `Calça preta — Gaveta 4` · `Tênis branco — Sapateira`
 6. O look aparece montado no espelho, com as ações **[Usar este look] [Trocar uma peça] [Remixar] [Salvar]**.
 
-Diagrama: [`RF26_Vista-me_Atividades.puml`](RF26_Vista-me_Atividades.puml).
+Diagrama: [`RF28_Vista-me_Atividades.puml`](RF28_Vista-me_Atividades.puml).
 
 ### 2.3 Integridade do Look do Dia
 
-O Look do Dia é **sempre um Esquema** (`RF6_HYPE_SCORE_CALCULO.md` §1). Por isso, "Usar este look" com um look que ainda não existe como esquema faz duas coisas: (a) cria o esquema com `origin = "smart_mirror"` (montado à mão no espelho) ou `"vista_me"` (sugerido pela IA), com a visibilidade padrão do perfil (RF3.CA12); (b) registra `saiDailyLooks` com `source` **igual ao `origin` do look**. Um look montado à mão nunca é registrado como `vista_me`: isso distorceria as métricas de uso da IA e acionaria indevidamente a regra de pontos exclusiva do Vista-me (RF28 §5.2). Se o usuário partir de uma sugestão do Vista-me e trocar peças à mão no espelho, o look continua `vista_me`, porque a origem é a sugestão. Nunca se registra um Look do Dia apontando para uma composição sem esquema.
+O Look do Dia é **sempre um Esquema** (`RF6_HYPE_SCORE_CALCULO.md` §1). Por isso, "Usar este look" com um look que ainda não existe como esquema faz duas coisas: (a) cria o esquema com `origin = "smart_mirror"` (montado à mão no espelho) ou `"vista_me"` (sugerido pela IA), com a visibilidade padrão do perfil (RF3.CA12); (b) registra `saiDailyLooks` com `source` **igual ao `origin` do look**. Um look montado à mão nunca é registrado como `vista_me`: isso distorceria as métricas de uso da IA e acionaria indevidamente a regra de pontos exclusiva do Vista-me (RF30 §5.2). Se o usuário partir de uma sugestão do Vista-me e trocar peças à mão no espelho, o look continua `vista_me`, porque a origem é a sugestão. Nunca se registra um Look do Dia apontando para uma composição sem esquema.
 
 ### 2.4 Entrega para o Criar Look (RF5)
 
@@ -175,21 +175,21 @@ O `CreateMySchemeView` passa a ler essa chave, preencher os slots e removê-la d
 
 | ID | Dado que | Quando | Então |
 |---|---|---|---|
-| RF26.CA01 | usuário no quarto | arrasta uma peça para o espelho **ou** toca na peça e escolhe "Levar ao espelho" | a peça ocupa o slot do seu tipo e o look é iniciado. As duas interações são equivalentes (touch e acessibilidade) |
-| RF26.CA02 | slot já ocupado | outra peça do mesmo tipo é levada ao espelho | a nova peça substitui a anterior, que volta à posição de origem com animação |
-| RF26.CA03 | look sem categoria obrigatória | o espelho é atualizado | aparece o aviso determinístico ("Esse look ainda não possui calçado.") com a ação [Sugerir calçado] |
-| RF26.CA04 | usuário aciona [Sugerir {categoria}] | a IA responde | as sugestões usam **somente** peças disponíveis do próprio usuário, levando em conta as peças já no espelho (**RF24.CA02**) |
-| RF26.CA05 | usuário leva ao espelho uma peça indisponível (cesto) | a peça entra no slot | sistema aceita e avisa "está no cesto". A peça não pode virar Look do Dia enquanto estiver indisponível |
-| RF26.CA06 | look completo no espelho | é exibido | aparecem as ações Salvar Look · Remixar · Look do Dia · Compartilhar · **Criar Look com estas peças** |
-| RF26.CA07 | usuário aciona "Criar Look com estas peças" | confirma | abre o RF5 com os slots preenchidos a partir de `sai_room_look_draft` (§2.4) |
-| RF26.CA08 | usuário aciona Vista-me com um pedido em linguagem natural | a IA responde | o look sugerido usa só peças elegíveis (§2.2 passo 2), respeita a peça âncora quando houver e aparece montado no espelho |
-| RF26.CA09 | uma sugestão do Vista-me contém um ID fora do conjunto elegível | a resposta é validada no servidor | a sugestão é descartada, nunca exibida, e o evento é registrado (**RF24**, **RNF5**) |
-| RF26.CA10 | sugestão do Vista-me exibida | o espelho é montado | as posições de cada peça acendem no ambiente e a legenda mostra "{peça} — {endereço}" |
-| RF26.CA11 | usuário aciona "Usar este look" | confirma | sistema cria o esquema se necessário e registra o Look do Dia com `source = "vista_me"` (§2.3) |
-| RF26.CA12 | usuário aciona "Trocar uma peça" num slot | a IA responde | aparecem até 3 alternativas para aquele slot, mantendo as demais peças |
-| RF26.CA13 | usuário pede outra sugestão | a IA responde | a nova composição não repete nenhuma composição já mostrada na sessão (**RF10.CA03**) |
-| RF26.CA14 | guarda-roupa sem peça superior nem vestido disponível | aciona Vista-me | sistema explica a limitação e oferece o cadastro (RF4) (**RF10.CA04**) |
-| RF26.CA15 | serviço de IA indisponível ou acima do limite | aciona Vista-me | sistema monta a sugestão por regras locais (ocasião × tags) e sinaliza isso, sem travar a interface (**RNF8**) |
+| RF28.CA01 | usuário no quarto | arrasta uma peça para o espelho **ou** toca na peça e escolhe "Levar ao espelho" | a peça ocupa o slot do seu tipo e o look é iniciado. As duas interações são equivalentes (touch e acessibilidade) |
+| RF28.CA02 | slot já ocupado | outra peça do mesmo tipo é levada ao espelho | a nova peça substitui a anterior, que volta à posição de origem com animação |
+| RF28.CA03 | look sem categoria obrigatória | o espelho é atualizado | aparece o aviso determinístico ("Esse look ainda não possui calçado.") com a ação [Sugerir calçado] |
+| RF28.CA04 | usuário aciona [Sugerir {categoria}] | a IA responde | as sugestões usam **somente** peças disponíveis do próprio usuário, levando em conta as peças já no espelho (**RF24.CA02**) |
+| RF28.CA05 | usuário leva ao espelho uma peça indisponível (cesto) | a peça entra no slot | sistema aceita e avisa "está no cesto". A peça não pode virar Look do Dia enquanto estiver indisponível |
+| RF28.CA06 | look completo no espelho | é exibido | aparecem as ações Salvar Look · Remixar · Look do Dia · Compartilhar · **Criar Look com estas peças** |
+| RF28.CA07 | usuário aciona "Criar Look com estas peças" | confirma | abre o RF5 com os slots preenchidos a partir de `sai_room_look_draft` (§2.4) |
+| RF28.CA08 | usuário aciona Vista-me com um pedido em linguagem natural | a IA responde | o look sugerido usa só peças elegíveis (§2.2 passo 2), respeita a peça âncora quando houver e aparece montado no espelho |
+| RF28.CA09 | uma sugestão do Vista-me contém um ID fora do conjunto elegível | a resposta é validada no servidor | a sugestão é descartada, nunca exibida, e o evento é registrado (**RF24**, **RNF5**) |
+| RF28.CA10 | sugestão do Vista-me exibida | o espelho é montado | as posições de cada peça acendem no ambiente e a legenda mostra "{peça} — {endereço}" |
+| RF28.CA11 | usuário aciona "Usar este look" | confirma | sistema cria o esquema se necessário e registra o Look do Dia com `source = "vista_me"` (§2.3) |
+| RF28.CA12 | usuário aciona "Trocar uma peça" num slot | a IA responde | aparecem até 3 alternativas para aquele slot, mantendo as demais peças |
+| RF28.CA13 | usuário pede outra sugestão | a IA responde | a nova composição não repete nenhuma composição já mostrada na sessão (**RF10.CA03**) |
+| RF28.CA14 | guarda-roupa sem peça superior nem vestido disponível | aciona Vista-me | sistema explica a limitação e oferece o cadastro (RF4) (**RF10.CA04**) |
+| RF28.CA15 | serviço de IA indisponível ou acima do limite | aciona Vista-me | sistema monta a sugestão por regras locais (ocasião × tags) e sinaliza isso, sem travar a interface (**RNF8**) |
 
 ---
 
@@ -222,7 +222,7 @@ Colocar o guarda-roupa inteiro no prompt não escala e vaza dado desnecessário.
 | `montar_no_espelho(ids)` | — (ação de UI) | devolve action chip |
 | `abrir_criar_look(slots)` | — (ação de UI) | usa `sai_room_look_draft` |
 
-**Resposta estruturada.** Toda menção a peça na resposta leva o `wardrobe_item_id`. O servidor valida (como no RF26.CA09) e a interface transforma essas menções em chips clicáveis. Exemplo:
+**Resposta estruturada.** Toda menção a peça na resposta leva o `wardrobe_item_id`. O servidor valida (como no RF28.CA09) e a interface transforma essas menções em chips clicáveis. Exemplo:
 
 > "Use sua **camisa branca Oversized**. Ela está na **Porta 2** e combina com sua **calça preta Wide Leg** da **Gaveta 3**."
 > **[Ver peças] [Montar no espelho] [Criar Look]**
@@ -255,7 +255,7 @@ A terceira frase é útil, mas pode virar anúncio disfarçado. Regras:
 
 ---
 
-## 4. RF27 — Destaques do Meu Inventário
+## 4. RF29 — Destaques do Meu Inventário
 
 Aba **🏆 Destaques** em Meu Guarda-Roupa. É a camada analítica, competitiva e social do inventário.
 
@@ -313,7 +313,7 @@ A fórmula completa do score, a elegibilidade e o antifraude estão em [`02-inve
 | 🏆 Curador | Catalogação ≥ 95 | FAI Points, Aura |
 | ♻️ Segunda Chance | 10 peças esquecidas reutilizadas | FAI Points |
 | 🎨 Camaleão | looks em 10 estilos diferentes | FAI Points |
-| 👑 Signature Closet | Inventory Score ≥ 900 | FAI Points, animação no quarto (RF25 §1.2) |
+| 👑 Signature Closet | Inventory Score ≥ 900 | FAI Points, animação no quarto (RF27 §1.2) |
 | 🧠 Stylist | 50 combinações únicas do próprio inventário | FAI Points |
 | 💎 Hidden Gem | uma peça esquecida entra no top 10 das mais usadas | FAI Points |
 
@@ -321,21 +321,21 @@ A fórmula completa do score, a elegibilidade e o antifraude estão em [`02-inve
 
 | ID | Dado que | Quando | Então |
 |---|---|---|---|
-| RF27.CA01 | usuário com ≥ 10 peças | abre Destaques | vê o Inventory Score (0–1000), as 7 dimensões (0–100) e o delta do mês |
-| RF27.CA02 | usuário com menos de 10 peças | abre Destaques | vê o progresso ("faltam N peças para o seu Inventory Score") no padrão do RF13.CA02, sem nota parcial |
-| RF27.CA03 | dois usuários, um com 30 peças completas e bem usadas e outro com 500 peças sem dados nem uso | o score é calculado | o primeiro tem score maior (teste de regressão obrigatório da fórmula) |
-| RF27.CA04 | usuário sem DNA de Estilo gerado | o score é calculado | a dimensão Identidade é omitida e os pesos são renormalizados, **sem penalizar** |
-| RF27.CA05 | score exibido | usuário toca numa dimensão | sistema mostra a regra dela em linguagem simples e os itens que mais puxam o valor para baixo |
-| RF27.CA06 | usuário na aba | a página carrega | "Seus Destaques" traz até 6 cards gerados dos dados reais, cada um com ação para ver a peça ou abrir no quarto |
-| RF27.CA07 | virada de mês | o usuário abre a aba | o bloco de evolução compara o snapshot atual com o do mês anterior (score, reutilizadas, looks únicos, esquecidas, versatilidade) |
-| RF27.CA08 | usuário **optou** por participar de rankings | abre Rankings | vê a posição em cada ranking elegível. Sem opt-in, vê só o próprio score, sem aparecer para os outros (**RNF6**) |
-| RF27.CA09 | ranking por cidade | o grupo da cidade tem menos de 50 participantes | o ranking por cidade não é exibido |
-| RF27.CA10 | condição de conquista atingida | o score é recalculado | a conquista é concedida uma única vez (idempotente) e dispara os efeitos da tabela §4.3 |
-| RF27.CA11 | comportamento suspeito (cadastros em massa com dados genéricos, looks repetidos para inflar uso) | o score é recalculado | as regras antifraude de [`02-inventory-score-calculo.md`](02-inventory-score-calculo.md) §5 neutralizam a contribuição |
+| RF29.CA01 | usuário com ≥ 10 peças | abre Destaques | vê o Inventory Score (0–1000), as 7 dimensões (0–100) e o delta do mês |
+| RF29.CA02 | usuário com menos de 10 peças | abre Destaques | vê o progresso ("faltam N peças para o seu Inventory Score") no padrão do RF13.CA02, sem nota parcial |
+| RF29.CA03 | dois usuários, um com 30 peças completas e bem usadas e outro com 500 peças sem dados nem uso | o score é calculado | o primeiro tem score maior (teste de regressão obrigatório da fórmula) |
+| RF29.CA04 | usuário sem DNA de Estilo gerado | o score é calculado | a dimensão Identidade é omitida e os pesos são renormalizados, **sem penalizar** |
+| RF29.CA05 | score exibido | usuário toca numa dimensão | sistema mostra a regra dela em linguagem simples e os itens que mais puxam o valor para baixo |
+| RF29.CA06 | usuário na aba | a página carrega | "Seus Destaques" traz até 6 cards gerados dos dados reais, cada um com ação para ver a peça ou abrir no quarto |
+| RF29.CA07 | virada de mês | o usuário abre a aba | o bloco de evolução compara o snapshot atual com o do mês anterior (score, reutilizadas, looks únicos, esquecidas, versatilidade) |
+| RF29.CA08 | usuário **optou** por participar de rankings | abre Rankings | vê a posição em cada ranking elegível. Sem opt-in, vê só o próprio score, sem aparecer para os outros (**RNF6**) |
+| RF29.CA09 | ranking por cidade | o grupo da cidade tem menos de 50 participantes | o ranking por cidade não é exibido |
+| RF29.CA10 | condição de conquista atingida | o score é recalculado | a conquista é concedida uma única vez (idempotente) e dispara os efeitos da tabela §4.3 |
+| RF29.CA11 | comportamento suspeito (cadastros em massa com dados genéricos, looks repetidos para inflar uso) | o score é recalculado | as regras antifraude de [`02-inventory-score-calculo.md`](02-inventory-score-calculo.md) §5 neutralizam a contribuição |
 
 ---
 
-## 5. RF28 — FAI Points e progressão do quarto
+## 5. RF30 — FAI Points e progressão do quarto
 
 ### 5.1 Princípios
 
@@ -354,7 +354,7 @@ A fórmula completa do score, a elegibilidade e o antifraude estão em [`02-inve
 | Resgatar peça esquecida (usar num look) | +30 | 3/dia |
 | Usar um look do Vista-me como Look do Dia | +15 | 1/dia |
 | Organizar o quarto (aplicar organização, nomear gavetas) | +20 | 1/semana |
-| Conquistas (RF27 §4.3) | +100 a +500 | 1× cada |
+| Conquistas (RF29 §4.3) | +100 a +500 | 1× cada |
 | Curtida / comentário / remix **recebidos** | +1 / +2 / +10 | 50/dia no total |
 
 Interação consigo mesmo não pontua. Todo ganho é registrado num **ledger append-only** com chave de idempotência `(user_id, action_code, ref_id)`.
@@ -379,14 +379,14 @@ Cada elemento é **Molde** (forma fixa, com medidas e pontos de encaixe) + **Aca
 
 | ID | Dado que | Quando | Então |
 |---|---|---|---|
-| RF28.CA01 | ação elegível concluída | o evento é processado | o ledger ganha um lançamento idempotente. O mesmo evento processado duas vezes não duplica pontos |
-| RF28.CA02 | limite diário da ação atingido | nova ação do mesmo tipo | a ação acontece normalmente, sem gerar pontos, e o usuário vê que o limite foi atingido |
-| RF28.CA03 | usuário compra um item | confirma | o saldo diminui, os pontos vitalícios e o nível não mudam |
-| RF28.CA04 | pontos vitalícios atingem o limiar do próximo nível | o evento é processado | o nível sobe, a função da tabela §5.3 é liberada e o quarto mostra a evolução com animação |
-| RF28.CA05 | qualquer nível e qualquer saldo | usuário cadastra peça, usa o espelho, o Vista-me ou o Copilot | a função está disponível (§0.1) |
-| RF28.CA06 | item da loja | usuário aciona "Provar no meu quarto" | o item aparece aplicado na cena sem compra e com o saldo intacto. A prévia é descartada ao sair |
-| RF28.CA07 | item incompatível com os módulos (regra de encaixe) | usuário tenta aplicar | sistema bloqueia e indica em quais módulos o item cabe |
-| RF28.CA08 | a plataforma | oferece FAI Points | não há compra de FAI Points com dinheiro real |
+| RF30.CA01 | ação elegível concluída | o evento é processado | o ledger ganha um lançamento idempotente. O mesmo evento processado duas vezes não duplica pontos |
+| RF30.CA02 | limite diário da ação atingido | nova ação do mesmo tipo | a ação acontece normalmente, sem gerar pontos, e o usuário vê que o limite foi atingido |
+| RF30.CA03 | usuário compra um item | confirma | o saldo diminui, os pontos vitalícios e o nível não mudam |
+| RF30.CA04 | pontos vitalícios atingem o limiar do próximo nível | o evento é processado | o nível sobe, a função da tabela §5.3 é liberada e o quarto mostra a evolução com animação |
+| RF30.CA05 | qualquer nível e qualquer saldo | usuário cadastra peça, usa o espelho, o Vista-me ou o Copilot | a função está disponível (§0.1) |
+| RF30.CA06 | item da loja | usuário aciona "Provar no meu quarto" | o item aparece aplicado na cena sem compra e com o saldo intacto. A prévia é descartada ao sair |
+| RF30.CA07 | item incompatível com os módulos (regra de encaixe) | usuário tenta aplicar | sistema bloqueia e indica em quais módulos o item cabe |
+| RF30.CA08 | a plataforma | oferece FAI Points | não há compra de FAI Points com dinheiro real |
 
 ---
 
@@ -430,7 +430,7 @@ O `saiDailyLooks.source` ganha os valores `"vista_me"` e `"smart_mirror"`, e o e
 | **3 — Gamificação** | FAI Points (ledger), níveis com funções, loja com moldes/acabamentos e "Provar no meu quarto", conquistas, estados visuais completos | recompensa por cima |
 | **4 — Comunidade** | rankings com opt-in, Room Tour, drops, Colabs Maison, diagnóstico com sugestão de compra (§3.3) | recompensa por cima |
 
-A sub-aba **Desafios** (RF29) entra nas fases 3 e 4, com o detalhamento em [`03-desafios-e-games.md`](03-desafios-e-games.md) §10. Os detalhes de engajamento têm fase própria, item a item, em [`04-detalhes-de-engajamento.md`](04-detalhes-de-engajamento.md).
+A sub-aba **Desafios** (RF32) entra nas fases 3 e 4, com o detalhamento em [`03-desafios-e-games.md`](03-desafios-e-games.md) §10. Os detalhes de engajamento têm fase própria, item a item, em [`04-detalhes-de-engajamento.md`](04-detalhes-de-engajamento.md).
 
 ---
 
