@@ -40,5 +40,6 @@ export async function POST(request: NextRequest) {
   };
 
   const created = await db.collection(COLLECTION).add(record);
+
   return NextResponse.json({ post_id: created.id, ...record }, { status: 201 });
 }

@@ -41,8 +41,15 @@ export async function toggleLikePiece(
   const sentinelRef = likedByDoc(schemeId, pieceId, userId);
 
   return runTransaction(db, async (tx: import('firebase/firestore').Transaction) => {
-    const sentinelSnap = await tx.get(sentinelRef);
+    // All reads must precede all writes in a Firestore transaction.
+    const [sentinelSnap, likeSnap] = await Promise.all([
+      tx.get(sentinelRef),
+      tx.get(likeRef),
+    ]);
+
     const alreadyLiked = sentinelSnap.exists();
+    const prevCount: number = likeSnap.exists() ? (likeSnap.data()?.likes ?? 0) : 0;
+    const nextCount = Math.max(0, prevCount + (alreadyLiked ? -1 : 1));
 
     if (alreadyLiked) {
       tx.delete(sentinelRef);
@@ -51,10 +58,6 @@ export async function toggleLikePiece(
       tx.set(sentinelRef, { createdAt: serverTimestamp() });
       tx.set(likeRef, { likes: increment(1) }, { merge: true });
     }
-
-    const likeSnap = await tx.get(likeRef);
-    const prevCount: number = likeSnap.exists() ? (likeSnap.data()?.likes ?? 0) : 0;
-    const nextCount = Math.max(0, prevCount + (alreadyLiked ? -1 : 1));
 
     return { liked: !alreadyLiked, likes: nextCount };
   });

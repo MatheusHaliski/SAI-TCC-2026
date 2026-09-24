@@ -1,14 +1,18 @@
+import { FollowsRepository } from '@/app/backend/repositories/FollowsRepository';
 import { SchemeItemsRepository } from '@/app/backend/repositories/SchemeItemsRepository';
 import { SchemesRepository } from '@/app/backend/repositories/SchemesRepository';
 import { WardrobeItemsRepository } from '@/app/backend/repositories/WardrobeItemsRepository';
-import { CreateSchemeInput } from '@/app/backend/types/entities';
+import { CreateSchemeInput, SchemeVisibility } from '@/app/backend/types/entities';
 import { ServiceError } from './errors';
+
+const VALID_VISIBILITIES: SchemeVisibility[] = ['private', 'followers', 'public'];
 
 export class SchemesService {
   constructor(
     private readonly schemesRepo = new SchemesRepository(),
     private readonly schemeItemsRepo = new SchemeItemsRepository(),
     private readonly wardrobeRepo = new WardrobeItemsRepository(),
+    private readonly followsRepo = new FollowsRepository(),
   ) {}
 
   private async validateReferences(input: CreateSchemeInput) {
@@ -55,5 +59,33 @@ export class SchemesService {
 
   async getSchemeDetails(schemeId: string) {
     return this.schemesRepo.findByIdWithItems(schemeId);
+  }
+
+  async getSchemeDetailsForViewer(schemeId: string, viewerId?: string | null) {
+    const details = await this.schemesRepo.findByIdWithItems(schemeId);
+    if (!details) return null;
+
+    const { visibility, user_id: ownerId } = details.scheme;
+    const viewer = viewerId?.trim() || '';
+
+    if (visibility === 'public') return details;
+    if (viewer && viewer === ownerId) return details;
+    if (visibility === 'followers' && viewer && (await this.followsRepo.isFollowing(viewer, ownerId))) {
+      return details;
+    }
+    return null;
+  }
+
+  async updateSchemeVisibility(schemeId: string, userId: string, visibility: SchemeVisibility) {
+    if (!VALID_VISIBILITIES.includes(visibility)) {
+      throw new ServiceError(`Invalid visibility "${visibility}"`, 400);
+    }
+    const scheme = await this.schemesRepo.findById(schemeId);
+    if (!scheme) throw new ServiceError('Scheme not found', 404);
+    if (scheme.user_id !== userId) {
+      throw new ServiceError('Only the owner can change visibility', 403);
+    }
+    await this.schemesRepo.updateVisibility(schemeId, visibility);
+    return { scheme_id: schemeId, visibility };
   }
 }

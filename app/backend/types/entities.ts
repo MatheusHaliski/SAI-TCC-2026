@@ -70,6 +70,19 @@ export interface Market {
   updatedAt: string;
 }
 
+export interface BrandFeedPost {
+  post_id: EntityId;
+  user_id: EntityId;
+  title: string;
+  body: string;
+  image_url?: string | null;
+  tag?: string | null;
+  featured_until?: string | null;
+  is_official: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PieceItem {
   piece_item_id: EntityId;
   brand_id: EntityId;
@@ -79,6 +92,7 @@ export interface PieceItem {
   piece_type: string;
   color: string;
   material: string;
+  size?: string;
   store_url: string | null;
   price_range: string | null;
   is_active: boolean;
@@ -147,12 +161,16 @@ export interface WardrobeItem {
   gender: string;
   color: string;
   material: string;
+  size?: string;
   style_tags: string[];
   occasion_tags: string[];
   is_favorite: boolean;
   createdAt: string;
   updatedAt: string;
 }
+
+/** RF28: outfit visibility levels. `followers` sits between public and private. */
+export type SchemeVisibility = 'private' | 'followers' | 'public';
 
 export interface Scheme {
   scheme_id: EntityId;
@@ -162,7 +180,7 @@ export interface Scheme {
   creation_mode: 'manual' | 'ai';
   style: string;
   occasion: string;
-  visibility: 'private' | 'public';
+  visibility: SchemeVisibility;
   community_indexed: boolean;
   cover_image_url: string | null;
   pieces?: SchemePieceSnapshot[];
@@ -181,6 +199,8 @@ export interface SchemePieceSnapshot {
   category: 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
   pieceType: string;
   wearstyles: string[];
+  /** Short first-person emotional expression of how the user feels wearing this piece in this occasion */
+  expressao?: string;
 }
 
 export interface SchemeItem {
@@ -196,6 +216,7 @@ export interface WardrobeViewItem {
   wardrobe_item_id: EntityId;
   name: string;
   image_url: string;
+  createdAt?: string | null;
   image_assets?: WardrobeImageAssets;
   image_analysis?: WardrobeImageAnalysis;
   model_3d_url?: string | null;
@@ -235,9 +256,12 @@ export interface WardrobeViewItem {
   piece_type: string;
   color?: string;
   material?: string;
+  size?: string;
   style_tags?: string[];
   occasion_tags?: string[];
   is_favorite?: boolean;
+  for_sale?: boolean;
+  listing_price?: number;
 }
 
 export interface PieceItemSearchResult {
@@ -267,7 +291,7 @@ export interface CreateSchemeInput {
   creation_mode: 'manual' | 'ai';
   style: string;
   occasion: string;
-  visibility: 'private' | 'public';
+  visibility: SchemeVisibility;
   community_indexed?: boolean;
   cover_image_url?: string;
   pieces?: SchemePieceSnapshot[];
@@ -353,7 +377,7 @@ export interface OutfitSelection2D {
 
 // ─── Autopilot types ──────────────────────────────────────────────────────────
 
-export type Occasion = 'trabalho' | 'casual' | 'balada' | 'academia' | 'evento';
+export type Occasion = 'trabalho' | 'casual' | 'festa' | 'academia' | 'evento';
 export type Mood = 'disposto' | 'cansado' | 'confiante' | 'criativo';
 export type DailyLookFeedback = 'loved' | 'used' | 'skipped';
 
@@ -385,6 +409,8 @@ export interface WeekPlanDay {
   occasion: Occasion;
   scheme_id: string | null;
   gap_hints: string[];
+  scheme_title?: string;
+  scheme_items?: AutopilotWardrobeItem[];
 }
 
 export interface WeekPlan {
@@ -409,6 +435,8 @@ export interface AutopilotWardrobeItem {
   image_url: string;
   name: string;
   color: string;
+  /** Resolved brand name; empty when the piece has no brand on record. */
+  brand?: string;
 }
 
 export interface SchemeSuggestion {

@@ -23,6 +23,14 @@ export const COLLECTIONS = {
   FLAIR_VOUCHERS: 'saiFlairVouchers',
   FLAIR_DUELS: 'saiFlairDuels',
   FLAIR_SEASON_EVENTS: 'saiFlairSeasonEvents',
+  OUTFIT_LIKES: 'saiOutfitLikes',
+  OUTFIT_COMMENTS: 'saiOutfitComments',
+  FOLLOWS: 'saiFollows',
+  REMIXES: 'saiRemixes',
+  NOTIFICATIONS: 'saiNotifications',
+  BRAND_FEED_POSTS: 'saiBrandFeedPosts',
+  BRAND_FEED_SPOTLIGHTS: 'saiBrandFeedSpotlights',
+  SUBSCRIPTIONS: 'saiSubscriptions',
 } as const;
 
 export const LEGACY_COLLECTIONS = [

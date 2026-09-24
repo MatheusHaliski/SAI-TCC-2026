@@ -1,0 +1,387 @@
+@startuml RF6_Perfil_Lookbook_Atividades
+title RF06 — Visualizar o Perfil Lookbook do Usuário\nDiagrama de Atividades — Corrigido (Look do Dia como aba + painel Hype Score, RF19)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #52606D
+skinparam activity {
+  BackgroundColor #F8F4FF
+  BorderColor #B695F5
+  FontColor #2D2438
+  DiamondBackgroundColor #FFF5F8
+  DiamondBorderColor #F08DB1
+  StartColor #20A77A
+  EndColor #4B5563
+  BarColor #4B4B4B
+}
+skinparam note {
+  BackgroundColor #FFFDEB
+  BorderColor #D8CE78
+  FontColor #554F24
+}
+
+|Usuário|
+start
+:Usuário acessa a aba\n"Perfil Lookbook";
+
+|Sistema|
+:Carregar dados do perfil:\n- Nome\n- Foto\n- Biografia\n- Privacidade;
+:Carregar relacionamento social:\n- Seguindo\n- Não seguindo\n- Solicitação pendente;
+:Calcular contadores:\n- Peças criadas\n- Meus looks (esquemas criados)\n- Peças salvas\n- Looks salvos;
+:Verificar autorização para\nvisualizar o conteúdo do perfil;
+
+if (Conteúdo do perfil está acessível?) then (Sim)
+  :Exibir cabeçalho, contadores,\nações sociais e abas;
+
+  if (O visitante autenticado é o\npróprio dono do perfil?) then (Sim)
+    :Carregar o registro de\nsaiDailyLooks da data atual\ndo dono (leitura/escrita própria);
+
+    if (Existe registro de\nsaiDailyLooks para hoje?) then (Não)
+      :Buscar o registro de\nsaiDailyLooks mais recente\nanterior à data atual;
+
+      if (Existe registro anterior E sua\ndata é exatamente ontem?) then (Sim)
+        :Materializar (criar) o registro\nde hoje copiando scheme_id do\nregistro anterior, com\nsource = "carried_over";
+
+        note right
+          Sem esta materialização, um look
+          marcado ontem e nunca "remarcado"
+          não tem documento para a data de
+          hoje: a consulta por data atual
+          volta vazia e o look ativo some
+          após a virada do dia, mesmo que a
+          marcação devesse persistir por
+          mais um dia. Este passo garante
+          que exista um registro datado
+          para o dia imediatamente seguinte
+          a uma marcação (manual ou já
+          carregada) — sem depender de um
+          job agendado à meia-noite.
+
+          **Limitado a um único dia de
+          propagação (correção desta
+          rodada).** A busca exige que o
+          registro anterior seja de ontem,
+          não "o mais recente, seja qual
+          for a data" — sem este limite, a
+          cada visita ao perfil o sistema
+          materializaria um novo registro
+          de hoje a partir do último
+          encontrado, ainda que ele tivesse
+          semanas de idade, encadeando
+          indefinidamente e tornando
+          impossível o usuário voltar a
+          "não ter look do dia registrado"
+          depois da primeira marcação —
+          contradizendo HU19, Critério 3
+          ("Feedback sem look do dia
+          registrado"), fabricando entradas
+          no histórico datado, e expondo
+          prompts de avaliação (HU19) para
+          looks que o usuário não usou nem
+          escolheu naquele dia. `source =
+          "carried_over"` (em vez de copiar
+          o `source` do registro anterior)
+          marca explicitamente que este
+          registro específico não veio de
+          uma ação do usuário hoje —
+          diferencia de `source = "manual"`
+          (linha da Etapa "marcar outro
+          esquema", abaixo) para quem
+          consumir o histórico depois.
+
+          **Restrito ao dono autenticado
+          (correção desta rodada).** As
+          regras do Firestore para
+          `saiDailyLooks` só permitem
+          `create`/`update` quando
+          `request.auth.uid ==
+          user_id` do documento — um
+          visitante nunca conseguiria
+          completar esta escrita mesmo
+          sem esta restrição explícita no
+          diagrama. Sem o gate acima, uma
+          implementação com SDK admin
+          (que ignora as regras do
+          Firestore) poderia materializar
+          — e assim alterar — o histórico
+          datado do dono só porque
+          alguém visitou o perfil dele;
+          este passo nunca roda para um
+          visitante, dono ou não.
+        end note
+      else (Não)
+        :Nenhum registro disponível —\nusuário nunca marcou um look do\ndia, ou o último registro é de\nhá dois dias ou mais (a\npropagação não alcança);
+      endif
+    else (Sim)
+    endif
+  else (Não — visitante,\nnão é o dono)
+    :Ler o registro de saiDailyLooks\nda data atual do dono, quando\nexistir, via caminho server-side\ncom filtro de visibilidade —\nnunca uma leitura direta do\ncliente;
+
+    note right
+      As regras do Firestore para
+      `saiDailyLooks` restringem leitura
+      a `request.auth.uid == user_id`
+      do documento — um visitante
+      autenticado (mesmo seguidor
+      aprovado de um perfil de
+      seguidores, já autorizado pelo
+      gate acima) não consegue ler o
+      documento de outra pessoa
+      diretamente pelo SDK do cliente.
+      RF6.CA08 (perfil público) precisa
+      de uma rota server-side
+      (equivalente a
+      `SchemesService.getSchemeDetailsForViewer`,
+      já usado para esquemas) que
+      aplique a mesma regra de
+      visibilidade e devolva o
+      registro do dono ao visitante
+      autorizado — sem essa rota, a aba
+      "Look do Dia" de um perfil de
+      terceiros nunca carrega, mesmo
+      após o gate de acessibilidade
+      acima já ter passado. Este
+      caminho nunca escreve/materializa
+      — só lê o que já existe (ramo
+      "Sim" acima trata a
+      materialização, restrita ao
+      dono).
+    end note
+  endif
+else (Não)
+  :Exibir informações públicas\ne indicar "Perfil privado";
+  :Ocultar peças, esquemas\ne conteúdos restritos;
+endif
+
+|Usuário|
+if (Qual ação deseja realizar?) then (Ação social)
+
+  if (Qual ação social?) then (Seguir)
+    if (Já segue o perfil?) then (Sim)
+      |Sistema|
+      :Manter o relacionamento atual;
+      :Informar que o perfil\njá está sendo seguido;
+    else (Não)
+      |Sistema|
+      if (O perfil é público?) then (Sim)
+        :Adicionar o usuário à\nlista de seguidores;
+        :Atualizar os contadores\nde seguidores e seguindo;
+        :Notificar o proprietário\nsobre o novo seguidor;
+      else (Não)
+        :Criar solicitação\ncom status "pendente";
+        :Notificar o proprietário\ndo perfil privado;
+        note right
+          A aprovação ou rejeição pode
+          ocorrer posteriormente.
+        end note
+        :Exibir ao solicitante\n"Solicitação enviada";
+      endif
+    endif
+
+  elseif (Deixar de seguir) then (Desseguir)
+    |Sistema|
+    if (O usuário segue o perfil?) then (Sim)
+      :Remover o relacionamento\nda lista de seguidores;
+      :Atualizar os contadores\nde seguidores e seguindo;
+    else (Não)
+      :Informar que o perfil\nnão está sendo seguido;
+    endif
+
+  elseif (Cancelar solicitação) then (Cancelar)
+    |Sistema|
+    :Remover a solicitação\nde seguimento pendente;
+    :Atualizar o status\nda ação social;
+
+  else (Nenhuma ação)
+    |Sistema|
+    :Manter o estado atual\ndo relacionamento social;
+  endif
+
+elseif (Abas do Lookbook) then (Abas do Lookbook)
+
+  |Sistema|
+  if (Conteúdo do perfil está acessível?) then (Não)
+
+    :Bloquear a entrada nas abas —\nperfil privado sem autorização;
+
+    note right
+      Reaproveita a mesma verificação de
+      acessibilidade feita no início do
+      fluxo. Nenhuma consulta de coleção
+      (Look do Dia, Looks Salvos, Peças
+      Salvas, Minhas Peças, Meus Looks)
+      roda sem essa checagem passar —
+      a autorização é obrigatória para
+      ENTRAR nas abas, e não é repetida
+      individualmente por aba: se o
+      perfil está inacessível, o fluxo
+      termina aqui e nenhuma consulta às
+      peças/esquemas do dono é feita.
+    end note
+
+  else (Sim)
+
+    |Usuário|
+    if (Qual aba deseja visualizar?) then (Look do Dia)
+
+      :Usuário abre a aba\n"Look do Dia";
+
+      |Sistema|
+      if (Existe um look do dia ativo?) then (Sim)
+        :Exibir em destaque:\n- Esquema em versão compacta\n- Peças utilizadas\n- Estilos e ocasiões\n- Data de marcação (saiDailyLooks.date);
+
+        note right
+          O Look do Dia é sempre um Esquema
+          de Vestimenta referenciado por um
+          registro de saiDailyLooks. Peça
+          avulsa e DNA de Estilo nunca
+          aparecem nesta aba.
+        end note
+
+        :Somar os contadores sociais (RF19)\ndo esquema: curtidas, comentários,\ncompartilhamentos e remixes\n(esquema + peças);
+
+        note right
+          "Retornar" (RF19.CA13/CA14) é
+          navegação — abre o esquema de
+          origem a partir de uma peça da
+          lista — não é reconhecimento
+          social de terceiros e não gera
+          contador próprio. Por isso não
+          entra na soma de engajamento.
+          Ver markdowns/RF6_HYPE_SCORE_CALCULO.md,
+          seção 3.
+        end note
+
+        :Calcular o Engajamento Normalizado\n(E_norm) por percentil frente à\njanela de calibração de 90 dias;
+        :Calcular o Alinhamento de Tendência\n(T_norm): compara marca, cor, categoria\ne estilo das peças com o uso global\nrecente (janela de 30 dias) na\nmesma janela de calibração;
+        :Calcular o Hype Score =\n0,65 × E_norm + 0,35 × T_norm;
+        :Classificar o Hype Score em uma\nfaixa (Despretensioso → Ícone\nde Estilo);
+        :Ranquear o Hype Score dentre os\nesquemas da janela semanal de\ncomparação, calculando a fatia\nsuperior inclusiva (Top X%) —\nnão um percentil ascendente\ninvertido;
+        :Calcular indicadores adicionais:\n- Total de curtidas (esquema + peças)\n- Breakdown por métrica\n- Selo Trendsetter / Style Match\n- Ranking "Top X% da semana"\n(fatia superior inclusiva,\nnão o Hype Score em si)\n- Comparação com o Hype Score do\nregistro de saiDailyLooks anterior;
+
+        |Serviço de IA|
+        :IA identifica a métrica mais fraca\ndo breakdown e gera uma sugestão\nde estilo acionável;
+
+        |Sistema|
+        :Selecionar a versão de painel\nconfigurada (preferência do usuário\nou padrão do sistema);
+        :Exibir o painel "Look do Dia"\nna versão selecionada — Hype Score\nsempre presente; demais elementos\nvariam por versão;
+
+        note right
+          Fórmula completa, pesos, janelas
+          de tempo e faixas de classificação
+          em markdowns/RF6_HYPE_SCORE_CALCULO.md.
+          Catálogo de versões de painel
+          (Spotlight Clássico, Passarela,
+          Raio-X do Estilo, Bento do Dia,
+          Editorial Minimal, Coach de
+          Estilo) em
+          markdowns/RF6_LOOK_DO_DIA_VERSOES_PAINEL.md.
+        end note
+
+      else (Não)
+        :Exibir mensagem incentivando\na marcar um look do dia;
+        :Oferecer atalho para\nselecionar ou criar um esquema;
+      endif
+
+      :Consultar os registros de\nsaiDailyLooks do usuário,\nordenados por data decrescente;
+      :Exibir o histórico\nde looks do dia anteriores;
+
+      |Usuário|
+      if (Deseja marcar outro esquema?) then (Sim)
+        :Selecionar um esquema\ncriado pelo usuário;
+
+        note right
+          A lista de seleção só apresenta
+          Esquemas de Vestimenta do próprio
+          usuário — Peças e registros de DNA
+          de Estilo não são elegíveis para
+          "marcar como look do dia".
+        end note
+
+        |Sistema|
+        :Validar a propriedade\ne a disponibilidade do esquema;
+        :Validar que a entidade selecionada\né do tipo Esquema (Card.tipo =\nESQUEMA, is_DNA = false);
+
+        if (Esquema válido?) then (Sim)
+          :Criar ou atualizar o registro em\nsaiDailyLooks para a data de hoje\n(user_id, date, scheme_id,\nsource = "manual"), preservando\nos registros de datas anteriores;
+
+          note right
+            Um flag booleano mutável perde a
+            data e a relação com a seleção
+            anterior — não sustenta o
+            histórico, a comparação com o
+            look do dia anterior nem o
+            feedback datado da HU19. O
+            registro datado (mesmo padrão de
+            docs/autopiloto-architecture.md,
+            saiDailyLooks) é a fonte de
+            verdade; um eventual flag de
+            leitura rápida no esquema é só
+            cache derivado do registro de
+            hoje.
+          end note
+
+          :Atualizar o destaque\nda aba "Look do Dia";
+          :Notificar seguidores\nsobre o novo look do dia;
+          :Recalcular o painel Hype Score\npara o novo look marcado;
+        else (Não)
+          :Informar que o esquema\nnão pode ser selecionado;
+        endif
+      else (Não)
+        |Sistema|
+        :Manter o look do dia atual;
+      endif
+
+    else (Looks Salvos / Peças Salvas /\nMinhas Peças / Meus Looks)
+
+      |Usuário|
+      if (Qual coleção?) then (Looks Salvos)
+        |Sistema|
+        :Definir fonte da consulta:\nesquemas salvos pelo usuário\n(favoritados de outros usuários);
+      elseif (Peças Salvas) then (Peças Salvas)
+        |Sistema|
+        :Definir fonte da consulta:\npeças salvas pelo usuário\n(favoritadas de outros usuários);
+      elseif (Minhas Peças) then (Minhas Peças)
+        |Sistema|
+        :Definir fonte da consulta:\npeças criadas pelo usuário;
+      else (Meus Looks)
+        |Sistema|
+        :Definir fonte da consulta:\nesquemas criados pelo usuário;
+      endif
+
+      :Carregar os itens\nda coleção selecionada;
+
+      |Usuário|
+      if (Deseja aplicar filtros?) then (Sim)
+        :Selecionar filtros:\n- Ocasião\n- Estilo\n- Cor\n- Mercado\n- Marca;
+        |Sistema|
+        :Validar os filtros informados;
+        :Aplicar os filtros\nà coleção selecionada;
+        :Exibir os resultados filtrados\nem formato de grade;
+      else (Não)
+        |Sistema|
+        :Exibir a coleção completa\nem formato de grade;
+      endif
+
+      if (Existem itens na coleção?) then (Sim)
+        :Permitir selecionar um item\npara visualizar seus detalhes;
+      else (Não)
+        :Exibir estado vazio\ncorrespondente à aba;
+      endif
+
+    endif
+
+  endif
+
+else (Sair)
+  |Usuário|
+  :Sair da aba\n"Perfil Lookbook";
+endif
+
+|Sistema|
+:Atualizar os dados afetados\npela ação realizada;
+:Exibir o Perfil Lookbook\nem seu estado atualizado;
+stop
+
+@enduml

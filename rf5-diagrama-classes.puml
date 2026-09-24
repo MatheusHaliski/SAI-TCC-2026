@@ -1,0 +1,267 @@
+@startuml RF5_Criar_Look_Diagrama_Classes
+
+!define ENTITY_COLOR #E1F5FF
+!define ENUM_COLOR #FFF3E0
+!define VALUE_COLOR #F3E5F5
+
+title RF5 — Criar Look: Diagrama de Classes
+
+enum SchemeStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+    DELETED
+}
+
+enum CreationMode {
+    MANUAL
+    AI_ASSISTED
+}
+
+enum Visibility {
+    PRIVATE
+    PUBLIC
+    FRIENDS_ONLY
+}
+
+enum SlotType {
+    TOP
+    BOTTOM
+    DRESS
+    OUTERWEAR
+    SHOES
+    ACCESSORIES
+    FULL_BODY
+}
+
+class User {
+    id: UUID
+    email: String
+    fullName: String
+    visibility_default: Visibility
+    createdAt: Timestamp
+    updatedAt: Timestamp
+}
+
+class WardrobeItem {
+    id: UUID
+    userId: UUID
+    --
+    name: String
+    category: String
+    availability_status: String
+    createdAt: Timestamp
+}
+
+class Scheme <<Entity>> {
+    id: UUID
+    userId: UUID
+    --
+    title: String
+    description: String
+    --
+    creationMode: CreationMode
+    status: SchemeStatus
+    visibility: Visibility
+    --
+    backgroundColor: String
+    backgroundGradient: String
+    backgroundImageUrl: URL
+    displayMode: String
+    --
+    createdAt: Timestamp
+    updatedAt: Timestamp
+    publishedAt: Timestamp
+    --
+    createScheme(mode): void
+    addItem(slot, wardrobeItem): void
+    validatePieces(): boolean
+    configureBackground(config): void
+    publish(): void
+    archive(): void
+    updateVisibility(visibility): void
+    suggestBrandLinks(): Brand[]
+}
+
+class SchemeItem <<Value>> {
+    id: UUID
+    schemeId: UUID
+    wardrobeItemId: UUID
+    --
+    slot: SlotType
+    zIndex: Integer
+    sortOrder: Integer
+    --
+    positionX: Float
+    positionY: Float
+    scale: Float
+    rotation: Float
+    --
+    createdAt: Timestamp
+    updatedAt: Timestamp
+    --
+    validateCompatibility(): boolean
+    getWardrobeItem(): WardrobeItem
+}
+
+class SchemeBackground {
+    id: UUID
+    schemeId: UUID
+    --
+    backgroundColor: String
+    backgroundGradient: String
+    backgroundImageUrl: URL
+    --
+    colorStartHex: String
+    colorEndHex: String
+    gradientAngle: Integer
+    --
+    displayMode: String
+    opacity: Float
+    --
+    createdAt: Timestamp
+    updatedAt: Timestamp
+    --
+    applyBackground(): void
+    generatePreview(): URL
+    validateColors(): boolean
+}
+
+class AIAssistance <<Service>> {
+    id: UUID
+    schemeId: UUID
+    --
+    userDescription: String
+    occasion: String
+    mood: String
+    --
+    suggestedItems: SchemeItem[]
+    confidenceScores: Float[]
+
+    generationAttempts: Integer
+    --
+    createdAt: Timestamp
+    --
+    generateSuggestions(): SchemeItem[]
+    validateSuggestions(): boolean
+    applySuggestion(schemeId, items): void
+    regenerate(): SchemeItem[]
+}
+
+class Brand {
+    id: UUID
+    name: String
+    officialLogoUrl: URL
+}
+
+class UserSavedScheme {
+    id: UUID
+    userId: UUID
+    schemeId: UUID
+    --
+    origin: String
+    originAuthorId: UUID
+    --
+    isFavorited: Boolean
+    favoritedAt: Timestamp
+    --
+    createdAt: Timestamp
+    --
+    favorite(): void
+    unfavorite(): void
+}
+
+class SchemeCompatibilityEngine {
+    validatePieces(slots): boolean
+    checkColorHarmony(colors): boolean
+    validateMinimumPieces(items): boolean
+    detectBrands(items): Brand[]
+    suggestBrands(items): Brand[]
+}
+
+class AIOutfitGenerator {
+    generateOutfit(description, userWardrobe): SchemeItem[]
+    analyzeDescription(text): {occasion, mood, colors}
+    restrictToAvailable(items, wardrobe): SchemeItem[]
+    scoreCompatibility(items): Float
+    rankSuggestions(items): SchemeItem[]
+}
+
+class BackgroundStyleService {
+    parseConfig(config): SchemeBackground
+    generatePreview(config): URL
+    validateColorScheme(colors): boolean
+    applyPreset(presetName): SchemeBackground
+}
+
+class AuditLog {
+    id: UUID
+    action: String
+    entityType: String
+    entityId: UUID
+    changedBy: UUID
+    details: JSON
+    timestamp: Timestamp
+    --
+    logAction(action, entityId, changedBy): void
+}
+
+' Relacionamentos
+User "1" -- "0..*" Scheme: creates
+User "1" -- "0..*" UserSavedScheme: saves
+
+Scheme "1" -- "1..*" SchemeItem: contains
+Scheme "1" -- "1" SchemeBackground: has
+Scheme "0..*" -- "0..*" Brand: links
+
+SchemeItem "*" -- "1" WardrobeItem: references
+SchemeItem "1..*" -- "1" Scheme: composes
+
+Scheme "0..*" -- "0..1" AIAssistance: uses
+Scheme "0..*" -- "1" AuditLog: produces
+
+AIAssistance ..> AIOutfitGenerator: uses
+Scheme ..> SchemeCompatibilityEngine: validates
+SchemeBackground ..> BackgroundStyleService: configures
+
+note right of Scheme
+  **RF5.CA01**: Escolher modo (Manual/IA)
+  **RF5.CA02**: Validação mínimo de peças
+  **RF5.CA03**: Herança de visibilidade do perfil
+  **RF5.CA04**: Sugestões IA
+  **RF5.CA05**: Publicar no feed
+end note
+
+note right of SchemeItem
+  Representa uma peça dentro do scheme
+  Mantém dados de positioning (x, y, z)
+  Referencia apenas peças DISPONÍVEIS
+  (availability_status = 'available')
+end note
+
+note right of AIAssistance
+  **RF24.CA02**: Geração de sugestões IA
+  Restringe candidatos a:
+  - Peças do guarda-roupa do usuário
+  - Peças com availability_status = available
+  - Peças compatíveis em categoria
+end note
+
+note right of SchemeBackground
+  **RF5.CA03**: Configuração de arte
+  Suporta:
+  - Cor sólida
+  - Gradiente (2+ cores)
+  - Imagem com URL
+  Gera preview automática
+end note
+
+note right of CreationMode
+  MANUAL: Usuário seleciona peças direto
+  AI_ASSISTED: IA sugere baseado em descrição
+
+  Bifurcação acontece na Etapa 1
+  Ambos convergem na Etapa 4 (Background)
+end note
+
+@enduml

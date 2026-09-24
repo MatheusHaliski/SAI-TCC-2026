@@ -10,7 +10,9 @@ import ProfileContextMenu from '@/app/components/profile/ProfileContextMenu';
 import ProfileSectionRenderer from '@/app/components/profile/ProfileSectionRenderer';
 import { ProfileSectionKey, UserPostRecord } from '@/app/components/profile/types';
 
-const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
+const ALLOWED_SECTIONS: ProfileSectionKey[] = ['wardrobe', 'user-info', 'style-dna', 'my-schemes', 'saved-schemes', 'my-posts', 'settings'];
+// Perfil-Lookbook (RF20): visitors may also see the creator's Style DNA.
+const PUBLIC_SECTIONS: ProfileSectionKey[] = ['user-info', 'style-dna'];
 
 interface WardrobeItem {
   wardrobe_item_id: string;
@@ -67,11 +69,13 @@ export default function ProfileView() {
   const [posts, setPosts] = useState<UserPostRecord[]>([]);
 
   const isOwnerView = Boolean(authUserId) && Boolean(userId) && authUserId === userId;
-  const forcedPublicSection = publicUserFromPath && !isOwnerView ? 'user-info' : null;
-  const selectedSection = forcedPublicSection ?? (pathname.endsWith('/settings') ? 'settings' : parseSectionFromQuery(searchParams.get('section')));
   const allowedSections: ProfileSectionKey[] = isOwnerView || !publicUserFromPath
     ? ALLOWED_SECTIONS
-    : ['user-info'];
+    : PUBLIC_SECTIONS;
+  const requestedSection = parseSectionFromQuery(searchParams.get('section') ?? (pathname.endsWith('/settings') ? 'settings' : null));
+  // For visited profiles, default to user-info but allow switching to the permitted public sections.
+  const forcedPublicSection = publicUserFromPath && !isOwnerView && !allowedSections.includes(requestedSection) ? 'user-info' : null;
+  const selectedSection = forcedPublicSection ?? requestedSection;
 
   useEffect(() => {
     const loadProfileHubData = async () => {
@@ -152,7 +156,12 @@ export default function ProfileView() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-      <ProfileContextMenu selectedSection={selectedSection} onSelectSection={updateSection} allowedSections={allowedSections} />
+      <ProfileContextMenu
+        selectedSection={selectedSection}
+        onSelectSection={updateSection}
+        allowedSections={allowedSections}
+        counts={{ wardrobe: wardrobeItems.length, 'my-schemes': schemes.length, 'my-posts': posts.length }}
+      />
 
       <div className="space-y-6">
         <PageHeader title={isOwnerView ? 'Profile' : `Creator Profile`} subtitle={isOwnerView ? 'Premium creator hub for wardrobe, schemes, publishing, and account controls.' : 'Public creator profile view.'} />
@@ -164,6 +173,9 @@ export default function ProfileView() {
           loginEmail={email}
           loginStatus={isOwnerView ? 'Authenticated' : 'Public Profile'}
           authSource="saiUsers"
+          targetUserId={userId}
+          viewerId={authUserId}
+          isOwnerView={isOwnerView}
         />
 
         <ProfileSectionRenderer
@@ -176,6 +188,10 @@ export default function ProfileView() {
           wardrobeItems={wardrobeItems}
           schemes={schemes}
           posts={posts}
+          viewerId={authUserId}
+          viewerName={authProfile.name?.trim() || displayName}
+          onWardrobeItemDeleted={(removedId) => setWardrobeItems((prev) => prev.filter((item) => item.wardrobe_item_id !== removedId))}
+          onProfileSaved={(profile) => setViewedProfile((prev) => ({ ...prev, ...profile }))}
         />
       </div>
     </div>

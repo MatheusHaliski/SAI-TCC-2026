@@ -2,11 +2,19 @@ import { BaseRepository } from './BaseRepository';
 
 export type FeedbackValue = 'loved' | 'used' | 'skipped';
 
+export interface DailyLookItem {
+  wardrobe_item_id: string;
+  name: string;
+  image_url?: string;
+  piece_type?: string;
+}
+
 export interface DailyLook {
   daily_look_id: string;
   user_id: string;
   date: string;
   scheme_id: string;
+  title?: string;
   occasion: string;
   mood: string;
   weather_c: number | null;
@@ -14,18 +22,37 @@ export interface DailyLook {
   feedback: FeedbackValue | null;
   feedback_at: string | null;
   created_at: string;
+  scheme_items?: DailyLookItem[];
 }
 
 const DAILY_LOOKS_COLLECTION = 'saiDailyLooks';
 
+/**
+ * Deterministic per-user/date document id. Firestore has no equivalent to a
+ * SQL (user_id, look_date) unique constraint, so the id itself is what
+ * prevents two concurrent writes from creating duplicate documents for the
+ * same user on the same day.
+ */
+function buildDailyLookId(userId: string, date: string): string {
+  return `${userId}_${date}`;
+}
+
 export class DailyLooksRepository extends BaseRepository {
+  /**
+   * Upserts the daily look for (user_id, date) using a deterministic
+   * document id instead of Firestore's random-id .add(). Two concurrent
+   * calls for the same user/date converge on the same document — one
+   * write wins, but no duplicate "current look" or history row is ever
+   * created (the race that .add() with random ids could not prevent).
+   */
   async create(
-    input: Omit<DailyLook, 'daily_look_id' | 'feedback' | 'feedback_at' | 'created_at'>,
+    input: Omit<DailyLook, 'daily_look_id' | 'feedback' | 'feedback_at' | 'created_at'> & { title?: string; scheme_items?: DailyLookItem[] },
   ): Promise<DailyLook> {
     const now = new Date().toISOString();
     const payload = { ...input, feedback: null, feedback_at: null, created_at: now };
-    const ref = await this.db.collection(DAILY_LOOKS_COLLECTION).add(payload);
-    return { daily_look_id: ref.id, ...payload };
+    const id = buildDailyLookId(input.user_id, input.date);
+    await this.db.collection(DAILY_LOOKS_COLLECTION).doc(id).set(payload);
+    return { daily_look_id: id, ...payload };
   }
 
   async findById(dailyLookId: string): Promise<DailyLook | null> {
@@ -79,6 +106,7 @@ export class DailyLooksRepository extends BaseRepository {
       user_id: String(data.user_id ?? ''),
       date: String(data.date ?? ''),
       scheme_id: String(data.scheme_id ?? ''),
+      title: String(data.title ?? ''),
       occasion: String(data.occasion ?? ''),
       mood: String(data.mood ?? ''),
       weather_c: typeof data.weather_c === 'number' ? data.weather_c : null,
@@ -86,6 +114,7 @@ export class DailyLooksRepository extends BaseRepository {
       feedback: (data.feedback as FeedbackValue | null) ?? null,
       feedback_at: (data.feedback_at as string | null) ?? null,
       created_at: String(data.created_at ?? ''),
+      scheme_items: Array.isArray(data.scheme_items) ? data.scheme_items as DailyLookItem[] : [],
     };
   }
 }

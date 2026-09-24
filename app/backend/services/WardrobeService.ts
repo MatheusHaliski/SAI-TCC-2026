@@ -137,6 +137,7 @@ export class WardrobeService {
       branding_pass_version: null,
       color: String(input.color ?? '').trim() || 'unspecified',
       material: String(input.material ?? '').trim() || 'unspecified',
+      size: String(input.size ?? '').trim() || 'unspecified',
       style_tags: Array.isArray(input.style_tags) ? input.style_tags.map((tag) => String(tag)) : [],
       occasion_tags: Array.isArray(input.occasion_tags) ? input.occasion_tags.map((tag) => String(tag)) : [],
       fitProfile: {

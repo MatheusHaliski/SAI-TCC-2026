@@ -1,0 +1,288 @@
+@startuml RF5_Criar_Look_Atividades_Corrigido
+title RF5 — Criar Look\nFluxo Manual e Geração com IA — Corrigido (raias de atores, elemento-alvo na Etapa 1\ne nova Etapa 4 — escolher e aplicar skin do card ao rascunho)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #52606D
+skinparam activity {
+  BackgroundColor #F8F4FF
+  BorderColor #B695F5
+  FontColor #2D2438
+  DiamondBackgroundColor #FFF5F8
+  DiamondBorderColor #F08DB1
+  StartColor #20A77A
+  EndColor #4B5563
+  BarColor #4B4B4B
+}
+skinparam note {
+  BackgroundColor #FFFDEB
+  BorderColor #D8CE78
+  FontColor #554F24
+}
+
+|Usuário|
+start
+:Usuário acessa a funcionalidade\n"Criar Look";
+:Etapa 1 — Escolher modo de geração\ne elemento a ser editado;
+:Usuário escolhe o modo de geração:\n- Geração manual\n- Geração com IA;
+
+|Sistema|
+if (Está editando um look existente?) then (Sim)
+  :Sistema carrega o esquema\ne suas peças/slots atuais;
+else (Não)
+  :Sistema cria um esquema\ncom status "rascunho";
+endif
+
+:Sistema exibe o painel de preview\nlateral do card;
+
+|Usuário|
+if (Qual elemento será editado?) then (Conjunto / Esquema completo)
+  |Sistema|
+  :Sistema destaca (luz, borda\ne realce) a arte do conjunto\nno painel de preview;
+  :Fixar elemento-alvo\n= arte do esquema;
+else (Peça específica)
+  :Usuário seleciona a peça/slot\na ser editada no painel de preview;
+  |Sistema|
+  :Sistema destaca (luz, borda\ne realce) a peça selecionada\nno painel de preview;
+  :Fixar elemento-alvo\n= peça selecionada;
+endif
+
+note right
+  O elemento-alvo fixado nesta etapa
+  permanece o mesmo em todas as etapas
+  seguintes (2 a 6). Ex.: se o alvo é a
+  arte do esquema, a Etapa 4 (skin) e a
+  Etapa 5 (arte de background) editam
+  somente esse alvo — se o alvo é uma
+  peça específica, ambas editam somente
+  aquela peça. Isto elimina a necessidade
+  de um seletor adicional de alvo dentro
+  do Background Studio (RF11) — ver nota
+  na Etapa 5.
+end note
+
+|Usuário|
+if (Qual é o modo de geração?) then (Manual)
+
+  :Etapa 2 — Selecionar peças manualmente;
+
+  repeat
+    :Usuário seleciona uma peça\npara cada slot do look;
+    |Sistema|
+    :Sistema verifica:\n- Disponibilidade da peça\n- Compatibilidade do slot\n- Duplicidade\n- Regras da composição\n- Até 3 estilos e 3 ocasiões;
+
+    if (Peças compatíveis?) then (Sim)
+      :Sistema adiciona as peças\nao esquema;
+    else (Não)
+      :Sistema informa as incompatibilidades;
+      |Usuário|
+      :Usuário substitui ou remove\nas peças incompatíveis;
+    endif
+    |Usuário|
+  repeat while (Existem incompatibilidades?) is (Sim)
+
+  :Etapa 3 — Revisar composição manual;
+
+  repeat
+    |Sistema|
+    :Sistema apresenta a pré-visualização\ndas peças nos respectivos slots;
+    |Usuário|
+    :Usuário revisa a composição;
+
+    if (Deseja alterar a composição?) then (Sim)
+      :Usuário adiciona, remove\nou substitui peças;
+      |Sistema|
+      :Sistema valida novamente\na composição;
+      |Usuário|
+    else (Não)
+      :Usuário aprova\na composição manual;
+    endif
+  repeat while (Deseja realizar novos ajustes?) is (Sim)
+
+else (IA)
+
+  :Etapa 2 — Descrever intenção do look;
+
+  repeat
+    :Usuário informa:\n- Descrição do look\n- Ocasião\n- Estilos desejados\n- Preferências de cores\n- Outras orientações;
+    |Sistema|
+    :Sistema valida a descrição;
+
+    if (Descrição suficiente?) then (Sim)
+      :Sistema envia a descrição\nao serviço de IA;
+    else (Não)
+      :Sistema solicita informações\nadicionais ao usuário;
+    endif
+    |Usuário|
+  repeat while (Descrição insuficiente?) is (Sim)
+
+  :Etapa 3 — Gerar e revisar sugestão da IA;
+
+  |Serviço de IA|
+  repeat
+    :IA analisa:\n- Descrição do usuário\n- Peças do guarda-roupa\n- Disponibilidade\n- Cores e marcas\n- Estilos e ocasiões;
+    :IA seleciona peças compatíveis\npara os slots do look;
+    |Sistema|
+    :Sistema valida a sugestão gerada;
+
+    if (Sugestão tecnicamente válida?) then (Sim)
+      :Sistema apresenta a sugestão\nao usuário;
+    else (Não)
+      :Sistema solicita nova geração\nao serviço de IA;
+    endif
+    |Serviço de IA|
+  repeat while (Sugestão inválida?) is (Sim)
+
+  |Usuário|
+  repeat
+    if (Qual ação o usuário deseja?) then (Editar peças)
+      :Usuário edita as peças manualmente;
+      |Sistema|
+      :Sistema valida as alterações\nrealizadas pelo usuário;
+
+      while (Alterações válidas?) is (Não)
+        :Sistema informa as incompatibilidades;
+        |Usuário|
+        :Usuário corrige as peças;
+        |Sistema|
+        :Sistema valida novamente\nas alterações;
+      endwhile (Sim)
+
+      :Sistema atualiza\na sugestão apresentada;
+      |Usuário|
+
+    elseif (Nova geração) then (Regenerar)
+      |Sistema|
+      :Sistema solicita nova geração\nao serviço de IA;
+      |Serviço de IA|
+      :IA gera outra composição\ncompatível com a intenção;
+      |Sistema|
+      :Sistema valida e apresenta\na nova sugestão;
+      |Usuário|
+
+    else (Aceitar)
+      :Usuário aprova a composição\nsugerida pela IA;
+    endif
+  repeat while (Composição aprovada?) is (Não)
+
+endif
+
+|Sistema|
+:Etapa 4 — Escolher e aplicar\na skin do card ao elemento\nfixado na Etapa 1;
+:Sistema apresenta os 7 skins\ndisponíveis (Atelier, Spread,\nÍndice, Trading, FAI Max, Stub,\nSpecimen), cada um com o\nthumbnail de referência gerado\npor IA (markdowns/RF11_PROMPTS_SKINS_CARD.md);
+
+|Usuário|
+repeat
+  :Usuário seleciona um skin\nno seletor;
+  |Sistema|
+  :Sistema aplica o skin ao\nelemento-alvo fixado — renderizado\npelo componente React real do skin\n(ex.: CardAtelier.tsx), nunca pela\nimagem de referência do seletor;
+  :Sistema atualiza a\npré-visualização do rascunho\nno painel lateral, refletindo a\ntipografia, a moldura e a decoração\ndo skin escolhido sobre os dados\nreais já preenchidos até aqui;
+  |Usuário|
+  :Usuário avalia o resultado\nno preview;
+repeat while (Deseja trocar\nde skin?) is (Sim)
+
+:Usuário confirma o skin\nescolhido para o elemento-alvo;
+|Sistema|
+:Salvar temporariamente\nselectedCardSkin do\nelemento-alvo fixado;
+
+note right
+  O thumbnail de referência (gerado por
+  IA, ver markdowns/RF11_PROMPTS_SKINS_CARD.md,
+  seção 1) é só uma prévia estática no
+  seletor — o card ao vivo no painel de
+  preview sempre usa o componente real
+  do skin, com os dados reais do
+  rascunho (fotos, peças, nomes já
+  preenchidos nas Etapas 2/3). Skin é
+  independente da anatomia (RF11, Etapa
+  3 — Layout & Estilo) e da arte de
+  fundo (Etapa 5 deste fluxo, que abre
+  o Background Studio do RF11): skin
+  decide tipografia/moldura/
+  decoração; anatomia decide onde cada
+  informação fica; arte de fundo decide
+  cor/textura/imagem do background. As
+  três camadas convivem sem se excluir —
+  mesmo princípio do mecanismo de
+  sobreposição já formalizado no RF11.
+  `selectedCardSkin`/`onSelectSkin` já
+  existem no código
+  (`OutfitBackgroundStudioModal`,
+  `PremiumSelections.tsx`); esta etapa é
+  a primeira vez que a escolha de skin é
+  modelada num diagrama de atividades.
+end note
+
+|Sistema|
+:Etapa 5 — Configurar a arte de fundo\ndo elemento fixado na Etapa 1;
+:Sistema abre o Background Studio\n(RF11), já restrito ao elemento-alvo\nfixado — peça específica ou\narte do esquema completo;
+
+|Usuário|
+repeat
+  :Usuário escolhe uma direção visual:\n- Cor sólida\n- Gradiente\n- Prompt\n- Direção recomendada por IA\n- Preset Aura;
+  :Usuário pode aplicar, opcionalmente,\numa camada de material sobre\na direção visual escolhida;
+  |Sistema|
+  :Sistema aplica o resultado apenas\nao elemento-alvo fixado;
+  :Sistema gera uma pré-visualização\ndo card completo;
+  |Usuário|
+  :Usuário revisa:\n- Peças\n- Slots\n- Layout\n- Arte de fundo do elemento-alvo\n- Legibilidade do conteúdo;
+repeat while (Deseja ajustar o background?) is (Sim)
+
+:Usuário confirma a arte de fundo\ndo elemento fixado;
+
+note right
+  Como o elemento-alvo já foi fixado na
+  Etapa 1 (peça específica ou arte do
+  esquema), esta etapa não precisa de um
+  seletor adicional de "o que estou
+  editando" dentro do RF11 — elimina o
+  antigo modo de geração dedicado a
+  "arte das peças" no Background Studio,
+  cuja finalidade já é resolvida aqui.
+end note
+
+note right
+  A cor do container (RF11) separa duas
+  camadas de arte/conteúdo: a externa
+  (fotos + títulos + lista de peças,
+  editável com Preset Aura + Material) e
+  a interna, com cor neutra e distinta da
+  externa — o que melhora a legibilidade
+  do conteúdo do esquema ou da peça
+  dentro do card.
+end note
+
+|Sistema|
+:Etapa 6 — Revisar, salvar e concluir;
+
+repeat
+  :Sistema apresenta o preview final\ndo card completo;
+  :Sistema valida:\n- Campos obrigatórios\n- Quantidade e ocupação dos slots\n- Compatibilidade das peças\n- Configuração do background\n- Permissões do usuário;
+
+  if (Look válido para conclusão?) then (Sim)
+    :Validação concluída;
+  else (Não)
+    :Sistema apresenta\nas inconsistências encontradas;
+    |Usuário|
+    :Usuário corrige a composição,\nos dados ou o background;
+    |Sistema|
+    :Sistema executa\numa nova validação;
+  endif
+repeat while (Ainda existem inconsistências?) is (Sim)
+
+|Usuário|
+if (Look será público?) then (Sim)
+  |Sistema|
+  :Sistema define visibilidade pública\ne status "publicado";
+else (Não)
+  |Sistema|
+  :Sistema define visibilidade privada\ne status "salvo";
+endif
+
+:Sistema persiste ou atualiza:\n- Registro em schemes\n- Itens em scheme_items\n- Ordem dos slots\n- Elemento-alvo fixado (Etapa 1)\n- selectedCardSkin (Etapa 4)\n- Configuração do background\n- Modo de geração\n- Visibilidade e status;
+:Sistema confirma:\n"Look criado com sucesso";
+:Sistema redireciona o usuário\npara "Looks Salvos";
+stop
+
+@enduml

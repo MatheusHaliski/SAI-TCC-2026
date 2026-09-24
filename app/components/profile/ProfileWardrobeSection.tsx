@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import SectionBlock from '@/app/components/shared/SectionBlock';
+import SubTabs from '@/app/components/shared/SubTabs';
+import { useSectionFilter } from '@/app/components/profile/useSectionFilter';
 import WardrobeCompactCard from '@/app/components/profile/WardrobeCompactCard';
 
 type WardrobeViewItem = {
@@ -19,6 +21,9 @@ interface ProfileWardrobeSectionProps {
   items: WardrobeViewItem[];
   onItemDeleted?: (id: string) => void;
 }
+
+// RF6.CA02 — chave do filtro por categoria (tipo de peça) no header da lista.
+const getPieceType = (item: WardrobeViewItem) => item.piece_type;
 
 // Maps a garment type to the Dress Tester query param for slot/mannequin selection
 function resolveTesterSlot(pieceType: string): string {
@@ -45,6 +50,13 @@ export default function ProfileWardrobeSection({ items: initialItems, onItemDele
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+
+  // RF6.CA02 — filtro por categoria sem recarregar a página; persiste ao voltar do detalhe (RF31.CA05).
+  const categoryFilter = useSectionFilter(items, getPieceType, 'sai-lookbook-filter:wardrobe-category');
+
   const handleUseInTester = (item: WardrobeViewItem) => {
     const gender = resolveTesterGender(item.gender);
     const slot = resolveTesterSlot(item.piece_type);
@@ -56,7 +68,7 @@ export default function ProfileWardrobeSection({ items: initialItems, onItemDele
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      const response = await fetch(`/api/wardrobe/${deleteItem.wardrobe_item_id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/wardrobe-items/${deleteItem.wardrobe_item_id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Falha ao excluir a peça.');
       const removed = deleteItem.wardrobe_item_id;
       setItems((prev) => prev.filter((item) => item.wardrobe_item_id !== removed));
@@ -71,9 +83,22 @@ export default function ProfileWardrobeSection({ items: initialItems, onItemDele
 
   return (
     <>
-      <SectionBlock title="Meu Guarda-roupa" subtitle="Visualize e gerencie suas peças com cards premium compactos.">
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          {items.map((item) => (
+      <SectionBlock
+        title={`Closet Digital (${items.length})`}
+        subtitle="Visualize e gerencie suas peças com cards premium compactos."
+        action={
+          <SubTabs
+            variant="filter"
+            size="sm"
+            ariaLabel="Filtrar peças por categoria"
+            items={categoryFilter.options}
+            activeKey={categoryFilter.selected}
+            onChange={categoryFilter.setSelected}
+          />
+        }
+      >
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {categoryFilter.filtered.map((item) => (
             <WardrobeCompactCard
               key={item.wardrobe_item_id}
               imageUrl={item.image_url}
@@ -92,7 +117,22 @@ export default function ProfileWardrobeSection({ items: initialItems, onItemDele
               }}
             />
           ))}
-          {!items.length ? <p className="text-sm text-white/80">Nenhuma peça encontrada ainda.</p> : null}
+          {!items.length ? (
+            // RF6.CA03 — estado vazio com chamada para “Adicionar nova peça” (RF4).
+            <div className="col-span-full flex flex-col items-start gap-3 rounded-2xl border border-dashed border-white/25 bg-white/5 p-5">
+              <p className="text-sm text-white/80">Seu Closet Digital ainda está vazio. Cadastre a primeira peça para começar a montar looks.</p>
+              <button
+                type="button"
+                onClick={() => router.push('/add-wardrobe-item')}
+                className="rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                style={{ background: 'var(--brand-gradient)' }}
+              >
+                + Adicionar nova peça
+              </button>
+            </div>
+          ) : !categoryFilter.filtered.length ? (
+            <p className="col-span-full text-sm text-white/80">Nenhuma peça nesta categoria.</p>
+          ) : null}
         </div>
       </SectionBlock>
 

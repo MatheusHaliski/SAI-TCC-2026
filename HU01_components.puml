@@ -1,0 +1,136 @@
+@startuml HU-RF1_Componentes
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentBackgroundColor #E1F5FE
+skinparam componentBorderColor #01579B
+skinparam arrowColor #01579B
+
+' ========================================
+' CAMADA DE APRESENTAÇÃO (Frontend)
+' ========================================
+package "Frontend (Next.js)" #FFECB3 {
+    component [Cadastro UI] as CadastroUI
+    component [Perfil UI] as PerfilUI
+    component [Admin Dashboard] as AdminDash
+    component [Form Validation] as FormVal
+}
+
+' ========================================
+' CAMADA DE NEGÓCIO (Backend)
+' ========================================
+package "Backend (Fastify)" #E1F5FE {
+    component [Auth Controller] as AuthCtrl
+    component [Profile Manager] as ProfileMgr
+    component [Verification Engine] as VerifEngine
+    component [Admin Controller] as AdminCtrl
+    component [Audit Logger] as AuditLog
+}
+
+' ========================================
+' SERVIÇOS EXTERNOS & INTERNOS
+' ========================================
+package "Serviços" #F0F0F0 {
+    component [Email Service] as EmailSvc
+    component [File Upload Service] as FileSvc
+    component [Verification Service] as VerifSvc
+    component [CNPJ Validator] as CNPJVal
+    component [Social Media API] as SocialAPI
+}
+
+' ========================================
+' CAMADA DE DADOS
+' ========================================
+package "Banco de Dados (Firestore)" #FFE0E0 {
+    database [Users Collection] as UsersDB
+    database [Verification Process] as VerifDB
+    database [Audit Logs] as AuditDB
+    database [File Storage] as FileDB
+}
+
+' ========================================
+' RELACIONAMENTOS - Frontend para Backend
+' ========================================
+CadastroUI --> AuthCtrl: POST /auth/register
+CadastroUI --> FormVal: valida formulário
+FormVal --> AuthCtrl: dados validados
+
+PerfilUI --> ProfileMgr: GET /profile
+PerfilUI --> VerifEngine: GET /verification-status
+
+AdminDash --> AdminCtrl: GET /admin/verifications
+AdminDash --> VerifEngine: POST /admin/verify
+
+' ========================================
+' RELACIONAMENTOS - Backend para Serviços
+' ========================================
+AuthCtrl --> EmailSvc: envia confirmação email
+AuthCtrl --> CNPJVal: valida CNPJ (marca)
+AuthCtrl --> SocialAPI: valida seguidores (celebridade)
+
+ProfileMgr --> FileSvc: upload documentos
+ProfileMgr --> UsersDB: salva perfil
+
+VerifEngine --> VerifSvc: auto-validação
+VerifEngine --> CNPJVal: verifica base pública
+VerifEngine --> SocialAPI: verifica redes sociais
+VerifEngine --> VerifDB: atualiza status
+
+AdminCtrl --> VerifDB: lê pendências
+AdminCtrl --> VerifEngine: aprova/rejeita
+AdminCtrl --> AuditLog: registra decisão
+
+' ========================================
+' RELACIONAMENTOS - Backend para Dados
+' ========================================
+AuthCtrl --> UsersDB: CREATE user
+ProfileMgr --> UsersDB: UPDATE user
+VerifEngine --> UsersDB: UPDATE user (status)
+VerifEngine --> VerifDB: CREATE process
+AuditLog --> AuditDB: INSERT log
+
+FileSvc --> FileDB: armazena documento
+
+' ========================================
+' FLUXO DE DADOS - Email
+' ========================================
+EmailSvc -.->|SMTP| [Email Provider] : envia
+
+' ========================================
+' FLUXO DE DADOS - External APIs
+' ========================================
+CNPJVal -.->|REST API| [Receita Federal] : consulta CNPJ
+SocialAPI -.->|Graph API| [Social Networks] : verifica seguidores
+
+' ========================================
+' NOTAS DE COMPONENTES
+' ========================================
+note right of CadastroUI
+    Formulário dinâmico
+    (comum/marca/celebridade)
+    Validação client-side
+end note
+
+note right of VerifEngine
+    3 Etapas:
+    1. Auto-validação
+    2. Análise de risco
+    3. Revisão manual (admin)
+end note
+
+note right of UsersDB
+    Collections:
+    - users
+    - commonUsers
+    - brands
+    - celebrities
+end note
+
+note right of AdminDash
+    Painel administrativo
+    - Pendências de verificação
+    - Score de risco
+    - Histórico de submissões
+    - Aprovação/Rejeição
+end note
+
+@enduml

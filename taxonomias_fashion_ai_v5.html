@@ -1,0 +1,1656 @@
+<title>Taxonomias do Fashion AI</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Literata:ital,opsz,wght@0,7..72,400;1,7..72,400&display=swap">
+<style>
+  :root {
+    --ground: #fbfaf8;
+    --surface: #ffffff;
+    --surface-2: #f4f2ef;
+    --ink: #1c1b20;
+    --ink-2: #4a4852;
+    --muted: #7b7885;
+    --line: #e2dfda;
+    --line-strong: #cbc6be;
+    --peca: #7a2f52;
+    --peca-soft: #f7ebf0;
+    --esquema: #1c5f63;
+    --esquema-soft: #e4f0ef;
+    --dna: #6a4c93;
+    --dna-soft: #efe9f5;
+    --social: #2c5f8a;
+    --social-soft: #e6eef5;
+    --warn: #8a5a12;
+    --warn-soft: #fbf0dc;
+    --focus: #7a2f52;
+    --radius: 10px;
+    --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --f-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --f-read: "Literata", Georgia, "Times New Roman", serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #131217; --surface: #1b1a20; --surface-2: #232128;
+      --ink: #f0eef2; --ink-2: #c6c2cd; --muted: #918d9c;
+      --line: #322f3a; --line-strong: #464252;
+      --peca: #e8a0bf; --peca-soft: #33202a;
+      --esquema: #7fcfd0; --esquema-soft: #16302f;
+      --dna: #b8a0e0; --dna-soft: #26203a;
+      --social: #8fb8e0; --social-soft: #182838;
+      --warn: #e2b269; --warn-soft: #33290f; --focus: #e8a0bf;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #131217; --surface: #1b1a20; --surface-2: #232128;
+    --ink: #f0eef2; --ink-2: #c6c2cd; --muted: #918d9c;
+    --line: #322f3a; --line-strong: #464252;
+    --peca: #e8a0bf; --peca-soft: #33202a;
+    --esquema: #7fcfd0; --esquema-soft: #16302f;
+    --dna: #b8a0e0; --dna-soft: #26203a;
+    --social: #8fb8e0; --social-soft: #182838;
+    --warn: #e2b269; --warn-soft: #33290f; --focus: #e8a0bf;
+  }
+
+  body { background: var(--ground); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+  h1, h2, h3, h4 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+
+  .topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--ground) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .topbar .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; flex-wrap: wrap; }
+  .mark { font-family: var(--f-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  nav.secnav { display: flex; gap: 4px; flex-wrap: wrap; margin-inline-start: auto; }
+  nav.secnav a { font-size: 12.5px; text-decoration: none; color: var(--ink-2); padding: 4px 9px; border-radius: 99px; border: 1px solid transparent; }
+  nav.secnav a:hover { border-color: var(--line-strong); color: var(--ink); }
+
+  header.page { padding-block: 40px 26px; }
+  .eyebrow { font-family: var(--f-mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--peca); margin-bottom: 12px; }
+  h1 { font-size: clamp(30px, 6vw, 46px); line-height: 1.06; font-weight: 700; letter-spacing: -.02em; }
+  .lede { font-family: var(--f-read); font-size: 16.5px; line-height: 1.62; color: var(--ink-2); max-width: 66ch; margin-top: 16px; }
+  .sources { margin-top: 18px; font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  .sources span::before { content: "↳ "; color: var(--line-strong); }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-top: 28px; }
+  .stat { background: var(--surface); padding: 12px 14px; }
+  .stat b { display: block; font-family: var(--f-display); font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 11.5px; color: var(--muted); }
+
+  section { padding-block: 34px; border-top: 1px solid var(--line); }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+  .sec-num { font-family: var(--f-mono); font-size: 12px; color: var(--muted); letter-spacing: .08em; padding-top: 4px; }
+  h2 { font-size: clamp(21px, 3.4vw, 27px); font-weight: 600; letter-spacing: -.015em; }
+  .sec-sub { color: var(--ink-2); font-size: 14.5px; max-width: 70ch; margin-top: 8px; }
+  h3 { font-size: 15px; font-weight: 600; margin-top: 30px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  h4 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 8px; }
+
+  .count { font-family: var(--f-mono); font-size: 11px; font-weight: 400; color: var(--muted); border: 1px solid var(--line-strong); border-radius: 99px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+  .limit { font-family: var(--f-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; padding: 2px 8px; border-radius: 99px; }
+  .limit.p { background: var(--peca-soft); color: var(--peca); }
+  .limit.e { background: var(--esquema-soft); color: var(--esquema); }
+  .limit.d { background: var(--dna-soft); color: var(--dna); }
+  .limit.s { background: var(--social-soft); color: var(--social); }
+
+  .entity { border-left: 3px solid var(--line-strong); padding-left: 18px; margin-top: 8px; }
+  .entity.peca { border-left-color: var(--peca); }
+  .entity.esquema { border-left-color: var(--esquema); }
+  .entity.dna { border-left-color: var(--dna); }
+  .entity.social { border-left-color: var(--social); }
+  .entity-name { font-family: var(--f-mono); font-size: 13px; font-weight: 500; display: inline-block; margin-bottom: 4px; }
+  .entity.peca .entity-name { color: var(--peca); }
+  .entity.esquema .entity-name { color: var(--esquema); }
+  .entity.dna .entity-name { color: var(--dna); }
+  .entity.social .entity-name { color: var(--social); }
+
+  .tw { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 520px; }
+  th, td { text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { background: var(--surface-2); font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); white-space: nowrap; position: sticky; top: 0; }
+  tbody tr:last-child td { border-bottom: none; }
+  td code, .code { font-family: var(--f-mono); font-size: 12.5px; color: var(--ink); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
+  td.req { white-space: nowrap; font-size: 12.5px; color: var(--muted); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: baseline; gap: 7px; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 5px 10px; font-size: 13px; line-height: 1.3; }
+  .chip .c { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+  .chip.hit { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus) inset; }
+  .chip.sneaker { border-left: 3px solid var(--warn); }
+
+  .swgroup { margin-top: 18px; }
+  .sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(146px, 1fr)); gap: 8px; margin-top: 8px; }
+  .swatch { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 8px 10px; display: flex; align-items: center; gap: 9px; }
+  .dot { width: 22px; height: 22px; border-radius: 5px; flex: none; border: 1px solid rgba(128,128,128,.4); }
+  .swatch .t { min-width: 0; }
+  .swatch .n { font-size: 12.5px; display: block; }
+  .swatch .h { font-family: var(--f-mono); font-size: 10.5px; color: var(--muted); }
+
+  .note { border: 1px solid var(--line); border-left: 3px solid var(--warn); background: var(--warn-soft); border-radius: 8px; padding: 12px 15px; font-size: 13.5px; color: var(--ink-2); margin-top: 16px; }
+  .note b { color: var(--ink); }
+  .note.plain { border-left-color: var(--line-strong); background: var(--surface-2); }
+  .note.ok { border-left-color: var(--esquema); background: var(--esquema-soft); }
+  .note.dna { border-left-color: var(--dna); background: var(--dna-soft); }
+
+  .filterbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 20px; }
+  .filterbar input { font: inherit; font-size: 14px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); min-width: 0; flex: 1 1 240px; }
+  .filterbar input::placeholder { color: var(--muted); }
+  .fstat { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ghost { font: inherit; font-size: 12.5px; padding: 7px 12px; border-radius: 8px; cursor: pointer; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2); }
+  .ghost:hover { color: var(--ink); border-color: var(--ink-2); }
+
+  footer { border-top: 1px solid var(--line); padding-block: 26px 44px; font-size: 12.5px; color: var(--muted); }
+  @media (max-width: 560px) { nav.secnav { display: none; } header.page { padding-block: 28px 20px; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="topbar">
+  <div class="wrap">
+    <span class="mark">Fashion AI · Taxonomias v3.6</span>
+    <nav class="secnav">
+      <a href="#limites">Limites</a>
+      <a href="#peca">Peça</a>
+      <a href="#brand">Brand</a>
+      <a href="#esquema">Esquema</a>
+      <a href="#dna">DNA</a>
+      <a href="#social">Usuário</a>
+      <a href="#remix">Remix</a>
+      <a href="#selos">Selos</a>
+      <a href="#selos-vinculo">Vínculo</a>
+      <a href="#subcategorias">Subcategorias</a>
+      <a href="#occasion">Occasion</a>
+      <a href="#style">Style</a>
+      <a href="#cores">Cores</a>
+      <a href="#tamanhos">Tamanhos</a>
+      <a href="#estado">Estado</a>
+      <a href="#hype-score">Hype Score</a>
+      <a href="#explorador">Explorador</a>
+      <a href="#chrome">Chrome</a>
+      <a href="#divergencias">Divergências</a>
+    </nav>
+  </div>
+</div>
+
+<header class="page">
+  <div class="wrap">
+    <div class="eyebrow">Referência única de UI · HU-RF2, RF3, RF4–RF9, RF11, RF13, RF14, RF17, RF19–RF23</div>
+    <h1>Entidades e taxonomias do Fashion AI</h1>
+    <p class="lede">
+      Além de <b>peça</b> (RF4), <b>esquema de vestimenta</b> (RF5) e <b>DNA de Estilo</b> (RF13), o grafo de
+      <b>usuário e rede social</b> e a mecânica de <b>remix / retornar</b> (RF7), a v3.1 adicionou
+      o <b>vínculo de marca/celebridade por selo</b> (RF20/RF21): a nova Etapa 5 — Analisar &amp; Resgatar Selo
+      do criador de looks, as entidades <code>SealBond</code> e <code>Promotion</code>, o campo <code>tier</code>
+      do <code>Seal</code>, e a correção do teto de selos do DNA de Estilo para o mesmo do esquema de vestimenta.
+      A v3.2 adicionou o <b>Hype Score global</b> (RF6/RF13): a entidade <code>HypeGroup</code>,
+      que agrupa esquemas iguais ou semelhantes marcados como Look do Dia hoje por qualquer usuário e calcula a
+      média dos seus Hype Scores pessoais — o dado exibido na narrativa <b>Hype Focus</b> do DNA de Estilo.
+      A v3.3 revisou as narrativas do DNA de Estilo contra bibliografia real de design de moda:
+      <code>narrativeType</code> passou de 9 para <b>10 variações</b> (remove <code>FAVORITOS</code>, renomeia
+      <code>CONSTELACAO</code> para <code>MOOD_BOARD</code>, adiciona <code>CAPSULA_VERSATILIDADE</code> e
+      <code>HARMONIA_CROMATICA</code>), e <code>archetype</code> deixou de ser texto livre para se ancorar no
+      sistema real de arquétipos de estilo de David Kibbe (<i>Metamorphosis</i>, 1987).
+      A v3.4 (Fase I) trouxe 6 melhorias estruturais: correção da regra de <code>visibility</code>, a entidade
+      <code>SavedItem</code> e o botão RF19 "Adicionar ao guarda-roupa", <code>hypeScore</code>/
+      <code>hypeScoreGlobal</code> generalizados e persistidos, a aba "Minha Cápsula &amp; Versatilidade", o
+      RF26 — Explorador Global, e a tabela de origem dos campos de RF4/RF5. Esta versão (<b>v3.5</b>) completa
+      duas lacunas que ficaram pendentes: <b>RNF7 — Design System do Chrome</b> (§chrome), a especificação
+      visual de tudo que pertence à interface do sistema (moldura/botões de card, topbar, side nav, modais,
+      painel de notificações — nunca ao conteúdo do usuário); e <b>RF24 — Motor de IA transversal</b>, hoje
+      finalmente com diagrama próprio (<code>RF24/</code>): mapeamento completo de toda IA do sistema, padrão
+      único de tratamento de falha/timeout (retrofitado em RF20/RF21/RF26), e uma nova IA de <b>moderação de
+      conteúdo</b> nos uploads do RF4 — política de imagem de rede social + verificação de que a foto é
+      realmente de uma peça de roupa. De quebra, corrige um mislabeling da v3.4: <code>hypeScore</code> havia
+      sido rotulado "IA automática" nas tabelas de origem — é cálculo estatístico determinístico, não IA/ML.
+      Esta versão (<b>v3.6</b>) fecha duas frentes: a auditoria de todo atributo de lista/array/enum fechado,
+      garantindo que cada um tenha suas opções tabeladas (o gap real era só <code>narrativeType</code>, agora
+      com tabela própria em §04); e a decisão de negócio sobre <code>brandId</code> — a entidade
+      <code>Brand</code> (§brand), com marcas pré-cadastradas (<code>SEEDED</code>) convivendo com auto-cadastro
+      pelo <b>Brand Resolver</b> (RF24) a partir do input de RF4/RF5/RF13, sempre validado por regex + busca
+      externa antes de criar qualquer registro novo — nunca por omissão.
+    </p>
+    <div class="sources">
+      <span>Trello · quadro TCC 2026 (Fashion AI) — consultado nesta rodada (RF26/RF5/RF13); conflitos de numeração em §divergencias</span>
+      <span>Taxonomia v2.0 — RF4/RF5/RF13, base desta revisão</span>
+      <span>Pedido funcional 2026-09-21 — RF2, RF6–RF9, RF11, RF14, RF19, RF22, RF23 e RNF10</span>
+      <span>Pedido funcional 2026-09-21 (Fase I) — privacidade, RF19, hypeScore universal, RF26, RF4/RF5</span>
+      <span>Pedido funcional 2026-09-21 (Brand Resolver) — taxonomia de listas/arrays, entidade Brand, RF5/RF13 restrição de seleção</span>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ 1. LIMITES ============ -->
+<section id="limites">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Limites de cardinalidade</h2></div>
+    <p class="sec-sub">
+      Os únicos campos com cardinalidade máxima são <span class="code">style</span> e
+      <span class="code">occasion</span>. O limite muda conforme a entidade: a peça classifica a si mesma,
+      o esquema sintetiza o conjunto, o DNA sintetiza o esquema de esquemas.
+    </p>
+    <div class="tw" style="margin-top:18px">
+      <table>
+        <thead><tr><th>Entidade</th><th>Campo</th><th>Máximo</th><th>Origem permitida</th></tr></thead>
+        <tbody>
+          <tr><td>Peça</td><td><code>style</code></td><td><b>2</b></td><td>IA do analisador de peças ou edição manual</td></tr>
+          <tr><td>Peça</td><td><code>occasion</code></td><td><b>2</b></td><td>IA do analisador de peças ou edição manual</td></tr>
+          <tr><td>Esquema de vestimenta</td><td><code>style</code></td><td><b>3</b></td><td>IA a partir das peças inseridas ou edição manual</td></tr>
+          <tr><td>Esquema de vestimenta</td><td><code>occasion</code></td><td><b>3</b></td><td>IA a partir das peças inseridas ou edição manual</td></tr>
+          <tr><td>Peça</td><td><code>seals</code></td><td><b>2</b></td><td>Sugestão da IA</td></tr>
+          <tr><td>Esquema de vestimenta</td><td><code>seals</code></td><td><b>4</b></td><td>Sugestão da IA ao selecionar as peças, ou vínculo aceito na Etapa 5 — Analisar &amp; Resgatar Selo (RF20/RF21)</td></tr>
+          <tr><td>DNA de estilo</td><td><code>seals</code></td><td><b>4</b></td><td><b>Corrigido nesta versão</b> — mesmo teto do esquema de vestimenta (antes, sem limite definido)</td></tr>
+          <tr><td>DNA de estilo</td><td><code>items</code> (células)</td><td><b>6</b> (mín. 2)</td><td>Seleção manual ou geração por IA (RF13)</td></tr>
+          <tr><td>DNA de estilo</td><td><code>colorPalette</code></td><td><b>5</b></td><td>Síntese automática dos esquemas referenciados</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <b>Regra de síntese.</b> No esquema de vestimenta e no DNA a IA deve ranquear e sintetizar os valores.
+      Concatenar todas as tags é proibido quando o resultado ultrapassa o teto do campo.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. PEÇA ============ -->
+<section id="peca">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Entidade da peça de roupa</h2></div>
+    <p class="sec-sub">Campos do formulário de cadastro (RF4) e campos gerenciados pelo sistema.</p>
+
+    <div class="entity peca" style="margin-top:20px">
+      <span class="entity-name">ClothesPiece</span>
+      <p style="font-size:13.5px;color:var(--ink-2)">Peça individual do guarda-roupa do usuário.</p>
+    </div>
+
+    <h3>Campos de entrada do usuário</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Obrig.</th><th>Controle na UI</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>string</td><td class="req">sim</td><td>Campo de texto — nome ou título da peça</td></tr>
+          <tr><td><code>category</code></td><td>enum</td><td class="req">sim</td><td>Seletor de 5 categorias (§08)</td></tr>
+          <tr><td><code>subcategory</code></td><td>enum</td><td class="req">sim</td><td>Seletor dependente da categoria (§08)</td></tr>
+          <tr><td><code>sex</code></td><td>enum</td><td class="req">sim</td><td>Três opções (§09)</td></tr>
+          <tr><td><code>brandId</code></td><td>UUID</td><td class="req">não</td><td>Busca na tabela Brand, com logotipo</td></tr>
+          <tr><td><code>color</code></td><td>enum</td><td class="req">sim</td><td>Paleta com amostras (§11) — cor dominante</td></tr>
+          <tr><td><code>material</code></td><td>enum</td><td class="req">sim</td><td>Seletor de 7 materiais (§09)</td></tr>
+          <tr><td><code>size</code></td><td>enum</td><td class="req">sim</td><td>Seletor por sistema de tamanho (§12)</td></tr>
+          <tr><td><code>market</code></td><td>enum</td><td class="req">sim</td><td>Seletor único de mercado, estação × gênero (§09)</td></tr>
+          <tr><td><code>occasion</code></td><td>string[]</td><td class="req">sim</td><td>Multisseleção, <b>máx. 2</b> (§10)</td></tr>
+          <tr><td><code>style</code></td><td>string[]</td><td class="req">sim</td><td>Multisseleção, <b>máx. 2</b> (§10)</td></tr>
+          <tr><td><code>price</code></td><td>float</td><td class="req">sim</td><td>Campo monetário em USD</td></tr>
+          <tr><td><code>seals</code></td><td>UUID[] → Seal</td><td class="req">sugerido</td><td>Selos sugeridos pela IA, <b>máx. 2</b> (§14)</td></tr>
+          <tr><td><code>imageUrl</code></td><td>URL</td><td class="req">sim</td><td>Upload JPG/PNG/WebP até 10 MB</td></tr>
+          <tr><td><code>disponivel</code></td><td>boolean</td><td class="req">sim</td><td><b>Toggle já no formulário de criação (RF4)</b> — "Disponível no guarda-roupa" — e reafirmado no modal de editar peça (RF9). Padrão <code>true</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Origem dos campos <span class="limit p">v3.4 — Fase I, item 5</span></h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      Classificação de cada campo já listado acima (e dos principais campos de sistema) por origem: preenchimento
+      manual, IA acionada por botão (o usuário pede a análise), IA automática por análise (o sistema roda sem
+      pedido explícito) ou sistema-derivado (cálculo/contador, sem inferência de IA). Metodologia em §divergencias
+      não se aplica aqui — esta tabela é nova, não uma reorganização de dado existente.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Origem</th><th>No formulário?</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>Manual</td><td>Sim</td></tr>
+          <tr><td><code>category</code> · <code>subcategory</code></td><td>Manual, com <b>IA automática por análise</b> quando há foto (Etapa 4, pré-preenchida se confiança suficiente — RF4.CA02) e <b>IA acionada por botão</b> "Detectar via IA" para reprocessar sob demanda (Etapa 5, RF24.CA16)</td><td>Sim</td></tr>
+          <tr><td><code>sex</code></td><td>Manual</td><td>Sim</td></tr>
+          <tr><td><code>brandId</code></td><td>Manual (busca), com <b>IA automática por análise</b> quando identificável na foto, <b>IA acionada por botão</b> para reprocessar, e <b>Brand Resolver (RF24)</b> auto-cadastrando a marca quando o texto digitado não casa com nenhum registro existente — ver Brand, abaixo, e <code>RF24_BRAND_RESOLVER.md</code></td><td>Sim</td></tr>
+          <tr><td><code>color</code></td><td>Manual, com <b>IA automática por análise</b> (foto) e <b>IA acionada por botão</b> para reprocessar</td><td>Sim</td></tr>
+          <tr><td><code>material</code></td><td>Manual, com <b>IA automática por análise</b> (foto) e <b>IA acionada por botão</b> para reprocessar</td><td>Sim</td></tr>
+          <tr><td><code>size</code> · <code>market</code></td><td>Manual</td><td>Sim</td></tr>
+          <tr><td><code>occasion</code> · <code>style</code></td><td><b>IA acionada por botão</b> (analisador de peças) ou edição manual — teto de 2 valores (§01)</td><td>Sim</td></tr>
+          <tr><td><code>price</code></td><td>Manual</td><td>Sim</td></tr>
+          <tr><td><code>seals</code></td><td><b>IA automática por análise</b> — sugestão ao selecionar as peças</td><td>Sim (sugestão)</td></tr>
+          <tr><td><code>imageUrl</code></td><td>Manual (upload)</td><td>Sim</td></tr>
+          <tr><td><code>disponivel</code></td><td>Manual</td><td>Sim</td></tr>
+          <tr><td><code>flatLayMetadata</code> · <code>photoProcessingStatus</code> · <code>photoQualityScores</code></td><td>IA automática por análise (pipeline Flat Lay, sem pedido do usuário)</td><td>Não</td></tr>
+          <tr><td><code>backgroundColor</code> · <code>backgroundGradient</code></td><td>Manual (Background Studio, RF11)</td><td>Não (fora do RF4)</td></tr>
+          <tr><td><code>backgroundImageUrl</code></td><td><b>IA acionada por botão</b> (Background Studio, RF11)</td><td>Não (fora do RF4)</td></tr>
+          <tr><td><code>wear_count</code> · <code>lookDoDiaCount</code> · <code>view_count</code></td><td>Sistema-derivado (contador incremental)</td><td>Não</td></tr>
+          <tr><td><code>likes</code> · <code>shares</code> · <code>remixes</code> · <code>comment_count</code></td><td>Sistema-derivado (RF19)</td><td>Não</td></tr>
+          <tr><td><code>hypeScore</code> · <code>hypeScoreGlobal</code> · <code>hypeGroupId</code></td><td><b>Sistema-derivado</b> — cálculo estatístico determinístico (percentis, pesos fixos), <b>não é IA/ML</b>, job periódico (RF6, Seção 9). Corrigido — v2 desta tabela rotulava como "IA automática por análise", classificação incorreta (ver RF24_MAPEAMENTO_IAS.md, §4)</td><td>Não</td></tr>
+          <tr><td><code>moderationStatus</code> · <code>moderationConfidence</code> · <code>moderationReasons</code></td><td><b>IA automática por análise</b> — Content Moderator (RF24), roda antes do Piece Analyzer; bloqueia, não é sugestão opcional</td><td>Não</td></tr>
+          <tr><td><code>availability_status</code> · <code>condition</code> · <code>is_favorite</code> · <code>for_sale</code></td><td>Manual (toggles do card)</td><td>Não (fora do RF4, editado no card)</td></tr>
+          <tr><td><code>remixedFromPieceId</code> · <code>groupingId</code></td><td>Sistema-derivado (RF7/RF14/RF22)</td><td>Não</td></tr>
+          <tr><td><code>id</code> · <code>userId</code> · <code>createdAt</code> · <code>updatedAt</code></td><td>Sistema-derivado</td><td>Não</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Campos de sistema e monitoramento</h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:10px">
+      Não aparecem no formulário. Alguns são exibidos como estado no card da peça (Perfil Lookbook, RF6).
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>userId</code></td><td>UUID</td><td>Identificador e proprietário (FK → User) — <b>só o proprietário edita</b> (RF7, RF9)</td></tr>
+          <tr><td><code>moderationStatus</code></td><td>enum</td><td><b>Novo (RF24 — Content Moderator).</b> <code>PENDING/APPROVED/REJECTED_POLICY/REJECTED_NOT_CLOTHING</code> — ver §09. Roda antes do <code>photoProcessingStatus</code>: nunca aprova por omissão, upload rejeitado nunca chega a virar peça persistida (ver <code>RF4-maquinadeestados-v2.puml</code>, estado <code>MODERATING</code>).</td></tr>
+          <tr><td><code>moderationConfidence</code></td><td>float 0–1</td><td>Confiança da IA na decisão de moderação</td></tr>
+          <tr><td><code>moderationReasons</code></td><td>string[]</td><td>Motivos da reprovação (quando aplicável), exibidos ao usuário</td></tr>
+          <tr><td><code>photoProcessingStatus</code></td><td>enum</td><td>Pipeline Flat Lay — ver §09</td></tr>
+          <tr><td><code>photoQualityScores</code> · <code>processingJobId</code> · <code>processingTimeMs</code></td><td>FK / int</td><td>Avaliação e job de processamento da foto</td></tr>
+          <tr><td><code>flatLayMetadata</code></td><td>JSON</td><td>background_removal_confidence, perspective_correction_applied, color_normalization_score, composition_quality, failed_stages, retry_count, fallback_used</td></tr>
+          <tr><td><code>imagePath</code> · <code>imageMimetype</code> · <code>imageFileSize</code> · <code>imageHash</code> · <code>thumbnailUrl</code></td><td>string / long</td><td>Arquivo, deduplicação e miniatura 300×300</td></tr>
+          <tr><td><code>backgroundColor</code> · <code>backgroundGradient</code> · <code>backgroundImageUrl</code></td><td>string / URL</td><td>Arte de fundo da peça isolada — editada pelo Background Studio (RF11) em modo <b>edição</b> (RF9.CA6), fora do fluxo do RF5/RF13</td></tr>
+          <tr><td><code>tags</code> · <code>notes</code></td><td>string[] / string</td><td>Organização e anotações pessoais</td></tr>
+          <tr><td><code>wear_count</code> · <code>last_worn_date</code></td><td>int / timestamp</td><td>Uso genérico da peça (qualquer marcação de "vestida hoje", fora do escopo do look do dia)</td></tr>
+          <tr><td><code>lookDoDiaCount</code></td><td>int, padrão 0</td><td><b>Novo (RF6).</b> Quantas vezes esta peça esteve em um <code>ClothesScheme</code> marcado <code>look_do_dia</code>. Incrementado em cascata — ver §remix e §estado.</td></tr>
+          <tr><td><code>likes</code> · <code>shares</code> · <code>remixes</code> · <code>comment_count</code></td><td>int</td><td><b>Novo (v3.4 — Fase I, item 3).</b> Espelha os contadores do <code>ClothesScheme</code> — necessário para computar <code>E_norm</code> da própria peça. Incrementado por RF19 quando a interação é direcionada à peça (<code>Comment.targetType = PIECE</code> já suportava comentário; curtir/compartilhar/remixar passam a incrementar aqui também).</td></tr>
+          <tr><td><code>hypeScore</code> · <code>hypeScoreGlobal</code></td><td>float 0–100, nullable</td><td><b>Novo (v3.4 — Fase I, item 3).</b> Campos persistidos, recalculados pelo job periódico (não mais on-demand) — mesma fórmula do esquema (§hype-score), aplicada aos contadores da própria peça.</td></tr>
+          <tr><td><code>hypeGroupId</code></td><td>UUID, nullable</td><td><b>Novo (v3.4 — Fase I, item 3).</b> FK → <code>HypeGroup</code> (<code>entityType = PIECE</code>) — cache do grupo atual de peças semelhantes. Ver §hype-score.</td></tr>
+          <tr><td><code>availability_status</code></td><td>enum</td><td>Estado no acervo — ver §09</td></tr>
+          <tr><td><code>condition</code></td><td>enum</td><td>Conservação — ver §09</td></tr>
+          <tr><td><code>is_favorite</code> · <code>for_sale</code></td><td>boolean</td><td>Toggles da faixa superior do card</td></tr>
+          <tr><td><code>marketId</code></td><td>UUID</td><td>FK → Market</td></tr>
+          <tr><td><code>remixedFromPieceId</code></td><td>UUID, nullable</td><td><b>Novo (RF7).</b> FK → <code>ClothesPiece</code> original, quando esta peça entrou no guarda-roupa do usuário via remix de um esquema alheio. Ver §remix.</td></tr>
+          <tr><td><code>groupingId</code></td><td>UUID, nullable</td><td><b>Novo (RF14/RF22).</b> FK → <code>SchemeGrouping</code> — coleção/promoção/era etc., quando o dono é perfil de marca ou celebridade. Ver §selos.</td></tr>
+          <tr><td><code>purchaseDate</code> · <code>purchaseLocation</code> · <code>sku</code> · <code>care_instructions</code></td><td>opcionais</td><td>Procedência e cuidados</td></tr>
+          <tr><td><code>model3dStatus</code></td><td>enum, nullable</td><td><b>⚠️ RF16 — tema futuro, fora do escopo do projeto final (confirmado pelo usuário).</b> <code>QUEUED/PROCESSING/COMPLETED/FAILED</code> — geração de modelo 3D via Meshy, opt-in, exige foto própria (não asset padrão). Campo/diagrama mantidos como referência (RF16-atividades.puml), não contam na entrega atual.</td></tr>
+          <tr><td><code>model3dUrl</code> · <code>model3dGeneratedAt</code></td><td>URL / timestamp, nullable</td><td>⚠️ Idem — RF16, tema futuro. Preenchidos quando <code>model3dStatus = COMPLETED</code> — alimentam o alternador "2D/3D" do card ampliado</td></tr>
+          <tr><td><code>createdAt</code> · <code>updatedAt</code></td><td>timestamp</td><td>Auditoria</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="brand"><span class="code">Brand</span> <span class="limit d">nova entidade — RF4/RF5/RF13/RF24</span></h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      Tabela referenciada por <code>ClothesPiece.brandId</code> (busca com logotipo, campo opcional). Além das
+      marcas <b>pré-cadastradas por padrão</b> no sistema (<code>SEEDED</code>), o <b>Brand Resolver</b>
+      (sub-motor do RF24) pode cadastrar automaticamente uma marca nova a partir do texto digitado pelo
+      usuário em RF4 (campo <code>brandId</code>, sem match exato), RF5 (orientações livres da Etapa 2 — modo
+      IA) ou RF13 (<code>identityPhrase</code>) — nunca sem antes confirmar, via busca externa, que a marca é
+      real. Funil completo (regex → deduplicação → validação externa → auto-cadastro) em
+      <code>RF24_BRAND_RESOLVER.md</code> e <code>RF24-brand-resolver-atividades.puml</code>.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>UUID</td><td>Identificador — alvo de <code>ClothesPiece.brandId</code></td></tr>
+          <tr><td><code>name</code></td><td>string</td><td>Nome exibido na busca e no logo_row dos cards</td></tr>
+          <tr><td><code>logoUrl</code></td><td>URL, nullable</td><td>Vazio quando <code>AUTO_DETECTED</code> sem logo encontrado na validação externa — card usa fallback de iniciais</td></tr>
+          <tr><td><code>source</code></td><td>enum</td><td>Ver <code>BrandSource</code>, abaixo</td></tr>
+          <tr><td><code>sourceConfidence</code></td><td>float 0–1, nullable</td><td>Confiança da validação externa — só preenchido quando <code>source = AUTO_DETECTED</code></td></tr>
+          <tr><td><code>verifiedAt</code></td><td>timestamp, nullable</td><td>Momento da validação externa que originou o auto-cadastro</td></tr>
+          <tr><td><code>createdAt</code></td><td>timestamp</td><td>Auditoria</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4 style="font-size:14px;margin:14px 0 6px"><span class="code">BrandSource</span> <span class="limit d">enum fechado</span></h4>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Valor</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>SEEDED</code></td><td>Marca pré-cadastrada por padrão no sistema (carga inicial/curadoria), não passou pelo funil do Brand Resolver</td></tr>
+          <tr><td><code>AUTO_DETECTED</code></td><td>Criada automaticamente pelo Brand Resolver (RF24) a partir de input do usuário em RF4/RF5/RF13, após passar pelo regex de plausibilidade, deduplicação por similaridade e validação externa de existência real</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note plain">
+      <b>Nunca cria por omissão.</b> Timeout ou erro do motor de IA na etapa de validação externa nunca cria
+      um registro <code>Brand</code> — mesmo princípio do Content Moderator (RF24). O campo permanece texto
+      livre, sem <code>brandId</code> resolvido, e o usuário pode tentar de novo. Em RF5/RF13, um novo
+      <code>Brand</code> auto-cadastrado só enriquece o catálogo para buscas futuras em RF4 — nunca é atribuído
+      automaticamente ao esquema/DNA em edição, que não tem campo <code>brandId</code> próprio.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. ESQUEMA ============ -->
+<section id="esquema">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Entidade do esquema de vestimenta</h2></div>
+    <p class="sec-sub">Campos do formulário de criação de look (RF5) e campos gerenciados pelo sistema.</p>
+
+    <div class="entity esquema" style="margin-top:20px">
+      <span class="entity-name">ClothesScheme</span>
+      <p style="font-size:13.5px;color:var(--ink-2)">Composição de uma ou mais peças do guarda-roupa do usuário.</p>
+    </div>
+
+    <h3>Campos de entrada do usuário</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Obrig.</th><th>Controle na UI</th></tr></thead>
+        <tbody>
+          <tr><td><code>title</code></td><td>string</td><td class="req">sim</td><td>Campo de texto — nome do look</td></tr>
+          <tr><td><code>description</code></td><td>string</td><td class="req">não</td><td>Área de texto — descrição ou contexto</td></tr>
+          <tr><td><code>occasion</code></td><td>string[]</td><td class="req">sim</td><td>Multisseleção, <b>máx. 3</b> (§10)</td></tr>
+          <tr><td><code>style</code></td><td>string[]</td><td class="req">sim</td><td>Multisseleção, <b>máx. 3</b> (§10)</td></tr>
+          <tr><td><code>season</code></td><td>enum</td><td class="req">não</td><td>Quatro estações (§13)</td></tr>
+          <tr><td><code>mood</code></td><td>enum</td><td class="req">não</td><td>Quatro climas (§13)</td></tr>
+          <tr><td><code>totalPrice</code></td><td>float</td><td class="req">derivado</td><td>Somatório automático das peças, somente leitura</td></tr>
+          <tr><td><code>seals</code></td><td>UUID[] → Seal</td><td class="req">sugerido</td><td>Selos sugeridos pela IA, <b>máx. 4</b> (§14)</td></tr>
+          <tr><td><code>backgroundColor</code></td><td>string</td><td class="req">sim</td><td>Seletor de cor hex — Background Studio (RF11), etapa 4</td></tr>
+          <tr><td><code>backgroundGradient</code></td><td>string</td><td class="req">não</td><td>Editor de gradiente CSS</td></tr>
+          <tr><td><code>backgroundImageUrl</code></td><td>URL</td><td class="req">não</td><td>Arte gerada pela IA (RF11)</td></tr>
+          <tr><td><code>displayMode</code></td><td>enum</td><td class="req">sim</td><td>Três modos de exibição (§13)</td></tr>
+          <tr><td><code>items</code></td><td>SchemeItem[]</td><td class="req">≥ 1</td><td>Slots do look (§13)</td></tr>
+          <tr><td><code>visibility</code></td><td>enum</td><td class="req">sim</td><td>Três níveis — <b>corrigido (v3.4):</b> nunca bloqueia a visualização, só habilita os botões Adicionar ao guarda-roupa/Remixar/Compartilhar/Retornar quando <code>PUBLIC</code> (§social)</td></tr>
+          <tr><td><code>status</code></td><td>enum</td><td class="req">sim</td><td>Rascunho, publicado ou arquivado (§13)</td></tr>
+          <tr><td><code>look_do_dia</code></td><td>boolean</td><td class="req">sim</td><td>Marca o look do dia — <b>exclusivo por usuário</b>, ver §estado</td></tr>
+          <tr><td><code>disponivel</code></td><td>boolean</td><td class="req">sim</td><td>Toggle "Marcar como indisponível" — presente <b>na etapa 3 do RF5/RF13</b> (formulário de revisão) e no modal de editar esquema (RF9)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Origem dos campos <span class="limit e">v3.4 — Fase I, item 5</span></h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      Mesma classificação do §02, aplicada aos campos de RF5. Metodologia e colunas idênticas.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Origem</th><th>No formulário?</th></tr></thead>
+        <tbody>
+          <tr><td><code>title</code> · <code>description</code></td><td>Manual</td><td>Sim</td></tr>
+          <tr><td><code>occasion</code> · <code>style</code></td><td><b>IA acionada por botão</b> "Detectar via IA" — reanalisa a partir das peças da composição (Etapa 3, RF24) — ou edição manual</td><td>Sim</td></tr>
+          <tr><td><code>season</code> · <code>mood</code></td><td>Manual, com <b>IA acionada por botão</b> (mesmo gatilho de occasion/style, Etapa 3)</td><td>Sim</td></tr>
+          <tr><td><code>totalPrice</code></td><td>Sistema-derivado (somatório automático)</td><td>Não (somente leitura)</td></tr>
+          <tr><td><code>seals</code></td><td><b>IA automática por análise</b> ao selecionar peças, ou <b>IA acionada por botão</b> na Etapa 5 — Analisar &amp; Resgatar Selo (RF20/RF21)</td><td>Sim</td></tr>
+          <tr><td><code>backgroundColor</code> · <code>backgroundGradient</code></td><td>Manual (Background Studio, RF11, Etapa 4)</td><td>Sim (Etapa 4)</td></tr>
+          <tr><td><code>backgroundImageUrl</code></td><td><b>IA acionada por botão</b> (Background Studio, RF11)</td><td>Sim (Etapa 4, resultado exibido)</td></tr>
+          <tr><td><code>displayMode</code> · <code>items</code> · <code>visibility</code> · <code>status</code> · <code>look_do_dia</code> · <code>disponivel</code></td><td>Manual</td><td>Sim</td></tr>
+          <tr><td><code>creationMode</code></td><td>Sistema-derivado (definido pela Etapa 1)</td><td>Não (decorre da escolha da Etapa 1)</td></tr>
+          <tr><td><code>renderingStatus</code> · <code>virtualTryOnUrl</code> · <code>renderingQuality</code> · <code>renderingMetadata</code></td><td>IA automática por análise (Provador 2D, RF18)</td><td>Não</td></tr>
+          <tr><td><code>likes</code> · <code>shares</code> · <code>remixes</code> · <code>comment_count</code> · <code>view_count</code> · <code>save_count</code> · <code>lookDoDiaCount</code></td><td>Sistema-derivado (RF19/RF6)</td><td>Não</td></tr>
+          <tr><td><code>hypeScore</code> · <code>hypeScoreGlobal</code> · <code>hypeGroupId</code></td><td><b>Sistema-derivado</b> — cálculo estatístico determinístico, <b>não é IA/ML</b>, job periódico (§hype-score, Seção 9). Corrigido — ver <code>RF24_MAPEAMENTO_IAS.md</code>, §4</td><td>Não</td></tr>
+          <tr><td><code>is_remixed_from</code> · <code>groupingId</code></td><td>Sistema-derivado (RF7/RF14/RF22)</td><td>Não</td></tr>
+          <tr><td><code>id</code> · <code>userId</code> · <code>tags</code> · <code>createdAt</code> · <code>updatedAt</code> · <code>publishedAt</code></td><td>Sistema-derivado / manual (tags)</td><td>Não</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Estrutura de <span class="code">SchemeItem</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Valores</th></tr></thead>
+        <tbody>
+          <tr><td><code>wardrobeItemId</code></td><td>FK → peça do guarda-roupa</td></tr>
+          <tr><td><code>slot</code></td><td><code>TOP</code> · <code>BOTTOM</code> · <code>SHOES</code> · <code>ACCESSORIES</code></td></tr>
+          <tr><td><code>zIndex</code> · <code>positionX</code> · <code>positionY</code> · <code>scale</code> · <code>rotation</code> · <code>opacity</code></td><td>Transformação da peça na composição</td></tr>
+          <tr><td><code>filters</code></td><td><code>blur</code> · <code>saturation</code> · <code>brightness</code> · <code>contrast</code> · <code>hue_shift</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Campos de sistema e monitoramento</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>userId</code></td><td>UUID</td><td>Identificador e proprietário — <b>só o proprietário edita</b> (RF7, RF9)</td></tr>
+          <tr><td><code>creationMode</code></td><td>enum</td><td><code>MANUAL</code> · <code>AI_ASSISTED</code></td></tr>
+          <tr><td><code>renderingStatus</code></td><td>enum</td><td>Provador 2D (RF18) — ver §13</td></tr>
+          <tr><td><code>virtualTryOnUrl</code> · <code>renderingJobId</code> · <code>cachedUntil</code></td><td>URL / UUID / ts</td><td>Renderização do provador, cache de 1 hora</td></tr>
+          <tr><td><code>renderingQuality</code></td><td>JSON</td><td>overall_score, dimensions, colors_matched, fabric_realism, composition_score</td></tr>
+          <tr><td><code>renderingMetadata</code></td><td>JSON</td><td>model_type, rendering_provider, total_processing_time_ms, cost_usd, stages_completed, <b>render_method_by_slot</b> (novo — <code>FASHN_AI</code> ou <code>CATEGORY_COMPOSITOR</code> por slot, ver RF18-atividades.puml e RF24_MAPEAMENTO_IAS.md §2.3)</td></tr>
+          <tr><td><code>likes</code> · <code>shares</code> · <code>remixes</code> · <code>comment_count</code></td><td>int</td><td>Interações sociais (RF19) — <code>comment_count</code> novo, alimenta o modal de comentários</td></tr>
+          <tr><td><code>view_count</code> · <code>save_count</code></td><td>int</td><td>Monitoramento</td></tr>
+          <tr><td><code>lookDoDiaCount</code></td><td>int, padrão 0</td><td><b>Novo (RF6).</b> Quantas vezes este esquema, especificamente, já foi marcado como look do dia ao longo do tempo (histórico, não o estado atual de <code>look_do_dia</code>).</td></tr>
+          <tr><td><code>tags</code></td><td>string[]</td><td>Hashtags e palavras-chave de busca (RF8)</td></tr>
+          <tr><td><code>is_remixed_from</code></td><td>UUID, nullable</td><td>FK → <code>ClothesScheme</code> original, quando remix (RF7/RF19.CA13). Ver §remix.</td></tr>
+          <tr><td><code>groupingId</code></td><td>UUID, nullable</td><td><b>Novo (RF14/RF22).</b> FK → <code>SchemeGrouping</code>. Ver §selos. <b>Não confundir com <code>hypeGroupId</code></b>, abaixo — conceitos diferentes.</td></tr>
+          <tr><td><code>hypeScore</code></td><td>float 0–100, nullable</td><td><b>Novo (v3.4 — Fase I, item 3).</b> Campo persistido, recalculado pelo job periódico — deixou de ser calculado só on-demand. Ver §hype-score, Seção 9.</td></tr>
+          <tr><td><code>hypeGroupId</code></td><td>UUID, nullable</td><td><b>Generalizado (v3.4, RF6/RF13).</b> FK → <code>HypeGroup</code> (<code>entityType = SCHEME</code>) — cache do grupo <b>atual</b> de esquemas semelhantes, recalculado continuamente pelo job periódico. Deixou de exigir registro de <code>saiDailyLooks</code> na data atual — todo esquema ativo participa. Ver §hype-score.</td></tr>
+          <tr><td><code>createdAt</code> · <code>updatedAt</code> · <code>publishedAt</code></td><td>timestamp</td><td>Auditoria e publicação</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note plain">
+      <b>As cinco etapas do Criar Look.</b> 1 · modo de geração + elemento-alvo &nbsp;→&nbsp; 2 · prompt da IA / seleção manual &nbsp;→&nbsp;
+      3 · formulário de revisão (occasion, style, <code>disponivel</code>) &nbsp;→&nbsp; 4 · arte de fundo (RF11) &nbsp;→&nbsp; 5 · preview, slots e salvar.
+      As etapas 2 e 3 não são excludentes: os resultados se acumulam e só são gravados na etapa 5.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. DNA DE ESTILO ============ -->
+<section id="dna">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">04</span><h2>DNA de estilo (RF13)</h2></div>
+    <p class="sec-sub">
+      O RF13 reaproveita a lógica de criação do RF5 (mesmas 5 etapas), com uma substituição: a "lista de
+      peças" do conjunto passa a ser uma <b>lista de esquemas de vestimenta</b>. O <code>DNAScheme</code> é,
+      na prática, o equivalente do <code>ClothesScheme</code> do RF5 — e cada célula do DNA referencia um
+      <code>ClothesScheme</code> inteiro, não uma peça solta.
+    </p>
+
+    <div class="entity dna" style="margin-top:20px">
+      <span class="entity-name">DNAScheme</span>
+      <p style="font-size:13.5px;color:var(--ink-2)">Conjunto de 2 a 6 esquemas de vestimenta do próprio usuário, com uma narrativa de exibição.</p>
+    </div>
+
+    <h3>Campos de entrada do usuário</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Obrig.</th><th>Controle na UI</th></tr></thead>
+        <tbody>
+          <tr><td><code>title</code></td><td>string</td><td class="req">sim</td><td>Campo de texto</td></tr>
+          <tr><td><code>identityPhrase</code></td><td>string</td><td class="req">não</td><td>"Frase de identidade" — síntese textual do DNA</td></tr>
+          <tr><td><code>archetype</code></td><td>enum <span class="limit d">v3.3</span></td><td class="req">derivado</td><td>Sintetizado pela IA a partir dos esquemas, restrito aos 5 arquétipos de Kibbe (§04) — não mais texto livre</td></tr>
+          <tr><td><code>boldnessIndex</code></td><td>int 0–100</td><td class="req">derivado</td><td>"Ousadia" — usado na narrativa Mood board de estilo</td></tr>
+          <tr><td><code>iconSchemeId</code></td><td>UUID</td><td class="req">sim</td><td>Esquema usado como capa/ícone do DNA</td></tr>
+          <tr><td><code>colorPalette</code></td><td>string[5]</td><td class="req">derivado</td><td>Síntese das 5 cores dominantes (variação Paleta dominante)</td></tr>
+          <tr><td><code>narrativeType</code></td><td>enum</td><td class="req">sim</td><td>10 variações (§04, tabela abaixo) — ver anatomia_cards_DNA_v2</td></tr>
+          <tr><td><code>occasion</code> · <code>style</code></td><td>string[]</td><td class="req">sim</td><td>Síntese, mesmos tetos do esquema (§10)</td></tr>
+          <tr><td><code>seals</code></td><td>UUID[] → Seal</td><td class="req">sugerido</td><td>Selos vinculados, <b>máx. 4 — corrigido nesta versão, mesmo teto do esquema de vestimenta</b> (§14, §selos-vinculo)</td></tr>
+          <tr><td><code>backgroundColor</code> · <code>backgroundGradient</code> · <code>backgroundImageUrl</code></td><td>string / URL</td><td class="req">sim/não</td><td>Background Studio (RF11), etapa 4</td></tr>
+          <tr><td><code>items</code></td><td>DNASchemeItem[]</td><td class="req">2–6</td><td>Células do DNA</td></tr>
+          <tr><td><code>visibility</code> · <code>status</code></td><td>enum</td><td class="req">sim</td><td>Mesmos valores do esquema (§estado, §13)</td></tr>
+          <tr><td><code>disponivel</code></td><td>boolean</td><td class="req">sim</td><td><b>Novo (RF6).</b> Mesmo campo do esquema — controla as sub-abas Disponível/Indisponível também para DNAs, embora a sub-aba <b>DNA de Estilo</b> os liste independentemente deste valor.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Estrutura de <span class="code">DNASchemeItem</span> <span class="limit d">célula, não slot</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Valores</th></tr></thead>
+        <tbody>
+          <tr><td><code>schemeId</code></td><td>FK → <code>ClothesScheme</code> (o "esquema de vestimenta", equivalente à peça do RF5)</td></tr>
+          <tr><td><code>cell</code></td><td><code>CELL_1</code> … <code>CELL_6</code></td></tr>
+          <tr><td><code>eraLabel</code></td><td>Rótulo de era/data manual, usado nas variações Linha do tempo, Momentos marcantes, Primeira vez</td></tr>
+          <tr><td><code>isDuplicate</code> · <code>sourceSchemeId</code> · <code>appliedToOriginal</code></td><td>Auditoria da decisão original×duplicata da etapa 4 — ver rf13-dna-de-estilo.puml</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note dna">
+      <b>Elemento-alvo da Etapa 1.</b> Igual ao RF5, o alvo fixado na Etapa 1 permanece o mesmo até a Etapa 5.
+      No RF13, as opções são <code>Conjunto DNA completo</code> (edita a arte do DNA e ativa as 10 variações de
+      narrativa em Layout &amp; Peças) ou <code>Esquema de vestimenta específico</code> (edita apenas aquele
+      <code>ClothesScheme</code>, com a decisão original×duplicata do RF6/Perfil Lookbook).
+    </div>
+
+    <h3><span class="code">archetype</span> <span class="limit d">enum fechado — Kibbe, v3.3</span></h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      Até a v3.2, <code>archetype</code> era texto livre sintetizado pela IA ("minimalista urbano", por
+      exemplo) — sem metodologia por trás, apenas um rótulo. Esta versão ancora o campo no sistema real mais
+      citado em consultoria de imagem: os <b>5 arquétipos de estilo de David Kibbe</b> (<i>Metamorphosis</i>,
+      1987), hoje a referência-padrão da área.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Valor</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>ROMANTIC</code></td><td>Curvas suaves, texturas macias, detalhes ornamentais</td></tr>
+          <tr><td><code>DRAMATIC</code></td><td>Linhas angulares, contraste forte, silhuetas marcantes</td></tr>
+          <tr><td><code>CLASSIC</code></td><td>Proporção equilibrada, alfaiataria, sem excessos</td></tr>
+          <tr><td><code>NATURAL</code></td><td>Caimento solto, texturas orgânicas, conforto</td></tr>
+          <tr><td><code>GAMINE</code></td><td>Contrastes lúdicos, mistura consciente de proporções opostas</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note plain">
+      A IA classifica a partir da combinação de <code>style</code>, silhueta predominante e paleta dos
+      esquemas referenciados — a mesma entrada que já alimentava o campo livre antes, só que mapeada para um
+      dos 5 valores fechados em vez de gerar texto novo a cada síntese. Migração do texto livre existente
+      para o enum fica como tarefa de implementação, mesmo padrão já usado para <code>seals</code> (§divergencias).
+    </div>
+
+    <h3><span class="code">narrativeType</span> <span class="limit d">enum fechado — 10 variações, v3.3</span></h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      Só relevante quando o elemento-alvo da Etapa 1 é o <b>Conjunto DNA completo</b> — controla a variação de
+      narrativa exibida em Layout &amp; Peças (Etapa 4) e persistida no card. Detalhe completo de cada
+      variação (layout, regra de logos, interações) em <code>anatomia_cards_DNA_v2.html</code>, Seção B.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>#</th><th>Valor</th><th>Nome exibido</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>TIMELINE</code></td><td>Linha do tempo</td><td>Ordena as células por data (<code>createdAt</code> ou <code>eraLabel</code>), do mais antigo ao mais recente</td></tr>
+          <tr><td>2</td><td><code>MOMENTOS_MARCANTES</code></td><td>Momentos marcantes</td><td>Elege 1 esquema marcado como capa (marco mais relevante) + fileira de apoio com os demais</td></tr>
+          <tr><td>3</td><td><code>PRIMEIRA_VEZ</code></td><td>Primeira vez</td><td>Uma célula por "primeira ocorrência" — primeiro look salvo, primeira occasion nova, primeira peça de marca nova</td></tr>
+          <tr><td>4</td><td><code>CAPSULA_VERSATILIDADE</code></td><td>Cápsula &amp; versatilidade</td><td><b>Substitui <code>FAVORITOS</code> (v3.2).</b> Mede reaproveitamento de peças-base entre os esquemas do DNA (teoria de cápsula de guarda-roupa)</td></tr>
+          <tr><td>5</td><td><code>POR_OCASIAO</code></td><td>Por ocasião</td><td>Agrupa os esquemas pela <code>occasion</code> predominante de cada um (trabalho, festa, casual…)</td></tr>
+          <tr><td>6</td><td><code>MOOD_BOARD</code></td><td>Mood board de estilo</td><td><b>Renomeado de <code>CONSTELACAO</code>.</b> Layout radial — <code>archetype</code> no núcleo, esquemas ao redor por proximidade de <code>style</code></td></tr>
+          <tr><td>7</td><td><code>PALETA_DOMINANTE</code></td><td>Paleta dominante</td><td>Usa o <code>colorPalette</code> sintetizado (5 cores) como faixa de cor acima de cada célula</td></tr>
+          <tr><td>8</td><td><code>HARMONIA_CROMATICA</code></td><td>Harmonia cromática</td><td>Classifica a relação geométrica entre as cores do <code>colorPalette</code> no círculo cromático de Itten (complementar/análoga/tríade/monocromática)</td></tr>
+          <tr><td>9</td><td><code>MARCAS_FAVORITAS</code></td><td>Marcas favoritas</td><td>Ranking horizontal das marcas mais presentes no conjunto (logo + marca em vez de foto + título)</td></tr>
+          <tr><td>10</td><td><code>HYPE_FOCUS</code></td><td>Hype Focus</td><td>Medidor de <code>hypeScoreGlobal</code> por esquema — dado social ao vivo, muda sozinho ao longo do dia; não é leitura estática do acervo</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. USUÁRIO E REDE SOCIAL ============ -->
+<section id="social">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">05</span><h2>Usuário e rede social</h2></div>
+    <p class="sec-sub">
+      As taxonomias de peça/esquema/DNA assumiam um <code>userId</code> sem detalhar a entidade. RF2, RF6, RF7,
+      RF8, RF14, RF22 e RF23 exigem essa extensão mínima — perfil, tipo de conta, privacidade e sessão.
+    </p>
+
+    <div class="entity social" style="margin-top:20px">
+      <span class="entity-name">User</span>
+      <p style="font-size:13.5px;color:var(--ink-2)">Conta do usuário — regular, celebridade ou marca.</p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>email</code> · <code>passwordHash</code> · <code>username</code></td><td>UUID / string</td><td>Identidade e login (RF2)</td></tr>
+          <tr><td><code>userType</code></td><td>enum</td><td><code>REGULAR</code> · <code>CELEBRITY</code> · <code>BRAND</code> — controla as abas extras do RF14/RF22 e o botão "Criar selo"</td></tr>
+          <tr><td><code>isPrivateAccount</code></td><td>boolean, padrão <code>false</code></td><td>Conta privada — controla acesso às abas do perfil (RF6/RF8)</td></tr>
+          <tr><td><code>country</code></td><td>string, nullable</td><td><b>Novo (v3.4 — Fase I, item 4, RF26).</b> Código de país do usuário — peças/esquemas herdam a região transitivamente via o dono, para os agregados do Explorador Global (§explorador). Nenhum campo de região novo em <code>ClothesPiece</code>/<code>ClothesScheme</code>.</td></tr>
+          <tr><td><code>isVerified</code></td><td>boolean, padrão <code>false</code></td><td><b>Novo (RF21).</b> Só celebridades verificadas entram no pool de candidatos da IA para sugestão de vínculo (CA18) — selo de conta comum não é suficiente.</td></tr>
+          <tr><td><code>twoFactorEnabled</code></td><td>boolean, padrão <code>false</code></td><td>2FA — toggle em Configurações → Privacidade (RF23)</td></tr>
+          <tr><td><code>sessionToken</code> · <code>sessionExpiresAt</code></td><td>string / timestamp</td><td>Ver §sessão (RF2)</td></tr>
+          <tr><td><code>createdAt</code></td><td>timestamp</td><td>Auditoria</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span class="code">Follow</span> <span class="limit s">segue / solicitação</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Valores</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>followerId</code> · <code>followingId</code></td><td>UUID (FK → User, FK → User)</td></tr>
+          <tr><td><code>status</code></td><td><code>PENDING</code> (conta alvo privada, aguardando aprovação) · <code>ACCEPTED</code></td></tr>
+          <tr><td><code>createdAt</code> · <code>respondedAt</code></td><td>timestamp</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <b>Regra de acesso ao perfil (RF6/RF8).</b> Se <code>targetUser.isPrivateAccount = true</code>, as abas do
+      perfil (Closet Digital, Looks Salvos, DNA de Estilo etc.) só renderizam para quem tem
+      <code>Follow.status = ACCEPTED</code> com esse usuário como <code>followingId</code>. Sem isso, a tela mostra
+      apenas capa, nome e botão "Solicitar para seguir" — nunca o conteúdo. Esta regra é <b>independente</b> da
+      regra de <code>visibility</code> por item, abaixo.
+    </div>
+    <div class="note">
+      <b>Regra de <code>visibility</code> por item — corrigida (v3.4, Fase I item 2).</b> Uma versão anterior
+      desta nota descrevia itens com <code>visibility = PRIVATE</code> como bloqueados/borrados ("cadeado sobre
+      fundo borrado") — <b>estava errada</b> e é corrigida aqui. A regra real: <code>visibility</code> nunca
+      bloqueia a visualização de uma peça/esquema/DNA — uma vez que as abas do perfil estejam acessíveis (regra
+      acima, independente), o item sempre renderiza por completo, dono ou não. <code>visibility</code> controla
+      <b>somente 4 botões de ação</b> — Adicionar ao guarda-roupa, Remixar, Compartilhar, Retornar — habilitados
+      apenas quando <code>visibility = PUBLIC</code> do item em exibição. Curtir e Comentar continuam sempre
+      disponíveis a quem já vê o item; Editar continua exclusivo do dono (RF7/RF9), eixo ortogonal não afetado
+      por esta correção. Ver <code>RF7-atividades.puml</code>.
+    </div>
+
+    <h3><span class="code">SavedItem</span> <span class="limit s">novo — v3.4, Fase I item 2</span></h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      Criado pelo novo botão RF19 "Adicionar ao guarda-roupa" (só ativo quando <code>visibility = PUBLIC</code>
+      do item) — formaliza o que já era implícito nas abas "Looks Salvos"/"Peças Salvas" do guarda-roupa (RF6),
+      que hoje não tinham entidade própria de suporte. Não clona a peça/esquema (diferente de Remixar) — é uma
+      referência/bookmark.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>userId</code></td><td>UUID</td><td>FK → <code>User</code> — quem salvou</td></tr>
+          <tr><td><code>targetType</code></td><td>enum</td><td>Reaproveita o <code>TargetType</code> já existente — <code>PIECE</code> ou <code>SCHEME</code> (DNA não é alvo deste botão)</td></tr>
+          <tr><td><code>targetId</code></td><td>UUID</td><td>FK → <code>ClothesPiece</code> ou <code>ClothesScheme</code></td></tr>
+          <tr><td><code>savedAt</code></td><td>timestamp</td><td>Auditoria</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note plain">
+      <b>Alimenta as abas Looks Salvos / Peças Salvas (RF6).</b> Antes desta versão, essas abas eram descritas
+      no fluxo de atividades sem entidade de dados correspondente. A fonte de consulta passa a ser
+      <code>SavedItem</code> do usuário, filtrado por <code>targetType</code>.
+    </div>
+
+    <h3><span class="code">Comment</span> <span class="limit s">RF19</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Valores</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>authorId</code> · <code>targetType</code> · <code>targetId</code></td><td><code>targetType</code> ∈ {<code>PIECE</code>, <code>SCHEME</code>, <code>DNA</code>}</td></tr>
+          <tr><td><code>body</code></td><td>string</td></tr>
+          <tr><td><code>parentCommentId</code></td><td>UUID, nullable — resposta a outro comentário</td></tr>
+          <tr><td><code>createdAt</code></td><td>timestamp</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note plain">
+      <b>Padrão do botão Comentar, válido em RF5/6/7/8/13/14/19/22.</b> Abre um modal de comentários ancorado
+      logo abaixo da peça/esquema/DNA em exibição — nunca navega para outra tela. Incrementa
+      <code>comment_count</code> no item comentado.
+    </div>
+    <div class="note plain">
+      <b>Padrão do botão Compartilhar (RF19).</b> Abre a folha de compartilhamento nativa/agregada com destino
+      às redes externas — Facebook, Instagram, X, WhatsApp, Link — usando a Web Share API quando disponível
+      (fallback: menu com ícones das redes). Incrementa <code>shares</code>. Não requer nova entidade — usa a
+      URL pública do item.
+    </div>
+    <div class="note plain">
+      <b>Botão "Adicionar ao guarda-roupa" (RF19, novo v3.4).</b> Cria um <code>SavedItem</code> para o usuário
+      atual — não clona a peça/esquema. Só ativo quando <code>item.visibility = PUBLIC</code> (gate decidido na
+      visualização, RF7, não reverificado no clique). Junto com Remixar/Compartilhar/Retornar, é um dos 4
+      botões afetados pela regra de <code>visibility</code> corrigida acima — Curtir e Comentar nunca são
+      afetados por <code>visibility</code>.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. REMIX E RETORNAR ============ -->
+<section id="remix">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Remix e retornar (RF7)</h2></div>
+    <p class="sec-sub">
+      Dentro da visualização de um esquema (RF7), checkboxes sobre as peças permitem remixar. O tipo do item em
+      exibição decide o fluxo de destino e a granularidade do checkbox.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Você está vendo</th><th>Checkbox seleciona</th><th>Botão "Remixar" cria</th></tr></thead>
+        <tbody>
+          <tr><td><code>ClothesScheme</code></td><td>Peças (<code>ClothesPiece</code>) do esquema</td><td>Novo fluxo <b>RF5</b>, Etapa 2/3 pré-preenchida com cópias das peças marcadas</td></tr>
+          <tr><td><code>DNAScheme</code></td><td>Esquemas (<code>ClothesScheme</code>) do DNA — os "itens" do RF13</td><td>Novo fluxo <b>RF13</b>, Etapa 2/3 pré-preenchida com os esquemas marcados</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>O que o remix grava</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Preenchido quando</th></tr></thead>
+        <tbody>
+          <tr><td><code>ClothesPiece.remixedFromPieceId</code></td><td>A peça marcada não pertencia ao usuário — o sistema clona a peça para o guarda-roupa dele com este ponteiro para a original.</td></tr>
+          <tr><td><code>ClothesScheme.is_remixed_from</code></td><td>O novo esquema criado ao final do fluxo RF5 remix aponta para o <code>ClothesScheme</code> de onde as peças foram remixadas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Botão "Retornar"</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Aspecto</th><th>Regra</th></tr></thead>
+        <tbody>
+          <tr><td>Disponibilidade</td><td>Ativo <b>somente</b> quando o item em exibição tem <code>is_remixed_from</code> (esquema) ou <code>remixedFromPieceId</code> (peça) preenchido <b>e</b> <code>visibility = PUBLIC</code> (v3.4 — Fase I item 2). Sem lineage de remix, ou com visibility não-pública, o botão fica desabilitado/oculto.</td></tr>
+          <tr><td>Ação</td><td>Sistema resolve o <code>userId</code> dono do item original (via a FK de lineage) e navega imediatamente para aquele esquema/peça original — não para o perfil do autor, direto para o item.</td></tr>
+          <tr><td>Dentro de um DNA de estilo</td><td><b>Retornar sempre resolve em um <code>ClothesScheme</code></b>, nunca em outro DNA — porque a lineage de remix de um DNA opera célula a célula (cada <code>DNASchemeItem.schemeId</code> carrega a lineage do próprio esquema referenciado, não do DNA como um todo).</td></tr>
+          <tr><td>Permissão</td><td>Qualquer usuário pode clicar Retornar (é navegação, não edição) — mas só o dono do item de destino pode editá-lo, por RF7/RF9.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. SELOS E AGRUPAMENTOS ============ -->
+<section id="selos">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">07</span><h2>Selos e agrupamentos (RF14 / RF22)</h2></div>
+    <p class="sec-sub">
+      O campo <code>seals: string[]</code> das taxonomias v1/v2 era informal (rótulos soltos sugeridos pela IA).
+      RF14/RF22 exigem selo com <b>dono, política e ciclo de vida</b> — promovido a entidade própria.
+    </p>
+
+    <h3><span class="code">Seal</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>ownerId</code></td><td>UUID</td><td>FK → <code>User</code> com <code>userType ∈ {CELEBRITY, BRAND}</code></td></tr>
+          <tr><td><code>name</code></td><td>string</td><td>Nome do selo</td></tr>
+          <tr><td><code>tier</code></td><td>enum</td><td><b>Novo (RF20/RF21, lacuna 1).</b> <code>PECA</code> — vínculo com 1 peça específica (menor) · <code>LOOK</code> — vínculo com várias peças ou o esquema inteiro (maior). Distingue as pranchas de selo pequeno/botão de alfaiate vs. selo grande/brasão bordado.</td></tr>
+          <tr><td><code>policyText</code></td><td>string</td><td>"Política de selos" — regras de concessão, exibida na sub-aba homônima</td></tr>
+          <tr><td><code>status</code></td><td>enum</td><td><code>ACTIVE</code> · <code>INACTIVE</code> — alimenta a sub-aba "Selos ativos" vs. "Todos os selos"</td></tr>
+          <tr><td><code>iconUrl</code></td><td>URL</td><td>Centro do selo — recebe o <code>logo_url</code> cadastrado pela marca/celebridade; a moldura nunca desenha um logotipo próprio</td></tr>
+          <tr><td><code>premium</code></td><td>boolean, padrão <code>false</code></td><td><b>Novo (RF21, CA20).</b> Selo Premium — exclusivo de vínculos com celebridade</td></tr>
+          <tr><td><code>createdAt</code></td><td>timestamp</td><td>Auditoria</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note plain">
+      <b>Distinção visual categórica (lacuna 3).</b> <code>Seal</code> não guarda um campo de estilo visual —
+      é <b>derivado</b> de <code>owner.userType</code>: selo de marca (<code>BRAND</code>) é têxtil/dourado;
+      selo de celebridade (<code>CELEBRITY</code>) é vítreo/holográfico. O usuário deve identificar o tipo
+      sem precisar ler o nome do selo.
+    </div>
+    <div class="note plain">
+      <b>Efeito na busca (RF8).</b> Um esquema com ao menos 1 <code>Seal.status = ACTIVE</code> entra na listagem
+      de <b>"Esquemas em destaque"</b> do perfil de quem concedeu o selo (RF14/RF22) e ganha prioridade de
+      exibição na aba Explorar do RF8.
+    </div>
+
+    <h3><span class="code">SchemeGrouping</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>ownerId</code></td><td>UUID</td><td>FK → <code>User</code></td></tr>
+          <tr><td><code>type</code></td><td>enum</td><td>Marca: <code>COLLECTION</code> · <code>PROMOTION</code> · <code>SIGNATURE_SERIES</code> · <code>EVOLUTION</code> · <code>STYLE_LINE</code>. Celebridade: <code>ERA</code> · <code>PHASE</code> · <code>SEASON</code> · <code>TOUR</code>.</td></tr>
+          <tr><td><code>label</code></td><td>string</td><td>Nome exibido na sub-aba (ex.: "Coleção Verão 26", "Era Renascença")</td></tr>
+          <tr><td><code>description</code></td><td>string</td><td>Opcional</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note plain">
+      <code>ClothesScheme.groupingId</code>, <code>ClothesPiece.groupingId</code> e <code>DNAScheme.groupingId</code>
+      (FK opcional) associam o item a um agrupamento. Só perfis <code>CELEBRITY</code>/<code>BRAND</code> expõem
+      as sub-abas de agrupamento dentro de Meus Esquemas/Peças (RF14/RF22); perfis <code>REGULAR</code> não têm
+      esse FK preenchido.
+    </div>
+
+    <h3 id="selos-vinculo"><span class="code">SealBond</span> <span class="limit d">novo — RF20/RF21</span></h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      O vínculo entre um esquema (ou peças específicas dele) e uma marca/celebridade, do momento em que a IA
+      sugere até o selo ser emitido — ou a sugestão ser recusada. Nasce na nova <b>Etapa 5 — Analisar &amp;
+      Resgatar Selo</b> do RF5/RF13.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>schemeId</code></td><td>UUID</td><td>FK → <code>ClothesScheme</code> (ou o esquema-célula do DNA, no RF13)</td></tr>
+          <tr><td><code>targetOwnerId</code></td><td>UUID</td><td>FK → <code>User</code>, <code>userType ∈ {BRAND, CELEBRITY}</code> — a marca ou celebridade proposta</td></tr>
+          <tr><td><code>tier</code></td><td>enum</td><td><code>PECA</code> · <code>LOOK</code> — replicado do selo que será emitido (lacuna 1)</td></tr>
+          <tr><td><code>linkedPieceIds</code></td><td>UUID[]</td><td>Preenchido só quando <code>tier = PECA</code> — quais peças do esquema geram o vínculo</td></tr>
+          <tr><td><code>confidence</code></td><td>float 0–1</td><td>Confiança da IA na sugestão (CA01)</td></tr>
+          <tr><td><code>justification</code></td><td>string</td><td>Explicação da IA — transparência exigida pelo RF24.CA12</td></tr>
+          <tr><td><code>basis</code></td><td>enum</td><td><code>BRAND_MATCH</code> (peça da marca no esquema) · <code>STYLE_SIGNATURE</code> — <b>só celebridade (CA17)</b>, comparação com a assinatura de estilo do perfil, não exige peça da celebridade</td></tr>
+          <tr><td><code>status</code></td><td>enum</td><td><code>SUGGESTED</code> → <code>ACCEPTED</code>/<code>EDITED</code>/<code>REFUSED</code> → <code>PENDING_REVIEW</code> → <code>APPROVED</code>/<code>REJECTED</code>. Ver máquina de estados (RF20).</td></tr>
+          <tr><td><code>requiresReview</code></td><td>boolean</td><td>Copiado do perfil-alvo no momento da sugestão (CA07)</td></tr>
+          <tr><td><code>sealId</code></td><td>UUID, nullable</td><td>Preenchido quando o selo é emitido (auto-aprovado ou aprovado na revisão)</td></tr>
+          <tr><td><code>imageRightsConsent</code></td><td>boolean, nullable</td><td><b>Só celebridade (CA19).</b> Consentimento de direito de imagem exibido e aceito antes da confirmação</td></tr>
+          <tr><td><code>createdAt</code> · <code>respondedAt</code> · <code>reviewedAt</code></td><td>timestamp</td><td>Auditoria e rastreabilidade (CA16)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <b>CA09 — selo único por par.</b> Antes de criar um novo <code>SealBond</code>, o sistema verifica se já
+      existe um <code>SealBond</code> com <code>status ∈ {ACCEPTED, EDITED, PENDING_REVIEW, APPROVED}</code>
+      para o mesmo par (<code>schemeId</code>, <code>targetOwnerId</code>) — impede duplicata. <b>CA10 —
+      múltiplos selos</b> continuam permitidos: o mesmo esquema pode ter <code>SealBond</code>s aprovados com
+      marcas/celebridades <i>diferentes</i>, até o teto de 4 selos do esquema (§01).
+    </div>
+    <div class="note">
+      <b>CA04 — recusa não é descarte (lacuna 2).</b> Um <code>SealBond</code> com <code>status = REFUSED</code>
+      não é apagado: fica disponível na aba <b>Meus Selos</b> do usuário (RF14, não a do dono do selo) para
+      aplicação manual posterior — o usuário pode voltar e aceitar depois, fora do fluxo de criação.
+    </div>
+
+    <h3><span class="code">Promotion</span> <span class="limit d">novo — RF20/RF21</span></h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      O que o selo emitido habilita — a promoção resgatável que motiva o usuário a aceitar o vínculo.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>sealId</code></td><td>UUID</td><td>FK → <code>Seal</code> (CA11 — promoção habilitada pela emissão)</td></tr>
+          <tr><td><code>type</code></td><td>enum</td><td><code>DESCONTO_ECOMMERCE</code> · <code>CUPOM_LOJA</code> · <code>EVENTO</code> · <code>SHOW</code> — os dois últimos exclusivos de celebridade (CA21)</td></tr>
+          <tr><td><code>code</code></td><td>string, único</td><td>Código de resgate (CA12)</td></tr>
+          <tr><td><code>partnerBrandId</code></td><td>UUID, nullable</td><td><b>Só celebridade (CA22).</b> FK → <code>User</code> (BRAND) quando a promoção é uma parceria celebridade × marca</td></tr>
+          <tr><td><code>campaignLimit</code></td><td>int, nullable</td><td><b>Só celebridade (CA23).</b> Teto de emissões da campanha — novas propostas param de gerar esta promoção ao atingir o limite</td></tr>
+          <tr><td><code>status</code></td><td>enum</td><td><code>AVAILABLE</code> · <code>REDEEMED</code> · <code>EXPIRED</code> · <code>REVOKED</code> (CA13, CA14)</td></tr>
+          <tr><td><code>visibility</code></td><td>enum</td><td>Mesmos valores de <code>Visibility</code> — controla quem vê a promoção no perfil (CA15)</td></tr>
+          <tr><td><code>expiresAt</code> · <code>redeemedAt</code></td><td>timestamp</td><td>Ciclo de vida do resgate</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. SUBCATEGORIAS ============ -->
+<section id="subcategorias">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">08</span><h2>Categorias e subcategorias</h2></div>
+    <p class="sec-sub">
+      Cada peça recebe uma categoria principal e uma subcategoria controlada. O campo
+      <span class="code">subcategory</span> da UI é filtrado pela categoria escolhida.
+    </p>
+
+    <div class="filterbar">
+      <input id="q" type="search" placeholder="Filtrar subcategorias, occasion, style e cores…" autocomplete="off">
+      <span class="fstat" id="qstat"></span>
+      <button class="ghost" id="qclear" type="button">Limpar</button>
+    </div>
+
+    <div id="cats"></div>
+
+    <div class="note">
+      <b>Atenção ao rótulo "Tênis".</b> A categoria <span class="code">shoes_piece</span> significa
+      calçados e inclui sapatos, botas, sandálias e chinelos. Se a interface usar o nome "Tênis", ela deve
+      restringir a seleção às seis subcategorias marcadas com a faixa lateral: casual_sneakers,
+      running_shoes, training_shoes, basketball_shoes, skate_shoes e high_top_sneakers.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9. ENUMS DA PEÇA ============ -->
+<section id="enums-peca">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">09</span><h2>Demais listas da peça</h2></div>
+    <p class="sec-sub">Enumerações restantes da entidade de peça, na ordem em que aparecem no formulário e no card.</p>
+
+    <h3><span class="code">market</span> Mercado <span class="count" id="mktCount"></span></h3>
+    <p style="font-size:13px;color:var(--muted);margin:-4px 0 10px">
+      Enum composto: cada valor é o cruzamento de uma estação com um gênero. Seletor único e obrigatório.
+    </p>
+    <div class="tw" style="margin-bottom:12px">
+      <table id="mktTable">
+        <thead><tr><th>Estação \ Gênero</th><th>Masculino</th><th>Feminino</th><th>Unissex</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="mktChips"></div>
+
+    <div id="enumsPeca"></div>
+  </div>
+</section>
+
+<!-- ============ 10. OCCASION E STYLE ============ -->
+<section id="occasion">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">10</span><h2>Occasion e Style</h2></div>
+    <p class="sec-sub">
+      As duas taxonomias são compartilhadas entre peça, esquema e DNA — os mesmos códigos, para permitir filtro
+      e comparação semântica na busca (RF8). O que muda é o limite e o objeto descrito.
+    </p>
+    <div id="occstyle"></div>
+  </div>
+</section>
+
+<!-- ============ 11. CORES ============ -->
+<section id="cores">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">11</span><h2>Cores disponíveis</h2></div>
+    <p class="sec-sub">
+      Doze famílias cromáticas, cada uma com a cor principal e suas variações. O campo
+      <span class="code">color</span> da peça guarda o código da variação; a família serve para agrupar a
+      paleta na UI e para filtrar o guarda-roupa por cor aproximada.
+    </p>
+    <div id="cores"></div>
+    <div class="note plain">
+      Os valores hexadecimais são de referência para a amostra exibida na interface, não uma medida
+      colorimétrica da peça real. A cor detectada pela IA deve ser aproximada para a variação mais próxima
+      desta lista antes de ser gravada.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12. TAMANHOS ============ -->
+<section id="tamanhos">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">12</span><h2>Tamanhos</h2></div>
+    <p class="sec-sub">
+      O campo <span class="code">size</span> aceita quatro sistemas. A UI escolhe qual exibir conforme a
+      categoria da peça; <span class="code">one_size</span> está disponível em todos.
+    </p>
+    <div id="tamanhos"></div>
+  </div>
+</section>
+
+<!-- ============ 13. ENUMS DO ESQUEMA ============ -->
+<section id="enums-esquema">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">13</span><h2>Demais listas do esquema</h2></div>
+    <p class="sec-sub">Enumerações restantes da entidade de esquema de vestimenta.</p>
+    <div id="enumsEsquema"></div>
+  </div>
+</section>
+
+<!-- ============ 14. ESTADO ============ -->
+<section id="estado">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">14</span><h2>Booleanos e contadores de estado</h2></div>
+    <p class="sec-sub">
+      Campos que não descrevem a peça/esquema em si: são estados que o usuário liga e desliga, ou contadores
+      que o sistema incrementa, e que decidem <b>em qual sub-aba</b> o item aparece dentro do guarda-roupa (RF6).
+    </p>
+
+    <h3><span class="code">disponivel</span> <span class="count">peça, esquema e DNA</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Aspecto</th><th>Definição</th></tr></thead>
+        <tbody>
+          <tr><td>Tipo</td><td><code>boolean</code>, padrão <code>true</code> — todo item nasce disponível</td></tr>
+          <tr><td>Entidades</td><td><code>ClothesPiece</code>, <code>ClothesScheme</code> <b>e</b> <code>DNAScheme</code></td></tr>
+          <tr><td>Controle — peça</td><td>Toggle no formulário de criação (RF4) <b>e</b> no modal de editar peça (RF9)</td></tr>
+          <tr><td>Controle — esquema/DNA</td><td>Toggle na Etapa 3 do fluxo de criação (RF5/RF13) <b>e</b> no modal de editar (RF9)</td></tr>
+          <tr><td>Efeito na navegação</td><td>Alimenta as sub-abas <b>Disponível</b> e <b>Indisponível</b> dentro de <b>Minhas Peças</b> e <b>Meus Esquemas</b> (RF6). Cada item aparece em exatamente uma das duas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span class="code">look_do_dia</span> <span class="count">só esquema</span> <span class="limit e">exclusivo do esquema</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Aspecto</th><th>Definição</th></tr></thead>
+        <tbody>
+          <tr><td>Tipo</td><td><code>boolean</code>, padrão <code>false</code></td></tr>
+          <tr><td>Entidades</td><td>Somente <code>ClothesScheme</code> (e <code>DNAScheme</code>, pela mesma regra). <code>ClothesPiece</code> isolada <b>nunca</b> é marcada — o look do dia é sempre um conjunto.</td></tr>
+          <tr><td>Exclusividade</td><td><b>Resolvido nesta versão:</b> marcar um novo look do dia desmarca automaticamente o anterior do mesmo usuário — é uma referência única por usuário e por dia, não um booleano independente por esquema.</td></tr>
+          <tr><td>Expiração</td><td><b>Resolvido:</b> o campo <b>não expira sozinho</b> — permanece marcado até o usuário escolher outro look do dia ou desmarcar manualmente. O histórico de quantas vezes cada esquema já foi look do dia vive em <code>lookDoDiaCount</code>, não neste booleano.</td></tr>
+          <tr><td>Fonte de verdade</td><td><b>Nota v3.2:</b> para o Hype Score (§hype-score) e para o histórico exibido na aba, <code>look_do_dia</code> é tratado como <b>cache de leitura rápida</b> — a fonte de verdade é o registro datado <code>saiDailyLooks</code> (<code>user_id</code>, <code>date</code>, <code>scheme_id</code>), um documento por dia em que o look permanece ativo. Ver <code>markdowns/RF6_HYPE_SCORE_CALCULO.md</code>, seção 1.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span class="code">lookDoDiaCount</span> <span class="count">peça e esquema</span> <span class="limit e">novo</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Aspecto</th><th>Definição</th></tr></thead>
+        <tbody>
+          <tr><td>Tipo</td><td><code>int</code>, padrão <code>0</code>, monotônico crescente</td></tr>
+          <tr><td>Gatilho</td><td>Ao marcar um <code>ClothesScheme</code> (ou <code>DNAScheme</code>) como <code>look_do_dia = true</code>: incrementa o <code>lookDoDiaCount</code> do próprio esquema em 1, <b>e</b> o sistema detecta cada <code>SchemeItem.wardrobeItemId</code> (ou, no DNA, cada peça de cada <code>DNASchemeItem.schemeId</code>) e incrementa o <code>lookDoDiaCount</code> de cada peça envolvida em 1.</td></tr>
+          <tr><td>Efeito — aba "Mais usadas"</td><td>Dentro de Minhas Peças / Meus Esquemas, lista os itens com maior <code>lookDoDiaCount</code>, decrescente.</td></tr>
+          <tr><td>Efeito — aba "Menos usadas"</td><td>Lista itens com <code>disponivel = false</code> <b>e/ou</b> <code>lookDoDiaCount</code> baixo/nulo — ordenação crescente, indisponíveis primeiro.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span class="code">sub-aba DNA de Estilo</span> <span class="limit d">dentro de Meus Esquemas</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Aspecto</th><th>Definição</th></tr></thead>
+        <tbody>
+          <tr><td>Conteúdo</td><td>Somente registros de <code>DNAScheme</code> do usuário — nunca <code>ClothesScheme</code> comuns.</td></tr>
+          <tr><td>Filtro por <code>disponivel</code></td><td>Não se aplica aqui: a sub-aba lista <b>todos</b> os DNAs do usuário, disponíveis ou não. O filtro Disponível/Indisponível continua existindo como sub-abas irmãs, mas separadas — DNA de Estilo é uma quarta sub-aba, ao lado de Disponível/Indisponível/Mais usadas/Menos usadas, não um cruzamento com elas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span class="code">Minha Cápsula &amp; Versatilidade</span> <span class="limit d">nova aba — v3.4, Fase I item 1</span></h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      Nova aba do guarda-roupa, paralela a Look do Dia / Looks Salvos / Peças Salvas / Minhas Peças / Meus Looks
+      (RF6). Generalização mecânica do modelo já existente na anatomia DNA de Estilo (prancha "Cápsula &amp;
+      versatilidade", <code>narrativeType = CAPSULA_VERSATILIDADE</code>, RF13), que hoje soma peças-base dos
+      2–6 esquemas de <b>um</b> DNA — aqui, o mesmo algoritmo roda sobre <b>todos</b> os esquemas do usuário.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Aspecto</th><th>Definição</th></tr></thead>
+        <tbody>
+          <tr><td>Escopo</td><td>Todos os <code>ClothesScheme</code> com <code>userId = self</code> e <code>status ≠ ARCHIVED</code> — não itens de <code>SavedItem</code> (Looks/Peças Salvas de terceiros).</td></tr>
+          <tr><td>Peças-base</td><td>União de <code>SchemeItem.wardrobeItemId</code> de todos os esquemas do usuário — mesma definição da prancha DNA (§04), sem o teto de 2–6 esquemas.</td></tr>
+          <tr><td>Fator de versatilidade</td><td>nº de looks ÷ nº de peças-base — mesma fórmula da prancha DNA.</td></tr>
+          <tr><td>Exclui</td><td><code>SavedItem</code> (itens salvos de outros perfis) — cápsula é sobre o que o usuário possui, não itens de terceiros salvos via "Adicionar ao guarda-roupa".</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note plain">
+      Mockup completo em <code>anatomia_capsula_guarda_roupa.html</code> — reaproveita o CSS
+      <code>.cv-wrap/.cv-grid/.cv-piece/.cv-badge/.cv-stat</code> de <code>anatomia_cards_DNA_v2.html</code>,
+      adaptado para uma grade responsiva maior (o guarda-roupa inteiro pode ter dezenas de peças-base) com
+      filtro por categoria.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 15. DIVERGÊNCIAS ============ -->
+<!-- ============ 15. HYPE SCORE ============ -->
+<section id="hype-score">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">15</span><h2>Hype Score — pessoal e global (RF6 / RF13)</h2></div>
+    <p class="sec-sub">
+      <b>v3.2</b> introduziu o Hype Score global; <b>v3.4 (Fase I, item 3)</b> generaliza os dois números —
+      pessoal e global — de "só esquemas marcados Look do Dia hoje" para <b>toda peça e todo esquema ativos</b>
+      do sistema, como campos <b>persistidos</b>, recalculados por job periódico (deixam de ser calculados
+      só on-demand). Fórmulas completas em <code>markdowns/RF6_HYPE_SCORE_CALCULO.md</code> (Seção 9 documenta a
+      generalização) — esta seção documenta só o modelo de dados.
+    </p>
+
+    <h3><span class="code">Hype Score pessoal</span> <span class="limit e">campo persistido — generalizado v3.4</span></h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Aspecto</th><th>Definição</th></tr></thead>
+        <tbody>
+          <tr><td>O que mede</td><td>Engajamento (curtidas/comentários/shares/remixes, normalizado por percentil) + alinhamento de tendência de <b>uma <code>ClothesPiece</code> ou <code>ClothesScheme</code> específico</b> — <code>0,65 × E_norm + 0,35 × T_norm</code>, 0–100%. Ver <code>markdowns/RF6_HYPE_SCORE_CALCULO.md</code> §2–4 (fórmula) e §9.2 (extensão a peça).</td></tr>
+          <tr><td>Persistência</td><td><b>Corrigido em v3.4 — agora é campo armazenado</b> (<code>hypeScore</code> em <code>ClothesPiece</code>/<code>ClothesScheme</code>, §02/§03), recalculado pelo job periódico. Deixa de ser recalculado on-demand a cada abertura de painel.</td></tr>
+          <tr><td>Escopo</td><td><b>Generalizado (v3.4).</b> Toda peça/esquema ativos (<code>disponivel = true</code>, <code>status ≠ ARCHIVED</code>) — não só os marcados Look do Dia hoje.</td></tr>
+          <tr><td>Onde aparece</td><td>Painel "Look do Dia" (RF6, qualquer versão — <code>markdowns/RF6_LOOK_DO_DIA_VERSOES_PAINEL.md</code>), Minha Cápsula &amp; Versatilidade (§estado), Explorador Global (§explorador).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="hypegroup"><span class="code">HypeGroup</span> <span class="limit d">generalizado — v3.4, Fase I item 3</span></h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      Agrupa, continuamente (não mais só "para hoje"), todas as <code>ClothesPiece</code> e todos os
+      <code>ClothesScheme</code> ativos — de <b>qualquer usuário</b>, separados por <code>entityType</code> —
+      considerados iguais ou semelhantes entre si (mesma marca predominante, tipo/categoria de peça, cor e
+      estilo). O <b>Hype Score global</b> do grupo é a média dos Hype Scores pessoais dos seus membros.
+      <b>Diferente do desenho original (v3.2):</b> não é mais recriado do zero a cada dia — o job periódico
+      recalcula continuamente, e uma entidade só troca de grupo quando sua assinatura muda o suficiente.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> · <code>entityType</code></td><td>UUID / enum</td><td><b>v3.4:</b> campo <code>date</code> removido — <code>entityType</code> (<code>PIECE</code>/<code>SCHEME</code>) substitui o recorte diário, separando grupos de peças e de esquemas</td></tr>
+          <tr><td><code>signatureStyle</code> · <code>signatureOccasion</code></td><td>string</td><td>Valor único que define o grupo nesses dois atributos (peso 1,5 e 1,0 — mesmos pesos do <code>T_norm</code>)</td></tr>
+          <tr><td><code>signatureBrands[]</code> · <code>signatureColors[]</code> · <code>signaturePieceTypes[]</code></td><td>string[]</td><td>Conjuntos comparados por interseção de Jaccard entre candidatos</td></tr>
+          <tr><td><code>memberIds[]</code></td><td>UUID[]</td><td><b>v3.4:</b> renomeado de <code>memberSchemeIds</code> — peças ou esquemas ativos (conforme <code>entityType</code>) com similaridade ≥ 0,70 contra o grupo</td></tr>
+          <tr><td><code>memberCount</code></td><td>int</td><td>Abaixo de 3, o grupo existe mas não expõe <code>hypeScoreGlobal</code> como número (amostra insuficiente) — inalterado</td></tr>
+          <tr><td><code>hypeScoreGlobal</code></td><td>float 0–100, nullable</td><td>Média dos Hype Scores pessoais dos membros — <b>não</b> uma nova fórmula de engajamento — inalterado</td></tr>
+          <tr><td><code>computedAt</code></td><td>timestamp</td><td>Última execução do job periódico que atualizou este grupo</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <b>Critério de semelhança.</b> Reaproveita os mesmos 5 atributos e pesos já usados pelo <code>T_norm</code>
+      (§3.2 de <code>markdowns/RF6_HYPE_SCORE_CALCULO.md</code>): estilo (1,5) · marca (1,0) · cor (1,0) · ocasião (1,0) ·
+      categoria/tipo de peça (0,5). Dois esquemas entram no mesmo grupo quando a similaridade ponderada entre
+      eles é ≥ 0,70 — cobre tanto "iguais" (similaridade 1) quanto "semelhantes".
+    </div>
+    <div class="note plain">
+      <b>Hype Score pessoal × global — resumo.</b> Pessoal responde "como esta peça/esquema, deste usuário,
+      está indo" — desde v3.4, campo persistido, recalculado pelo job periódico (não mais on-demand). Global
+      responde "como itens parecidos com este estão indo, agora, entre todo mundo" e é recalculado em lote por
+      <code>HypeGroup</code> — o número menos estável dos dois, porque muda também quando <i>outros</i>
+      usuários interagem com itens semelhantes. Pessoal aparece no painel "Look do Dia" (RF6) e em toda peça/
+      esquema (Minha Cápsula &amp; Versatilidade, Explorador Global); global aparece na narrativa Hype Focus do
+      DNA de Estilo (RF13, <code>anatomia_cards_DNA_v2.html</code>, prancha B10) e no Explorador Global (RF26).
+    </div>
+    <div class="note plain">
+      <b>Novo em v3.5 — Hype Focus também no card do esquema (RF5).</b> <code>anatomias_card_v13.html</code>,
+      prancha B08, espelha a narrativa Hype Focus do DNA um nível abaixo: em vez de ranquear os esquemas
+      referenciados no DNA, ranqueia as <code>ClothesPiece</code> que compõem o esquema, lendo
+      <code>hypeScoreGlobal</code> via <code>HypeGroup</code> com <code>entityType = PIECE</code>. Diferente do
+      DNA, não é um valor de <code>narrativeType</code> persistido — é uma visão opcional do card, como as
+      demais 7 pranchas da Seção B. Fluxo de leitura em <code>RF6-hypescore-global-atividades.puml</code>.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 16. EXPLORADOR GLOBAL (RF26) ============ -->
+<section id="explorador">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">16</span><h2>Explorador Global (RF26)</h2></div>
+    <p class="sec-sub">
+      <b>Novo em v3.4 — Fase I, item 4.</b> Nova aba "Explorar o mundo", com 3 sub-abas: Painel global, Buscar
+      marcas &amp; lojas, Insights globais. Cruza dados já existentes (<code>hypeScore</code>/
+      <code>hypeScoreGlobal</code> generalizados, <code>color</code>, <code>season</code>/<code>market</code>,
+      <code>occasion</code>/<code>style</code>, <code>price</code>) com o único campo novo, <code>User.country</code>
+      (§social). Mockup completo em <code>RF26/RF26_explorador_global.html</code>; fluxo em
+      <code>RF26/RF26-atividades.puml</code> e <code>RF26/RF26-sequencia.puml</code>.
+    </p>
+
+    <h3>As 3 sub-abas</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Sub-aba</th><th>O que mostra</th><th>Fonte dos dados</th></tr></thead>
+        <tbody>
+          <tr><td>Painel global</td><td>Globo interativo semi-realista iluminado — um ponto luminoso por país com dados suficientes</td><td>Peças/esquemas agrupados por <code>User.country</code> (via <code>userId</code> do dono), <code>color</code>, <code>season</code>/<code>market</code>, faixa de <code>hypeScore</code></td></tr>
+          <tr><td>Buscar marcas &amp; lojas</td><td>Grade de cards de marca (<code>userType = BRAND</code>), com filtros (país, categoria, cor, estação, hypeScore) — estilo visual portado de <code>dine_explorer_VI-main_J2026</code> (glassmorphism + gradiente, <code>uiToken.ts</code>)</td><td>Perfis <code>BRAND</code> (mesma listagem do RF8) + hypeScore médio agregado das peças/esquemas vinculados</td></tr>
+          <tr><td>Insights globais</td><td>Rankings — marcas mais usadas, maior hypeScore médio por estação/cor/marca, com leitura textual da IA (RF24)</td><td>Agregados sobre <code>hypeScore</code>/<code>hypeScoreGlobal</code> universais (§hype-score)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note plain">
+      <b>RF24 — motor de IA transversal.</b> Mesmo padrão já usado por RF5/RF13/RF20/RF21: RF26 não duplica
+      lógica de IA própria, apenas chama o motor transversal para gerar a leitura textual da sub-aba Insights
+      globais.
+    </div>
+    <div class="note plain">
+      <b>Nenhum campo novo em <code>ClothesPiece</code>/<code>ClothesScheme</code>.</b> Região é herdada
+      transitivamente via o dono (<code>User.country</code>) — todo o restante dos dados já existia antes
+      desta rodada (ou foi adicionado pelos outros 5 itens da Fase I, no caso de <code>hypeScore</code>).
+    </div>
+  </div>
+</section>
+
+<!-- ============ 17. CHROME — DESIGN SYSTEM (RNF7) ============ -->
+<section id="chrome">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">17</span><h2>Chrome — Design System (RNF7)</h2></div>
+    <p class="sec-sub">
+      <b>Novo em v3.5.</b> Especificação visual de tudo que pertence à interface do sistema — moldura/botões de
+      ação dos cards de peça/esquema/DNA, topbar, side nav, abas, modais, painel de notificações — nunca ao
+      conteúdo que o usuário insere (foto, texto, arte Aura do RF11). Mockup completo em
+      <code>RNF7/RNF7_design_system_chrome.html</code>. Zero precedente visual existia para topbar/side
+      nav/notificações/central de conta antes desta rodada.
+    </p>
+
+    <h3>Regra de tipografia — Chrome × conteúdo</h3>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px">
+      Conteúdo do card segue o <code>CardSkinId</code> ativo (7 skins já definidos em RF11 —
+      Atelier/Spread/Índice/Trading/FAI Max/Stub/Specimen, cada um com tipografia própria). O Chrome nunca muda
+      com o skin escolhido — usa Inter fixo, para que labels de botão e meta-informação continuem legíveis e
+      reconhecíveis independente do skin.
+    </p>
+
+    <h3>Tokens de Chrome</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Token</th><th>Valor</th><th>Papel</th></tr></thead>
+        <tbody>
+          <tr><td><code>--chrome-bg</code></td><td>#0F1013</td><td>Fundo da tela por trás do shell</td></tr>
+          <tr><td><code>--chrome-surface</code></td><td>#17181C</td><td>Topbar, sidebar, modal, painel de notificações</td></tr>
+          <tr><td><code>--chrome-surface-2</code></td><td>#202127</td><td>Hover, item ativo, campo de busca</td></tr>
+          <tr><td><code>--chrome-border</code></td><td>#2C2D33</td><td>Divisórias</td></tr>
+          <tr><td><code>--chrome-ink</code></td><td>#F2F1EE</td><td>Texto principal do Chrome</td></tr>
+          <tr><td><code>--chrome-muted</code></td><td>#9B9AA3</td><td>Texto secundário</td></tr>
+          <tr><td><code>--chrome-accent</code></td><td>#E8433B</td><td>Reservado — só badge de notificação não lida, nunca decoração</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note plain">
+      <b>Chrome é tema escuro fixo</b>, independente do tema do conteúdo — destaca a moldura de navegação do
+      conteúdo por trás. Não muda de cor conforme a seção (peça/esquema/DNA) em exibição.
+    </div>
+
+    <h3>Legenda oficial de ícones</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Ícone</th><th>Ação</th><th>Origem da decisão</th></tr></thead>
+        <tbody>
+          <tr><td>♥ / ♡</td><td>Curtir</td><td>já convencionado (contador, card DNA)</td></tr>
+          <tr><td>💬</td><td>Comentar</td><td>já convencionado</td></tr>
+          <tr><td>↗</td><td>Compartilhar</td><td>resolve conflito com texto puro do card DNA — adota o ícone já usado no RF26</td></tr>
+          <tr><td>🔖</td><td>Adicionar ao guarda-roupa</td><td>reaproveita o "salvar" do RF26 — mesmo conceito (<code>SavedItem</code>)</td></tr>
+          <tr><td>↻</td><td>Remixar</td><td>já convencionado</td></tr>
+          <tr><td>⟲</td><td>Retornar</td><td>já convencionado</td></tr>
+          <tr><td>✏️</td><td>Editar</td><td>novo — ícone universal</td></tr>
+          <tr><td>🔔 · 👤 · 🔍 · ✕</td><td>Chrome — notificações · conta · busca · fechar modal</td><td>novos, sem precedente</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Topbar — novos botões</h3>
+    <p style="font-size:13.5px;color:var(--ink-2)">
+      Novo botão de <b>notificações</b> (🔔, com badge de contagem não lida — <code>--chrome-accent</code>) e de
+      <b>central de conta</b> (👤, avatar) no topbar, ao lado da busca global. O painel de notificações
+      categoriza os 11 <code>NotificationType</code> já existentes (§social, <code>RNF10-notificacoes.html</code>)
+      por cor de indicador: cinza-azulado para segurança/transacional, azul para social, dourado para
+      conquista/selo.
+    </p>
+  </div>
+</section>
+
+<section id="divergencias">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">18</span><h2>Divergências e pendências</h2></div>
+    <p class="sec-sub">
+      Pontos em que as fontes não coincidem, ou que dependem de confirmação — inclusive desta própria revisão.
+    </p>
+
+    <h3>Correção de erro de modelagem anterior — regra de privacidade</h3>
+    <p style="font-size:13.5px;color:var(--ink-2)">
+      Uma instrução anterior (registrada nas versões v2.0–v3.3 desta taxonomia e nos diagramas RF6/RF7/RF8/
+      RF14/RF17/RF22/RNF10) afirmava que peças/esquemas com <code>visibility = PRIVATE</code> não podiam ser
+      visualizados — apareceriam com "cadeado sobre fundo borrado". Isso estava <b>incorreto</b> e foi
+      corrigido nesta versão (v3.4 — Fase I, item 2): <code>visibility</code> nunca bloqueia a visualização do
+      item; afeta somente os botões Adicionar ao guarda-roupa/Remixar/Compartilhar/Retornar, habilitados
+      apenas quando <code>PUBLIC</code>. Ver §social e todos os diagramas RF6/RF7/RF8/RF14/RF17/RF22/RNF10
+      atualizados.
+    </p>
+
+    <h3>Trello consultado nesta rodada — conflitos de numeração encontrados</h3>
+    <p style="font-size:13.5px;color:var(--ink-2)">
+      <b>Corrigido (2026-09-21, rodada Brand Resolver/RF26).</b> O apontamento anterior desta seção, de que o
+      Trello estava indisponível por timeout, ficou desatualizado — o board <i>TCC 2026 (Fashion AI) —
+      Bryan,Matheus</i> foi lido nesta rodada para criar os cards RF26/HU-RF26 e os fixes de RF5/RF13. Dois
+      pontos de numeração merecem atenção do time:
+    </p>
+    <ul style="font-size:13.5px;color:var(--ink-2);margin:-4px 0 10px;padding-left:20px">
+      <li><b>RNF7 real ≠ RNF7 desta documentação.</b> No board, RNF7 é <i>"Desempenho e usabilidade da
+      interface gráfica do sistema"</i> (Eficiência/Usabilidade, ISO/IEC 25010) — não o Design System do
+      Chrome (moldura de cards, topbar, ícones etc.) documentado em <code>RNF7_design_system_chrome.html</code>
+      numa rodada anterior deste pacote. O conteúdo do mockup permanece válido como especificação de UI, mas
+      precisa de um número novo (ou de fusão com o RNF7 real, se o time preferir tratar performance e design
+      system sob o mesmo requisito) — decisão do time, não tomada aqui.</li>
+      <li><b>RF25 real não colide com nada deste pacote.</b> No board, RF25 é <i>"Criar &amp; editar selo de
+      marca ou celebridade através de formulário e arte de background"</i> — RF novo desta rodada usou RF26
+      (confirmado livre no board) para o Explorador Global, sem sobreposição.</li>
+      <li><b>RF24 real confirma a numeração já usada neste pacote.</b> No board, RF24 é <i>"Usar a IA do
+      sistema (motor transversal de inteligência artificial do Fashion AI)"</i> — mesmo conceito e mesmo
+      número já adotados em <code>RF24_MAPEAMENTO_IAS.md</code> desde a rodada anterior. Sem conflito.</li>
+      <li><b>RNF12 (novo no board) se sobrepõe a Seal/Promotion (§07).</b> <i>"Diretrizes para promoções
+      aplicadas a selos ativos &amp; disponibilidade de um selo"</i> cobre o mesmo território de
+      <code>SealBond</code>/<code>Promotion</code>/<code>Seal.status</code> já modelados nesta taxonomia
+      (RF20/RF21) — vale cruzar as duas fontes numa próxima rodada.</li>
+      <li><b>RN11 (typo de RNF11, novo no board) — "Tratamento de dados provenientes de upload em
+      formulários"</b> — relevante ao pipeline de moderação de conteúdo (Content Moderator, RF24) já
+      modelado em RF4/RF9; ainda sem critérios de aceite escritos no card, vale preenchê-lo a partir do
+      que já existe aqui.</li>
+    </ul>
+
+    <h3><code>market</code> e <code>disponivel</code> — já oficiais</h3>
+    <p style="font-size:13.5px;color:var(--ink-2)">
+      A v2.0 desta taxonomia (RF4/RF5) ainda não tinha esses campos; a versão fornecida pelo usuário em
+      2026-09-21 (v1.0 de outra linhagem) já os tinha, mas sem a seção de DNA de estilo (RF13). Esta versão
+      funde as duas: mantém <code>market</code>/<code>disponivel</code> como já estavam, e reintroduz DNA como
+      §04.
+    </p>
+
+    <h3><code>availability_status</code> contra <code>disponivel</code></h3>
+    <p style="font-size:13.5px;color:var(--ink-2)">
+      O enum <code>availability_status</code> (<code>AVAILABLE</code>/<code>UNAVAILABLE</code>/<code>ARCHIVED</code>)
+      e o booleano <code>disponivel</code> continuam coexistindo sem regra de sincronia formal — ver v2.0. Não
+      resolvido nesta versão.
+    </p>
+
+    <h3><code>seals</code>: de <code>string[]</code> para <code>UUID[] → Seal</code></h3>
+    <p style="font-size:13.5px;color:var(--ink-2)">
+      RF14/RF22 exigem selo com dono e política, o que a lista de strings livre não suporta. Esta versão
+      promove <code>seals</code> para referência a uma entidade <code>Seal</code> própria (§07) em todas as
+      três entidades (peça, esquema, DNA). Migração de dados dos rótulos antigos para selos reais fica como
+      tarefa de implementação, fora do escopo desta taxonomia.
+    </p>
+
+    <h3>Nome das sub-abas do guarda-roupa</h3>
+    <p style="font-size:13.5px;color:var(--ink-2)">
+      A v2.0 já registrava a divergência entre "Meus Looks/Meus Esquemas" (nome usado nas especificações de
+      fluxo) e "Closet Digital/Looks Salvos" (nome do HU-RF6, Perfil Lookbook). Esta versão herda o problema e
+      usa os nomes descritivos ("Minhas Peças", "Meus Esquemas") só para fins de documentação — a nomenclatura
+      final da UI segue pendente de decisão única.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    Fashion AI · TCC 2026 — taxonomia v3.4: RF2, RF4–RF9, RF11, RF13, RF14, RF19, RF22, RF23, RF26.
+    Códigos destinados ao banco de dados e à API; rótulos em português destinados à interface.
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var SNEAKERS = ["casual_sneakers","running_shoes","training_shoes","basketball_shoes","skate_shoes","high_top_sneakers"];
+
+  var CATS = [
+    { code: "upper_piece", ui: "PARTE_CIMA", label: "Parte superior",
+      desc: "Peças usadas predominantemente na parte superior do corpo, incluindo camadas externas.",
+      items: [
+        ["t_shirt","Camiseta"],["shirt","Camisa"],["blouse","Blusa"],["tank_top","Regata"],
+        ["crop_top","Cropped"],["polo_shirt","Camisa polo"],["bodysuit","Body"],["sweater","Suéter"],
+        ["sweatshirt","Moletom sem capuz"],["hoodie","Moletom com capuz"],["cardigan","Cardigã"],
+        ["vest","Colete"],["blazer","Blazer"],["jacket","Jaqueta"],["coat","Casaco"],
+        ["parka","Parka"],["windbreaker","Corta-vento"],["kimono","Quimono"]
+      ] },
+    { code: "lower_piece", ui: "PARTE_BAIXO", label: "Parte inferior",
+      desc: "Peças usadas predominantemente na parte inferior do corpo.",
+      items: [
+        ["jeans","Calça jeans"],["tailored_pants","Calça de alfaiataria"],["casual_pants","Calça casual"],
+        ["chino_pants","Calça chino / sarja"],["cargo_pants","Calça cargo"],["jogger_pants","Calça jogger"],
+        ["sweatpants","Calça de moletom"],["leggings","Legging"],["culottes","Pantacourt"],
+        ["shorts","Shorts"],["bermuda_shorts","Bermuda"],["denim_shorts","Shorts jeans"],
+        ["skirt","Saia"],["skort","Saia-short"]
+      ] },
+    { code: "shoes_piece", ui: "TENIS", label: "Calçados",
+      desc: "Todos os tipos de calçado, incluindo seis opções específicas de tênis.",
+      items: [
+        ["casual_sneakers","Tênis casual"],["running_shoes","Tênis de corrida"],["training_shoes","Tênis de treino"],
+        ["basketball_shoes","Tênis de basquete"],["skate_shoes","Tênis de skate"],["high_top_sneakers","Tênis de cano alto"],
+        ["loafers","Loafer"],["moccasins","Mocassim"],["oxford_shoes","Sapato Oxford"],["derby_shoes","Sapato Derby"],
+        ["ankle_boots","Bota de cano curto"],["long_boots","Bota de cano longo"],["combat_boots","Coturno"],
+        ["sandals","Sandália"],["flip_flops","Chinelo"],["heels","Salto alto"],["flats","Sapatilha"],["espadrilles","Alpargata"]
+      ] },
+    { code: "accessory_piece", ui: "ACESSORIO", label: "Acessórios",
+      desc: "Acessórios funcionais, ornamentais e complementares.",
+      items: [
+        ["handbag","Bolsa de mão"],["crossbody_bag","Bolsa transversal"],["tote_bag","Bolsa tote"],
+        ["clutch","Bolsa clutch"],["backpack","Mochila"],["belt","Cinto"],["cap","Boné"],["hat","Chapéu"],
+        ["beanie","Gorro"],["scarf","Cachecol / lenço"],["tie","Gravata"],["bow_tie","Gravata-borboleta"],
+        ["sunglasses","Óculos de sol"],["eyeglasses","Óculos de grau"],["necklace","Colar"],["bracelet","Pulseira"],
+        ["earrings","Brincos"],["ring","Anel"],["watch","Relógio"],["gloves","Luvas"],["socks","Meias"],
+        ["hair_accessory","Acessório de cabelo"]
+      ] },
+    { code: "full_body_piece", ui: "CORPO_INTEIRO", label: "Corpo inteiro", proposed: true,
+      desc: "Categoria recomendada pelo PDF e ainda ausente do enum do card. Acomoda peças que cobrem o corpo todo.",
+      items: [
+        ["dress","Vestido"],["jumpsuit","Macacão"],["romper","Macaquinho"],
+        ["matching_set","Conjunto coordenado"],["overalls","Jardineira"]
+      ] }
+  ];
+
+  var OCCASIONS = [
+    ["casual","Casual"],["work","Trabalho"],["business","Negócios / corporativo"],["formal","Formal"],
+    ["party","Festa"],["night_out","Saída noturna"],["date","Encontro"],["wedding","Casamento"],
+    ["ceremony","Cerimônia"],["sport","Esporte"],["gym","Academia"],["travel","Viagem"],
+    ["beach","Praia"],["vacation","Férias"],["school","Escola"],["university","Universidade"],
+    ["social","Evento social"],["home","Casa"],["outdoor","Atividade ao ar livre"],["festival","Festival"]
+  ];
+
+  var STYLES = [
+    ["classic","Clássico"],["minimalist","Minimalista"],["modern","Moderno"],["chic","Chique"],
+    ["streetwear","Moda urbana / streetwear"],["sporty","Esportivo"],["athleisure","Esportivo casual / athleisure"],
+    ["preppy","Colegial sofisticado / preppy"],["romantic","Romântico"],["boho","Boêmio / boho"],
+    ["vintage","Vintage"],["grunge","Grunge"],["edgy","Ousado / alternativo"],["glam","Glamouroso"],
+    ["luxury","Luxuoso"],["avant_garde","Vanguarda"],["y2k","Anos 2000 / Y2K"],["utility","Utilitário"],
+    ["techwear","Moda tecnológica"],["tailored","Alfaiataria"],["urban","Urbano"],["resort","Resort / veraneio"],
+    ["basic","Básico"],["statement","Marcante / peça de destaque"],["futuristic","Futurista"]
+  ];
+
+  var COLORS = [
+    { family: "Preto", items: [["black","Preto","#12100F"],["charcoal","Grafite","#36373B"],["washed_black","Preto lavado","#2E2B2A"]] },
+    { family: "Branco", items: [["white","Branco","#FFFFFF"],["off_white","Off-white","#F3EFE7"],["ivory","Marfim","#FAF4E4"],["cream","Creme","#F0E4CB"]] },
+    { family: "Cinza", items: [["light_gray","Cinza claro","#D5D2CD"],["gray","Cinza","#8C8A87"],["dark_gray","Cinza escuro","#54524F"],["silver","Prata","#C3C6C9"]] },
+    { family: "Azul", items: [["blue","Azul","#2A5FA8"],["navy","Azul-marinho","#1B2A4A"],["light_blue","Azul-claro","#A9C7E4"],["sky_blue","Azul-céu","#7EC0E8"],["cobalt","Cobalto","#0B4FC4"],["denim","Jeans / denim","#4A6A8C"],["teal","Azul-petróleo","#16666B"]] },
+    { family: "Vermelho", items: [["red","Vermelho","#C62B28"],["crimson","Carmesim","#D6244A"],["burgundy","Bordô","#6B1220"],["maroon","Vinho","#87313F"],["rust","Ferrugem","#B05330"]] },
+    { family: "Rosa", items: [["pink","Rosa","#EFA8BC"],["hot_pink","Rosa-choque","#E0367E"],["rose","Rosé","#D79A9A"],["coral","Coral","#F07F63"],["salmon","Salmão","#F2A18B"]] },
+    { family: "Laranja", items: [["orange","Laranja","#E8722A"],["terracotta","Terracota","#C4674A"],["amber","Âmbar","#D99418"],["apricot","Damasco","#F2C09A"]] },
+    { family: "Amarelo", items: [["yellow","Amarelo","#E8C93C"],["mustard","Mostarda","#B8912A"],["gold","Dourado","#C9A227"],["butter","Manteiga","#F2E5A8"]] },
+    { family: "Verde", items: [["green","Verde","#2F7A45"],["olive","Verde-oliva","#6E7A3C"],["military_green","Verde-militar","#4A5340"],["forest_green","Verde-floresta","#1C4429"],["mint","Verde-menta","#A9DFC2"],["sage","Verde-sálvia","#A3B191"],["emerald","Esmeralda","#187A5F"]] },
+    { family: "Roxo", items: [["purple","Roxo","#6B3F9E"],["violet","Violeta","#8046D6"],["lilac","Lilás","#C4A5D6"],["lavender","Lavanda","#DCD5EC"],["plum","Ameixa","#6E3552"]] },
+    { family: "Marrom", items: [["brown","Marrom","#5B3B28"],["chocolate","Chocolate","#4A2C1A"],["camel","Camelo","#B98E5E"],["tan","Bege-escuro","#C7A175"],["beige","Bege","#DFCDB0"],["taupe","Taupe","#7A6B5D"]] },
+    { family: "Especiais", items: [["metallic_gold","Metálico dourado","#C8A64B"],["metallic_silver","Metálico prateado","#B8BCC0"],["bronze","Bronze","#9C6B3C"],["multicolor","Multicolorido","#9A9A9A"],["print","Estampado","#8A8A8A"]] }
+  ];
+
+  var SIZES = [
+    { group: "Alfanumérico — roupas", note: "Padrão para parte superior, inferior e corpo inteiro.",
+      items: [["xs","PP (extra pequeno)"],["s","P (pequeno)"],["m","M (médio)"],["l","G (grande)"],
+              ["xl","GG (extra grande)"],["xxl","XGG (duplo extra grande)"]] },
+    { group: "Numérico BR — parte inferior", note: "Calças, saias e shorts com numeração.",
+      items: [["br_34","34"],["br_36","36"],["br_38","38"],["br_40","40"],["br_42","42"],
+              ["br_44","44"],["br_46","46"],["br_48","48"],["br_50","50"],["br_52","52"]] },
+    { group: "Numérico BR — calçados", note: "Aplicado somente à categoria de calçados.",
+      items: [["shoe_33","33"],["shoe_34","34"],["shoe_35","35"],["shoe_36","36"],["shoe_37","37"],
+              ["shoe_38","38"],["shoe_39","39"],["shoe_40","40"],["shoe_41","41"],["shoe_42","42"],
+              ["shoe_43","43"],["shoe_44","44"],["shoe_45","45"],["shoe_46","46"]] },
+    { group: "Tamanho único", note: "Disponível em todas as categorias. Padrão para a maioria dos acessórios.",
+      items: [["one_size","Único"]] }
+  ];
+
+  var MKT_SEASONS = [["spring","Primavera"],["summer","Verão"],["autumn","Outono"],["winter","Inverno"]];
+  var MKT_GENDERS = [["male","Masculino"],["female","Feminino"],["unisex","Unissex"]];
+
+  var ENUMS_PECA = [
+    { field: "sex", title: "Sexo da peça", ui: "Seletor de três opções", req: "obrigatório",
+      items: [["MASCULINO","Masculino"],["FEMININO","Feminino"],["UNISSEX","Unissex"]] },
+    { field: "material", title: "Material", ui: "Seletor único", req: "obrigatório",
+      items: [["COTTON","Algodão"],["POLYESTER","Poliéster"],["WOOL","Lã"],["SILK","Seda"],
+              ["LEATHER","Couro"],["SYNTHETIC","Sintético"],["BLEND","Misto"]] },
+    { field: "condition", title: "Condição", ui: "Seletor único no card da peça", req: "sistema",
+      items: [["NEW","Nova"],["GOOD","Boa"],["WORN","Usada"],["DAMAGED","Danificada"]] },
+    { field: "moderationStatus", title: "Moderação de conteúdo", ui: "Indicador de estado (RF24)", req: "sistema",
+      items: [["PENDING","Pendente"],["APPROVED","Aprovada"],["REJECTED_POLICY","Reprovada — política"],["REJECTED_NOT_CLOTHING","Reprovada — não é roupa"]] },
+    { field: "availability_status", title: "Disponibilidade", ui: "Toggle na faixa superior do card", req: "sistema",
+      items: [["AVAILABLE","Disponível"],["UNAVAILABLE","Indisponível"],["ARCHIVED","Arquivada"]] },
+    { field: "photoProcessingStatus", title: "Processamento da foto", ui: "Indicador de estado", req: "sistema",
+      items: [["NEW","Recebida"],["PROCESSING","Processando"],["COMPLETED","Concluída"],["FAILED","Falhou"]] }
+  ];
+
+  var ENUMS_ESQUEMA = [
+    { field: "season", title: "Estação", ui: "Seletor único", req: "opcional",
+      items: [["spring","Primavera"],["summer","Verão"],["autumn","Outono"],["winter","Inverno"]] },
+    { field: "mood", title: "Clima do look", ui: "Seletor único", req: "opcional",
+      items: [["energetic","Energético"],["elegant","Elegante"],["comfortable","Confortável"],["sophisticated","Sofisticado"]] },
+    { field: "displayMode", title: "Modo de exibição", ui: "Três botões no preview", req: "obrigatório",
+      items: [["CAROUSEL","Carrossel"],["GRID","Grade"],["STACKED","Empilhado"]] },
+    { field: "visibility", title: "Visibilidade", ui: "Seletor único ao salvar", req: "obrigatório",
+      items: [["PRIVATE","Privado"],["FOLLOWERS","Seguidores"],["PUBLIC","Público"]] },
+    { field: "status", title: "Estado de publicação", ui: "Rascunho, publicar ou arquivar", req: "obrigatório",
+      items: [["DRAFT","Rascunho"],["PUBLISHED","Publicado"],["ARCHIVED","Arquivado"]] },
+    { field: "items[].slot", title: "Slot da peça no look", ui: "Quatro posições da composição", req: "≥ 1 item",
+      items: [["TOP","Parte de cima"],["BOTTOM","Parte de baixo"],["SHOES","Calçados"],["ACCESSORIES","Acessórios"]] },
+    { field: "creationMode", title: "Modo de criação", ui: "Definido pela etapa 1", req: "sistema",
+      items: [["MANUAL","Manual"],["AI_ASSISTED","Assistido por IA"]] },
+    { field: "renderingStatus", title: "Renderização do provador 2D", ui: "Indicador de estado (RF18)", req: "sistema",
+      items: [["PENDING","Na fila"],["RENDERING","Renderizando"],["ENHANCING","Refinando"],
+              ["COMPOSITING","Compondo"],["COMPLETED","Concluída"],["FAILED","Falhou"]] }
+  ];
+
+  function el(tag, cls, html) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (html != null) n.innerHTML = html;
+    return n;
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function chip(code, label, extraCls) {
+    var c = el("span", "chip" + (extraCls ? " " + extraCls : ""));
+    c.innerHTML = '<span class="c">' + esc(code) + "</span><span>" + esc(label) + "</span>";
+    c.dataset.k = (code + " " + label).toLowerCase();
+    return c;
+  }
+  function chipList(items, decorate) {
+    var box = el("div", "chips");
+    items.forEach(function (it) {
+      box.appendChild(chip(it[0], it[1], decorate ? decorate(it) : ""));
+    });
+    return box;
+  }
+  function heading(text, countLabel, limitLabel, limitKind) {
+    var h = el("h3");
+    h.appendChild(document.createTextNode(text));
+    if (countLabel) h.appendChild(el("span", "count", countLabel));
+    if (limitLabel) h.appendChild(el("span", "limit " + limitKind, limitLabel));
+    return h;
+  }
+
+  var catsBox = document.getElementById("cats");
+  CATS.forEach(function (cat) {
+    var h = heading(cat.label, cat.items.length + " subcategorias");
+    h.insertBefore(el("span", "code", cat.code), h.firstChild.nextSibling);
+    catsBox.appendChild(h);
+    var meta = el("p");
+    meta.style.cssText = "font-size:13px;color:var(--muted);margin:-4px 0 10px";
+    meta.innerHTML = esc(cat.desc) + (cat.proposed
+      ? ' <b style="color:var(--warn)">Proposta — ainda não implementada.</b>'
+      : ' Enum da UI: <span class="code">' + esc(cat.ui) + "</span>.");
+    catsBox.appendChild(meta);
+    catsBox.appendChild(chipList(cat.items, function (it) {
+      return SNEAKERS.indexOf(it[0]) >= 0 ? "sneaker" : "";
+    }));
+  });
+
+  var os = document.getElementById("occstyle");
+  os.appendChild(heading("Occasion", OCCASIONS.length + " valores", "peça máx. 2 · esquema/DNA máx. 3", "p"));
+  os.appendChild(chipList(OCCASIONS));
+  os.appendChild(heading("Style", STYLES.length + " valores", "peça máx. 2 · esquema/DNA máx. 3", "e"));
+  os.appendChild(chipList(STYLES));
+
+  var cores = document.getElementById("cores");
+  var totalCores = 0;
+  COLORS.forEach(function (fam) {
+    totalCores += fam.items.length;
+    var g = el("div", "swgroup");
+    g.appendChild(el("h4", null, esc(fam.family) + ' <span class="count">' + fam.items.length + "</span>"));
+    var grid = el("div", "sw");
+    fam.items.forEach(function (it) {
+      var s = el("div", "swatch");
+      s.dataset.k = (it[0] + " " + it[1] + " " + fam.family).toLowerCase();
+      var d = el("span", "dot");
+      d.style.background = it[2];
+      s.appendChild(d);
+      s.appendChild(el("span", "t",
+        '<span class="n">' + esc(it[1]) + '</span><span class="h">' + esc(it[0]) + "</span>"));
+      grid.appendChild(s);
+    });
+    g.appendChild(grid);
+    cores.appendChild(g);
+  });
+
+  var tam = document.getElementById("tamanhos");
+  SIZES.forEach(function (grp) {
+    tam.appendChild(heading(grp.group, grp.items.length + " valores"));
+    var p = el("p");
+    p.style.cssText = "font-size:13px;color:var(--muted);margin:-4px 0 10px";
+    p.textContent = grp.note;
+    tam.appendChild(p);
+    tam.appendChild(chipList(grp.items));
+  });
+
+  function renderEnums(target, defs, kind) {
+    defs.forEach(function (d) {
+      var h = heading(d.title, d.items.length + " valores", d.req, kind);
+      h.insertBefore(el("span", "code", d.field), h.firstChild.nextSibling);
+      target.appendChild(h);
+      var p = el("p");
+      p.style.cssText = "font-size:13px;color:var(--muted);margin:-4px 0 10px";
+      p.textContent = d.ui;
+      target.appendChild(p);
+      target.appendChild(chipList(d.items));
+    });
+  }
+
+  var MARKETS = [];
+  MKT_SEASONS.forEach(function (s) {
+    MKT_GENDERS.forEach(function (g) {
+      MARKETS.push([s[0] + "_" + g[0], s[1] + " · " + g[1]]);
+    });
+  });
+
+  var mktBody = document.querySelector("#mktTable tbody");
+  MKT_SEASONS.forEach(function (s) {
+    var tr = el("tr");
+    tr.appendChild(el("td", null, "<b>" + esc(s[1]) + "</b>"));
+    MKT_GENDERS.forEach(function (g) {
+      tr.appendChild(el("td", null, "<code>" + esc(s[0] + "_" + g[0]) + "</code>"));
+    });
+    mktBody.appendChild(tr);
+  });
+  document.getElementById("mktCount").textContent = MARKETS.length + " valores";
+  document.getElementById("mktChips").appendChild(chipList(MARKETS));
+
+  renderEnums(document.getElementById("enumsPeca"), ENUMS_PECA, "p");
+  renderEnums(document.getElementById("enumsEsquema"), ENUMS_ESQUEMA, "e");
+
+  var subtotal = CATS.reduce(function (a, c) { return a + c.items.length; }, 0);
+  var sizeTotal = SIZES.reduce(function (a, g) { return a + g.items.length; }, 0);
+  var stats = [
+    [CATS.length, "categorias"], [subtotal, "subcategorias"], [OCCASIONS.length, "occasions"],
+    [STYLES.length, "styles"], [totalCores, "cores"], [sizeTotal, "tamanhos"], [MARKETS.length, "markets"]
+  ];
+  var statsBox = document.getElementById("stats");
+  stats.forEach(function (s) {
+    statsBox.appendChild(el("div", "stat", "<b>" + s[0] + "</b><span>" + s[1] + "</span>"));
+  });
+
+  var q = document.getElementById("q");
+  var qstat = document.getElementById("qstat");
+  var targets = [].slice.call(document.querySelectorAll("[data-k]"));
+  function applyFilter() {
+    var term = q.value.trim().toLowerCase();
+    if (!term) {
+      targets.forEach(function (t) { t.hidden = false; t.classList.remove("hit"); });
+      qstat.textContent = targets.length + " itens";
+      return;
+    }
+    var n = 0;
+    targets.forEach(function (t) {
+      var hit = t.dataset.k.indexOf(term) >= 0;
+      t.hidden = !hit;
+      t.classList.toggle("hit", hit);
+      if (hit) n++;
+    });
+    qstat.textContent = n + " de " + targets.length + " itens";
+  }
+  q.addEventListener("input", applyFilter);
+  document.getElementById("qclear").addEventListener("click", function () {
+    q.value = ""; applyFilter(); q.focus();
+  });
+  applyFilter();
+})();
+</script>

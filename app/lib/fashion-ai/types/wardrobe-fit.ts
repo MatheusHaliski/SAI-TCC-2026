@@ -41,6 +41,8 @@ export type WardrobeItemDocument = {
   id: string;
   name: string;
   image_url: string;
+  segmented_png_url?: string;
+  normalized_2d_preview_url?: string;
   piece_type?: string;
   gender?: string;
   createdAt?: string;

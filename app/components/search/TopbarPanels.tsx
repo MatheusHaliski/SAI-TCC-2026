@@ -128,18 +128,52 @@ function PageBackgroundStudio({
   );
 }
 
+interface NotificationItem {
+  notification_id: string;
+  type?: string;
+  title?: string;
+  body?: string;
+  is_read?: boolean;
+  createdAt?: string;
+}
+
 export function NotificationsPanel({ onClose }: { onClose: () => void }) {
-  const notifications = [
-    'Outfit liked by @alicefits',
-    'AI generation completed for "Urban Layers"',
-    'Wardrobe item processed successfully',
-  ];
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const profile = getAuthSessionProfile();
+    const userId = profile.user_id?.trim();
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    fetch(`/api/notifications?userId=${encodeURIComponent(userId)}`)
+      .then((res) => (res.ok ? res.json() : { notifications: [] }))
+      .then((data) => setNotifications(Array.isArray(data?.notifications) ? data.notifications : []))
+      .catch(() => setNotifications([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <RightDrawer title="Notifications" onClose={onClose}>
-      {notifications.map((item) => (
-        <article key={item} className="sa-liquid-glass-token rounded-xl border border-white/15 bg-white/10 p-3 text-sm">{item}</article>
-      ))}
+      {loading ? (
+        <p className="py-4 text-center text-xs text-white/50">Carregando...</p>
+      ) : notifications.length === 0 ? (
+        <p className="py-4 text-center text-xs text-white/50">Nenhuma notificação por aqui ainda.</p>
+      ) : (
+        notifications.map((item) => (
+          <article
+            key={item.notification_id}
+            className={`sa-liquid-glass-token rounded-xl border p-3 text-sm ${item.is_read ? 'border-white/15 bg-white/10' : 'border-cyan-300/40 bg-cyan-400/10'}`}
+          >
+            {item.title ? <p className="font-semibold text-white">{item.title}</p> : null}
+            {item.body ? <p className="mt-1 text-xs text-white/70">{item.body}</p> : null}
+            {item.createdAt ? <p className="mt-1 text-[10px] text-white/40">{new Date(item.createdAt).toLocaleString()}</p> : null}
+          </article>
+        ))
+      )}
     </RightDrawer>
   );
 }

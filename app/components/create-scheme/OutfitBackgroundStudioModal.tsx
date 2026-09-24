@@ -7,6 +7,8 @@ import {
   BackgroundStudioStyleConfig,
   OutfitBackgroundConfig,
   OutfitCardData,
+  OutfitCardDisplayOptions,
+  OutfitPieceListFormat,
   buildBackgroundCssStyle,
   resolveBrandLogoUrlByName,
   resolveOutfitBackgroundForRender,
@@ -27,7 +29,9 @@ import { applyArtworkToOutfitCard } from '@/app/lib/artwork-studio';
 import FancySelect from '@/app/components/ui/fancy-select';
 import { MATERIAL_PRESETS, applyFabricMaterialToCard, buildFabricPresetConfig, type FabricMaterialConfig } from '@/app/lib/materialPresets';
 import PremiumSelections from '@/app/components/studio/PremiumSelections';
-import type { CardSkinId } from '@/app/lib/outfit-card';
+import PieceStyleEditorPanel from '@/app/components/create-scheme/PieceStyleEditorPanel';
+import type { CardSkinId, OutfitPiece } from '@/app/lib/outfit-card';
+import { getSkinById } from '@/app/components/outfit-card/skins/skinRegistry';
 
 type StudioTab = 'color' | 'gradient' | 'ai_artwork';
 type GeometryFamily = 'arrows' | 'waves' | 'diamond' | 'mesh' | 'circles' | 'triangles' | 'stars' | 'flowers' | 'beams' | 'panels' | 'mixed';
@@ -103,7 +107,24 @@ interface OutfitBackgroundStudioModalProps {
   onApply: (value: OutfitBackgroundConfig) => void;
   selectedCardSkin?: CardSkinId;
   onSelectSkin?: (skinId: CardSkinId) => void;
+  pieceListFormat?: OutfitPieceListFormat;
+  onSelectPieceListFormat?: (format: OutfitPieceListFormat) => void;
+  cardDisplayOptions?: OutfitCardDisplayOptions;
+  onChangeCardDisplayOptions?: (options: OutfitCardDisplayOptions) => void;
+  /** Called when per-piece styling changes in the inline piece editor. */
+  onChangePieces?: (pieces: OutfitPiece[]) => void;
+  /** Render as an inline page section instead of a fixed modal overlay */
+  asPage?: boolean;
 }
+
+const PIECE_LIST_FORMAT_OPTIONS: Array<{ value: OutfitPieceListFormat; label: string; hint: string }> = [
+  { value: 'grid-2', label: 'Grid 2 colunas', hint: 'Cards completos lado a lado' },
+  { value: 'grid-3', label: 'Grid 3 colunas', hint: 'Cards completos em três colunas' },
+  { value: 'stack', label: 'Lista', hint: 'Peças empilhadas em linhas' },
+  { value: 'row', label: 'Carrossel', hint: 'Peças em uma faixa horizontal' },
+  { value: 'magazine', label: 'Revista', hint: 'Peça em destaque + miniaturas' },
+  { value: 'plate', label: 'Prato', hint: 'Peças dispostas em círculo' },
+];
 
 const COLOR_SWATCHES = ['#0a0a0a', '#ffffff', '#c0c0c0', '#2e1065', '#047857', '#ddc7a1', '#1d4ed8', '#fff8dc'];
 
@@ -196,52 +217,62 @@ const FLOWER_PICKER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 const TONAL_GEOMETRY_BACKGROUND_IMAGE = `/${encodeURIComponent('Sem título (32).png')}`;
 const NEON_MOTION_GRID_IMAGE = '/neongrid.png';
 const CURATED_IMAGE_PICKER_OPTIONS = [
-  { fileName: 'a1.png', label: 'Psychedelic Palace' },
-  { fileName: 'a2.png', label: 'Art Nouveau Bloom' },
-  { fileName: 'a3.png', label: 'Pastel Kaleidoscope' },
-  { fileName: 'a4.png', label: 'Sacred Geometry Temple' },
-  { fileName: 'a5.png', label: 'Surreal Midnight' },
-  { fileName: 'a6.png', label: 'Solar Mandala' },
-  { fileName: 'a7.png', label: 'Tropical Rainbow' },
-  { fileName: 'a8.png', label: 'Nocturnal Totem' },
-  { fileName: 'a9.png', label: 'Urban Chaos' },
-  { fileName: 'a10.png', label: 'Blueprint Mosaic' },
-  { fileName: 'a11.png', label: 'Midnight Surrealism' },
-  { fileName: 'a12.png', label: "Lion's Gate" },
-  { fileName: 'a13.png', label: 'Temple of Doves' },
-  { fileName: 'a14.png', label: 'Eye of the Storm' },
-  { fileName: 'a15.png', label: 'Tropical Sun Shrine' },
-  { fileName: 'a16.png', label: 'Jungle Totem' },
-  { fileName: 'a17.png', label: 'Cosmic Bestiary' },
-  { fileName: 'a18.png', label: 'Neon Labyrinth' },
-  { fileName: 'a19.png', label: 'Sacred Ibis' },
-  { fileName: 'a20.png', label: 'Whimsical Garden' },
-  { fileName: 'a21.png', label: 'Pastel Dream Temple' },
-  { fileName: 'a22.png', label: 'Fantasy Cityscape' },
-  { fileName: 'a23.png', label: 'Cosmic Sun Face' },
-  { fileName: 'a24.png', label: 'Electric Arcadia' },
-  { fileName: 'a25.png', label: 'Tribal Totem Gate' },
-  { fileName: 'a26.png', label: 'Creature Carnival' },
-  { fileName: 'a27.png', label: 'Egyptian Garden' },
-  { fileName: 'a28.png', label: 'Solar Checkerboard' },
-  { fileName: 'a29.png', label: 'Folk Spirit Garden' },
-  { fileName: 'a30.png', label: 'Solar Court' },
-  { fileName: 'a31.png', label: 'Guardian Fortress' },
-  { fileName: 'a32.png', label: 'Butterfly Duality' },
-  { fileName: 'Sem título (32).png', label: 'Geometric Canvas' },
-  { fileName: 'Sem título (33).png', label: 'Botanical Bloom' },
-  { fileName: 'Fart.png', label: 'Fashion Icon Grid' },
-  { fileName: 'newbirds.jpg', label: 'Morris Birds' },
-  { fileName: 'streetvibes.jpg', label: 'Neon Graffiti' },
-  { fileName: 'flw.jpg', label: 'Paper Florals' },
-  { fileName: 'mfui.jpg', label: 'Fuji Woodblock' },
-].map(({ fileName, label }) => ({
+  // ── Coleção A — Arte & Fantasia ──────────────────────────────────────────
+  { fileName: 'a1.png',  label: 'Psychedelic Palace',      group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a2.png',  label: 'Art Nouveau Bloom',        group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a3.png',  label: 'Pastel Kaleidoscope',      group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a4.png',  label: 'Sacred Geometry Temple',   group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a5.png',  label: 'Surreal Midnight',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a6.png',  label: 'Solar Mandala',            group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a7.png',  label: 'Tropical Rainbow',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a8.png',  label: 'Nocturnal Totem',          group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a9.png',  label: 'Urban Chaos',              group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a10.png', label: 'Blueprint Mosaic',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a11.png', label: 'Midnight Surrealism',      group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a12.png', label: "Lion's Gate",              group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a13.png', label: 'Temple of Doves',          group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a14.png', label: 'Eye of the Storm',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a15.png', label: 'Tropical Sun Shrine',      group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a16.png', label: 'Jungle Totem',             group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a17.png', label: 'Cosmic Bestiary',          group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a18.png', label: 'Neon Labyrinth',           group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a19.png', label: 'Sacred Ibis',              group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a20.png', label: 'Whimsical Garden',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a21.png', label: 'Pastel Dream Temple',      group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a22.png', label: 'Fantasy Cityscape',        group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a23.png', label: 'Cosmic Sun Face',          group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a24.png', label: 'Electric Arcadia',         group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a25.png', label: 'Tribal Totem Gate',        group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a26.png', label: 'Creature Carnival',        group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a27.png', label: 'Egyptian Garden',          group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a28.png', label: 'Solar Checkerboard',       group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a29.png', label: 'Folk Spirit Garden',       group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a30.png', label: 'Solar Court',              group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a31.png', label: 'Guardian Fortress',        group: 'Coleção A — Arte & Fantasia' },
+  { fileName: 'a32.png', label: 'Butterfly Duality',        group: 'Coleção A — Arte & Fantasia' },
+  // ── Coleção C — Paisagens, Moda & Cultura ───────────────────────────────
+  { fileName: 'c1.png',  label: 'Paisagens Geométricas',    group: 'Coleção C — Paisagens, Moda & Cultura' },
+  { fileName: 'c2.png',  label: 'Grade Pop Culture',        group: 'Coleção C — Paisagens, Moda & Cultura' },
+  { fileName: 'c3.png',  label: 'Arquitetura Tropical',     group: 'Coleção C — Paisagens, Moda & Cultura' },
+  { fileName: 'c4.png',  label: 'Colagem Moda Urbana',      group: 'Coleção C — Paisagens, Moda & Cultura' },
+  { fileName: 'c5.png',  label: 'Retrato Fashion Abstrato', group: 'Coleção C — Paisagens, Moda & Cultura' },
+  { fileName: 'c6.png',  label: 'Fuga Costeira',            group: 'Coleção C — Paisagens, Moda & Cultura' },
+  // ── Outros ──────────────────────────────────────────────────────────────
+  { fileName: 'Sem título (32).png', label: 'Geometric Canvas',   group: 'Outros' },
+  { fileName: 'Sem título (33).png', label: 'Botanical Bloom',    group: 'Outros' },
+  { fileName: 'Fart.png',            label: 'Fashion Icon Grid',  group: 'Outros' },
+  { fileName: 'newbirds.jpg',        label: 'Morris Birds',       group: 'Outros' },
+  { fileName: 'streetvibes.jpg',     label: 'Neon Graffiti',      group: 'Outros' },
+  { fileName: 'flw.jpg',             label: 'Paper Florals',      group: 'Outros' },
+  { fileName: 'mfui.jpg',            label: 'Fuji Woodblock',     group: 'Outros' },
+].map(({ fileName, label, group }) => ({
   value: `image:${fileName}`,
   label: label || fileName,
-  hint: `Applies ${label || fileName} as artwork surface`,
+  hint: `Aplica "${label || fileName}" como superfície de arte`,
+  group,
   imageUrl: `/${encodeURIComponent(fileName)}`,
 }));
-const BACKGROUND_IMAGE_OPTIONS = CURATED_IMAGE_PICKER_OPTIONS.filter((opt) => /^image:a\d+\.png$/.test(opt.value));
+const BACKGROUND_IMAGE_OPTIONS = CURATED_IMAGE_PICKER_OPTIONS.filter((opt) => /^image:[ac]\d+\.png$/.test(opt.value));
 const SHAPE_SEGMENT_OPTIONS: Array<NonNullable<OutfitBackgroundConfig['shape']>> = [
   'none',
   'orb',
@@ -1934,6 +1965,39 @@ function getRecommendedPresets(outfitMetadata: OutfitMetadata | undefined, runti
   ].filter(Boolean).slice(0, 3) as RecommendedPreset[];
 }
 
+// ── GIF-like animated gradient presets ──
+// Replace the static "recommended presets" list. Each preset is a dynamic gradient
+// (or image) that animates like a GIF when the Aura (dynamic background) toggle is on,
+// changing color/gradient continuously; static when Aura is off.
+type GifGradientPreset = {
+  id: string;
+  label: string;
+  description: string;
+  category: string;
+  type: 'linear' | 'radial' | 'conic';
+  angle: number;
+  stops: Array<{ color: string; position: number }>;
+  /** Optional image — applied as a dynamic background image instead of a gradient. */
+  image?: string;
+};
+
+const GIF_GRADIENT_PRESETS: GifGradientPreset[] = [
+  { id: 'gif_heat',      label: 'Heat Pulse',        description: 'Laranja incandescente que pulsa com a Aura.',     category: 'aura / heat',        type: 'linear', angle: 135, stops: [{ color: '#431407', position: 0 }, { color: '#9a3412', position: 40 }, { color: '#f97316', position: 75 }, { color: '#fbbf24', position: 100 }] },
+  { id: 'gif_vibrant',   label: 'Vibrant Spin',      description: 'Violeta e magenta em rotação contínua.',          category: 'aura / vibrant',     type: 'conic',  angle: 0,   stops: [{ color: '#7c3aed', position: 0 }, { color: '#ec4899', position: 50 }, { color: '#f59e0b', position: 100 }] },
+  { id: 'gif_iconic',    label: 'Iconic Gold',       description: 'Dourado radiante com brilho cíclico.',            category: 'aura / iconic',      type: 'radial', angle: 0,   stops: [{ color: '#451a03', position: 0 }, { color: '#d97706', position: 60 }, { color: '#fbbf24', position: 100 }] },
+  { id: 'gif_legendary', label: 'Legendary Holo',    description: 'Holográfico que muda de matiz como um GIF.',       category: 'aura / legendary',   type: 'linear', angle: 135, stops: [{ color: '#1c1400', position: 0 }, { color: '#3d2e00', position: 35 }, { color: '#d4af37', position: 70 }, { color: '#fef3c7', position: 100 }] },
+  { id: 'gif_neon',      label: 'Neon Drift',        description: 'Ciano e azul elétrico deslizando.',               category: 'dinâmico / neon',    type: 'linear', angle: 115, stops: [{ color: '#082f49', position: 0 }, { color: '#0ea5e9', position: 55 }, { color: '#22d3ee', position: 100 }] },
+  { id: 'gif_aurora',    label: 'Aurora Mist',       description: 'Verde-aurora em movimento suave.',                category: 'dinâmico / aurora',  type: 'linear', angle: 160, stops: [{ color: '#022c22', position: 0 }, { color: '#059669', position: 55 }, { color: '#34d399', position: 100 }] },
+  { id: 'gif_image_neon', label: 'Neon Grid (imagem)', description: 'Fundo de imagem dinâmica em grade neon.',        category: 'imagem / dinâmica',  type: 'linear', angle: 135, stops: [{ color: '#0f172a', position: 0 }, { color: '#1e293b', position: 100 }], image: '/neongrid.png' },
+];
+
+function buildGifGradientCss(preset: GifGradientPreset): string {
+  const stops = preset.stops.map((s) => `${s.color} ${s.position}%`).join(', ');
+  if (preset.type === 'radial') return `radial-gradient(circle at 50% 50%, ${stops})`;
+  if (preset.type === 'conic') return `conic-gradient(from ${preset.angle}deg at 50% 50%, ${stops})`;
+  return `linear-gradient(${preset.angle}deg, ${stops})`;
+}
+
 const TEMPLATE_PICKER_PRESETS: RecommendedPreset[] = [
   { id: 'selection_luxury_fabric_monogram', category: 'pattern_surface', label: 'Monograma de tecido', description: 'Superfície de moda com textura de monograma da marca.' },
   { id: 'selection_tonal_geometry', category: 'pattern_surface', label: 'Geometria tonal', description: 'Paleta tonal com painéis geométricos sutis.' },
@@ -2019,6 +2083,12 @@ export default function OutfitBackgroundStudioModal({
   onApply,
   selectedCardSkin,
   onSelectSkin,
+  pieceListFormat,
+  onSelectPieceListFormat,
+  cardDisplayOptions,
+  onChangeCardDisplayOptions,
+  onChangePieces,
+  asPage = false,
 }: OutfitBackgroundStudioModalProps) {
   const buildNoMaterialConfig = (baseColor: string): FabricMaterialConfig => ({
     ...buildFabricPresetConfig(baseColor),
@@ -2046,6 +2116,7 @@ export default function OutfitBackgroundStudioModal({
 
   const [activeTab, setActiveTab] = useState<StudioTab>('color');
   const [draft, setDraft] = useState<OutfitBackgroundConfig>(() => resolveOutfitBackgroundForRender(value));
+  const [dynamicBackground, setDynamicBackground] = useState<boolean>(() => Boolean(value.dynamicBackground));
   const [recentColors, setRecentColors] = useState<string[]>([]);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiStylePreset, setAiStylePreset] = useState<ArtworkStylePreset>('editorial_fashion');
@@ -2066,7 +2137,7 @@ export default function OutfitBackgroundStudioModal({
   const [aiGradientResults, setAiGradientResults] = useState<OutfitBackgroundConfig[]>([]);
   const [selectedAiResult, setSelectedAiResult] = useState<ArtworkVariation | null>(null);
   const [selectedRecommendedPreset, setSelectedRecommendedPreset] = useState<BackgroundPresetId | null>(null);
-  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [selectedGifPreset, setSelectedGifPreset] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
@@ -2165,7 +2236,12 @@ export default function OutfitBackgroundStudioModal({
   const previewData: OutfitCardData = {
     ...previewCardData,
     outfitBackground: draft,
+    pieceListFormat: pieceListFormat ?? previewCardData.pieceListFormat,
+    displayOptions: cardDisplayOptions ?? previewCardData.displayOptions,
+    cardSkin: selectedCardSkin ?? previewCardData.cardSkin,
   };
+
+  const ActiveSkin = selectedCardSkin ? getSkinById(selectedCardSkin).Component : null;
 
   const dominantColor =
     draft.background_mode === 'solid'
@@ -2229,8 +2305,9 @@ export default function OutfitBackgroundStudioModal({
       hasReferenceImage: Boolean(getUploadedReferenceImage()),
       styleConfig: draft.studioStyleConfig ?? null,
       previewUpdated: true,
+      dynamicBackground,
     });
-    onApply(draft);
+    onApply({ ...draft, dynamicBackground });
   };
 
   const saveBackgroundConfig = () => {
@@ -2238,8 +2315,9 @@ export default function OutfitBackgroundStudioModal({
       presetId: draft.studioStyleConfig?.presetId ?? selectedRecommendedPreset ?? null,
       hasReferenceImage: Boolean(getUploadedReferenceImage()),
       styleConfig: draft.studioStyleConfig ?? null,
+      dynamicBackground,
     });
-    onApply(draft);
+    onApply({ ...draft, dynamicBackground });
   };
 
   const generateAiBackground = async () => {
@@ -2609,23 +2687,26 @@ export default function OutfitBackgroundStudioModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, aiResults.length, aiLoading]);
 
-  return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="flex h-[98vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]"
-        style={{ backgroundColor: 'var(--user-surface-solid)' }}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-white/70">Background Studio</p>
-            <h2 className="text-2xl font-semibold">Customize the visual surface of your outfit card</h2>
-          </div>
-          <button type="button" className="rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold" onClick={onClose}>Close ✕</button>
-        </header>
+  const innerContent = (
+    <div
+      className={asPage
+        ? 'flex flex-col gap-4 text-white'
+        : 'flex h-[98vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-[0_30px_120px_rgba(15,23,42,0.7)]'}
+      style={asPage ? undefined : { backgroundColor: 'var(--user-surface-solid)' }}
+      onClick={asPage ? undefined : (event) => event.stopPropagation()}
+    >
+      <header className="mb-4 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs uppercase tracking-[0.18em] text-white/70">Estúdio de Fundo</p>
+          <h2 className={asPage ? 'max-w-none text-xl font-semibold leading-tight' : 'text-2xl font-semibold'}>Personalize a superfície visual do seu card de look</h2>
+        </div>
+        {!asPage && (
+          <button type="button" className="rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold" onClick={onClose}>Fechar ✕</button>
+        )}
+      </header>
 
-        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]">
-          <section className="min-h-0 space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4">
+      <div className={asPage ? 'grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(460px,1.35fr)]' : 'grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[1fr_1.1fr]'}>
+        <section className={asPage ? 'space-y-4 rounded-2xl border border-white/15 bg-white/5 p-4' : 'min-h-0 space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
             <div className="inline-flex rounded-xl border border-white/20 bg-white/5 p-1">
               {([
                 ['color', 'Color'],
@@ -2961,6 +3042,114 @@ export default function OutfitBackgroundStudioModal({
                   </div>
                 </div>
 
+                <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                  <p className="text-xs uppercase tracking-[0.12em] text-white/65">Predefinições recomendadas para o look atual</p>
+                  {(() => {
+                    const seen = new Set<BackgroundPresetId>();
+                    const orderedPresets = [...recommendedPresets, ...TEMPLATE_PICKER_PRESETS].filter((preset) => {
+                      if (seen.has(preset.id)) return false;
+                      seen.add(preset.id);
+                      return true;
+                    });
+
+                    if (orderedPresets.length === 0) {
+                      return <p className="mt-2 text-[11px] text-white/55">Nenhuma predefinição disponível para este look ainda.</p>;
+                    }
+
+                    const [heroPreset, ...gridPresets] = orderedPresets;
+
+                    const renderPreview = (preset: RecommendedPreset, height: number) => {
+                      const previewConfig = applyPresetPreview({
+                        presetId: preset.id,
+                        context: presetContext,
+                        referenceImage: uploadedReferenceImage,
+                        gradient: draft.gradient,
+                      });
+                      return (
+                        <div
+                          className="overflow-hidden rounded-lg border border-white/10"
+                          style={{
+                            height,
+                            ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)),
+                            backgroundColor: '#0f172a',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                          }}
+                        >
+                          <div className="flex h-full flex-col justify-between p-1.5" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.45))' }}>
+                            <div className="h-1 w-6 rounded-full bg-white/25" />
+                            <div className="space-y-0.5">
+                              <div className="h-1.5 w-12 rounded-full bg-white/40" />
+                              <div className="h-1 w-8 rounded-full bg-white/22" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    };
+
+                    const heroAvailable = isPresetAvailable(heroPreset.id, presetContext, uploadedReferenceImage);
+                    const heroReason = getPresetAvailabilityReason(heroPreset.id, presetContext, uploadedReferenceImage);
+                    const heroSelected = selectedRecommendedPreset === heroPreset.id;
+                    const heroBadge = !heroAvailable
+                      ? `🟡 ${heroReason}`
+                      : heroSelected
+                        ? '● Aplicado'
+                        : '🟢 Pronto';
+
+                    return (
+                      <div className="mt-2 space-y-2">
+                        {/* Hero — recomendação principal em destaque */}
+                        <button
+                          type="button"
+                          disabled={!heroAvailable}
+                          className={`block w-full rounded-2xl border p-3 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_14px_40px_rgba(192,132,252,0.25)] disabled:cursor-not-allowed disabled:opacity-40 ${heroSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent'}`}
+                          onClick={() => void applyRecommendedPresetFromReferenceImage(heroPreset.id, uploadedReferenceImage, presetContext)}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[9px] uppercase tracking-[0.14em] text-fuchsia-300/80">★ Recomendação principal</p>
+                            <p className={`text-[9px] ${heroAvailable ? (heroSelected ? 'text-fuchsia-300' : 'text-emerald-300') : 'text-amber-200'}`}>{heroBadge}</p>
+                          </div>
+                          <div className="mt-2">{renderPreview(heroPreset, 132)}</div>
+                          <p className="mt-2 text-[9px] uppercase tracking-[0.12em] text-white/50">{heroPreset.category.replaceAll('_', ' / ')}</p>
+                          <p className="text-[13px] font-semibold leading-tight">{heroPreset.label}</p>
+                          <p className="mt-0.5 text-[10px] text-white/60">{heroPreset.description}</p>
+                        </button>
+
+                        {/* Grade — alternativas em cards compactos */}
+                        {gridPresets.length > 0 && (
+                          <div className="grid grid-cols-3 gap-2">
+                            {gridPresets.map((preset) => {
+                              const isAvailable = isPresetAvailable(preset.id, presetContext, uploadedReferenceImage);
+                              const availabilityReason = getPresetAvailabilityReason(preset.id, presetContext, uploadedReferenceImage);
+                              const isSelected = selectedRecommendedPreset === preset.id;
+                              const badgeLabel = !isAvailable
+                                ? `🟡 ${availabilityReason}`
+                                : isSelected
+                                  ? '● Aplicado'
+                                  : '🟢 Pronto';
+
+                              return (
+                                <button
+                                  key={preset.id}
+                                  type="button"
+                                  disabled={!isAvailable}
+                                  className={`rounded-xl border p-1.5 text-left transition enabled:hover:border-fuchsia-300/50 enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/15 bg-white/5'}`}
+                                  onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
+                                >
+                                  {renderPreview(preset, 68)}
+                                  <p className="mt-1 text-[8px] uppercase tracking-[0.1em] text-white/45">{preset.category.replaceAll('_', ' / ')}</p>
+                                  <p className="text-[10px] font-semibold leading-tight text-white/90 line-clamp-2">{preset.label}</p>
+                                  <p className={`mt-0.5 text-[8px] ${isAvailable ? (isSelected ? 'text-fuchsia-300' : 'text-emerald-300') : 'text-amber-200'}`}>{badgeLabel}</p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+
                 <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.1em] text-white/80">Generation Mode</p>
                   <p className="mt-1 text-[11px] text-white/65">{AI_GENERATION_MODE_DESCRIPTIONS[aiGenerationMode]}</p>
@@ -3192,134 +3381,118 @@ export default function OutfitBackgroundStudioModal({
             ) : null}
 
             <section className="rounded-xl border border-white/20 bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-white/65">Predefinições recomendadas para o look atual</p>
-              <div className="mt-2 grid gap-2 grid-cols-2">
-                {recommendedPresets.slice(0, 2).map((preset) => {
-                  const isAvailable = isPresetAvailable(preset.id, presetContext, uploadedReferenceImage);
-                  const availabilityReason = getPresetAvailabilityReason(preset.id, presetContext, uploadedReferenceImage);
-                  const previewConfig = applyPresetPreview({
-                    presetId: preset.id,
-                    context: presetContext,
-                    referenceImage: uploadedReferenceImage,
-                    gradient: draft.gradient,
-                  });
-                  const isSelected = selectedRecommendedPreset === preset.id;
-                  const badgeLabel = !isAvailable
-                    ? `🟡 ${availabilityReason}`
-                    : isSelected
-                      ? '● Aplicado'
-                      : '🟢 Pronto';
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs uppercase tracking-[0.12em] text-white/65">Predefinições recomendadas para o look atual</p>
+                <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wide ${dynamicBackground ? 'border-violet-400/40 bg-violet-500/25 text-violet-200' : 'border-white/15 bg-white/5 text-white/45'}`}>
+                  ✦ Aura {dynamicBackground ? 'Ativo' : 'Off'}
+                </span>
+              </div>
+              <p className="mt-1 text-[10px] text-white/50">
+                {dynamicBackground
+                  ? 'Com a Aura ativa, as predefinições animam como GIF — a cor e o gradiente evoluem continuamente.'
+                  : 'Predefinições estáticas. Ative a Aura (no rodapé) para animar os gradientes como GIF.'}
+              </p>
+              <div className="mt-2 grid gap-2 grid-cols-2 sm:grid-cols-3">
+                {GIF_GRADIENT_PRESETS.map((preset) => {
+                  const isSelected = selectedGifPreset === preset.id;
+                  const gradientCss = buildGifGradientCss(preset);
 
                   return (
                     <button
                       key={preset.id}
                       type="button"
-                      disabled={!isAvailable}
-                      className={`rounded-xl border p-2 text-left transition enabled:hover:border-fuchsia-300/60 enabled:hover:shadow-[0_10px_30px_rgba(192,132,252,0.2)] disabled:cursor-not-allowed disabled:opacity-40 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/20 bg-gradient-to-br from-white/15 via-white/8 to-transparent'}`}
-                      onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
+                      aria-pressed={isSelected}
+                      className={`rounded-xl border p-2 text-left transition hover:border-fuchsia-300/60 hover:shadow-[0_10px_30px_rgba(192,132,252,0.2)] ${isSelected ? 'border-fuchsia-400/70 bg-fuchsia-900/20' : 'border-white/20 bg-white/5'}`}
+                      onClick={() => {
+                        setSelectedGifPreset(preset.id);
+                        if (preset.image) {
+                          setDraft((prev) => ({
+                            ...prev,
+                            background_mode: 'ai_artwork',
+                            ai_artwork: { prompt: `${preset.label} dynamic background`, image_url: preset.image as string, generation_status: 'done' },
+                          }));
+                        } else {
+                          setDraft((prev) => ({
+                            ...prev,
+                            background_mode: 'gradient',
+                            gradient: { type: preset.type, angle: preset.angle, intensity: 110, stops: preset.stops },
+                          }));
+                        }
+                      }}
                     >
-                      <p className="text-[9px] uppercase tracking-[0.12em] text-white/50">{preset.category.replaceAll('_', ' / ')}</p>
-                      <p className="text-[11px] font-semibold leading-tight">{preset.label}</p>
-                      <p className="mt-0.5 text-[10px] text-white/60 line-clamp-2">{preset.description}</p>
                       <div
-                        className="mt-2 rounded-md border border-white/10 overflow-hidden"
+                        className="rounded-md border border-white/10 overflow-hidden"
                         style={{
-                          height: 72,
-                          ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)),
+                          height: 70,
+                          backgroundImage: preset.image ? `url(${preset.image})` : gradientCss,
                           backgroundColor: '#0f172a',
-                          backgroundSize: 'cover',
+                          backgroundSize: preset.image ? 'cover' : '220% 220%',
                           backgroundPosition: 'center',
+                          animation: dynamicBackground ? 'sai-gif-pan 6s ease-in-out infinite, sai-gif-aura 12s linear infinite' : undefined,
                         }}
                       >
-                        <div className="h-full flex flex-col justify-between p-1.5" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.45))' }}>
-                          <div className="h-1 w-6 bg-white/25 rounded-full" />
-                          <div className="space-y-0.5">
-                            <div className="h-1.5 w-12 bg-white/40 rounded-full" />
-                            <div className="h-1 w-8 bg-white/22 rounded-full" />
-                          </div>
-                        </div>
+                        <div className="h-full w-full" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.05), rgba(0,0,0,0.35))' }} />
                       </div>
-                      <p className={`mt-1 text-[9px] ${isAvailable ? (isSelected ? 'text-fuchsia-300' : 'text-emerald-300') : 'text-amber-200'}`}>{badgeLabel}</p>
+                      <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/45">{preset.category}</p>
+                      <p className="text-[11px] font-semibold leading-tight text-white/90">{preset.label}</p>
+                      <p className="mt-0.5 text-[10px] text-white/55 line-clamp-2">{preset.description}</p>
+                      <p className={`mt-1 text-[9px] ${isSelected ? 'text-fuchsia-300' : 'text-emerald-300'}`}>
+                        {isSelected
+                          ? (dynamicBackground ? '● Aplicado · GIF' : '● Aplicado')
+                          : (dynamicBackground ? '▶ GIF pronto' : '○ Estático')}
+                      </p>
                     </button>
                   );
                 })}
-
-                {/* Template picker — full width, replaces tech_energy slot */}
-                <div className="col-span-2 rounded-xl border border-white/20 bg-gradient-to-br from-violet-900/15 via-fuchsia-900/8 to-transparent">
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between px-3 py-2.5 text-left"
-                    onClick={() => setTemplatePickerOpen((prev) => !prev)}
-                  >
-                    <div>
-                      <p className="text-[9px] uppercase tracking-[0.12em] text-violet-300/70">Templates pré-configurados</p>
-                      <p className="text-[11px] font-semibold">Escolher template pré-configurado</p>
-                      <p className="mt-0.5 text-[10px] text-white/55">Selecione um dos templates visuais disponíveis.</p>
-                    </div>
-                    <svg
-                      className="ml-2 h-4 w-4 shrink-0 text-white/50 transition-transform"
-                      style={{ transform: templatePickerOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {templatePickerOpen && (
-                    <div className="border-t border-white/10 px-3 pb-3 pt-2">
-                      <div className="grid grid-cols-3 gap-2">
-                        {TEMPLATE_PICKER_PRESETS.map((preset) => {
-                          const isAvailable = isPresetAvailable(preset.id, presetContext, uploadedReferenceImage);
-                          const previewConfig = applyPresetPreview({
-                            presetId: preset.id,
-                            context: presetContext,
-                            referenceImage: uploadedReferenceImage,
-                            gradient: draft.gradient,
-                          });
-                          const isSelected = selectedRecommendedPreset === preset.id;
-
-                          return (
-                            <button
-                              key={preset.id}
-                              type="button"
-                              disabled={!isAvailable}
-                              className={`rounded-lg border p-1.5 text-left transition enabled:hover:border-white/35 enabled:hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-35 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/15 bg-white/5'}`}
-                              onClick={() => void applyRecommendedPresetFromReferenceImage(preset.id, uploadedReferenceImage, presetContext)}
-                            >
-                              <div
-                                className="rounded border border-white/10 overflow-hidden"
-                                style={{
-                                  height: 68,
-                                  ...buildBackgroundCssStyle(resolveOutfitBackgroundForRender(previewConfig)),
-                                  backgroundColor: '#0f172a',
-                                  backgroundSize: 'cover',
-                                  backgroundPosition: 'center',
-                                }}
-                              >
-                                <div className="h-full flex flex-col justify-between p-1" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))' }}>
-                                  <div className="h-0.5 w-4 bg-white/25 rounded-full" />
-                                  <div className="space-y-0.5">
-                                    <div className="h-1 w-8 bg-white/40 rounded-full" />
-                                    <div className="h-0.5 w-5 bg-white/22 rounded-full" />
-                                  </div>
-                                </div>
-                              </div>
-                              <p className="mt-1 text-[9px] font-semibold leading-tight text-white/90 line-clamp-2">{preset.label}</p>
-                              {isSelected && <p className="mt-0.5 text-[8px] text-fuchsia-300">● Aplicado</p>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
             </section>
+
+            <section className="rounded-xl border border-white/20 bg-white/10 p-3">
+              <p className="text-xs uppercase tracking-[0.12em] text-white/65">Layout das peças no card</p>
+              <p className="mt-1 text-[11px] text-white/55">Escolha como as peças do look serão exibidas no card final.</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {PIECE_LIST_FORMAT_OPTIONS.map((option) => {
+                  const isSelected = (pieceListFormat ?? 'grid-2') === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`rounded-xl border p-2 text-left transition hover:border-fuchsia-300/50 hover:bg-white/10 ${isSelected ? 'border-fuchsia-400/60 bg-fuchsia-900/20' : 'border-white/15 bg-white/5'}`}
+                      onClick={() => onSelectPieceListFormat?.(option.value)}
+                    >
+                      <p className="text-[11px] font-semibold leading-tight text-white/90">{option.label}</p>
+                      <p className="mt-0.5 text-[10px] text-white/55">{option.hint}</p>
+                      {isSelected ? <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-fuchsia-300">● Selecionado</p> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {onChangePieces ? (
+              <PieceStyleEditorPanel
+                pieces={previewCardData.pieces}
+                format={pieceListFormat ?? previewCardData.pieceListFormat}
+                onChangePieces={onChangePieces}
+              />
+            ) : null}
           </section>
 
-          <section className="min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-white/65">Live Preview</p>
-            <OutfitCard data={previewData} variant="default" />
+          <section className={asPage ? 'space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4 lg:sticky lg:top-4 lg:h-fit' : 'min-h-0 space-y-3 overflow-y-auto rounded-2xl border border-white/15 bg-white/5 p-4'}>
+            <p className="text-xs uppercase tracking-[0.12em] text-white/65">Pré-visualização</p>
+            {ActiveSkin ? (
+              <div className="mx-auto flex w-full justify-center overflow-visible">
+                <div className="origin-top scale-[0.82] sm:scale-100">
+                  <ActiveSkin data={previewData} />
+                </div>
+              </div>
+            ) : (
+              <div className="mx-auto w-full max-w-[832px] overflow-visible pb-[40%]">
+                <div style={{ width: '76.923%', margin: '0 auto', transform: 'scale(1.3, 1.4)', transformOrigin: 'top center' }}>
+                  <OutfitCard data={previewData} variant="default" />
+                </div>
+              </div>
+            )}
             <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white/85">
               <p>Contrast recommendation: <span className="font-semibold">Use {recommendTextTone} text/icons</span>.</p>
               {shouldShowContrastWarning ? <p className="mt-1 text-amber-200">Warning: high-luminance solid background may reduce metadata readability.</p> : null}
@@ -3358,13 +3531,61 @@ export default function OutfitBackgroundStudioModal({
           />
         </div>
 
-        <footer className="mt-2 flex flex-wrap justify-end gap-2 border-t border-white/15 pt-4">
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancel / Close</button>
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Reset</button>
-          <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={saveBackgroundConfig}>Save Background</button>
-          <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={applyDraftToCard}>Apply to Card · {draft.shape || 'none'}</button>
+        <footer className="mt-2 border-t border-white/15 pt-4 space-y-3">
+          {/* Dynamic Background toggle */}
+          <label className="flex items-start gap-3 rounded-xl border border-white/12 bg-white/4 px-4 py-3 cursor-pointer hover:bg-white/8 transition-colors select-none">
+            <div className="mt-0.5 flex-shrink-0">
+              <input
+                type="checkbox"
+                checked={dynamicBackground}
+                onChange={(e) => setDynamicBackground(e.target.checked)}
+                className="sr-only"
+                id="dynamic-bg-toggle"
+              />
+              <div
+                className={`w-10 h-5 rounded-full transition-colors duration-200 relative ${dynamicBackground ? 'bg-gradient-to-r from-violet-600 to-fuchsia-500' : 'bg-white/15'}`}
+              >
+                <div
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${dynamicBackground ? 'translate-x-5' : 'translate-x-0.5'}`}
+                />
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-white leading-tight flex items-center gap-1.5">
+                Background dinâmico
+                {dynamicBackground && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/25 border border-violet-400/40 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wide text-violet-300">
+                    ✦ Aura Ativo
+                  </span>
+                )}
+              </p>
+              <p className="mt-0.5 text-[11px] text-white/50 leading-tight">
+                {dynamicBackground
+                  ? 'O background evolui automaticamente com os likes — cada marco desbloqueia uma nova Aura visual.'
+                  : 'Desativado — o background definido aqui será fixo neste card.'}
+              </p>
+            </div>
+          </label>
+
+          <div className="flex flex-wrap justify-end gap-2">
+            {!asPage && (
+              <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={onClose}>Cancelar / Fechar</button>
+            )}
+            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={() => setDraft(DEFAULT_BACKGROUND)}>Redefinir</button>
+            <button type="button" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2 text-sm" onClick={saveBackgroundConfig}>Salvar Fundo</button>
+            <button type="button" className="rounded-xl border border-violet-300/70 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold" onClick={applyDraftToCard}>Aplicar ao Card · {draft.shape || 'none'}</button>
+          </div>
         </footer>
       </div>
+  );
+
+  if (asPage) {
+    return innerContent;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      {innerContent}
     </div>
   );
 }

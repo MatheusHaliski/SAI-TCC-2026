@@ -63,6 +63,37 @@ export function resolveOAuthUserMessage(
   return fallbackMessage;
 }
 
+const SOCIAL_PROVIDER_LABEL: Record<"google" | "facebook", string> = {
+  google: "Google",
+  facebook: "Facebook",
+};
+
+export function resolveSocialSignInErrorMessage(
+  error: unknown,
+  provider: "google" | "facebook"
+): string {
+  const oauthError = extractOAuthErrorDetails(error);
+  const providerLabel = SOCIAL_PROVIDER_LABEL[provider];
+
+  if (oauthError.isDeletedClient) {
+    return DELETED_GOOGLE_CLIENT_USER_MESSAGE;
+  }
+
+  switch (oauthError.code) {
+    case "auth/operation-not-allowed":
+      return `Login com ${providerLabel} não está habilitado. Contate o suporte.`;
+    case "auth/account-exists-with-different-credential":
+      return "Já existe uma conta com este e-mail usando outro método de login. Tente entrar com e-mail/senha ou outro provedor.";
+    case "auth/popup-closed-by-user":
+    case "auth/cancelled-popup-request":
+      return "Login cancelado.";
+    case "auth/unauthorized-domain":
+      return "Este domínio não está autorizado para login social. Contate o suporte.";
+    default:
+      return `Não foi possível entrar com ${providerLabel}.`;
+  }
+}
+
 export async function signInWithGoogle() {
   const { firebaseApp, hasFirebaseConfig } = firebaseAuthGate();
   if (!firebaseApp || !hasFirebaseConfig) {

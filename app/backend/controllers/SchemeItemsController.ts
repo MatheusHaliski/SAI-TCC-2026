@@ -6,4 +6,8 @@ export class SchemeItemsController {
   async createMany(items: Array<{ scheme_id: string; wardrobe_item_id: string; slot: 'upper' | 'lower' | 'shoes' | 'accessory'; sort_order: number }>) {
     return this.schemeItemsService.createMany(items);
   }
+
+  async getWardrobeUsage(wardrobeItemIds: string[]) {
+    return this.schemeItemsService.getWardrobeUsage(wardrobeItemIds);
+  }
 }

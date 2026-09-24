@@ -1,4 +1,4 @@
-import { CreateSchemeInput, Scheme, SchemeWithItems } from '@/app/backend/types/entities';
+import { CreateSchemeInput, Scheme, SchemeVisibility, SchemeWithItems } from '@/app/backend/types/entities';
 import { BaseRepository } from './BaseRepository';
 import { UsersRepository } from './UsersRepository';
 
@@ -47,6 +47,19 @@ export class SchemesRepository extends BaseRepository {
     return snap.exists;
   }
 
+  async findById(schemeId: string): Promise<Scheme | null> {
+    const snap = await this.db.collection(SCHEMES_COLLECTION).doc(schemeId).get();
+    if (!snap.exists) return null;
+    return { scheme_id: snap.id, ...(snap.data() as Omit<Scheme, 'scheme_id'>) };
+  }
+
+  async updateVisibility(schemeId: string, visibility: SchemeVisibility): Promise<void> {
+    await this.db.collection(SCHEMES_COLLECTION).doc(schemeId).set(
+      { visibility, updatedAt: new Date().toISOString() },
+      { merge: true },
+    );
+  }
+
   async findPublic(): Promise<Scheme[]> {
     const snapshot = await this.db.collection(SCHEMES_COLLECTION).where('visibility', '==', 'public').get();
     return snapshot.docs.map((doc) => ({ scheme_id: doc.id, ...(doc.data() as Omit<Scheme, 'scheme_id'>) }));
@@ -57,8 +70,17 @@ export class SchemesRepository extends BaseRepository {
       .collection(SCHEMES_COLLECTION)
       .where('user_id', '==', userId)
       .get();
+    const legacySnapshot = await this.db
+      .collection(SCHEMES_COLLECTION)
+      .where('userId', '==', userId)
+      .get()
+      .catch(() => null);
 
-    return snapshot.docs
+    const mergedDocs = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+    for (const doc of snapshot.docs) mergedDocs.set(doc.id, doc);
+    for (const doc of legacySnapshot?.docs ?? []) mergedDocs.set(doc.id, doc);
+
+    return Array.from(mergedDocs.values())
       .map((doc) => ({
         scheme_id: doc.id,
         ...(doc.data() as Omit<Scheme, 'scheme_id'>),

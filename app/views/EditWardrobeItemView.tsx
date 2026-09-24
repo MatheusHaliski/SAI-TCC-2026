@@ -41,6 +41,16 @@ const OCCASION_TAG_OPTIONS = [
   'Business', 'Everyday', 'Travel', 'Wedding', 'Outdoors',
 ];
 
+const SIZE_OPTIONS = [
+  { value: 'PP', label: 'PP (Extra pequeno)' },
+  { value: 'P', label: 'P (Pequeno)' },
+  { value: 'M', label: 'M (Médio)' },
+  { value: 'G', label: 'G (Grande)' },
+  { value: 'GG', label: 'GG (Extra grande)' },
+  { value: 'XG', label: 'XG (Extra extra grande)' },
+  { value: 'Único', label: 'Tamanho único' },
+];
+
 const PIECE_TYPE_OPTIONS = [
   { value: 'upper_piece', label: 'Parte de Cima' },
   { value: 'lower_piece', label: 'Parte de Baixo' },
@@ -74,12 +84,14 @@ interface FormState {
   piece_type: string;
   color: string;
   material: string;
+  size: string;
   style_tags: string;
   occasion_tags: string;
   brand_id: string;
   description: string;
   is_favorite: boolean;
   image_url: string;
+  gender_pattern: string;
 }
 
 export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, onDeleted }: EditWardrobeItemViewProps) {
@@ -97,16 +109,20 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
     piece_type: 'upper_piece',
     color: '',
     material: '',
+    size: '',
     style_tags: '',
     occasion_tags: '',
     brand_id: 'default',
     description: '',
     is_favorite: false,
     image_url: '',
+    gender_pattern: '',
   });
+  const [classifyingGender, setClassifyingGender] = useState(false);
+  const [genderSource, setGenderSource] = useState<string | null>(null);
 
   const inputClassName =
-    'w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
+    'w-full rounded-xl border border-border bg-accent px-3 py-2 text-sm text-white placeholder:text-muted-foreground shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition focus:border-violet-400/70 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
 
   useEffect(() => {
     const load = async () => {
@@ -136,12 +152,14 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
           piece_type: String(item.piece_type ?? 'upper_piece'),
           color: String(item.color ?? ''),
           material: String(item.material ?? ''),
+          size: String(item.size ?? ''),
           style_tags: Array.isArray(item.style_tags) ? item.style_tags.join(', ') : '',
           occasion_tags: Array.isArray(item.occasion_tags) ? item.occasion_tags.join(', ') : '',
           brand_id: String(item.brand_id ?? 'default'),
           description: String(item.description ?? ''),
           is_favorite: Boolean(item.is_favorite),
           image_url: String(item.image_url ?? ''),
+          gender_pattern: String(item.gender_pattern ?? ''),
         });
         setImagePreview(String(item.image_url ?? ''));
       } catch {
@@ -203,6 +221,26 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
       .map((tag) => tag.trim())
       .filter(Boolean);
 
+  // RF21 — ask the AI to suggest the gender pattern; the user can always override.
+  const handleClassifyGender = async () => {
+    if (classifyingGender) return;
+    setClassifyingGender(true);
+    setGenderSource(null);
+    try {
+      const res = await fetch('/api/ai/classify-gender', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: form.name, pieceType: form.piece_type, styleTags: parseTags(form.style_tags) }),
+      });
+      const data = await res.json().catch(() => null) as { gender?: string; confidence?: number; source?: string } | null;
+      if (res.ok && data?.gender) {
+        setForm((prev) => ({ ...prev, gender_pattern: data.gender as string }));
+        setGenderSource(`${data.source === 'ai' ? 'IA' : 'heurística'} · ${Math.round((data.confidence ?? 0) * 100)}% de confiança · você pode ajustar`);
+      }
+    } catch { /* ignore */ }
+    finally { setClassifyingGender(false); }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.name.trim()) {
@@ -217,12 +255,14 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         piece_type: form.piece_type,
         color: form.color,
         material: form.material,
+        size: form.size,
         style_tags: parseTags(form.style_tags),
         occasion_tags: parseTags(form.occasion_tags),
         brand_id: form.brand_id,
         description: form.description.trim(),
         is_favorite: form.is_favorite,
         image_url: form.image_url,
+        gender_pattern: form.gender_pattern,
       };
 
       const response = await fetch(`/api/wardrobe-items/${encodeURIComponent(itemId)}`, {
@@ -278,7 +318,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <p className="text-sm text-white/50">Carregando peça...</p>
+        <p className="text-sm text-muted-foreground">Carregando peça...</p>
       </div>
     );
   }
@@ -304,7 +344,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         <SectionBlock title="Imagem da Peça" subtitle="Atualize a foto desta peça do guarda-roupa.">
           <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
             {imagePreview && (
-              <div className="relative h-44 w-44 shrink-0 overflow-hidden rounded-2xl border border-white/20">
+              <div className="relative h-44 w-44 shrink-0 overflow-hidden rounded-2xl border border-border">
                 <Image
                   src={imagePreview}
                   alt={form.name || 'Peça'}
@@ -320,7 +360,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               </div>
             )}
             <div className="flex-1 space-y-2">
-              <label className="block text-sm text-white/70">
+              <label className="block text-sm text-muted-foreground">
                 Substituir imagem
               </label>
               <input
@@ -328,7 +368,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
                 accept="image/*"
                 onChange={handleImageChange}
                 disabled={uploadingImage}
-                className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-violet-600 file:to-fuchsia-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:brightness-110 disabled:opacity-50"
+                className="w-full rounded-xl border border-border bg-accent px-3 py-2 text-sm text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-purple-600 file:to-pink-500 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:brightness-110 disabled:opacity-50"
               />
               <p className="text-xs text-white/40">Deixe em branco para manter a imagem atual.</p>
             </div>
@@ -339,7 +379,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         <SectionBlock title="Informações Básicas" subtitle="Nome, tipo e marca da peça.">
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
-              <label className="block text-sm text-white/70">Nome da Peça *</label>
+              <label className="block text-sm text-muted-foreground">Nome da Peça *</label>
               <input
                 type="text"
                 value={form.name}
@@ -351,7 +391,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Tipo de Peça</label>
+              <label className="block text-sm text-muted-foreground">Tipo de Peça</label>
               <FancySelect
                 options={PIECE_TYPE_OPTIONS}
                 value={form.piece_type}
@@ -361,7 +401,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Marca</label>
+              <label className="block text-sm text-muted-foreground">Marca</label>
               <FancySelect
                 options={brandOptions}
                 value={form.brand_id}
@@ -376,7 +416,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         <SectionBlock title="Atributos Visuais" subtitle="Cor, material e tags de estilo da peça.">
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Cor</label>
+              <label className="block text-sm text-muted-foreground">Cor</label>
               <FancySelect
                 options={COLOR_OPTIONS.map((c) => ({ value: c, label: c }))}
                 value={form.color}
@@ -386,7 +426,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Material</label>
+              <label className="block text-sm text-muted-foreground">Material</label>
               <FancySelect
                 options={MATERIAL_OPTIONS.map((m) => ({ value: m, label: m }))}
                 value={form.material}
@@ -396,7 +436,17 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Tags de Estilo</label>
+              <label className="block text-sm text-muted-foreground">Tamanho</label>
+              <FancySelect
+                options={SIZE_OPTIONS}
+                value={form.size}
+                onChange={(value) => setForm((prev) => ({ ...prev, size: value }))}
+                placeholder="Selecione o tamanho"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-sm text-muted-foreground">Tags de Estilo</label>
               <input
                 type="text"
                 value={form.style_tags}
@@ -408,7 +458,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Ocasiões</label>
+              <label className="block text-sm text-muted-foreground">Ocasiões</label>
               <input
                 type="text"
                 value={form.occasion_tags}
@@ -421,11 +471,39 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
           </div>
         </SectionBlock>
 
+        {/* Gender pattern (RF21) — AI suggests, user decides */}
+        <SectionBlock title="Padrão de Gênero" subtitle="A IA sugere a classificação (masculino / feminino / unissex); você sempre pode ajustar.">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1.5">
+              <label className="block text-sm text-muted-foreground">Classificação</label>
+              <FancySelect
+                options={[
+                  { value: 'masculino', label: 'Masculino' },
+                  { value: 'feminino', label: 'Feminino' },
+                  { value: 'unissex', label: 'Unissex' },
+                ]}
+                value={form.gender_pattern}
+                onChange={(value) => { setForm((prev) => ({ ...prev, gender_pattern: value })); setGenderSource(null); }}
+                placeholder="Não classificado"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleClassifyGender()}
+              disabled={classifyingGender}
+              className="rounded-xl border border-violet-400/50 bg-violet-500/15 px-4 py-2 text-sm font-semibold text-violet-100 transition hover:brightness-110 disabled:opacity-60"
+            >
+              {classifyingGender ? 'Classificando…' : '🤖 Classificar com IA'}
+            </button>
+          </div>
+          {genderSource && <p className="mt-2 text-xs text-emerald-300/80">Sugestão da {genderSource}.</p>}
+        </SectionBlock>
+
         {/* Tags quick-fill */}
         <SectionBlock title="Sugestões de Tags" subtitle="Clique para adicionar rapidamente ao campo de estilos ou ocasiões.">
           <div className="mt-3 space-y-3">
             <div>
-              <p className="mb-1.5 text-xs text-white/50">Estilos</p>
+              <p className="mb-1.5 text-xs text-muted-foreground">Estilos</p>
               <div className="flex flex-wrap gap-1.5">
                 {STYLE_TAG_OPTIONS.map((tag) => (
                   <button
@@ -436,7 +514,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
                       if (current.includes(tag)) return prev;
                       return { ...prev, style_tags: [...current, tag].join(', ') };
                     })}
-                    className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-xs text-white/70 hover:border-violet-400/50 hover:text-white transition"
+                    className="rounded-full border border-border bg-accent px-2 py-0.5 text-xs text-muted-foreground hover:border-violet-400/50 hover:text-white transition"
                   >
                     {tag}
                   </button>
@@ -444,7 +522,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               </div>
             </div>
             <div>
-              <p className="mb-1.5 text-xs text-white/50">Ocasiões</p>
+              <p className="mb-1.5 text-xs text-muted-foreground">Ocasiões</p>
               <div className="flex flex-wrap gap-1.5">
                 {OCCASION_TAG_OPTIONS.map((tag) => (
                   <button
@@ -455,7 +533,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
                       if (current.includes(tag)) return prev;
                       return { ...prev, occasion_tags: [...current, tag].join(', ') };
                     })}
-                    className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-xs text-white/70 hover:border-fuchsia-400/50 hover:text-white transition"
+                    className="rounded-full border border-border bg-accent px-2 py-0.5 text-xs text-muted-foreground hover:border-fuchsia-400/50 hover:text-white transition"
                   >
                     {tag}
                   </button>
@@ -469,7 +547,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
         <SectionBlock title="Descrição e Preferências" subtitle="Notas adicionais e marcação de favorito.">
           <div className="mt-4 space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-sm text-white/70">Descrição</label>
+              <label className="block text-sm text-muted-foreground">Descrição</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
@@ -479,14 +557,14 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               />
             </div>
 
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/20 bg-white/5 px-4 py-3 hover:bg-white/10 transition">
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-accent px-4 py-3 hover:bg-accent transition">
               <input
                 type="checkbox"
                 checked={form.is_favorite}
                 onChange={(e) => setForm((prev) => ({ ...prev, is_favorite: e.target.checked }))}
                 className="h-4 w-4 rounded accent-violet-500"
               />
-              <span className="text-sm text-white/80">★ Marcar como favorita</span>
+              <span className="text-sm text-foreground">★ Marcar como favorita</span>
             </label>
           </div>
         </SectionBlock>
@@ -497,7 +575,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
             <button
               type="submit"
               disabled={saving || uploadingImage}
-              className="flex-1 rounded-xl border border-white/20 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition hover:scale-[1.01] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex-1 rounded-xl border border-border bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition hover:scale-[1.01] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? 'Salvando...' : 'Salvar Alterações'}
             </button>
@@ -509,7 +587,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               className={`rounded-xl border px-4 py-2 text-sm font-medium transition disabled:opacity-60 ${
                 confirmDelete
                   ? 'border-rose-400/60 bg-rose-500/20 text-rose-200 hover:bg-rose-500/30'
-                  : 'border-white/20 bg-white/5 text-white/70 hover:border-rose-400/40 hover:text-rose-300'
+                  : 'border-border bg-accent text-muted-foreground hover:border-rose-400/40 hover:text-rose-300'
               }`}
             >
               {deleting ? 'Removendo...' : confirmDelete ? 'Confirmar Remoção' : 'Remover Peça'}
@@ -519,7 +597,7 @@ export default function EditWardrobeItemView({ itemId, mode = 'page', onSaved, o
               <button
                 type="button"
                 onClick={() => setConfirmDelete(false)}
-                className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/60 hover:text-white transition"
+                className="rounded-xl border border-border bg-accent px-4 py-2 text-sm text-muted-foreground hover:text-white transition"
               >
                 Cancelar
               </button>

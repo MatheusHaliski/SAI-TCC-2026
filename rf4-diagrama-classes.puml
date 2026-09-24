@@ -1,0 +1,258 @@
+@startuml RF4_Adicionar_Peca_Diagrama_Classes
+
+!define ENTITY_COLOR #E1F5FF
+!define ENUM_COLOR #FFF3E0
+!define SERVICE_COLOR #F3E5F5
+
+title RF4 — Adicionar Peça ao Guarda-Roupa: Diagrama de Classes
+
+enum PieceCategory {
+    TOPS
+    BOTTOMS
+    DRESSES
+    OUTERWEAR
+    SHOES
+    ACCESSORIES
+    ACTIVEWEAR
+    INTIMATE
+}
+
+enum PieceStatus {
+    DRAFT
+    PROCESSING
+    ACTIVE
+    ARCHIVED
+    REMOVED
+}
+
+enum AvailabilityStatus {
+    AVAILABLE
+    UNAVAILABLE
+    FOR_SALE
+}
+
+enum MaterialType {
+    COTTON
+    POLYESTER
+    WOOL
+    SILK
+    LINEN
+    LEATHER
+    SYNTHETIC
+    MIXED
+}
+
+enum PipelineJobStatus {
+    CREATED
+    QUEUED
+    RUNNING
+    RETRYING
+    COMPLETED
+    FAILED
+}
+
+enum PipelineJobProvider {
+    BLENDER
+    MESHY
+    REMBG
+    LOCAL_YOLO
+}
+
+class User {
+    id: UUID
+    email: String
+    fullName: String
+    createdAt: Timestamp
+    updatedAt: Timestamp
+}
+
+class WardrobeItem <<Entity>> {
+    id: UUID
+    userId: UUID
+    --
+    name: String
+    category: PieceCategory
+    color: String
+    material: MaterialType
+    description: String
+    --
+    imageUrl: URL
+    imagePath: String
+    model3dUrl: URL
+    --
+    availability_status: AvailabilityStatus
+    is_favorite: Boolean
+    for_sale: Boolean
+    listing_price: Decimal
+    --
+    pieceStatus: PieceStatus
+    createdAt: Timestamp
+    updatedAt: Timestamp
+    --
+    uploadImage(file): boolean
+    analyzePiece(imageBytes): AIInference
+    removeBgProcess(): PipelineJob
+    updateAvailability(status): void
+    toggleFavorite(): void
+    markForSale(price): void
+    validateImageFormat(): boolean
+}
+
+class PieceMetadata {
+    id: UUID
+    wardrobeItemId: UUID
+    --
+    confidenceScore: Float
+    detectedCategory: String
+    detectedColor: String
+    detectedMaterial: String
+    --
+    width: Integer
+    height: Integer
+    mimeType: String
+    fileSize: Long
+    fileHash: String
+    --
+    createdAt: Timestamp
+    updatedAt: Timestamp
+}
+
+class AIInference <<Entity>> {
+    id: UUID
+    wardrobeItemId: UUID
+    --
+    provider: String
+    inputPrompt: String
+    --
+    detectedCategory: PieceCategory
+    colorDominant: String
+    materialDetected: MaterialType
+    patternDetected: String
+    --
+    confidenceScore: Float
+    rawResponse: JSON
+    --
+    isAcceptable(): boolean
+    getConfidenceLevel(): String
+    createdAt: Timestamp
+}
+
+class PipelineJob <<Entity>> {
+    id: UUID
+    wardrobeItemId: UUID
+    --
+    jobType: String
+    provider: PipelineJobProvider
+    status: PipelineJobStatus
+    --
+    jobId: String
+    externalUrl: URL
+    --
+    inputImageUrl: URL
+    outputImageUrl: URL
+    --
+    priority: Integer
+    retryCount: Integer
+    maxRetries: Integer
+    --
+    startedAt: Timestamp
+    completedAt: Timestamp
+    createdAt: Timestamp
+    updatedAt: Timestamp
+    --
+    submit(): boolean
+    getStatus(): PipelineJobStatus
+    retry(): boolean
+    complete(): void
+    fail(errorMessage): void
+}
+
+class BackgroundRemovalJob {
+    id: UUID
+    pipelineJobId: UUID
+    --
+    originalImageUrl: URL
+    processedImageUrl: URL
+    --
+    removalMethod: String
+    confidence: Float
+    --
+    isFallback: Boolean
+    createdAt: Timestamp
+    completedAt: Timestamp
+}
+
+class ImageValidation {
+    validateFormat(file): boolean
+    validateSize(file): boolean
+    validateDimensions(width, height): boolean
+    getFileHash(file): String
+    detectMimeType(file): String
+}
+
+class AIDetectionService {
+    analyzeImage(imageBytes): AIInference
+    getConfidence(inference): Float
+    classifyCategory(inference): PieceCategory
+    extractColors(imageBytes): String[]
+    detectMaterial(inference): MaterialType
+    preprocessImage(imageBytes): ImageData
+}
+
+class BackgroundRemovalService {
+    removeBackground(imageUrl): BackgroundRemovalJob
+    submitJob(imageBytes): String
+    getJobStatus(jobId): PipelineJobStatus
+    downloadResult(jobId): URL
+    handleFallback(imageUrl): void
+}
+
+class AuditLog {
+    id: UUID
+    action: String
+    entityType: String
+    entityId: UUID
+    changedBy: UUID
+    details: JSON
+    timestamp: Timestamp
+    --
+    logAction(action, entityId, changedBy): void
+}
+
+' Relacionamentos
+User "1" -- "0..*" WardrobeItem: owns
+WardrobeItem "1" -- "1" PieceMetadata: has
+WardrobeItem "1" -- "0..*" AIInference: generates
+WardrobeItem "1" -- "0..*" PipelineJob: submits
+PipelineJob "1" -- "0..1" BackgroundRemovalJob: creates
+WardrobeItem "0..*" -- "1" AuditLog: produces
+
+AIDetectionService ..> AIInference: creates
+BackgroundRemovalService ..> BackgroundRemovalJob: manages
+ImageValidation ..> WardrobeItem: validates
+
+note right of WardrobeItem
+  **RF4.CA01**: Validação de formato/tamanho
+  **RF4.CA02**: Pré-preenchimento (High Confidence)
+  **RF4.CA03**: Formulário vazio (Low Confidence)
+  **RF4.CA04**: Aparição imediata no Closet
+  **RF4.CA05**: Rascunho por foto (lote)
+  **RF4.CA06**: Reprocessamento de fundo
+end note
+
+note right of AIInference
+  **RF24.CA01**: Detecção de peça
+  Confiança determina se:
+  - ≥ threshold: pré-preenche (CA02)
+  - < threshold: formula vazio (CA03)
+end note
+
+note right of PipelineJob
+  Background removal com fallback
+  Se serviço indisponível:
+  - Salva com imagem original
+  - Enfileira para reprocessamento
+  - Não bloqueia o usuário
+end note
+
+@enduml

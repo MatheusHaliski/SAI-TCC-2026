@@ -1,0 +1,276 @@
+@startuml RF4_Adicionar_Peca_Corrigido
+
+!define FIRESTORE_COLOR #E8F5E9
+!define MYSQL_COLOR #E3F2FD
+!define REDIS_COLOR #FFF3E0
+!define ENUM_COLOR #F3E5F5
+
+title RF4 — Adicionar Peça ao Guarda-Roupa: Diagrama de Classes Atualizado
+
+'' ===== ENUMERAÇÕES =====
+
+enum ClothingCategory #ENUM_COLOR {
+  PARTE_CIMA
+  PARTE_BAIXO
+  TENIS
+  ACESSORIO
+}
+
+enum StyleType #ENUM_COLOR {
+  classic
+  minimalist
+  modern
+  chic
+  streetwear
+  sporty
+  athleisure
+  preppy
+  romantic
+  boho
+  vintage
+  grunge
+  edgy
+  glam
+  luxury
+  avant_garde
+  y2k
+  utility
+  techwear
+  tailored
+  urban
+  resort
+  basic
+  statement
+  futuristic
+}
+
+enum OccasionType #ENUM_COLOR {
+  casual
+  work
+  business
+  formal
+  party
+  night_out
+  date
+  wedding
+  ceremony
+  sport
+  gym
+  travel
+  beach
+  vacation
+  school
+  university
+  social
+  home
+  outdoor
+  festival
+}
+
+enum SexType {
+  MASCULINO
+  FEMININO
+  UNISSEX
+}
+
+enum MaterialType {
+  COTTON
+  POLYESTER
+  WOOL
+  SILK
+  LEATHER
+  SYNTHETIC
+  BLEND
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  ARCHIVED
+}
+
+enum ConditionType {
+  NEW
+  GOOD
+  WORN
+  DAMAGED
+}
+
+enum PhotoProcessingStatus {
+  NEW
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+'' ===== ENTIDADES =====
+
+entity User {
+  * id: UUID [PK]
+  * email: String [UNIQUE]
+  * fullName: String
+  * createdAt: Timestamp
+  * updatedAt: Timestamp
+}
+
+entity WardrobeItem <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * userId: UUID [FK → User]
+  --
+  ** CAMPOS DO FORMULÁRIO **
+  * name: String
+  * category: ClothingCategory
+  * subcategory: String
+  * sex: SexType
+  * brandId: UUID [FK → Brand, OPTIONAL]
+  * color: String
+  * material: MaterialType
+  * size: String
+  * price: Float [OPTIONAL]
+  * imageUrl: URL
+  * imagePath: String
+  --
+  ** CAMPOS DE DISPONIBILIDADE **
+  * availability_status: AvailabilityStatus
+  * is_favorite: Boolean
+  * for_sale: Boolean
+  * condition: ConditionType
+  --
+  ** CAMPOS RF4 - PROCESSAMENTO **
+  * photoProcessingStatus: PhotoProcessingStatus
+  * photoQualityScores: Reference [FK → QualityScore]
+  * processingJobId: UUID [FK → ProcessingJob]
+  * processingTimeMs: Integer
+  * flatLayMetadata: JSON
+  --
+  ** CAMPOS MONITORAMENTO **
+  * tags: String[]
+  * notes: String
+  * wear_count: Integer
+  * last_worn_date: Timestamp
+  * imageMimetype: String
+  * imageFileSize: Long
+  * imageHash: String
+  * thumbnailUrl: URL
+  * marketId: UUID [FK → Market, OPTIONAL]
+  * purchaseDate: Timestamp [OPTIONAL]
+  * purchaseLocation: String [OPTIONAL]
+  * sku: String [OPTIONAL]
+  * care_instructions: String [OPTIONAL]
+  --
+  * createdAt: Timestamp
+  * updatedAt: Timestamp
+}
+
+entity QualityScore <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * wardrobeItemId: UUID [FK]
+  * background_removal_confidence: Float (0-1)
+  * perspective_correction_applied: Boolean
+  * color_normalization_score: Float (0-1)
+  * composition_quality: Float (0-1)
+  * failed_stages: String[]
+  * retry_count: Integer
+  * fallback_used: Boolean
+  * createdAt: Timestamp
+}
+
+entity ProcessingJob <<FirestoreDocument>> #FIRESTORE_COLOR {
+  * id: UUID [PK]
+  * wardrobeItemId: UUID [FK]
+  * job_type: String
+  * status: PhotoProcessingStatus
+  * total_processing_time_ms: Integer
+  * stage_times: JSON
+  * final_quality_score: Float
+  * was_accepted: Boolean
+  * retry_count: Integer
+  * fallback_used: Boolean
+  * createdAt: Timestamp
+  * completed_at: Timestamp
+}
+
+entity Brand <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
+  * name: String
+  * officialLogoUrl: URL [OPTIONAL]
+  * createdAt: Timestamp
+}
+
+entity Market <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
+  * name: String
+  * createdAt: Timestamp
+}
+
+entity ProcessingJobsLog <<MySQL>> #MYSQL_COLOR {
+  * id: UUID [PK]
+  * wardrobe_item_id: UUID [FK]
+  * user_id: UUID [FK]
+  * job_type: String
+  * status: String
+  * total_processing_time_ms: Integer
+  * stage_times: JSON
+  * final_quality_score: Float
+  * was_accepted: Boolean
+  * retry_count: Integer
+  * fallback_used: Boolean
+  * created_at: Timestamp
+  * completed_at: Timestamp
+}
+
+'' ===== RELACIONAMENTOS =====
+
+User "1" -- "0..*" WardrobeItem : owns
+WardrobeItem "1" -- "0..*" QualityScore : has
+WardrobeItem "1" -- "0..*" ProcessingJob : submits
+WardrobeItem "0..*" -- "0..*" StyleType : has_styles (≤2)
+WardrobeItem "0..*" -- "0..*" OccasionType : has_occasions (≤2)
+WardrobeItem "0..1" -- "1" Brand : linkedTo
+WardrobeItem "0..1" -- "1" Market : linkedTo
+WardrobeItem "1" -- "0..*" ProcessingJobsLog : audited_by
+
+'' ===== NOTAS =====
+
+note right of WardrobeItem
+  **Armazenamento:** Firestore (Coleção /users/{userId}/wardrobeItems)
+  **Categoria:** 4 valores fixos (PARTE_CIMA, PARTE_BAIXO, TENIS, ACESSORIO)
+  **Style & Occasion:** Taxonomias Controladas (máx 2 cada)
+    - Sugeridos por IA (analisador de peças) ou edição manual
+  **RF4 Pipeline:** Foto → Validação → Rembg (BG) → OpenCV (Perspectiva) →
+                   Cloudinary (Cores) → Canvas 2D → Validação Qualidade
+end note
+
+note right of QualityScore
+  **Armazenamento:** Firestore (Subcoleção ou Documento Relacionado)
+  **Propósito:** Rastreamento de qualidade após processamento RF4
+  **Score Mínimo:** ≥0.6 para exibir em RF5/RF6
+end note
+
+note right of ProcessingJob
+  **Armazenamento:** Firestore (/processingJobs coleção global)
+  **Auditoria:** Também registra em MySQL (processing_jobs_log)
+  **Status:** Transição desde NEW → PROCESSING → COMPLETED/FAILED
+  **Fallback:** Se falhar, usa foto original com aviso
+end note
+
+note right of StyleType
+  **Taxonomia Compartilhada:** RF4 (peça) e RF5 (esquema)
+  **25 Estilos Predefinidos:**
+  Clássico, Minimalista, Moderno, Chique, Streetwear,
+  Esportivo, Athleisure, Colegial, Romântico, Boêmio,
+  Vintage, Grunge, Ousado, Glamouroso, Luxuoso,
+  Vanguarda, Anos2000, Utilitário, Techwear, Alfaiataria,
+  Urbano, Resort, Básico, Marcante, Futurista
+end note
+
+note right of OccasionType
+  **Taxonomia Compartilhada:** RF4 (peça) e RF5 (esquema)
+  **20 Ocasiões Predefinidas:**
+  Casual, Trabalho, Negócios, Formal, Festa,
+  Saída Noturna, Encontro, Casamento, Cerimônia, Esporte,
+  Academia, Viagem, Praia, Férias, Escola,
+  Universidade, Evento Social, Casa, Atividade Ar Livre, Festival
+end note
+
+@enduml

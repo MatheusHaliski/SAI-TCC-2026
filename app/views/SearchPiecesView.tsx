@@ -46,7 +46,7 @@ export default function SearchPiecesView() {
             onBrandChange={setBrand}
             onRarityChange={setRarity}
           />
-          <p className="text-xs text-white/70">{pieces.length} peças encontradas.</p>
+          <p className="text-xs text-muted-foreground">{pieces.length} peças encontradas.</p>
         </div>
       </SectionBlock>
 
@@ -55,7 +55,7 @@ export default function SearchPiecesView() {
           {trendingPieces.map((piece) => (
             <PieceDiscoveryCard key={`trend-${piece.wardrobe_item_id}`} piece={piece} onOpen={setSelectedPiece} />
           ))}
-          {!trendingPieces.length ? <p className="text-sm text-white/70">No trending pieces yet.</p> : null}
+          {!trendingPieces.length ? <p className="text-sm text-muted-foreground">No trending pieces yet.</p> : null}
         </div>
       </SectionBlock>
 
@@ -64,7 +64,7 @@ export default function SearchPiecesView() {
           {pieces.map((piece) => (
             <PieceDiscoveryCard key={piece.wardrobe_item_id} piece={piece} onOpen={setSelectedPiece} />
           ))}
-          {!pieces.length ? <p className="text-sm text-white/70">No pieces matched your current filters.</p> : null}
+          {!pieces.length ? <p className="text-sm text-muted-foreground">No pieces matched your current filters.</p> : null}
         </div>
       </SectionBlock>
 

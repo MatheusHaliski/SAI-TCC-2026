@@ -1,0 +1,214 @@
+@startuml HU-RF1_Cadastro_Perfis
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #E1F5FE
+skinparam classBorderColor #01579B
+skinparam arrowColor #01579B
+
+' ========================================
+' CLASSE BASE - USUÁRIO COMUM
+' ========================================
+class User {
+    ' Identificação
+    - id: UUID
+    - fullName: String
+    - email: String (unique)
+    - password: String (hash)
+    - profileType: Enum[common, brand, celebrity]
+
+    ' Auditoria
+    - createdAt: Timestamp
+    - updatedAt: Timestamp
+    - lastLoginAt: Timestamp
+
+    ' Status
+    - status: Enum[active, inactive, suspended, deleted]
+    - emailVerified: Boolean
+    - verificationToken: String
+    - acceptTerms: Boolean
+
+    ' Perfil
+    - profilePicture: URL {optional}
+    - bio: String {optional}
+
+    --
+    + register(data): Boolean
+    + verify(): void
+    + updateProfile(data): void
+    + deactivate(): void
+}
+
+' ========================================
+' CLASSE - USUÁRIO COMUM (Extensão)
+' ========================================
+class CommonUser extends User {
+    --
+    ' Sem campos adicionais específicos
+    ' Herda todos os campos de User
+}
+
+' ========================================
+' CLASSE - MARCA DE ROUPA
+' ========================================
+class Brand extends User {
+    ' Dados Legais
+    - cnpj: String (unique)
+    - razaoSocial: String
+    - nomeFantasia: String
+
+    ' Informações Comerciais
+    - website: URL
+    - categoriaModa: Enum[fast-fashion, luxo, sustentável, streetwear]
+    - descricaoComercial: String
+    - logoOficial: URL
+    - fotoCapa: URL
+    - hashtagOficial: String {optional}
+
+    ' Contato
+    - contatoComercial: ContactInfo
+        - email: String
+        - telefone: String
+
+    ' Documentação
+    - comprovanteAtividade: FileReference
+
+    ' Verificação
+    - status: Enum[pending_verification, active, suspended, deleted]
+    - verificationScore: Integer[0-100]
+    - verificationNotes: String
+    - identityVerified: Boolean
+    - badgeVerificado: Boolean
+
+    ' Aprovação
+    - approvedBy: UUID {optional}
+    - approvedAt: Timestamp {optional}
+
+    --
+    + registerBrand(data): Boolean
+    + submitVerification(): void
+    + updateBrandInfo(data): void
+}
+
+' ========================================
+' CLASSE - CELEBRIDADE
+' ========================================
+class Celebrity extends User {
+    ' Identificação Profissional
+    - nomeArtistico: String
+    - nomeReal: String
+    - areasAtuacao: Array[String]
+
+    ' Redes Sociais & Verificação
+    - seguidoresVerificaveis: SocialMediaLinks
+        - instagram: {URL, followerCount}
+        - tiktok: {URL, followerCount}
+        - youtube: {URL, subscriberCount}
+        - twitter: {URL, followerCount}
+    - urlVerificacao: URL
+
+    ' Documentação
+    - comprovanteIdentidade: FileReference
+    - historicoProfissional: String
+
+    ' Representação
+    - contatoRepresentacao: ContactInfo {optional}
+        - nome: String
+        - email: String
+        - telefone: String
+
+    ' Perfil
+    - fotoPerfil: URL
+    - areasInteresseModa: Array[String]
+
+    ' Verificação
+    - status: Enum[pending_verification, active, suspended, deleted]
+    - verificationScore: Integer[0-100]
+    - verificationNotes: String
+    - identityVerified: Boolean
+    - badgeVerificado: Boolean
+
+    ' Aprovação
+    - approvedBy: UUID {optional}
+    - approvedAt: Timestamp {optional}
+
+    --
+    + registerCelebrity(data): Boolean
+    + submitVerification(): void
+    + updateCelebrityInfo(data): void
+}
+
+' ========================================
+' CLASSE - PROCESSO DE VERIFICAÇÃO
+' ========================================
+class VerificationProcess {
+    - id: UUID
+    - profileId: UUID
+    - profileType: Enum[brand, celebrity]
+    - status: Enum[draft, under_review, approved, rejected]
+    - submittedAt: Timestamp
+    - reviewedBy: UUID {optional}
+    - reviewedAt: Timestamp {optional}
+    - riskScore: Integer[0-100]
+    - decision: String
+    - notes: String
+    - createdAt: Timestamp
+    - updatedAt: Timestamp
+
+    --
+    + submitForVerification(): void
+    + autoValidate(): AutoValidationResult
+    + reviewManually(admin): void
+    + approve(): void
+    + reject(reason): void
+    + notifyUser(decision): void
+}
+
+' ========================================
+' CLASSE - AUDITORIA
+' ========================================
+class AuditLog {
+    - id: UUID
+    - action: String
+    - entityType: String
+    - entityId: UUID
+    - changedBy: UUID
+    - timestamp: Timestamp
+    - details: JSON
+
+    --
+    + logAction(action, entityId): void
+}
+
+' ========================================
+' RELACIONAMENTOS
+' ========================================
+
+User <|-- CommonUser : extends
+User <|-- Brand : extends
+User <|-- Celebrity : extends
+
+Brand --* VerificationProcess : submits
+Celebrity --* VerificationProcess : submits
+VerificationProcess "1" --> "1" AuditLog : logged in
+
+note right of Brand
+    Status Progression:
+    pending_verification → under_review
+    → approved → active (badge ✓)
+end note
+
+note right of Celebrity
+    Status Progression:
+    pending_verification → under_review
+    → approved → active (badge ✓)
+end note
+
+note bottom of User
+    Campos de Monitoramento:
+    createdAt → Início de atividade
+    updatedAt → Última mudança
+    lastLoginAt → Análise de atividade
+    status → Governança
+end note
+
+@enduml

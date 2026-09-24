@@ -1,0 +1,376 @@
+@startuml RF13_Criar_DNA_Estilo_Atividades_Corrigido
+title RF13 — Criar DNA de Estilo\nFluxo Manual e Geração com IA — raias de atores, elemento-alvo (Etapa 1) e Layout & Estilo / Container & Cor via RF11
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #52606D
+skinparam activity {
+  BackgroundColor #F8F4FF
+  BorderColor #B695F5
+  FontColor #2D2438
+  DiamondBackgroundColor #FFF5F8
+  DiamondBorderColor #F08DB1
+  StartColor #20A77A
+  EndColor #4B5563
+  BarColor #4B4B4B
+}
+skinparam note {
+  BackgroundColor #FFFDEB
+  BorderColor #D8CE78
+  FontColor #554F24
+}
+
+|Usuário|
+start
+:Usuário acessa a funcionalidade\n"DNA de Estilo";
+:Etapa 1 — Escolher modo de geração\ne elemento a ser editado;
+:Usuário escolhe o modo de geração:\n- Geração manual\n- Geração com IA;
+
+|Sistema|
+if (Está editando um DNA existente\ncom ao menos uma célula\npreenchida?) then (Sim)
+  :Sistema carrega o DNAScheme\ne suas células/esquemas atuais;
+
+  :Sistema exibe o painel de preview\nlateral do card;
+
+  |Usuário|
+  if (Qual elemento será editado?) then (Conjunto DNA completo)
+    |Sistema|
+    :Sistema destaca (luz, borda\ne realce) a arte do conjunto\nDNA no painel de preview;
+    :Fixar elemento-alvo\n= arte do conjunto DNA;
+  else (Esquema de vestimenta específico)
+    :Usuário seleciona, no painel de preview,\num esquema de vestimenta (ClothesScheme)\njá presente no DNA;
+    |Sistema|
+    :Sistema destaca (luz, borda\ne realce) o esquema selecionado\nno painel de preview;
+    :Fixar elemento-alvo\n= esquema de vestimenta selecionado;
+
+    note right
+      Diferença central para o RF5: aqui o
+      elemento-alvo "peça específica" do RF5
+      vira **esquema de vestimenta específico**
+      — um ClothesScheme inteiro, já publicado
+      no Perfil Lookbook (RF6), não uma peça
+      solta do guarda-roupa.
+    end note
+  endif
+else (Não — DNA novo\nou ainda sem células)
+  :Sistema cria um DNAScheme\ncom status "rascunho"\n(quando ainda não existia);
+  :Sistema exibe o painel de preview\nlateral do card;
+  |Sistema|
+  :Fixar elemento-alvo\n= arte do conjunto DNA;
+
+  note right
+    Um DNA sem células ainda não tem
+    nenhum ClothesScheme para apontar como
+    alvo — a opção "Esquema de vestimenta
+    específico" não é oferecida aqui, só
+    "Conjunto DNA completo": não há escolha
+    a fazer. Depois que a Etapa 2/3
+    (seleção manual ou geração por IA)
+    preencher ao menos uma célula, uma
+    edição futura deste mesmo DNA passa a
+    oferecer o elemento-alvo "esquema
+    específico" normalmente (ramo "Sim"
+    acima).
+  end note
+endif
+
+note right
+  O elemento-alvo fixado nesta etapa
+  permanece o mesmo em todas as etapas
+  seguintes (2 a 5). Ex.: se o alvo é a
+  arte do conjunto DNA, a Etapa 4 (arte de
+  background) edita somente essa arte —
+  se o alvo é um esquema específico, a
+  Etapa 4 edita somente aquele esquema.
+  Isto elimina a necessidade de um seletor
+  adicional de alvo dentro do Background
+  Studio (RF11) — ver nota na Etapa 4.
+end note
+
+|Usuário|
+if (Qual é o modo de geração?) then (Manual)
+
+  :Etapa 2 — Selecionar esquemas manualmente;
+
+  repeat
+    :Sistema lista esquemas elegíveis:\nsomente ClothesScheme com\nuserId = usuário atual (sub-aba\n"Meus Esquemas", RF6) — exclui\n"Looks Salvos" (SavedItem de\noutros usuários);
+    :Usuário seleciona um esquema\nde vestimenta para cada célula\ndo DNA (2 a 6 células) dentre\nos elegíveis;
+    |Sistema|
+    :Sistema verifica:\n- Disponibilidade do esquema\n- Duplicidade dentro do DNA\n- Regras da composição\n- Até 3 estilos e 3 ocasiões (síntese);
+
+    note right
+      **Correção (mesma da sessão que
+      atualizou RF13-atividades-v3.puml,
+      2026-09-21).** "Looks Salvos" são
+      esquemas públicos de outros usuários,
+      favoritados via "Adicionar ao
+      guarda-roupa" (RF19) — ficam como
+      SavedItem (bookmark), nunca viram
+      ClothesScheme próprio. Para usar o
+      esquema de outro usuário em um DNA
+      novo, o caminho é Remixar (RF7), que
+      clona o esquema para "Meus Esquemas"
+      — só então ele entra no pool
+      selecionável aqui.
+    end note
+
+    if (Esquemas compatíveis?) then (Sim)
+      :Sistema adiciona os esquemas\nàs células do DNA;
+    else (Não)
+      :Sistema informa as incompatibilidades;
+      |Usuário|
+      :Usuário substitui ou remove\nos esquemas incompatíveis;
+    endif
+    |Usuário|
+  repeat while (Existem incompatibilidades?) is (Sim)
+
+  :Etapa 3 — Revisar composição manual;
+
+  repeat
+    |Sistema|
+    :Sistema apresenta a pré-visualização\ndos esquemas nas respectivas células;
+    |Usuário|
+    :Usuário revisa a composição;
+
+    if (Deseja alterar a composição?) then (Sim)
+      :Usuário adiciona, remove\nou substitui esquemas;
+      |Sistema|
+      :Sistema valida novamente\na composição;
+      |Usuário|
+    else (Não)
+      :Usuário aprova\na composição manual;
+    endif
+  repeat while (Deseja realizar novos ajustes?) is (Sim)
+
+else (IA)
+
+  :Etapa 2 — Descrever intenção do DNA;
+
+  repeat
+    :Usuário informa:\n- Narrativa desejada (§ver anatomia_cards_DNA_v2.html)\n- Ocasiões e estilos representativos\n- Preferências de cores\n- Outras orientações;
+    |Sistema|
+    :Sistema valida a descrição;
+
+    if (Descrição suficiente?) then (Sim)
+      :Sistema envia a descrição\nao serviço de IA;
+    else (Não)
+      :Sistema solicita informações\nadicionais ao usuário;
+    endif
+    |Usuário|
+  repeat while (Descrição insuficiente?) is (Sim)
+
+  :Etapa 3 — Gerar e revisar sugestão da IA;
+
+  |Serviço de IA|
+  repeat
+    :IA analisa:\n- Esquemas de "Meus Esquemas" (RF6)\n— userId = usuário atual, nunca\n"Looks Salvos" de terceiros\n- Disponibilidade dos esquemas\n- Marcas, cores e selos predominantes\n- Estilos e ocasiões\n- Narrativa escolhida;
+
+    note right
+      **Correção (mesma da sessão que
+      atualizou RF13-atividades-v3.puml,
+      2026-09-21).** Versão anterior deste
+      passo citava "Looks Salvos" como
+      fonte — estava errado, pela mesma
+      razão do modo manual acima: Looks
+      Salvos são esquemas de terceiros
+      (SavedItem), nunca elegíveis para
+      compor um DNA que não é deles.
+    end note
+    :IA seleciona esquemas de vestimenta\ncompatíveis para as células do DNA;
+    |Sistema|
+    :Sistema valida a sugestão gerada;
+
+    if (Sugestão tecnicamente válida?) then (Sim)
+      :Sistema apresenta a sugestão\nao usuário;
+    else (Não)
+      :Sistema solicita nova geração\nao serviço de IA;
+    endif
+    |Serviço de IA|
+  repeat while (Sugestão inválida?) is (Sim)
+
+  |Usuário|
+  repeat
+    if (Qual ação o usuário deseja?) then (Editar esquemas)
+      :Usuário edita os esquemas manualmente;
+      |Sistema|
+      :Sistema valida as alterações\nrealizadas pelo usuário;
+
+      while (Alterações válidas?) is (Não)
+        :Sistema informa as incompatibilidades;
+        |Usuário|
+        :Usuário corrige os esquemas;
+        |Sistema|
+        :Sistema valida novamente\nas alterações;
+      endwhile (Sim)
+
+      :Sistema atualiza\na sugestão apresentada;
+      |Usuário|
+
+    elseif (Nova geração) then (Regenerar)
+      |Sistema|
+      :Sistema solicita nova geração\nao serviço de IA;
+      |Serviço de IA|
+      :IA gera outra composição\ncompatível com a narrativa;
+      |Sistema|
+      :Sistema valida e apresenta\na nova sugestão;
+      |Usuário|
+
+    else (Aceitar)
+      :Usuário aprova a composição\nsugerida pela IA;
+    endif
+  repeat while (Composição aprovada?) is (Não)
+
+endif
+
+|Sistema|
+:Etapa 4 — Configurar a arte de fundo\ndo elemento fixado na Etapa 1;
+:Sistema abre o Background Studio\n(RF11), já restrito ao elemento-alvo\nfixado — esquema específico ou\narte do conjunto DNA completo;
+
+note right
+  Como o elemento-alvo já foi fixado na
+  Etapa 1, esta etapa não precisa de um
+  seletor adicional de "o que estou
+  editando" dentro do RF11 — mesma
+  economia de design já aplicada no RF5.
+end note
+
+if (Elemento-alvo é o conjunto\nDNA completo?) then (Sim)
+
+  :O RF11 identifica o tipo de card como\nDNA de Estilo (Etapa 1 do RF11) e\napresenta sua Etapa 3 — Layout & Estilo\ncom as 4 anatomias de base do card de\nDNA (Ampliado, Em grade, Na horizontal,\nNa lateral — anatomia_cards_DNA_v2.html,\nSeção A);
+  |Usuário|
+  :Usuário seleciona\numa anatomia de base;
+
+  |Sistema|
+  :O RF11 identifica que o container do\nDNA sempre existe para as 4 anatomias\nde base e apresenta sua Etapa 4 —\nIncluir Container & Definir Cor;
+  |Usuário|
+  :Usuário define a cor do container\nagora, ou deixa o sistema decidir\nautomaticamente mais adiante\n(mesma mecânica de origem\nmanual/auto do RF11);
+
+  |Usuário|
+  :Etapa 4 do RF13 — Layout & Peças;
+  if (Qual narrativa?) then (Linha do tempo)
+    :Trilho vertical rolável,\nmarcos clicáveis por era;
+  elseif (Momentos marcantes) then (Momentos marcantes)
+    :Hero + fileira de apoio\nque funciona como\nsegmented picker;
+  elseif (Primeira vez) then (Primeira vez)
+    :Uma célula por\nmarca-estreia;
+  elseif (Favoritos) then (Favoritos)
+    :Células ordenadas pelos\nesquemas mais curtidos/salvos;
+  elseif (Por ocasião) then (Por ocasião)
+    :Células agrupadas\npor ocasião predominante;
+  elseif (Constelação de estilo) then (Constelação de estilo)
+    :Disposição radial,\naté 3 logos de marca por célula;
+  elseif (Paleta dominante) then (Paleta dominante)
+    :Células por cor dominante\nde cada esquema;
+  else (Marcas favoritas)
+    :Ranking completo de marcas\npor contagem de peças —\nlogo é o conteúdo principal;
+  endif
+
+  note right
+    As 8 narrativas (anatomia_cards_DNA_v2.html,
+    Seção B) só existem aqui — Etapa 4 do
+    RF13 — quando o elemento-alvo é o
+    Conjunto DNA completo. Não fazem parte
+    da Etapa 3 do RF11 (que resolve só a
+    anatomia de BASE, reaproveitada fora da
+    criação também). Todas as 8 reutilizam
+    as mesmas 2–6 células de DNASchemeItem;
+    nenhuma pede dado que o modelo de
+    dna_scheme_items já não preveja.
+  end note
+
+  |Sistema|
+  :Sistema aplica a narrativa escolhida\nà organização das células do DNA,\nsobre a anatomia de base já definida\npela Etapa 3 do RF11;
+
+else (Não — esquema específico)
+
+  :O RF11 identifica o tipo de card como\nEsquema (Etapa 1 do RF11) e apresenta\nsua Etapa 3 — Layout & Estilo completa\n(anatomias_card_v13.html, Seções A/B) —\nmesmo catálogo usado ao editar\nqualquer esquema fora do DNA;
+  |Usuário|
+  :Usuário seleciona anatomia e densidade\n(ou mantém a anatomia já publicada\nno Perfil Lookbook — RF6);
+
+  |Sistema|
+  :O RF11 identifica se a anatomia\nescolhida tem container do esquema\ne, quando tem, apresenta sua Etapa 4 —\nIncluir Container & Definir Cor;
+  |Usuário|
+  :Usuário define a cor do container\nagora, ou deixa o sistema decidir\nautomaticamente mais adiante;
+
+  note right #FBF0DC
+    **Decisão do RF13, sem equivalente no RF5.**
+    Um esquema de vestimenta editado aqui já
+    existe, publicado, no Perfil Lookbook (RF6)
+    do usuário.
+  end note
+  |Usuário|
+  if (Aplicar esta alteração ao esquema\noriginal salvo no Perfil Lookbook (RF6)?) then (Sim)
+    |Sistema|
+    :Sistema atualiza o ClothesScheme\noriginal em RF6 com a nova anatomia,\ncontainer e arte de fundo;
+    :Sistema referencia, dentro do DNA,\no mesmo ClothesScheme atualizado\n(isDuplicate = false);
+  else (Não)
+    |Sistema|
+    :Sistema duplica o esquema —\ncria um novo ClothesScheme\n(isDuplicate = true, sourceSchemeId = original);
+    :Sistema aplica a nova anatomia,\ncontainer e arte de fundo\nsomente à cópia;
+    :Sistema referencia, dentro do DNA,\na cópia derivada — o esquema original\nem RF6 permanece intocado;
+    :Reatribuir elemento-alvo\n= cópia derivada (novo ClothesScheme);
+
+    note right
+      Sem este passo, o elemento-alvo fixado
+      na Etapa 1 continua apontando para o
+      esquema original — o loop de "Arte de
+      fundo" logo abaixo (escolha de cor,
+      gradiente, prompt, direção recomendada
+      ou preset Aura) aplicaria o resultado
+      ao esquema publicado, exatamente o que
+      o usuário pediu para evitar ao escolher
+      "Não". Reatribuir o alvo aqui garante
+      que toda configuração visual restante
+      desta etapa afete só a cópia isolada.
+    end note
+  endif
+
+endif
+
+|Usuário|
+repeat
+  :Usuário escolhe uma direção visual:\n- Cor sólida\n- Gradiente\n- Prompt\n- Direção recomendada por IA\n- Preset Aura;
+  :Usuário pode aplicar, opcionalmente,\numa camada de material sobre\na direção visual escolhida;
+  |Sistema|
+  :Sistema aplica o resultado apenas\nao elemento-alvo fixado — respeitando\na anatomia (e a narrativa, quando\naplicável) já definidas acima;
+  :Sistema gera uma pré-visualização\ndo card DNA completo;
+  |Usuário|
+  :Usuário revisa:\n- Esquemas/células\n- Anatomia e narrativa (quando o alvo\né o conjunto DNA) ou anatomia do\nesquema (quando o alvo é um esquema)\n- Cor do container\n- Arte de fundo do elemento-alvo\n- Legibilidade do conteúdo;
+repeat while (Deseja ajustar o background,\na anatomia ou o container?) is (Sim)
+
+:Usuário confirma a arte de fundo\ndo elemento fixado;
+
+|Sistema|
+:Etapa 5 — Revisar, salvar e concluir;
+
+repeat
+  :Sistema apresenta o preview final\ndo card DNA completo;
+  :Sistema valida:\n- Campos obrigatórios\n- Quantidade de células (2 a 6)\n- Disponibilidade dos esquemas\n- Configuração de anatomia, container\ne background\n- Permissões do usuário;
+
+  if (DNA válido para conclusão?) then (Sim)
+    :Validação concluída;
+  else (Não)
+    :Sistema apresenta\nas inconsistências encontradas;
+    |Usuário|
+    :Usuário corrige a composição,\nos dados, a anatomia ou o background;
+    |Sistema|
+    :Sistema executa\numa nova validação;
+  endif
+repeat while (Ainda existem inconsistências?) is (Sim)
+
+|Usuário|
+if (DNA será público na rede social?) then (Sim)
+  |Sistema|
+  :Sistema define visibilidade pública\ne status "publicado";
+else (Não)
+  |Sistema|
+  :Sistema define visibilidade privada\ne status "salvo";
+endif
+
+:Sistema persiste ou atualiza:\n- Registro em dna_schemes\n- Itens em dna_scheme_items (célula → esquema)\n- Anatomia de base e narrativa\n(quando o alvo é o conjunto DNA)\n- Anatomia e densidade do esquema editado\n(quando o alvo é um esquema)\n- Cor e origem do container\n- Decisão original/duplicata por esquema\neditado (Etapa 4)\n- Elemento-alvo fixado (Etapa 1)\n- Configuração do background\n- Modo de geração\n- Visibilidade e status;
+:Sistema confirma:\n"DNA de Estilo criado com sucesso";
+:Sistema redireciona o usuário\npara a página "DNA de Estilo";
+stop
+
+@enduml

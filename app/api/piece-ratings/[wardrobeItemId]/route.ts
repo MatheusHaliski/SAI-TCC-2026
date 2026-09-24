@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { wardrobeItemId: string } },
+  { params }: { params: Promise<{ wardrobeItemId: string }> },
 ) {
-  const { wardrobeItemId } = params;
+  const { wardrobeItemId } = await params;
 
   try {
     const body = (await request.json()) as { userId?: string; stars?: number };

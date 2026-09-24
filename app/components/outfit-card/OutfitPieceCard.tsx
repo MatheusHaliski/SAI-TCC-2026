@@ -1,56 +1,185 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { OutfitPiece, resolveBrandLogoUrlByName } from '@/app/lib/outfit-card';
-import WearstyleChips from '@/app/components/outfit-card/WearstyleChips';
-import VisualToken from '@/app/components/outfit-card/VisualToken';
 import BrandBadge from '@/app/components/outfit-card/BrandBadge';
-import { FILTER_GLOW_LINE, GLOW_LINE, TEXT_GLOW } from '@/app/lib/uiToken';
+import TierChip from '@/app/components/outfit-card/badges/TierChip';
+import PieceCardModal from '@/app/components/outfit-card/PieceCardModal';
 
 interface OutfitPieceCardProps {
   piece: OutfitPiece;
   compact?: boolean;
+  schemeId?: string;
+  /** @deprecated Use the built-in modal instead. Kept for callers not yet migrated. */
+  onViewPieceCard?: () => void;
   onOpenInDressTester?: () => void;
 }
 
-export default function OutfitPieceCard({ piece, compact = false, onOpenInDressTester }: OutfitPieceCardProps) {
-  const pieceName = piece.name?.trim() || 'Unnamed Piece';
-  const brandName = piece.brand?.trim() || 'Brand not specified';
-  const brandLogoUrl = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
-  const categoryLabel = piece.category ?? 'Standard';
+export default function OutfitPieceCard({
+  piece,
+  compact = false,
+  onViewPieceCard,
+  onOpenInDressTester,
+}: OutfitPieceCardProps) {
+  const router = useRouter();
+  const [modalOpen,  setModalOpen]  = useState(false);
+  const [launching,  setLaunching]  = useState(false);
+
+  const pieceName      = piece.name?.trim()  || 'Unnamed Piece';
+  const brandName      = piece.brand?.trim() || 'Brand not specified';
+  const brandLogoUrl   = piece.brandLogoUrl || resolveBrandLogoUrlByName(brandName) || undefined;
+  const imageUrl       = piece.imageUrl || brandLogoUrl;
+  const categoryLabel  = piece.category  ?? 'Standard';
   const pieceTypeLabel = piece.pieceType || 'Garment';
-  
+  const description    = piece.description?.trim()
+    || `${pieceTypeLabel} da marca ${brandName}, escolhida para compor a identidade visual do look.`;
+
+  const handleExperiment = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (launching || !onOpenInDressTester) return;
+    setLaunching(true);
+    setTimeout(() => { setLaunching(false); onOpenInDressTester(); }, 400);
+  };
+
+  const style = piece.style;
+  const hasCustomStyle = Boolean(
+    style && (style.cellBackground || style.cellBackgroundImage || style.textColor || style.borderColor || style.accentColor || style.highlight),
+  );
+  const articleStyle: React.CSSProperties = hasCustomStyle
+    ? {
+        border: `1px solid ${style?.borderColor || 'rgba(124,58,237,0.35)'}`,
+        background: style?.cellBackground || 'linear-gradient(145deg, rgba(124,58,237,0.28) 0%, rgba(219,39,119,0.22) 52%, rgba(109,40,217,0.20) 100%)',
+        backgroundImage: style?.cellBackgroundImage ? `url(${style.cellBackgroundImage})` : undefined,
+        backgroundSize: style?.cellBackgroundImage ? 'cover' : undefined,
+        backgroundPosition: style?.cellBackgroundImage ? 'center' : undefined,
+        color: style?.textColor || undefined,
+        backdropFilter: 'blur(14px)',
+        boxShadow: style?.highlight
+          ? `0 0 0 2px ${style?.accentColor || '#f0abfc'}, 0 14px 38px rgba(2,6,23,0.46)`
+          : '0 10px 30px rgba(2,6,23,0.36)',
+      }
+    : {
+        border: '1px solid rgba(124,58,237,0.35)',
+        background: 'linear-gradient(145deg, rgba(124,58,237,0.28) 0%, rgba(219,39,119,0.22) 52%, rgba(109,40,217,0.20) 100%)',
+        backdropFilter: 'blur(14px)',
+        boxShadow: '0 10px 30px rgba(2,6,23,0.36)',
+      };
+  const textColorStyle = style?.textColor ? { color: style.textColor } : undefined;
+
+  const handleRemix = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.sessionStorage.setItem('fai-remix-piece', JSON.stringify({
+      wardrobeItemId: piece.wardrobeItemId,
+      name: pieceName,
+      brand: brandName,
+      imageUrl,
+      pieceType: piece.pieceType,
+      description,
+    }));
+    router.push('/create-my-scheme');
+  }, [brandName, description, imageUrl, piece.pieceType, piece.wardrobeItemId, pieceName, router]);
+
   return (
-    <article
-      className={`group relative overflow-hidden rounded-2xl border border-cyan-200/45 bg-[linear-gradient(145deg,rgba(59,130,246,0.34)_0%,rgba(20,184,166,0.3)_52%,rgba(6,182,212,0.26)_100%)] ${compact ? 'p-3' : 'p-4'} backdrop-blur-[14px] shadow-[0_10px_30px_rgba(2,6,23,0.36)] transition duration-300 hover:scale-[1.02] hover:border-cyan-100/70 hover:shadow-[0_16px_42px_rgba(34,211,238,0.24)] ${FILTER_GLOW_LINE} ${GLOW_LINE}`}
-    >
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.28)_0%,rgba(255,255,255,0)_44%),linear-gradient(130deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0)_48%,rgba(14,116,144,0.2)_100%)] opacity-90" />
-      <div aria-hidden className="pointer-events-none absolute inset-[1px] rounded-2xl border border-cyan-100/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),inset_0_0_38px_rgba(8,145,178,0.2)]" />
+    <>
+      <article
+        className={`group relative min-w-0 max-w-full overflow-hidden rounded-2xl transition duration-300 hover:scale-[1.02] ${compact ? 'p-3.5' : 'p-4'}`}
+        style={articleStyle}
+      >
+        {/* Inner glow */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: 'radial-gradient(circle at 20% 18%, rgba(255,255,255,0.18) 0%, transparent 44%), linear-gradient(130deg, rgba(255,255,255,0.10) 0%, transparent 48%)',
+            borderRadius: 'inherit',
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-[1px] rounded-2xl"
+          style={{ border: '1px solid rgba(255,255,255,0.15)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
+        />
 
-      <div className="relative z-[1] space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex items-center gap-2">
-            <p className={`truncate pr-1 text-sm font-semibold ${TEXT_GLOW}`}>{pieceName}</p>
+        {/* Launch flash */}
+        {launching && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-[2] animate-ping rounded-2xl"
+            style={{ background: 'rgba(219,39,119,0.2)', animationDuration: '0.35s', animationIterationCount: '1' }}
+          />
+        )}
+
+        <div className="relative z-[1] space-y-4">
+          {/* Header — name + tier */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <p className="break-words text-sm font-semibold leading-snug text-white" style={textColorStyle}>{pieceName}</p>
+              <p className="truncate font-mono text-[9px] uppercase tracking-[0.20em] text-white/55" style={textColorStyle}>
+                {pieceTypeLabel}
+              </p>
+            </div>
+            <TierChip tier={categoryLabel} />
           </div>
-          <VisualToken type="category" value={pieceTypeLabel} compact />
-        </div>
 
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <BrandBadge brandName={brandName} brandLogoUrl={brandLogoUrl} variant="compact" />
-          </div>
-          <VisualToken type="rarity" value={categoryLabel} compact />
-        </div>
+          {/* Remix flag — piece must be swapped for one the user owns */}
+          {piece.needsReplacement && (
+            <div
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wide"
+              style={{ border: '1px solid rgba(251,191,36,0.45)', background: 'rgba(251,191,36,0.14)', color: '#fcd34d' }}
+            >
+              <span>↺</span>
+              <span className="truncate">Substituir por peça sua</span>
+            </div>
+          )}
 
-        {!compact ? <WearstyleChips wearstyles={piece.wearstyles} pieceType={piece.pieceType} /> : null}
+          {/* Brand */}
+          <BrandBadge brandName={brandName} brandLogoUrl={brandLogoUrl} variant="compact" />
 
-        {onOpenInDressTester ? (
+          {/* Dress tester button */}
+          {onOpenInDressTester && (
+            <button
+              type="button"
+              onClick={handleExperiment}
+              disabled={launching}
+              className={`w-full rounded-xl py-2 text-[11px] font-semibold uppercase tracking-wide transition-all duration-300 ${
+                launching
+                  ? 'scale-95 border border-pink-300/50 bg-pink-500/25 text-pink-100'
+                  : 'border border-pink-400/45 bg-pink-500/15 text-pink-100 hover:scale-[1.02] hover:border-pink-300/65 hover:bg-pink-500/28'
+              }`}
+            >
+              {launching ? '✦ Abrindo Provador...' : '✦ Experimentar'}
+            </button>
+          )}
+
+          {/* Remix button */}
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onOpenInDressTester(); }}
-            className="mt-2 w-full rounded-lg border border-cyan-300/50 bg-cyan-500/15 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/30 hover:border-cyan-200/70"
+            onClick={handleRemix}
+            className="w-full rounded-xl border border-yellow-400/45 bg-yellow-500/12 py-2 text-[11px] font-semibold uppercase tracking-wide text-yellow-200 transition-all duration-300 hover:scale-[1.02] hover:border-yellow-300/65 hover:bg-yellow-500/22"
           >
-            Abrir no Provador
+            ↺ Remixar
           </button>
-        ) : null}
-      </div>
-    </article>
+
+          {/* View piece card button */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setModalOpen(true); onViewPieceCard?.(); }}
+            className="w-full rounded-lg border px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition"
+            style={{
+              borderColor: 'rgba(124,58,237,0.5)',
+              background: 'rgba(124,58,237,0.15)',
+              color: '#c4b5fd',
+            }}
+          >
+            Visualizar card da peça
+          </button>
+        </div>
+      </article>
+
+      {modalOpen && (
+        <PieceCardModal piece={piece} onClose={() => setModalOpen(false)} />
+      )}
+    </>
   );
 }

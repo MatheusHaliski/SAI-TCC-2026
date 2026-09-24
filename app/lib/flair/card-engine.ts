@@ -1,4 +1,4 @@
-import type { WardrobeItem, WardrobeImageAnalysis } from '@/app/backend/types/entities';
+import type { WardrobeItem } from '@/app/backend/types/entities';
 import type { OutfitBackgroundConfig, PieceCategory } from '@/app/lib/outfit-card';
 import type {
   CardStats,
@@ -64,12 +64,9 @@ export function computeCardStats(
     | 'style_tags'
     | 'occasion_tags'
     | 'brand_detection_confidence'
-    | 'season'
+    | 'image_analysis'
   > & {
-    image_analysis?: Pick<
-      WardrobeImageAnalysis,
-      'catalog_readiness_score' | 'front_view_score'
-    >;
+    season?: string;
     backgroundConfig?: OutfitBackgroundConfig | null;
     isFavorite?: boolean;
     currentSeason?: string;

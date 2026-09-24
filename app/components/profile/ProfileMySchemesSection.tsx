@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import SectionBlock from '@/app/components/shared/SectionBlock';
+import SubTabs from '@/app/components/shared/SubTabs';
+import { useSectionFilter } from '@/app/components/profile/useSectionFilter';
 import OutfitCard from '@/app/components/outfit-card/OutfitCard';
 import OutfitExportModal from '@/app/components/profile/OutfitExportModal';
 import { OutfitCardData, OutfitBackgroundConfig } from '@/app/lib/outfit-card';
@@ -28,9 +30,11 @@ interface Scheme {
   occasion: string;
   description?: string | null;
   cover_image_url?: string | null;
-  visibility: 'public' | 'private';
+  visibility: 'public' | 'followers' | 'private';
   creation_mode?: 'manual' | 'ai';
   updatedAt?: string;
+  user_id?: string;
+  author_name?: string;
   pieces?: SchemePieceSnapshot[];
 }
 
@@ -50,6 +54,9 @@ function parseBackground(description?: string | null): OutfitBackgroundConfig | 
   }
 }
 
+// RF6.CA10 — chave do filtro de ocasião (header da lista).
+const getSchemeOccasion = (scheme: Scheme) => scheme.occasion;
+
 const buildData = (scheme: Scheme): OutfitCardData => {
   const pieces = Array.isArray(scheme.pieces)
     ? scheme.pieces.map((piece, index) => ({
@@ -63,17 +70,19 @@ const buildData = (scheme: Scheme): OutfitCardData => {
       }))
     : [];
 
+  const metaBadges = [
+    { icon: scheme.creation_mode === 'ai' ? '✨' : '✍️', label: scheme.creation_mode === 'ai' ? 'AI' : 'Manual' },
+    { icon: scheme.visibility === 'public' ? '🌐' : scheme.visibility === 'followers' ? '👥' : '🔒', label: scheme.visibility === 'public' ? 'Público' : scheme.visibility === 'followers' ? 'Seguidores' : 'Privado' },
+    { icon: '🕒', label: scheme.updatedAt ? new Date(scheme.updatedAt).toLocaleDateString('pt-BR') : 'recente' },
+  ];
+
   return {
     outfitName: scheme.title,
     outfitStyleLine: `${scheme.style} · ${scheme.occasion}`,
     outfitDescription: undefined, // let OutfitCard build fallback from pieces
     heroImageUrl: scheme.cover_image_url || '/welcome-newcomers.png',
     outfitBackground: parseBackground(scheme.description),
-    metaBadges: [
-      { icon: scheme.creation_mode === 'ai' ? '✨' : '✍️', label: scheme.creation_mode === 'ai' ? 'AI' : 'Manual' },
-      { icon: scheme.visibility === 'public' ? '🌐' : '🔒', label: scheme.visibility === 'public' ? 'Público' : 'Privado' },
-      { icon: '🕒', label: scheme.updatedAt ? new Date(scheme.updatedAt).toLocaleDateString('pt-BR') : 'recente' },
-    ],
+    metaBadges,
     pieces,
   };
 };
@@ -81,13 +90,76 @@ const buildData = (scheme: Scheme): OutfitCardData => {
 export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySchemesSectionProps) {
   const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null);
   const [exportingScheme, setExportingScheme] = useState<Scheme | null>(null);
+  const [loadedSchemes, setLoadedSchemes] = useState<Scheme[]>(schemes);
+  const [loadingSchemes, setLoadingSchemes] = useState(false);
 
-  const cards = useMemo(() => schemes.map((scheme) => ({ scheme, data: buildData(scheme) })), [schemes]);
+  useEffect(() => {
+    setLoadedSchemes(schemes);
+  }, [schemes]);
+
+  useEffect(() => {
+    if (!userId || schemes.length > 0) return;
+    setLoadingSchemes(true);
+    fetch(`/api/schemes/user/${encodeURIComponent(userId)}`)
+      .then((response) => response.json())
+      .then((data) => setLoadedSchemes(Array.isArray(data) ? data as Scheme[] : []))
+      .catch(() => setLoadedSchemes([]))
+      .finally(() => setLoadingSchemes(false));
+  }, [schemes.length, userId]);
+
+  // RF6.CA10 / RF31.CA04 — filtro de ocasião no header da lista, persistido ao voltar do detalhe.
+  const occasionFilter = useSectionFilter(loadedSchemes, getSchemeOccasion, 'sai-lookbook-filter:my-schemes');
+  const cards = useMemo(
+    () => occasionFilter.filtered.map((scheme) => ({ scheme, data: buildData(scheme) })),
+    [occasionFilter.filtered],
+  );
+
+  // RF28: cycle visibility público → seguidores → privado → público, persisting
+  // each change via PATCH /api/schemes/[id]. Optimistic update with revert on error.
+  const NEXT_VISIBILITY: Record<Scheme['visibility'], Scheme['visibility']> = {
+    public: 'followers',
+    followers: 'private',
+    private: 'public',
+  };
+  const VISIBILITY_ACTION_LABEL: Record<Scheme['visibility'], string> = {
+    public: '🌐 Público → restringir a Seguidores',
+    followers: '👥 Seguidores → tornar Privado',
+    private: '🔒 Privado → Publicar',
+  };
+
+  const cycleVisibility = async (scheme: Scheme) => {
+    const next = NEXT_VISIBILITY[scheme.visibility];
+    setLoadedSchemes((prev) => prev.map((s) => (s.scheme_id === scheme.scheme_id ? { ...s, visibility: next } : s)));
+    try {
+      const res = await fetch(`/api/schemes/${encodeURIComponent(scheme.scheme_id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, visibility: next }),
+      });
+      if (!res.ok) throw new Error('visibility update failed');
+    } catch (err) {
+      console.warn('[visibility] revert', err);
+      setLoadedSchemes((prev) => prev.map((s) => (s.scheme_id === scheme.scheme_id ? { ...s, visibility: scheme.visibility } : s)));
+    }
+  };
 
   return (
     <>
-      <SectionBlock title="Meus Esquemas" subtitle="Cards de look criados por você com visualização premium compacta.">
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+      <SectionBlock
+        title={`Meus Esquemas (${loadedSchemes.length})`}
+        subtitle="Cards de look criados por você com visualização premium compacta."
+        action={
+          <SubTabs
+            variant="filter"
+            size="sm"
+            ariaLabel="Filtrar meus esquemas por ocasião"
+            items={occasionFilter.options}
+            activeKey={occasionFilter.selected}
+            onChange={occasionFilter.setSelected}
+          />
+        }
+      >
+        <div className="mt-4 grid gap-5 lg:grid-cols-2">
           {cards.map(({ scheme, data }) => (
             <OutfitCard
               key={scheme.scheme_id}
@@ -97,12 +169,20 @@ export default function ProfileMySchemesSection({ userId, schemes }: ProfileMySc
                 { label: 'Abrir', onClick: () => setSelectedScheme(scheme), tone: 'accent' },
                 { label: 'Editar' },
                 { label: 'Exportar', onClick: () => setExportingScheme(scheme), tone: 'accent' },
-                { label: scheme.visibility === 'public' ? 'Despublicar' : 'Publicar' },
+                { label: VISIBILITY_ACTION_LABEL[scheme.visibility], onClick: () => void cycleVisibility(scheme) },
                 { label: 'Excluir', tone: 'danger' },
               ]}
             />
           ))}
-          {!cards.length ? <p className="text-sm text-white/80">Nenhum esquema criado ainda.</p> : null}
+          {!cards.length ? (
+            <p className="text-sm text-white/80">
+              {loadingSchemes
+                ? 'Carregando esquemas...'
+                : loadedSchemes.length
+                  ? 'Nenhum esquema para a ocasião selecionada.'
+                  : 'Nenhum esquema criado ainda.'}
+            </p>
+          ) : null}
         </div>
       </SectionBlock>
 

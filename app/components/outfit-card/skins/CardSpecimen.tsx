@@ -39,8 +39,8 @@ export default function CardSpecimen({ data, showHero = true }: CardSpecimenProp
     <div
       className="relative flex flex-col overflow-hidden"
       style={{
-        width: 360,
-        minHeight: 560,
+        width: 'var(--sai-card-width, 360px)',
+        minHeight: 'var(--sai-card-min-height, 560px)',
         background: graphPaperBg,
         fontFamily: 'var(--font-sharetech), "Share Tech Mono", monospace',
       }}

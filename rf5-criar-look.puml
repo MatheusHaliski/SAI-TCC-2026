@@ -1,0 +1,252 @@
+@startuml RF5_CriarLook_Bifurcacao_Modos_Geracao
+
+title RF5 — Criar Look: Bifurcação dos Modos de Geração (5 Etapas)
+
+' ============================================================================
+' DIAGRAMA DE ATIVIDADES — Fluxo principal com bifurcação Manual × IA
+' ============================================================================
+
+start
+
+:Etapa 1: Modo de Geração;
+:Usuário escolhe modo: Manual ou IA;
+
+if (Modo de Geração?) then (Manual)
+    repeat
+        :Etapa 2: Seleção Manual de Peças;
+        :Usuário seleciona peças por slot;
+        :Motor valida compatibilidade;
+    repeat while (Peças compatíveis?)
+
+else (IA)
+    repeat
+        :Etapa 2: Descrição / Intent;
+        :Usuário descreve look desejado;
+        :Enviar descrição para IA;
+
+        :Etapa 3: AI Assist — Seleção de Peças;
+        :IA analisa descrição;
+        :IA seleciona peças compatíveis;
+        :IA determina cores e combinações;
+        :IA seleciona marcas relevantes;
+    repeat while (IA gerou seleção válida?)
+
+    :Sugerir seleção ao usuário;
+    :Usuário pode aceitar ou editar;
+endif
+
+:Etapa 4: Configurar Arte de Background;
+:Abrir Background Studio Modal;
+:Opções: cor sólida, gradiente, imagem;
+:Gerar pré-visualização automática;
+:Usuário confirma arte;
+
+:Etapa 5: Salvar Look;
+:Validar campos obrigatórios;
+:Persistir em 'schemes' (banco);
+:Persistir em 'scheme_items' (slots + sort_order);
+:Persistir config de background;
+:Look criado com sucesso;
+
+if (Look será público?) then (Sim)
+    :Publicar esquema;
+else (Não)
+    :Manter como privado;
+endif
+
+:Retornar para Dashboard / Looks Salvos;
+
+stop
+
+@enduml
+
+
+@startuml RF5_CriarLook_Fluxo_Manual_vs_IA
+
+title RF5 — Criar Look: Fluxo Comparativo (Manual × IA)
+
+start
+
+:Etapa 1: Modo de Geração;
+
+if (Escolher Modo?) then (Manual)
+    partition "🔄 CAMINHO MANUAL" {
+        :Etapa 2: Seleção Direta;
+        :Usuário abre Closet Digital;
+        :Arrasta peças para composition;
+        :Motor valida compatibilidade;
+        if (Peças válidas?) then (Sim)
+            :Peças confirmadas;
+        else (Não)
+            :Indicar erro de compatibilidade;
+            :Retornar para seleção;
+            note right : Loop até validação OK
+        endif
+    }
+else (IA)
+    partition "🤖 CAMINHO IA" {
+        :Etapa 2: Descrição/Intent;
+        :Usuário descreve look;
+        :Ex: 'Casual verão, cores claras';
+
+        :Etapa 3: IA Assist;
+        :IA processa descrição;
+        :IA sugere 3 composições;
+        :Usuário escolhe uma;
+
+        if (Sugestão aceita?) then (Sim)
+            :Peças sugeridas aceitas;
+        else (Não)
+            :Usuário pode editar;
+            :ou gerar nova sugestão;
+            note right : Loop até aceitação
+        endif
+    }
+endif
+
+partition "🎨 AMBOS OS CAMINHOS" {
+    :Etapa 4: Background Art;
+    :Abrir Background Studio;
+    :Selecionar cores/gradiente/imagem;
+    :Pré-visualizar;
+
+    :Etapa 5: Salvar & Publicar;
+    :Validar todos os campos;
+    :Persistir em DB;
+
+    if (Publicar?) then (Sim)
+        :Publicar no feed;
+    else (Não)
+        :Salvar como rascunho;
+    endif
+}
+
+:Look criado com sucesso;
+:Redirecionar para Looks Salvos;
+
+stop
+
+@enduml
+
+
+@startuml RF5_CriarLook_Estados
+
+title RF5 — Criar Look: Máquina de Estados
+
+state "Não Iniciado" as NotStarted
+state "Modo de Geração" as ModeSelection {
+  state "Manual" as ManualMode
+  state "IA" as AIMode
+}
+
+state "Seleção de Peças" as PieceSelection {
+  state "Manual: Slots" as ManualSlots
+  state "IA: Descrição" as AIDescription
+  state "IA: Processamento" as AIProcessing
+  state "IA: Sugestões" as AISuggestions
+}
+
+state "Arte de Background" as BackgroundArt {
+  state "Studio Aberto" as BackgroundOpen
+  state "Configurando" as Configuring
+}
+
+state "Validação" as Validation {
+  state "Validando" as Validating
+  state "Válido" as Valid
+}
+
+state "Persistência" as Persistence {
+  state "Salvando Scheme" as SavingScheme
+  state "Salvando Itens" as SavingItems
+  state "Salvando Background" as SavingBackground
+}
+
+state "Publicação" as Publishing {
+  state "Privado" as Private
+  state "Público" as Public
+}
+
+NotStarted --> ModeSelection: Usuário inicia
+
+ModeSelection --> ManualMode: Manual
+ModeSelection --> AIMode: IA
+
+ManualMode --> ManualSlots: Abre seleção
+ManualSlots --> Validating: Submete
+
+AIMode --> AIDescription: Abre input
+AIDescription --> AIProcessing: Submete texto
+AIProcessing --> AISuggestions: IA processa
+AISuggestions --> Validating: Aceita sugestão
+
+Validating --> Valid: OK
+Validating --> ManualSlots: Erro (Manual)
+Validating --> AIDescription: Erro (IA)
+
+Valid --> BackgroundArt: Continua
+
+BackgroundArt --> BackgroundOpen: Abre modal
+BackgroundOpen --> Configuring: Usuário ajusta
+Configuring --> Validation: Aplica
+
+Validation --> Persistence: Validado
+
+Persistence --> SavingScheme: Registra scheme
+SavingScheme --> SavingItems: Registra itens
+SavingItems --> SavingBackground: Registra background
+SavingBackground --> Publishing: Pergunta visibilidade
+
+Publishing --> Private: Usuário escolhe privado
+Publishing --> Public: Usuário escolhe público
+
+Private --> [*]: Look criado (privado)
+Public --> [*]: Look criado (público)
+
+@enduml
+
+
+@startuml RF5_CriarLook_Componentes_Simplificado
+
+title RF5 — Criar Look: Arquitetura Simplificada
+
+start
+
+partition "Frontend (Next.js)" {
+    :CreateMySchemeView;
+    :ModeSelectionStep;
+    :ManualSelectionStep;
+    :AIAssistStep;
+    :BackgroundStudioModal;
+}
+
+partition "Backend (API Routes)" {
+    :SchemeController;
+    :SchemeService;
+    :AIAssistService;
+    :CompatibilityEngine;
+}
+
+partition "Data Layer" {
+    :Database;
+    :Repositories;
+}
+
+partition "External Services" {
+    :IA Provider;
+    :Image Processing;
+}
+
+:Fluxo:;
+:1. Frontend renderiza seleção de modo;
+:2. Backend cria scheme draft;
+:3. Se Manual: Seleção direta;
+:4. Se IA: Enviar para IA Service;
+:5. IA retorna sugestões;
+:6. Ambos convergem em Background;
+:7. Validar e persistir;
+:8. Publicar ou salvar privado;
+
+stop
+
+@enduml

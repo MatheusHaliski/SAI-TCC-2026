@@ -9,14 +9,14 @@ import SectionBlock from '@/app/components/shared/SectionBlock';
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
-type Occasion = 'trabalho' | 'casual' | 'balada' | 'academia' | 'evento';
+type Occasion = 'trabalho' | 'casual' | 'festa' | 'academia' | 'evento';
 type Mood = 'disposto' | 'cansado' | 'confiante' | 'criativo';
 type FeedbackValue = 'loved' | 'used' | 'skipped';
 
 const OCCASIONS: { value: Occasion; label: string }[] = [
   { value: 'trabalho', label: 'Trabalho' },
   { value: 'casual', label: 'Casual' },
-  { value: 'balada', label: 'Balada' },
+  { value: 'festa', label: 'Festa' },
   { value: 'academia', label: 'Academia' },
   { value: 'evento', label: 'Evento' },
 ];
@@ -28,16 +28,6 @@ const MOODS: { value: Mood; label: string }[] = [
   { value: 'criativo', label: 'Criativo' },
 ];
 
-const WEATHER_CONDITION_LABELS: Record<string, string> = {
-  clear: '☀️ Limpo',
-  partly_cloudy: '⛅ Nublado',
-  fog: '🌫️ Neblina',
-  drizzle: '🌦️ Garoa',
-  rain: '🌧️ Chuva',
-  snow: '❄️ Neve',
-  thunderstorm: '⛈️ Tempestade',
-};
-
 const FEEDBACK_LABELS: Record<FeedbackValue, string> = {
   loved: '❤️ Amei',
   used: '👍 Usei',
@@ -46,8 +36,9 @@ const FEEDBACK_LABELS: Record<FeedbackValue, string> = {
 
 const OCCASION_LABELS: Record<string, string> = {
   trabalho: 'Trabalho',
+  formal: 'Formal',
   casual: 'Casual',
-  balada: 'Balada',
+  festa: 'Festa',
   academia: 'Academia',
   evento: 'Evento',
 };
@@ -74,14 +65,7 @@ interface Suggestion {
   scheme_id: string;
   title: string;
   items: AutopilotItem[];
-  weather_fit_note: string;
   score: number;
-}
-
-interface WeatherInfo {
-  temp_c: number;
-  condition: string;
-  city: string;
 }
 
 function DailyLookPanel() {
@@ -90,7 +74,6 @@ function DailyLookPanel() {
   const [city, setCity] = useState('São Paulo');
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [weather, setWeather] = useState<WeatherInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmedId, setConfirmedId] = useState<string | null>(null);
   const [feedbackSent, setFeedbackSent] = useState<Record<string, FeedbackValue>>({});
@@ -100,7 +83,6 @@ function DailyLookPanel() {
     setLoading(true);
     setError(null);
     setSuggestions([]);
-    setWeather(null);
     setConfirmedId(null);
     setDailyLookId(null);
     try {
@@ -116,7 +98,6 @@ function DailyLookPanel() {
         return;
       }
       setSuggestions(data.suggestions ?? []);
-      setWeather(data.weather ?? null);
     } catch {
       setError('Erro de conexão. Tente novamente.');
     } finally {
@@ -125,13 +106,24 @@ function DailyLookPanel() {
   }
 
   async function confirmLook(suggestion: Suggestion) {
-    if (!weather) return;
     try {
       const response = await fetch('/api/autopilot/daily/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ scheme_id: suggestion.scheme_id, occasion, mood, weather }),
+        body: JSON.stringify({
+          scheme_id: suggestion.scheme_id,
+          title: suggestion.title,
+          occasion,
+          mood,
+          weather: { temp_c: 20, condition: 'partly_cloudy', city },
+          items: suggestion.items.map((item) => ({
+            wardrobe_item_id: item.wardrobe_item_id,
+            name: item.name,
+            image_url: item.image_url,
+            piece_type: item.piece_type,
+          })),
+        }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -164,20 +156,22 @@ function DailyLookPanel() {
 
   return (
     <div className="space-y-4">
-      <SectionBlock title="Configurar Look" subtitle="Escolha a ocasião, humor e cidade para gerar sugestões personalizadas">
+      <SectionBlock title="Configurar Look" subtitle="Escolha a ocasião e humor para gerar looks do seu guarda-roupa">
         <div className="mt-4 space-y-4">
           <div className="space-y-1">
-            <label className="text-xs text-white/50">Ocasião</label>
+            <label className="text-xs text-muted-foreground">Ocasião</label>
             <div className="flex flex-wrap gap-2">
               {OCCASIONS.map(({ value, label }) => (
                 <button
                   key={value}
                   onClick={() => setOccasion(value)}
-                  className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-                    occasion === value
-                      ? 'bg-white text-black font-semibold'
-                      : 'border border-white/20 text-white/70 hover:border-white/50'
-                  }`}
+                  className="rounded-full px-4 py-1.5 text-sm transition-colors"
+                  style={{
+                    background: occasion === value ? '#ffffff' : 'transparent',
+                    color: occasion === value ? '#0f172a' : 'var(--muted-foreground)',
+                    border: occasion === value ? 'none' : '1px solid var(--border)',
+                    fontWeight: occasion === value ? 600 : 400,
+                  }}
                 >
                   {label}
                 </button>
@@ -186,17 +180,19 @@ function DailyLookPanel() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-white/50">Humor</label>
+            <label className="text-xs text-muted-foreground">Humor</label>
             <div className="flex flex-wrap gap-2">
               {MOODS.map(({ value, label }) => (
                 <button
                   key={value}
                   onClick={() => setMood(value)}
-                  className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-                    mood === value
-                      ? 'bg-white text-black font-semibold'
-                      : 'border border-white/20 text-white/70 hover:border-white/50'
-                  }`}
+                  className="rounded-full px-4 py-1.5 text-sm transition-colors"
+                  style={{
+                    background: mood === value ? '#ffffff' : 'transparent',
+                    color: mood === value ? '#0f172a' : 'var(--muted-foreground)',
+                    border: mood === value ? 'none' : '1px solid var(--border)',
+                    fontWeight: mood === value ? 600 : 400,
+                  }}
                 >
                   {label}
                 </button>
@@ -205,22 +201,22 @@ function DailyLookPanel() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-white/50">Cidade</label>
+            <label className="text-xs text-muted-foreground">Cidade (opcional)</label>
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="Ex: São Paulo"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+              className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-white/30" style={{ color: "var(--foreground)" }}
             />
           </div>
 
           <button
             onClick={generateLooks}
             disabled={loading}
-            className="w-full rounded-lg bg-white py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-lg py-2.5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50" style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "#ffffff" }}
           >
-            {loading ? 'Gerando...' : 'Gerar Looks'}
+            {loading ? 'Gerando looks...' : 'Gerar Looks'}
           </button>
         </div>
       </SectionBlock>
@@ -231,18 +227,8 @@ function DailyLookPanel() {
         </div>
       )}
 
-      {weather && (
-        <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm">
-          <span className="text-white/60">
-            {WEATHER_CONDITION_LABELS[weather.condition] ?? weather.condition}
-          </span>
-          <span className="font-semibold">{weather.temp_c.toFixed(0)}°C</span>
-          <span className="text-white/40">{weather.city}</span>
-        </div>
-      )}
-
       {suggestions.length > 0 && (
-        <SectionBlock title={`${suggestions.length} Sugestões`} subtitle="Selecione o look que mais combina com o seu dia">
+        <SectionBlock title={`${suggestions.length} Looks Gerados`} subtitle="Selecione o look que mais combina com o seu dia — os looks foram salvos automaticamente em Looks Salvos">
           <div className="mt-4 space-y-4">
             {suggestions.map((suggestion) => {
               const isConfirmed = confirmedId === suggestion.scheme_id;
@@ -250,24 +236,22 @@ function DailyLookPanel() {
                 <div
                   key={suggestion.scheme_id}
                   className={`rounded-xl border p-4 space-y-3 transition-colors ${
-                    isConfirmed ? 'border-white/40 bg-white/10' : 'border-white/10 bg-white/5'
+                    isConfirmed ? 'border-white/40 bg-accent' : 'border-border bg-accent'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">{suggestion.title}</h3>
                     {isConfirmed && (
-                      <span className="text-xs rounded-full bg-white/20 px-3 py-1 text-white/80">
+                      <span className="text-xs rounded-full bg-white/20 px-3 py-1 text-foreground">
                         Look do Dia ✓
                       </span>
                     )}
                   </div>
 
-                  <p className="text-xs text-white/50">{suggestion.weather_fit_note}</p>
-
                   <div className="flex gap-2 overflow-x-auto">
                     {suggestion.items.map((item) => (
                       <div key={item.wardrobe_item_id} className="flex-shrink-0 space-y-1">
-                        <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-white/5">
+                        <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-accent">
                           {item.image_url ? (
                             <Image src={item.image_url} alt={item.name} fill className="object-cover" />
                           ) : (
@@ -276,7 +260,7 @@ function DailyLookPanel() {
                             </div>
                           )}
                         </div>
-                        <p className="text-xs text-white/50 text-center w-20 truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground text-center w-20 truncate">{item.name}</p>
                       </div>
                     ))}
                   </div>
@@ -284,7 +268,7 @@ function DailyLookPanel() {
                   {!isConfirmed && (
                     <button
                       onClick={() => confirmLook(suggestion)}
-                      className="w-full rounded-lg border border-white/20 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+                      className="w-full rounded-lg border border-border py-2 text-sm text-foreground hover:bg-accent transition-colors"
                     >
                       Usar este look hoje
                     </button>
@@ -292,13 +276,13 @@ function DailyLookPanel() {
 
                   {isConfirmed && !existingFeedback && (
                     <div className="space-y-2">
-                      <p className="text-xs text-white/50">Como foi este look?</p>
+                      <p className="text-xs text-muted-foreground">Como foi este look?</p>
                       <div className="flex gap-2">
                         {(['loved', 'used', 'skipped'] as FeedbackValue[]).map((fb) => (
                           <button
                             key={fb}
                             onClick={() => sendFeedback(fb)}
-                            className="flex-1 rounded-lg border border-white/20 py-2 text-xs hover:bg-white/10 transition-colors"
+                            className="flex-1 rounded-lg border border-border py-2 text-xs hover:bg-accent transition-colors"
                           >
                             {FEEDBACK_LABELS[fb]}
                           </button>
@@ -329,17 +313,19 @@ interface DayInput {
   occasion: Occasion;
 }
 
-interface WeekPlanDay {
+interface WeekPlanDayResult {
   date: string;
   occasion: Occasion;
   scheme_id: string | null;
   gap_hints: string[];
+  scheme_title?: string;
+  scheme_items?: AutopilotItem[];
 }
 
-interface WeekPlan {
+interface WeekPlanResult {
   week_plan_id: string;
   week_start: string;
-  days: WeekPlanDay[];
+  days: WeekPlanDayResult[];
 }
 
 function getNextMonday(): string {
@@ -364,7 +350,7 @@ function WeekPlanPanel() {
   const [city, setCity] = useState('São Paulo');
   const [days, setDays] = useState<DayInput[]>(() => buildDefaultDays(getNextMonday()));
   const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState<WeekPlan | null>(null);
+  const [plan, setPlan] = useState<WeekPlanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -401,32 +387,32 @@ function WeekPlanPanel() {
 
   return (
     <div className="space-y-4">
-      <SectionBlock title="Configurar Semana" subtitle="Defina a data de início, cidade e ocasião para cada dia">
+      <SectionBlock title="Configurar Semana" subtitle="Defina a data de início e a ocasião para cada dia — os looks serão vinculados à sua agenda semanal">
         <div className="mt-4 space-y-4">
           <div className="flex gap-4 flex-wrap">
             <div className="space-y-1 flex-1 min-w-[160px]">
-              <label className="text-xs text-white/50">Início da semana</label>
+              <label className="text-xs text-muted-foreground">Início da semana</label>
               <input
                 type="date"
                 value={weekStart}
                 onChange={(e) => setWeekStart(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+                className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30"
               />
             </div>
             <div className="space-y-1 flex-1 min-w-[160px]">
-              <label className="text-xs text-white/50">Cidade</label>
+              <label className="text-xs text-muted-foreground">Cidade (opcional)</label>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="Ex: São Paulo"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+                className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-white/30" style={{ color: "var(--foreground)" }}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs text-white/50">Ocasião por dia</p>
+            <p className="text-xs text-muted-foreground">Ocasião por dia</p>
             {days.map((day, index) => (
               <div key={day.date} className="flex items-center gap-3">
                 <span className="w-16 text-xs text-white/40 flex-shrink-0">{DAY_LABELS[index]}</span>
@@ -439,7 +425,7 @@ function WeekPlanPanel() {
                       className={`rounded-full px-2.5 py-0.5 text-xs transition-colors ${
                         day.occasion === value
                           ? 'bg-white text-black font-semibold'
-                          : 'border border-white/15 text-white/50 hover:border-white/40'
+                          : 'border border-white/15 text-muted-foreground hover:border-white/40'
                       }`}
                     >
                       {label}
@@ -453,7 +439,7 @@ function WeekPlanPanel() {
           <button
             onClick={generatePlan}
             disabled={loading}
-            className="w-full rounded-lg bg-white py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-lg py-2.5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50" style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "#ffffff" }}
           >
             {loading ? 'Gerando plano...' : 'Gerar Planejamento Semanal'}
           </button>
@@ -467,30 +453,52 @@ function WeekPlanPanel() {
       )}
 
       {plan && (
-        <SectionBlock title={`Plano — Semana de ${plan.week_start}`} subtitle="Looks gerados para cada dia da semana">
+        <SectionBlock title={`Plano — Semana de ${plan.week_start}`} subtitle="Looks gerados para cada dia — todos salvos automaticamente em Looks Salvos">
           <div className="mt-4 space-y-3">
             {plan.days.map((day, index) => (
               <div
                 key={day.date}
                 className={`rounded-xl border p-4 ${
-                  day.scheme_id ? 'border-white/10 bg-white/5' : 'border-amber-500/20 bg-amber-500/5'
+                  day.scheme_id ? 'border-border bg-accent' : 'border-amber-500/20 bg-amber-500/5'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
                     <p className="text-sm font-semibold">
                       {DAY_LABELS[index]} <span className="text-white/40 font-normal">— {day.date}</span>
                     </p>
-                    <p className="text-xs text-white/50 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {OCCASIONS.find((o) => o.value === day.occasion)?.label ?? day.occasion}
                     </p>
+                    {day.scheme_title && (
+                      <p className="text-xs text-white/40 mt-0.5 italic">{day.scheme_title}</p>
+                    )}
                   </div>
                   {day.scheme_id ? (
-                    <span className="text-xs rounded-full bg-white/10 px-2 py-0.5 text-white/60">Look gerado ✓</span>
+                    <span className="text-xs rounded-full bg-accent px-2 py-0.5 text-muted-foreground flex-shrink-0">Look gerado ✓</span>
                   ) : (
-                    <span className="text-xs rounded-full bg-amber-500/20 px-2 py-0.5 text-amber-400">Lacuna</span>
+                    <span className="text-xs rounded-full bg-amber-500/20 px-2 py-0.5 text-amber-400 flex-shrink-0">Lacuna</span>
                   )}
                 </div>
+
+                {day.scheme_items && day.scheme_items.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto">
+                    {day.scheme_items.map((item) => (
+                      <div key={item.wardrobe_item_id} className="flex-shrink-0 space-y-1">
+                        <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-accent">
+                          {item.image_url ? (
+                            <Image src={item.image_url} alt={item.name} fill className="object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-white/20 text-xs">
+                              {item.piece_type}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-white/40 text-center w-16 truncate">{item.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {day.gap_hints.length > 0 && (
                   <div className="mt-2 space-y-1">
@@ -513,13 +521,16 @@ function WeekPlanPanel() {
 
 interface DailyLook {
   daily_look_id: string;
+  scheme_id?: string;
   date: string;
   occasion: string;
   mood: string;
-  weather_c: number;
+  weather_c: number | null;
   city: string;
   feedback: FeedbackValue | null;
   created_at: string;
+  scheme_items?: AutopilotItem[];
+  title?: string;
 }
 
 function HistoryPanel() {
@@ -542,7 +553,8 @@ function HistoryPanel() {
         setError(data.error ?? 'Erro ao carregar histórico.');
         return;
       }
-      setLooks(Array.isArray(data.looks) ? data.looks : []);
+      const rawLooks: DailyLook[] = Array.isArray(data.looks) ? data.looks : [];
+      setLooks(rawLooks);
     } catch {
       setError('Erro de conexão. Tente novamente.');
     } finally {
@@ -600,7 +612,7 @@ function HistoryPanel() {
     return (
       <SectionBlock title="Histórico Vazio" subtitle="Você ainda não registrou nenhum look">
         <p className="mt-4 text-sm text-white/40">
-          Gere seu primeiro look na aba <strong className="text-white/70">Looks Diários</strong> para começar o histórico.
+          Gere seu primeiro look na aba <strong className="text-muted-foreground">Looks Diários</strong> para começar o histórico.
         </p>
       </SectionBlock>
     );
@@ -615,7 +627,7 @@ function HistoryPanel() {
           { label: '👍 Usei', value: stats.used, color: 'text-blue-400' },
           { label: '⏭️ Pulei', value: stats.skipped, color: 'text-white/40' },
         ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
+          <div key={label} className="rounded-xl border border-border bg-accent p-3 text-center">
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
             <p className="text-xs text-white/40 mt-1">{label}</p>
           </div>
@@ -628,24 +640,50 @@ function HistoryPanel() {
           <SectionBlock key={date} title={date} subtitle={`${dateLooks.length} look${dateLooks.length !== 1 ? 's' : ''} neste dia`}>
             <div className="mt-3 space-y-3">
               {dateLooks.map((look) => (
-                <div key={look.daily_look_id} className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
+                <div key={look.daily_look_id} className="rounded-xl border border-border bg-accent p-4 space-y-3">
+                  {/* Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">
-                        {OCCASION_LABELS[look.occasion] ?? look.occasion}
+                        {look.title ?? OCCASION_LABELS[look.occasion] ?? look.occasion}
                       </span>
                       <span className="text-xs text-white/30">·</span>
-                      <span className="text-xs text-white/50">
+                      <span className="text-xs text-muted-foreground">
                         {MOOD_LABELS[look.mood] ?? look.mood}
                       </span>
                     </div>
-                    <span className="text-xs text-white/30">
-                      {look.weather_c.toFixed(0)}°C — {look.city}
-                    </span>
+                    <span className="text-xs text-white/30">{look.city}</span>
                   </div>
 
+                  {/* Peças da combinação */}
+                  {look.scheme_items && look.scheme_items.length > 0 ? (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {look.scheme_items.map((item) => (
+                        <div key={item.wardrobe_item_id} className="flex-shrink-0 space-y-1">
+                          <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-border bg-white/5">
+                            {item.image_url ? (
+                              <img
+                                src={item.image_url}
+                                alt={item.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-white/20 text-xs">
+                                📷
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-center text-[9px] text-white/50 w-20 truncate">{item.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-white/30 italic">Peças não disponíveis</p>
+                  )}
+
+                  {/* Feedback */}
                   {look.feedback ? (
-                    <span className="inline-block text-xs rounded-full bg-white/10 px-3 py-0.5 text-white/70">
+                    <span className="inline-block text-xs rounded-full bg-accent px-3 py-0.5 text-muted-foreground">
                       {FEEDBACK_LABELS[look.feedback]}
                     </span>
                   ) : (
@@ -654,7 +692,7 @@ function HistoryPanel() {
                         <button
                           key={fb}
                           onClick={() => sendFeedback(look.daily_look_id, fb)}
-                          className="flex-1 rounded-lg border border-white/15 py-1.5 text-xs hover:bg-white/10 transition-colors"
+                          className="flex-1 rounded-lg border border-white/15 py-1.5 text-xs hover:bg-accent transition-colors"
                         >
                           {FEEDBACK_LABELS[fb]}
                         </button>
@@ -677,11 +715,11 @@ const SECTIONS = ['Looks Diários', 'Semana', 'Histórico'];
 const SECTION_META: Record<string, { title: string; subtitle: string }> = {
   'Looks Diários': {
     title: 'Autopiloto de Looks',
-    subtitle: 'Looks diários personalizados com base no clima, ocasião e humor',
+    subtitle: 'Gera esquemas de moda do seu guarda-roupa com base na ocasião e humor',
   },
   'Semana': {
     title: 'Planejamento Semanal',
-    subtitle: 'Organize looks para a semana inteira com base nas suas ocasiões',
+    subtitle: 'Gera looks para cada dia da semana vinculados à sua agenda',
   },
   'Histórico': {
     title: 'Histórico de Looks',

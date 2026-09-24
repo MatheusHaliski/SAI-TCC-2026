@@ -15,7 +15,7 @@ export class AutopilotController {
 
   async confirmDailyLook(
     userId: string,
-    body: { scheme_id: string; occasion: Occasion; mood: Mood; weather: WeatherInfo },
+    body: { scheme_id: string; title?: string; occasion: Occasion; mood: Mood; weather: WeatherInfo; items?: Array<{ wardrobe_item_id: string; name: string; image_url?: string; piece_type?: string }> },
   ) {
     return this.autopilotService.confirmDailyLook(userId, body);
   }

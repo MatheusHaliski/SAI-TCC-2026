@@ -22,4 +22,11 @@ export class SchemeItemsService {
 
     return this.schemeItemsRepository.createMany(items);
   }
+
+  async getWardrobeUsage(wardrobeItemIds: string[]) {
+    const normalized = Array.from(
+      new Set(wardrobeItemIds.map((id) => String(id).trim()).filter(Boolean)),
+    );
+    return this.schemeItemsRepository.getUsageByWardrobeItemIds(normalized);
+  }
 }

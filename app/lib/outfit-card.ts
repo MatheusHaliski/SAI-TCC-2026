@@ -1,19 +1,52 @@
 export type PieceCategory = 'Premium' | 'Standard' | 'Limited Edition' | 'Rare';
 
+/**
+ * Per-piece visual styling applied to a single piece tile/cell in the outfit
+ * card. Every field is optional and falls back to the card's global theme,
+ * so pieces without a `style` render exactly as before.
+ */
+export type OutfitPieceStyle = {
+  /** Solid background color of the piece cell. */
+  cellBackground?: string;
+  /** Image used as the cell background (data URI or curated URL). */
+  cellBackgroundImage?: string;
+  /** Main text color inside the cell. */
+  textColor?: string;
+  /** Border color of the cell. */
+  borderColor?: string;
+  /** Accent color used for highlights/badges within the cell. */
+  accentColor?: string;
+  /** Visually promotes the cell (e.g. the look's hero piece). */
+  highlight?: boolean;
+};
+
 export type OutfitPiece = {
   id: string;
   wardrobeItemId?: string;
   name: string;
   brand: string;
+  /** Optional per-piece visual styling (cell color, image, text, border). */
+  style?: OutfitPieceStyle;
   brandLogoUrl?: string;
+  /** Direct 2D image URL for piece card modal visualization. */
+  imageUrl?: string;
   pieceType: string;
   pieceTypeIconUrl?: string;
   category?: PieceCategory;
   wearstyles?: string[];
+  /** Remix flag: piece comes from another user's scheme and must be swapped for one the user owns. */
+  needsReplacement?: boolean;
+  description?: string;
+  creatorName?: string;
+  occasion?: string;
   /** Community-quality base, 0–5. Default by tier: Premium→3.5, Rare→3.0, LimitedEdition→3.2, Standard→2.5 */
   baseQuality?: number;
   /** Aggregated like count, maintained via pieceLikes subcollection. */
   likes?: number;
+  /** How many users own this piece. */
+  ownersCount?: number;
+  /** 0–5 explicit rating (distinct from computed quality stars). */
+  ratingStars?: number;
 };
 
 export type OutfitMetaBadge = {
@@ -92,9 +125,23 @@ export type OutfitBackgroundConfig = {
   };
   shape?: 'none' | 'orb' | 'diamond' | 'mesh' | 'stars' | 'circles' | 'triangles' | 'waves' | 'beams' | 'flowers' | 'arrows';
   studioStyleConfig?: BackgroundStudioStyleConfig;
+  /** When true the card background is driven by the Aura system (based on like count) instead of the static config set in Studio. */
+  dynamicBackground?: boolean;
 };
 
 export type CardSkinId = 'atelier' | 'spread' | 'index' | 'trading' | 'fai_max' | 'stub' | 'specimen';
+
+/** Layout used to render the outfit's piece list on the card. */
+export type OutfitPieceListFormat = 'grid-2' | 'grid-3' | 'stack' | 'plate' | 'magazine' | 'row';
+
+export type OutfitCardDisplayMode = 'complete' | 'hide-hero' | 'hide-pieces' | 'pieces-only';
+
+export type OutfitCardDisplayOptions = {
+  /** Background used only behind the readable internal content, helpful over busy AI artwork. */
+  contentPanelColor?: string;
+  /** Controls which card sections stay visible in the final composition. */
+  displayMode?: OutfitCardDisplayMode;
+};
 
 export type OutfitCardData = {
   outfitName: string;
@@ -114,7 +161,21 @@ export type OutfitCardData = {
   creatorName?: string;
   titleFontFamily?: string;
   score?: number;
+  /** 0–5 star rating rendered in the outfit header. */
+  ratingStars?: number;
+  /** How many users have saved/own this outfit. */
+  ownersCount?: number;
+  /** Outfit-level like count (distinct from individual piece likes). */
+  outfitLikes?: number;
+  /** Occasion label rendered alongside the style line. */
+  occasion?: string;
   cardSkin?: CardSkinId;
+  /** Aggregated like count used by the Aura system when dynamicBackground is enabled. */
+  likes?: number;
+  /** Layout used to render the piece list. Defaults to 'grid-2'. */
+  pieceListFormat?: OutfitPieceListFormat;
+  /** Readability and section visibility options for the outfit card. */
+  displayOptions?: OutfitCardDisplayOptions;
 };
 
 const FALLBACK_BACKGROUND: OutfitBackgroundConfig = {
@@ -289,7 +350,7 @@ type DescriptionGeneratorInput = {
   outfitName?: string;
   style?: string;
   occasion?: string;
-  visibility?: 'private' | 'public';
+  visibility?: 'private' | 'followers' | 'public';
   brand?: string;
   palette?: string;
   mood?: string;
