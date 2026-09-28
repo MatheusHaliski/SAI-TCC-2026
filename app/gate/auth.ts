@@ -259,10 +259,14 @@ export function useAuthGate(): UseAuthGateReturn  {
         callback: handleGoogleResponse,
       });
 
-      window.google.accounts.id.renderButton(
-          document.getElementById("google-signin"),
-          {theme: "outline", size: "large", text: "continue_with"}
-      );
+      const container = document.getElementById("google-signin");
+      window.google.accounts.id.renderButton(container, {
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        // GIS aceita largura entre 200 e 400px: ocupa a coluna do gate.
+        width: Math.min(400, Math.max(200, container?.clientWidth ?? 0)),
+      });
     };
 
     if (window.google?.accounts?.id) {

@@ -43,9 +43,7 @@ export default function SignupViewPage() {
     const pathname = usePathname();
 
     useEffect(() => {
-        // TODO: reativar verificação do devauthgate em produção
-        // const t = getDevSessionToken();
-        // if (!t) router.replace("/devauthgate");
+        // O dev auth gate é aplicado a todas as páginas pelo DevAuthGateBoundary (app/layout.tsx).
         ensureSharedAccessToken();
     }, [router]);
 

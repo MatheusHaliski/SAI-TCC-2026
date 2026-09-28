@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import DevAuthGateBoundary from "@/app/gate/DevAuthGateBoundary";
 
 export const metadata: Metadata = {
     title: "Fashion AI — Seu Estilista Pessoal",
@@ -23,7 +24,7 @@ export default function RootLayout({
             ` }} />
         </head>
         <body suppressHydrationWarning>
-            {children}
+            <DevAuthGateBoundary>{children}</DevAuthGateBoundary>
         </body>
         </html>
     );

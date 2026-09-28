@@ -1,0 +1,145 @@
+/* Dev auth gate (/gate): exibido antes de qualquer página do projeto, inclusive RF1/RF2. */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background-color: #fafafa;
+  color: #09090b;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
+.card {
+  width: 100%;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 2rem;
+  border-radius: 1rem;
+  background-color: #ffffff;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  color: #09090b;
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: #09090b;
+}
+
+.googleSlot {
+  min-height: 44px;
+}
+
+.error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #f43f5e;
+}
+
+.verified {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #10b981;
+}
+
+.signedIn {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #a7f3d0;
+  border-radius: 0.5rem;
+  background-color: #ecfdf5;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #047857;
+}
+
+/* Os temas globais forçam cor/fundo de todo <input> com !important; este seletor é mais específico. */
+.card .field input.pinInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 1rem;
+  border: 1px solid #52525b;
+  border-radius: 0.5rem;
+  outline: none;
+  background-color: #52525b !important;
+  color: #fafafa !important;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.card .field input.pinInput::placeholder {
+  color: #d4d4d8 !important;
+}
+
+.card .field input.pinInput:focus-visible {
+  border-color: #18181b;
+  box-shadow: 0 0 0 2px #a1a1aa;
+}
+
+.button {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: #000000;
+  color: #ffffff;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background-color: #27272a;
+}
+
+.button:disabled {
+  background-color: #a1a1aa;
+  cursor: not-allowed;
+}
+
+.checking {
+  min-height: 100vh;
+  background-color: #fafafa;
+}
