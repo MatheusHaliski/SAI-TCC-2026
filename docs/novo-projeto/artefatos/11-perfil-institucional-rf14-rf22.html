@@ -490,6 +490,63 @@
   .banner.info{ background: var(--surface-2); color: var(--ink-2); border:1px solid var(--line); }
   .banner.bad{ background: var(--bad-soft); color: var(--bad); }
 
+  /* editor sem campos textuais */
+  .field .sel{
+    position:relative; border:1px solid var(--line); border-radius: calc(1 * var(--mm)); background: var(--surface);
+    padding: calc(1.8 * var(--mm)) calc(7 * var(--mm)) calc(1.8 * var(--mm)) calc(2 * var(--mm));
+    font-size:8.5px; min-height: calc(8 * var(--mm)); display:flex; align-items:center; gap: calc(1.4 * var(--mm));
+  }
+  .field .sel::after{
+    content:""; position:absolute; right: calc(2.4 * var(--mm)); top:50%;
+    width: calc(1.6 * var(--mm)); height: calc(1.6 * var(--mm));
+    border-right:1.2px solid var(--ink-3); border-bottom:1.2px solid var(--ink-3);
+    transform: translateY(-70%) rotate(45deg);
+  }
+  .field .sel.locked{ opacity:.6; }
+  .field .sel.err{ border-color: var(--bad); background: var(--bad-soft); color: var(--bad); }
+  .field .sel .sw{ width: calc(3 * var(--mm)); height: calc(3 * var(--mm)); border-radius:50%; flex:none; border:1px solid rgba(0,0,0,.15); }
+  .policy{
+    border:1px solid var(--line); border-radius: calc(1.2 * var(--mm)); background: var(--surface-2);
+    padding: calc(2 * var(--mm)); display:flex; flex-direction:column; gap: calc(1.4 * var(--mm));
+  }
+  .policy.bad{ border-color: var(--bad); background: var(--bad-soft); }
+  .policy .ph{ display:flex; align-items:center; gap: calc(1.4 * var(--mm)); font-size:8px; font-weight:600; }
+  .policy .ph .vpill{ margin-left:auto; }
+  .policy .pc{ display:flex; flex-wrap:wrap; gap: calc(1 * var(--mm)); }
+  .pchip{
+    font-size:6.8px; padding: calc(.6 * var(--mm)) calc(1.4 * var(--mm)); border-radius:999px;
+    border:1px solid var(--line); background: var(--surface); color: var(--ink-2); font-family:"IBM Plex Mono",monospace;
+  }
+  .pchip.bad{ border-color: var(--bad); color: var(--bad); background: var(--bad-soft); }
+  .policy .pa{ display:flex; gap: calc(1.4 * var(--mm)); }
+  .btn.sm{ height: calc(6.5 * var(--mm)); font-size:7.5px; padding-inline: calc(2 * var(--mm)); }
+  .tagpill{
+    font-family:"IBM Plex Mono",monospace; font-size:6.8px; padding: calc(.5 * var(--mm)) calc(1.2 * var(--mm));
+    border-radius: calc(.8 * var(--mm)); background: var(--ink); color: var(--surface); white-space:nowrap;
+  }
+
+  /* janela do Copilot · versão Definir selo */
+  .cp{ flex:1; display:flex; flex-direction:column; gap: calc(2 * var(--mm)); overflow:hidden; }
+  .cp .patterns{ display:flex; gap: calc(1 * var(--mm)); overflow:hidden; flex:none; }
+  .cp .patterns .chip{ flex:none; }
+  .bub{ max-width:90%; padding: calc(1.8 * var(--mm)) calc(2.2 * var(--mm)); border-radius: calc(2 * var(--mm)); font-size:7.8px; line-height:1.45; }
+  .bub.me{ align-self:flex-end; background: var(--ink); color: var(--surface); border-bottom-right-radius: calc(.6 * var(--mm)); }
+  .bub.ai{ align-self:flex-start; background: var(--surface-2); border:1px solid var(--line); border-bottom-left-radius: calc(.6 * var(--mm)); }
+  .bub .slot{ background: rgba(255,255,255,.18); border-radius:3px; padding:0 3px; font-family:"IBM Plex Mono",monospace; }
+  .bub.ai .slot{ background: var(--surface-3); }
+  .pcard{ display:grid; grid-template-columns: auto 1fr; gap: calc(.8 * var(--mm)) calc(2 * var(--mm)); font-size:7.2px; margin-top: calc(1.2 * var(--mm)); }
+  .pcard .k{ color: var(--ink-3); font-family:"IBM Plex Mono",monospace; font-size:6.6px; text-transform:uppercase; letter-spacing:.04em; }
+  .pcard .v{ font-weight:500; }
+  .pcard .v.bad{ color: var(--bad); }
+  .src{ font-size:6.6px; color: var(--ink-3); font-family:"IBM Plex Mono",monospace; margin-top: calc(1 * var(--mm)); line-height:1.5; }
+  .opts{ display:flex; flex-direction:column; gap: calc(.8 * var(--mm)); margin-top: calc(1.2 * var(--mm)); }
+  .opts .o{ border:1px solid var(--line); border-radius: calc(1 * var(--mm)); padding: calc(1.2 * var(--mm)) calc(1.6 * var(--mm)); font-size:7.5px; background: var(--surface); display:flex; justify-content:space-between; gap: calc(1 * var(--mm)); }
+  .opts .o.on{ border-color: var(--ink); font-weight:600; }
+  .cp .composer{
+    margin-top:auto; flex:none; display:flex; gap: calc(1.4 * var(--mm)); align-items:center; border:1px solid var(--line);
+    border-radius:999px; padding: calc(1.2 * var(--mm)) calc(2 * var(--mm)); font-size:7.5px; color: var(--ink-3); background: var(--surface-2);
+  }
+
   /* estados */
   .empty{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: calc(2.4 * var(--mm));
           text-align:center; padding: calc(6 * var(--mm)); }
@@ -615,7 +672,7 @@
           <tr><th>Aba no modo administrador</th><th>O que o visitante vê</th><th>Regra</th></tr>
         </thead>
         <tbody>
-          <tr><td class="k">Cadastrar novo selo</td><td class="d">Não existe — a aba não é renderizada</td><td class="d"><span class="ca">RNF1</span> emissão de selo é ato do perfil emissor</td></tr>
+          <tr><td class="k">Cadastrar novo selo</td><td class="d">Não existe — a aba não é renderizada</td><td class="d"><span class="ca">RNF1</span> emissão de selo é ato do perfil emissor · <span class="ca">RF20.CA24</span> sem campos textuais · <span class="ca">RF20.CA25</span> política via Copilot</td></tr>
           <tr><td class="k">Meus selos</td><td class="d"><strong>Promoções</strong> — só as campanhas ativas habilitadas pelos selos que <em>o visitante</em> possui</td><td class="d"><span class="ca">RF20.CA11</span> <span class="ca">RF21.CA21</span></td></tr>
           <tr><td class="k">Meus esquemas</td><td class="d"><strong>Looks consagrados</strong> — galeria dos vínculos aprovados</td><td class="d"><span class="ca">RF14.CA03</span> <span class="ca">RF20.CA15</span></td></tr>
           <tr><td class="k">Minhas peças</td><td class="d"><strong>Catálogo</strong></td><td class="d"><span class="ca">RF14.CA03</span></td></tr>
@@ -843,7 +900,7 @@
 
     <div class="rack">
 
-      <!-- ABA 1 — CADASTRAR NOVO SELO -->
+      <!-- ABA 1 — CADASTRAR NOVO SELO (sem campos textuais) -->
       <figure class="device">
         <div class="phone">
           <div class="screen">
@@ -864,8 +921,8 @@
                 </div>
                 <div style="display:flex;flex-direction:column;gap:calc(1 * var(--mm))">
                   <span style="font-size:9px;font-weight:600">Pré-visualização</span>
-                  <span style="font-size:7.5px;color:var(--ink-3)">Centro vazio recebe o logotipo cadastrado. Arte da Coleção E.</span>
-                  <span class="vpill marca">tier LOOK</span>
+                  <span style="font-size:7.5px;color:var(--ink-3)">Renderizada a partir dos selects de estética. Centro vazio recebe o logotipo.</span>
+                  <span class="vpill marca">tier LOOK · tecido · malha</span>
                 </div>
               </div>
 
@@ -878,36 +935,66 @@
               </div>
 
               <div class="field">
+                <span class="lb">Política de selo</span>
+                <div class="policy">
+                  <div class="ph"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-sparkle"/></svg><span>Definida no Copilot</span><span class="vpill ok">válida · v2</span></div>
+                  <div class="pc">
+                    <span class="pchip">≥ 2 peças · Inverno 26</span>
+                    <span class="pchip">auto ≥ 0,85 · revisão 0,72–0,85</span>
+                    <span class="pchip">12 meses · fim da campanha</span>
+                    <span class="pchip">teto 2.000 · 1/usuário</span>
+                    <span class="pchip">Desconto e-commerce · 15%</span>
+                  </div>
+                  <div class="pa">
+                    <span class="btn ghost sm">Ajustar no Copilot</span>
+                    <span class="btn ghost sm">Ver transcript</span>
+                  </div>
+                </div>
+                <span class="hint"><span class="tagpill">#createsealpolicy</span> única entrada em linguagem natural — na janela do Copilot.</span>
+              </div>
+
+              <div class="field">
                 <span class="lb">Nome do selo</span>
-                <div class="in">Fio Seco · Inverno 26</div>
+                <div class="sel">Fio Seco · Inverno 26</div>
+                <span class="hint">3 propostas do Copilot. Escolha; não se digita.</span>
+              </div>
+
+              <div style="display:flex;gap:calc(2 * var(--mm))">
+                <div class="field" style="flex:1">
+                  <span class="lb">Material</span>
+                  <div class="sel"><span class="sw" style="background:#3E5A82"></span>Tecido</div>
+                </div>
+                <div class="field" style="flex:1">
+                  <span class="lb">Moldura</span>
+                  <div class="sel">Malha de pontos</div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:calc(2 * var(--mm))">
+                <div class="field" style="flex:1">
+                  <span class="lb">Centro</span>
+                  <div class="sel">Logotipo cadastrado</div>
+                </div>
+                <div class="field" style="flex:1">
+                  <span class="lb">Denominação</span>
+                  <div class="sel">Ano · 2026</div>
+                </div>
               </div>
 
               <div style="display:flex;gap:calc(2 * var(--mm))">
                 <div class="field" style="flex:1">
                   <span class="lb">Validade</span>
-                  <div class="in"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-clock"/></svg>12 meses</div>
+                  <div class="sel"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-clock"/></svg>12 meses</div>
                 </div>
                 <div class="field" style="flex:1">
-                  <span class="lb">Teto da campanha</span>
-                  <div class="in">2.000 selos</div>
+                  <span class="lb">Promoção habilitada</span>
+                  <div class="sel"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-ticket"/></svg>E-commerce · 15%</div>
                 </div>
-              </div>
-
-              <div class="field">
-                <span class="lb">Limiar de confiança da IA</span>
-                <div class="in">0,72 — abaixo disso, nenhuma sugestão</div>
-                <span class="hint">Configurável por perfil. Vale para as até 3 sugestões de RF20.CA01.</span>
               </div>
 
               <div class="switch on">
                 <span class="knob"></span>
-                <span>Auto-aprovar vínculos acima do limiar</span>
-              </div>
-
-              <div class="field">
-                <span class="lb">Promoção habilitada por este selo</span>
-                <div class="in"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-ticket"/></svg>Desconto e-commerce · 15%</div>
-                <span class="hint">Cota 2.000 · limite 1 por usuário · 01/03 a 30/06</span>
+                <span>Auto-aprovar acima de 0,85 <span style="color:var(--ink-3)">— vem da política</span></span>
               </div>
 
               <span class="btn pri marca" style="height:calc(9 * var(--mm))">Publicar selo e campanha</span>
@@ -916,16 +1003,17 @@
         </div>
         <figcaption>
           <span class="cap-k">Aba 1</span>
-          <span class="cap-t">Cadastrar novo selo</span>
-          <span class="cap-d">Um formulário, quatro decisões: <strong>tier</strong>, <strong>validade</strong>,
-          <strong>política de revisão</strong> e <strong>a promoção que o selo destrava</strong> — selo sem campanha
-          é selo que não faz nada pelo usuário. A pré-visualização mostra o centro vazio, para que ninguém envie
-          arte com logotipo embutido.</span>
-          <span class="cap-ca"><span class="ca">RF20.CA08</span><span class="ca">RF20.CA11</span><span class="ca">RF21.CA23</span><span class="ca">RF24.CA06</span></span>
+          <span class="cap-t">Cadastrar novo selo — sem campos textuais</span>
+          <span class="cap-d">Nenhum campo aceita digitação: tier é segmento, tudo o mais é <strong>select</strong> ou switch,
+          e a regra do selo é um objeto <span class="mono">SealPolicy</span> devolvido pelo Copilot, exibido em chips.
+          Os selects de estética (material, moldura, centro, denominação) leem o catálogo de selos vetoriais de
+          <span class="mono">insumos/selos/</span> e alimentam a pré-visualização. Nome, validade, teto e promoção
+          vêm da política e podem ser sobrescritos — cada sobrescrita gera uma versão nova.</span>
+          <span class="cap-ca"><span class="ca">RF20.CA08</span><span class="ca">RF20.CA11</span><span class="ca">RF20.CA24</span><span class="ca">RF20.CA25</span><span class="ca">RF20.CA28</span><span class="ca">RF20.CA29</span><span class="ca">RF20.CA30</span></span>
         </figcaption>
       </figure>
 
-      <!-- ABA 1 — variante celebridade -->
+      <!-- ABA 1 — variante celebridade · política em conflito -->
       <figure class="device">
         <div class="phone">
           <div class="screen">
@@ -942,8 +1030,8 @@
             <div class="s-body">
               <div class="banner warn">
                 <svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-lock"/></svg>
-                <span><strong>Revisão humana obrigatória.</strong> O vínculo associa o look de outra pessoa à sua
-                imagem. A auto-aprovação de RF20.CA02 não se aplica e o campo fica travado.</span>
+                <span><strong>Revisão humana obrigatória.</strong> O Copilot recusa qualquer política com auto-aprovação
+                para celebridade e explica por quê (RF21.CA19).</span>
               </div>
 
               <div style="display:flex;gap:calc(2.4 * var(--mm));align-items:center">
@@ -952,15 +1040,48 @@
                 </div>
                 <div style="display:flex;flex-direction:column;gap:calc(1 * var(--mm))">
                   <span style="font-size:9px;font-weight:600">Selo Premium</span>
-                  <span style="font-size:7.5px;color:var(--ink-3)">Visualmente distinto do Selo de Marca: vítreo, holográfico.</span>
-                  <span class="vpill celeb">era Vitral</span>
+                  <span style="font-size:7.5px;color:var(--ink-3)">Só materiais vítreos: vidro ou holográfico.</span>
+                  <span class="vpill celeb">era Vitral · holográfico</span>
                 </div>
               </div>
 
               <div class="field">
                 <span class="lb">Era do look consagrado</span>
-                <div class="in">Vitral · 2019–2022</div>
-                <span class="hint">Alimenta a justificativa em linguagem natural da sugestão.</span>
+                <div class="sel">Vitral · 2019–2022</div>
+                <span class="hint">Eras cadastradas no perfil. Alimenta a justificativa da sugestão (RF21.CA17).</span>
+              </div>
+
+              <div class="field">
+                <span class="lb">Política de selo</span>
+                <div class="policy bad">
+                  <div class="ph"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-alert"/></svg><span>Política em conflito</span><span class="vpill bad">conflito · v1</span></div>
+                  <div class="pc">
+                    <span class="pchip">Selo Premium · era Vitral</span>
+                    <span class="pchip">revisão manual · SLA 48 h</span>
+                    <span class="pchip bad">teto ausente — RF21.CA23</span>
+                    <span class="pchip">Pré-venda Turnê Vitral · parceira Meridiano</span>
+                  </div>
+                  <div class="pa">
+                    <span class="btn pri celeb sm">Definir teto no Copilot</span>
+                  </div>
+                </div>
+                <span class="hint err">O Copilot não encontrou teto de emissão na sua política. Celebridade não publica sem teto.</span>
+              </div>
+
+              <div class="field">
+                <span class="lb">Nome do selo</span>
+                <div class="sel">Vitral · Edição 26</div>
+              </div>
+
+              <div style="display:flex;gap:calc(2 * var(--mm))">
+                <div class="field" style="flex:1">
+                  <span class="lb">Material</span>
+                  <div class="sel"><span class="sw" style="background:linear-gradient(135deg,#FFB3E6,#B3E5FF,#E0B3FF)"></span>Holográfico</div>
+                </div>
+                <div class="field" style="flex:1">
+                  <span class="lb">Teto</span>
+                  <div class="sel err"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-alert"/></svg>—</div>
+                </div>
               </div>
 
               <div class="switch locked">
@@ -969,14 +1090,8 @@
               </div>
 
               <div class="field">
-                <span class="lb">Teto de emissão por campanha</span>
-                <div class="in err"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-alert"/></svg>0</div>
-                <span class="hint err">Informe um teto maior que zero, ou desmarque "limitar emissão".</span>
-              </div>
-
-              <div class="field">
                 <span class="lb">Promoção habilitada</span>
-                <div class="in"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-ticket"/></svg>Pré-venda Turnê Vitral · marca parceira</div>
+                <div class="sel"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-ticket"/></svg>Pré-venda Turnê Vitral · marca parceira</div>
                 <span class="hint">Código de resgate identifica celebridade emissora e marca executora.</span>
               </div>
 
@@ -985,13 +1100,115 @@
           </div>
         </div>
         <figcaption>
-          <span class="cap-k">Aba 1 · variante RF22 · estado de erro</span>
+          <span class="cap-k">Aba 1 · variante RF22 · estado de conflito</span>
           <span class="cap-t">Cadastrar Selo Premium</span>
-          <span class="cap-d">Duas diferenças que não são cosméticas: a auto-aprovação é <strong>travada, não
-          escondida</strong> — o perfil precisa entender por que não pode; e o teto de campanha é obrigatório.
-          A mensagem de erro diz o que fazer, não só o que falhou, e o botão de publicar fica inerte até a
-          correção.</span>
-          <span class="cap-ca"><span class="ca">RF21.CA19</span><span class="ca">RF21.CA20</span><span class="ca">RF21.CA22</span><span class="ca">RF21.CA23</span></span>
+          <span class="cap-d">O erro não é de digitação — não há o que digitar. É a <strong>política</strong> que está
+          incompleta: o cartão fica vermelho no chip exato, cita o CA que bloqueia e oferece a ação que resolve.
+          O select "Teto" espelha o mesmo vazio. A auto-aprovação continua <strong>travada, não escondida</strong>,
+          e o material só aceita vidro ou holográfico. "Publicar" fica inerte até a política voltar a
+          <span class="mono">valid</span>.</span>
+          <span class="cap-ca"><span class="ca">RF21.CA19</span><span class="ca">RF21.CA20</span><span class="ca">RF21.CA22</span><span class="ca">RF21.CA23</span><span class="ca">RF20.CA27</span><span class="ca">RF20.CA28</span></span>
+        </figcaption>
+      </figure>
+
+      <!-- JANELA DO COPILOT — versão Definir selo · política válida -->
+      <figure class="device">
+        <div class="phone">
+          <div class="screen">
+            <div class="s-appbar" style="border-bottom:1px solid var(--line)">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-back"/></svg>
+              <span class="t">Copilot · Definir selo</span>
+              <span class="tagpill">#createsealpolicy</span>
+            </div>
+            <div class="s-body cp">
+              <div class="patterns">
+                <span class="chip on">Elegibilidade</span><span class="chip">Revisão</span><span class="chip">Validade</span><span class="chip">Teto</span><span class="chip">Promoção</span><span class="chip">Estética</span><span class="chip">Nome</span>
+              </div>
+              <div class="bub me">
+                <span class="tagpill" style="background:rgba(255,255,255,.2)">#createsealpolicy</span> selo tier LOOK para looks com pelo menos
+                <span class="slot">«2»</span> peças da coleção <span class="slot">«Inverno 26»</span>; aprovar automaticamente acima de
+                <span class="slot">«0,85»</span>; validade <span class="slot">«12 meses»</span>; teto <span class="slot">«2.000»</span>;
+                vincular à promoção <span class="slot">«Desconto e-commerce · 15%»</span>; material <span class="slot">«tecido»</span>; propor 3 nomes.
+              </div>
+              <div class="bub ai">
+                <strong>Interpretei assim</strong> — confira antes de aplicar.
+                <div class="pcard">
+                  <span class="k">Tier</span><span class="v">LOOK</span>
+                  <span class="k">Elegível</span><span class="v">≥ 2 peças de Inverno 26 (14 peças no catálogo)</span>
+                  <span class="k">Revisão</span><span class="v">híbrida · auto ≥ 0,85 · manual 0,72–0,85 · SLA 48 h</span>
+                  <span class="k">Validade</span><span class="v">12 meses ou fim da campanha (30/06)</span>
+                  <span class="k">Teto</span><span class="v">2.000 · 1 por usuário</span>
+                  <span class="k">Promoção</span><span class="v">Desconto e-commerce · 15% (#A31, cota 2.000)</span>
+                  <span class="k">Estética</span><span class="v">tecido · malha de pontos · logotipo · ano</span>
+                  <span class="k">Nomes</span><span class="v">Fio Seco · Inverno 26 / Ponto Cheio · 26 / Trama de Inverno</span>
+                </div>
+                <div class="src">Fontes: coleção Inverno 26 · campanha #A31 · 3 políticas anteriores do perfil · limiar mínimo 0,72</div>
+                <div class="pa" style="display:flex;gap:calc(1.4 * var(--mm));margin-top:calc(1.6 * var(--mm))">
+                  <span class="btn pri marca sm">Aplicar ao selo</span>
+                  <span class="btn ghost sm">Ajustar</span>
+                  <span class="btn ghost sm">Por quê?</span>
+                </div>
+              </div>
+              <div class="composer"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-sparkle"/></svg><span>Trocar um chip ou pedir um ajuste…</span></div>
+            </div>
+          </div>
+        </div>
+        <figcaption>
+          <span class="cap-k">Campo "Política de selo" → janela</span>
+          <span class="cap-t">Copilot · versão Definir selo</span>
+          <span class="cap-d">A versão especial do Copilot abre com a tag fixa e os sete padrões de prompt como chips, já
+          com os slots <span class="mono">«…»</span> preenchidos pelo banco do perfil. A resposta nunca é prosa: é o
+          cartão da política, as fontes consultadas e "Aplicar ao selo". "Por quê?" abre a transparência da inferência
+          (RF24.CA12). Os 20 padrões estão no documento <span class="mono">06-copilot-definir-selo-prompts.md</span>.</span>
+          <span class="cap-ca"><span class="ca">RF20.CA25</span><span class="ca">RF20.CA26</span><span class="ca">RF20.CA29</span><span class="ca">RF24.CA17</span><span class="ca">RF24.CA12</span></span>
+        </figcaption>
+      </figure>
+
+      <!-- JANELA DO COPILOT — slot não resolvido -->
+      <figure class="device">
+        <div class="phone">
+          <div class="screen">
+            <div class="s-appbar" style="border-bottom:1px solid var(--line)">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-back"/></svg>
+              <span class="t">Copilot · Definir selo</span>
+              <span class="tagpill">#createsealpolicy</span>
+            </div>
+            <div class="s-body cp">
+              <div class="patterns">
+                <span class="chip">Elegibilidade</span><span class="chip">Revisão</span><span class="chip">Validade</span><span class="chip on">Teto</span><span class="chip">Promoção</span><span class="chip">Estética</span><span class="chip">Nome</span>
+              </div>
+              <div class="bub me">
+                <span class="tagpill" style="background:rgba(255,255,255,.2)">#createsealpolicy</span> validade até o fim da campanha
+                <span class="slot">«Inverno»</span> e teto <span class="slot">«300»</span> Selos Premium; ao atingir, fila.
+              </div>
+              <div class="bub ai">
+                <strong>"Inverno" bate com duas campanhas.</strong> Qual delas?
+                <div class="opts">
+                  <span class="o on"><span>Inverno 26</span><span class="mono" style="color:var(--ink-3)">01/03 – 30/06 · ativa</span></span>
+                  <span class="o"><span>Inverno 25</span><span class="mono" style="color:var(--ink-3)">encerrada</span></span>
+                  <span class="o"><span>Nenhuma destas</span><span class="mono" style="color:var(--ink-3)">criar no Copilot</span></span>
+                </div>
+                <div class="src">Não peço para digitar de novo: slot ambíguo vira escolha. Teto 300 já foi aceito (RF21.CA23 satisfeito).</div>
+              </div>
+              <div class="bub ai" style="opacity:.55">
+                <div class="pcard" style="margin-top:0">
+                  <span class="k">Validade</span><span class="v">até 30/06 (Inverno 26)</span>
+                  <span class="k">Teto</span><span class="v">300 · ao exceder: fila</span>
+                </div>
+              </div>
+              <div class="composer"><svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-sparkle"/></svg><span>Escolha acima para continuar</span></div>
+            </div>
+          </div>
+        </div>
+        <figcaption>
+          <span class="cap-k">Janela · estado "slot não resolvido"</span>
+          <span class="cap-t">Ambiguidade vira escolha, não redigitação</span>
+          <span class="cap-d">Toda entidade citada (coleção, campanha, era, marca parceira, nome) é resolvida no banco do
+          próprio perfil antes da resposta. Quando bate com mais de um registro — ou com nenhum — o Copilot devolve
+          um select de candidatos e "nenhum destes". O cartão parcial abaixo mostra o que já foi fechado; o resto
+          espera a escolha. Sem provedor ou sem cota, a última política válida fica preservada e o botão do campo
+          é desabilitado com o horário de reposição (RF24.CA13, CA14).</span>
+          <span class="cap-ca"><span class="ca">RF20.CA26</span><span class="ca">RF20.CA27</span><span class="ca">RF21.CA23</span><span class="ca">RF24.CA13</span><span class="ca">RF24.CA14</span></span>
         </figcaption>
       </figure>
 
@@ -1562,7 +1779,20 @@
       <li><strong>Os dois tiers de selo continuam fora do modelo de dados.</strong> A aba "Cadastrar novo selo"
       é a primeira tela que precisa de <span class="mono">Seal.tier</span> (<span class="mono">PEÇA</span> /
       <span class="mono">LOOK</span>). Sem o campo, o formulário não tem onde gravar a primeira decisão que pede
-      ao usuário.</li>
+      ao usuário. A proposta de <span class="mono">seal_policy</span>, <span class="mono">seal_template</span> e
+      <span class="mono">seal_policy_transcript</span> está no §5 do documento RF20/RF21 e precisa do mesmo aceite.</li>
+
+      <li><strong>O transcript do Copilot é dado de auditoria, e dado pessoal potencial.</strong> Tirar os campos
+      textuais do formulário concentrou toda a linguagem natural na janela "Definir selo". Isso é bom para validar
+      (a política vira objeto), mas o transcript fica ligado ao <span class="mono">policy_id</span> e precisa de
+      retenção definida (proposta: 12 meses após a última versão — RNF6) e de aparecer em "Baixar seus dados"
+      (RF3.CA04) do administrador do perfil.</li>
+
+      <li><strong>Os selects de estética dependem de um catálogo que ainda é insumo, não entidade.</strong>
+      Material (12 valores), moldura, centro e denominação leem <span class="mono">insumos/selos/</span> — os selos
+      vetoriais gerados no Illustrator. Para a pré-visualização ser renderizada pelo servidor
+      (<span class="mono">POST /api/seal-templates/preview</span>), o catálogo precisa virar tabela ou enum no
+      backend Java, com o SVG de referência por valor.</li>
 
       <li><strong>"Meus selos" tem dois significados.</strong> No perfil institucional é a coleção de selos que o
       perfil <em>emite</em>; no perfil do usuário comum é a coleção de selos que ele <em>recebeu</em> — e é lá que
@@ -1606,10 +1836,18 @@
           <tr><td class="k">RF20.CA12 · CA13</td><td class="d">Contador de cupons gerados na aba "Meus selos"; faixa de motivo específico no estado de erro</td></tr>
           <tr><td class="k">RF20.CA14</td><td class="d">Pílulas de estado na grade de selos: ativo, expirado, revogado (esmaecido, mas presente)</td></tr>
           <tr><td class="k">RF20.CA15</td><td class="d">Modo visitante: esquema privado não aparece na galeria pública, mas o selo segue válido para o dono</td></tr>
+          <tr><td class="k">RF20.CA24</td><td class="d">Aba "Cadastrar novo selo": tier em segmento; nome, material, moldura, centro, denominação, validade, teto, promoção e era em <strong>select</strong>; auto-aprovação em switch — nenhum campo de texto</td></tr>
+          <tr><td class="k">RF20.CA25</td><td class="d">Campo "Política de selo" → janela "Copilot · Definir selo" com a tag <span class="mono">#createsealpolicy</span> fixa; a política volta como chips no formulário</td></tr>
+          <tr><td class="k">RF20.CA26</td><td class="d">Janela do Copilot, estado "slot não resolvido": campanha ambígua vira select de candidatos + "nenhuma destas"; fontes listadas sob o cartão</td></tr>
+          <tr><td class="k">RF20.CA27</td><td class="d">Variante celebridade: cartão da política em vermelho no chip "teto ausente — RF21.CA23", com a ação "Definir teto no Copilot"</td></tr>
+          <tr><td class="k">RF20.CA28</td><td class="d">Botão "Publicar selo e campanha" inerte enquanto a política não é <span class="mono">valid</span>; o motivo aparece na dica do campo</td></tr>
+          <tr><td class="k">RF20.CA29</td><td class="d">Select "Nome do selo" com as três propostas do Copilot; dica "escolha; não se digita"</td></tr>
+          <tr><td class="k">RF20.CA30</td><td class="d">Pílula "válida · v2" no cartão da política; sobrescrever um select gera versão nova, com "Ver transcript"</td></tr>
+          <tr><td class="k">RF24.CA17</td><td class="d">A janela inteira do Copilot na versão emissor: chips de padrão, slots preenchidos pelo banco, cartão estruturado, "Aplicar ao selo" e "Por quê?"</td></tr>
           <tr><td class="k">RF21.CA17</td><td class="d">Etiqueta de era na capa do perfil de celebridade e campo "Era do look consagrado" no cadastro do selo</td></tr>
           <tr><td class="k">RF21.CA18</td><td class="d">Pílula "Verificada" no header; perfil não verificado não chega a ter a aba de cadastro de selo</td></tr>
           <tr><td class="k">RF21.CA19</td><td class="d">Banner travado no header e switch de auto-aprovação desabilitado, com o motivo escrito ao lado</td></tr>
-          <tr><td class="k">RF21.CA20</td><td class="d">Selo Premium vítreo/holográfico, materialmente distinto do selo têxtil/dourado da marca</td></tr>
+          <tr><td class="k">RF21.CA20</td><td class="d">Selo Premium vítreo/holográfico, materialmente distinto do selo têxtil/dourado da marca; o select "Material" da celebridade só oferece vidro e holográfico</td></tr>
           <tr><td class="k">RF21.CA22</td><td class="d">Campo de promoção com marca parceira; a dica do campo explica o código de duplo identificador</td></tr>
           <tr><td class="k">RF21.CA23</td><td class="d">Campo "Teto de emissão por campanha", obrigatório — mostrado no estado de erro de validação</td></tr>
           <tr><td class="k">RF31.CA01 – CA04</td><td class="d">Faixa de toggles no <strong>topo</strong> do card (⭐ favoritar · disponível · I) e o filtro "Todos" no header da lista, nunca no card</td></tr>
