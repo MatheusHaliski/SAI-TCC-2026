@@ -33,6 +33,7 @@
 | RF24.CA14 | **Limite de uso** | transversal | o usuário excedeu a cota diária de chamadas de IA | aciona nova geração | o sistema informa a cota, o horário de reposição e mantém as demais funções operantes |
 | RF24.CA15 | **Consentimento de uso de dados** | transversal | o usuário não autorizou o envio de fotos a provedores externos (RF3.CA06) | aciona uma função que dependeria desse envio | o sistema executa apenas o processamento local possível e explica a limitação |
 | RF24.CA16 | **Registro da inferência** | transversal | qualquer chamada de IA é executada | a resposta retorna | ficam registrados usuário, função, provedor, modelo, latência e custo estimado (**RNF5**) |
+| RF24.CA17 | **Definir selo** — Copilot na versão do perfil emissor (`#createsealpolicy`) | RF20, RF21 | o perfil emissor descreve a política do selo na janela "Definir selo" | envia a mensagem | o sistema resolve coleções, campanhas, eras e nomes no banco do próprio perfil e devolve um `SealPolicy` estruturado (ou perguntas com opções), nunca texto livre para gravar — ver [`06-copilot-definir-selo-prompts.md`](06-copilot-definir-selo-prompts.md) |
 
 ---
 
@@ -54,6 +55,7 @@ Legenda de custo: **G** gratuito / free tier suficiente para o TCC · **P** pago
 | RF24.CA08 / RF18 | Sobreposição no Provador 2D | **FASHN.ai** (já integrado) | IDM-VTON via Replicate | **P** | `FASHN_API_KEY` já existe no `.env.example`. |
 | RF24.CA09 / RF20, RF21 | Sugestão de vínculo por selo | **similaridade de embeddings local** | Claude com catálogo em contexto | **G** | Sugerir é barato; a decisão continua humana (RF20.CA03). |
 | RF24.CA10 / RF9 | Assistência na edição | **Claude (Anthropic API)** | Gemini Flash | **P** | Resposta precisa ser um *diff* estruturado → usar saída em JSON validada por schema. |
+| RF24.CA17 / RF20, RF21 | Copilot "Definir selo" (`#createsealpolicy`) | **Claude (Anthropic API)** com *tool use* sobre o banco do emissor | Gemini Flash | **P** | Saída `SealPolicy` validada por schema; as ferramentas expostas ao modelo são só de leitura (coleções, campanhas, eras, políticas anteriores, simulação de elegibilidade). Regras duras (RF21.CA19/CA20/CA23) aplicadas **depois** do modelo, no backend. |
 | RF24.CA11 / RF12 | Deduplicação de fotos | **hash perceptual local** (pHash) | — | **G** | Zero custo e zero envio de dados. |
 | RF16 | Geração 3D da peça | **Meshy** (já integrado) | Blender headless auto-hospedado (já há `blender-worker/`) | **P** / G | Stretch goal; manter atrás de *feature flag*. |
 | — | Clima para o Copilot | **Open-Meteo** | OpenWeather | **G** | Open-Meteo não exige chave. |

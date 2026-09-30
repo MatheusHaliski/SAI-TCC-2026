@@ -14,6 +14,7 @@ carrega num `<iframe>`. Para ler o conteúdo, use a URL do artefato na tabela ab
 | ✅ **Aula — Closet Inteligente** | `aulas/closet-inteligente.html` | [720ca125](https://claude.ai/code/artifact/720ca125-eea2-4719-8372-d874f94de46f) | ⏳ pendente de confronto com os CAs de RF6 |
 
 | ✅ **Modelagem UML & mapa de estado** (inclui a **Parte 3** dimensional dos cards) | `uml/modelagem-fashion-ai.html` | [8c050ab5](https://claude.ai/code/artifact/8c050ab5-8faf-4073-a077-dd8e492db661) | Spec do artefato #7 com cotas em mm; 7 CAs novos (doc `02`, §4.1); entidades do ER |
+| ✅ **Selos vetoriais** (33 SVGs para Illustrator: Fashion AI, 12 materiais, marcas e ícones, marcas em material) | [`selos/`](selos/README.md) | *(SVG autocontido; gerador em `scripts/selos/`)* | Catálogo dos selects de estética do editor de selo (doc `06`, RF20.CA24); prova de que material, moldura e centro são eixos independentes |
 
 ## Todos os insumos foram recebidos
 

@@ -258,6 +258,60 @@ verificada", acrescidos dos critérios específicos abaixo.
 - **ENTÃO** novos vínculos ficam em fila ou são recusados com mensagem explicativa, sem
   emissão de selo
 
+### 4.3 Editor de selo e política (perfil emissor — marca e celebridade)
+
+> Os padrões de prompt, o objeto `SealPolicy` e as regras de resolução estão em
+> [`docs/novo-projeto/06-copilot-definir-selo-prompts.md`](novo-projeto/06-copilot-definir-selo-prompts.md).
+
+**CA24 — Editor sem campos textuais**
+- **DADO QUE** o perfil emissor abre a aba "Cadastrar novo selo"
+- **QUANDO** o formulário é renderizado
+- **ENTÃO** todos os campos são `select`, segmento ou switch (tier, nome, material, moldura,
+  centro, denominação, validade, teto, limiar, auto-aprovação, promoção, era); **nenhum**
+  campo aceita digitação — a única entrada em linguagem natural é a janela do Copilot (CA25)
+
+**CA25 — Política de selo definida no Copilot**
+- **DADO QUE** o emissor aciona o campo "Política de selo"
+- **QUANDO** a janela do Copilot abre na versão **"Definir selo"** (tag `#createsealpolicy`)
+- **ENTÃO** o emissor descreve a política com os padrões reconhecidos e o Copilot devolve um
+  objeto estruturado `SealPolicy` (elegibilidade, revisão, validade, teto, revogação, promoção,
+  estética, nomes propostos), exibido no formulário como resumo em chips — o texto **não** é
+  gravado no selo
+
+**CA26 — Resolução contra o banco do emissor**
+- **DADO QUE** a política cita coleção, campanha, era, peça, marca parceira ou nome de selo
+- **QUANDO** o Copilot interpreta a mensagem
+- **ENTÃO** cada entidade é resolvida no banco do próprio perfil e listada como fonte; entidade
+  ambígua ou inexistente vira pergunta **com opções em `select`**, nunca pedido de redigitação
+
+**CA27 — Regras duras sobre a política**
+- **DADO QUE** a política pedida viola uma regra do requisito (auto-aprovação em celebridade —
+  CA19; material opaco em Selo Premium — CA20; teto ausente em celebridade — CA23; selo sem
+  promoção — CA11)
+- **QUANDO** o Copilot monta a resposta
+- **ENTÃO** o campo em conflito é marcado, o CA que bloqueia é citado e a ação corretiva é
+  oferecida; a política fica com `status = conflict` e o botão "Publicar" permanece inerte
+
+**CA28 — Publicação condicionada à política válida**
+- **DADO QUE** o formulário tem uma política com `status = valid` e promoção vinculada
+- **QUANDO** o emissor aciona "Publicar selo e campanha"
+- **ENTÃO** o selo é publicado com `policy_id` e `policy_version`; sem política válida o botão
+  não é habilitado e o motivo é exibido junto ao campo "Política de selo"
+
+**CA29 — Nome do selo proposto, nunca digitado**
+- **DADO QUE** a política foi interpretada
+- **QUANDO** o emissor abre o campo "Nome do selo"
+- **ENTÃO** escolhe entre as três propostas do Copilot (sem o nome da marca, sem duplicar nomes
+  já usados pelo perfil) ou pede outras três; não existe entrada de texto
+
+**CA30 — Versionamento e efeito sobre vínculos pendentes**
+- **DADO QUE** um `select` do editor sobrescreve um campo da política, ou o emissor ajusta a
+  política no Copilot
+- **QUANDO** a alteração é salva
+- **ENTÃO** nasce uma nova versão (`policy_version + 1`) com transcript próprio; vínculos
+  `pending` são reavaliados contra a versão nova e os já aprovados mantêm a versão em que foram
+  emitidos
+
 ---
 
 ## 5. Modelo de dados (proposta)
@@ -282,6 +336,12 @@ erDiagram
 | `seal` | `seal_id`, `link_id`, `scheme_id`, `user_id`, `issuer_type`, `issuer_id`, `seal_kind` (`brand_seal`/`premium_seal`), `issued_at`, `expires_at`, `status` (`active`/`expired`/`revoked`) |
 | `promotion` | `promotion_id`, `issuer_type`, `issuer_id`, `required_seal_kind`, `required_issuer_id`, `type` (`ecommerce_discount`/`store_coupon`/`event_ticket`/`exclusive_content`), `rules`, `starts_at`, `ends_at`, `total_quota`, `per_user_limit`, `partner_brand_id` |
 | `promotion_redemption` | `redemption_id`, `promotion_id`, `seal_id`, `user_id`, `code`, `redeemed_at`, `status` (`issued`/`used`/`expired`) |
+| `seal_policy` | `policy_id`, `issuer_type`, `issuer_id`, `version`, `derived_from`, `tier` (`PIECE`/`LOOK`), `eligibility` (JSON), `review` (JSON: `mode` `auto`/`manual`/`hybrid`, `auto_threshold`, `manual_below`, `sla_hours`), `validity` (JSON), `quota` (JSON), `revocation` (JSON), `promotion_id`, `partner_brand_id`, `era_id`, `status` (`valid`/`incomplete`/`conflict`/`unresolved`), `rationale`, `created_by`, `created_at` |
+| `seal_template` | `template_id`, `policy_id`, `material` (`plastico`…`holo`, 12 valores), `frame_pattern`, `center` (`logo_url`/`tshirt`/`tote`/`empty`), `denomination` (`year`/`edition`/`serial`), `name` (escolhido entre `name_proposals`), `preview_svg_url` |
+| `seal_policy_transcript` | `transcript_id`, `policy_id`, `version`, `messages` (JSON), `provider`, `model`, `latency_ms`, `retention_until` |
+
+`seal` passa a carregar `policy_id` e `policy_version`; `scheme_link` passa a carregar `policy_version`
+(a versão contra a qual foi avaliado — CA30).
 
 Sinais já disponíveis no código atual e reaproveitados pela análise: `brand_id_detected`,
 `brand_detection_confidence`, `brand_detection_source` (`manual`/`ocr`/`vision`/`hybrid`) das
@@ -299,6 +359,10 @@ peças do guarda-roupa, além das tags de estilo e paleta do esquema.
 | `GET` | `/api/users/{id}/seals` | Lista os selos do usuário (ativos, expirados, revogados) |
 | `GET` | `/api/brands/{id}/promotions` · `/api/celebrities/{id}/promotions` | Lista promoções do perfil, filtradas pelos selos do solicitante |
 | `POST` | `/api/promotions/{id}/redeem` | Gera o código de resgate, validando selo, cota e limite por usuário |
+| `POST` | `/api/copilot/seal-policy` | Versão "Definir selo" do Copilot: recebe mensagens com `#createsealpolicy`, resolve os slots no banco do emissor e devolve `SealPolicy` (JSON validado por schema) ou perguntas com opções |
+| `GET` | `/api/issuers/{id}/seal-policies` | Lista as políticas do perfil com versão e status; base para "copiar política" (P18) |
+| `POST` | `/api/seal-policies/{id}/simulate` | Conta os esquemas elegíveis num período com a política dada (P19/P20), sem gravar nada |
+| `POST` | `/api/seal-templates/preview` | Renderiza a pré-visualização vetorial a partir de material, moldura, centro e denominação |
 
 ---
 
@@ -313,7 +377,11 @@ peças do guarda-roupa, além das tags de estilo e paleta do esquema.
 5. Códigos de resgate são **únicos, de uso único** e não reutilizáveis entre campanhas.
 6. Toda decisão automática exibe justificativa legível ao usuário (transparência da IA).
 7. Métricas por perfil emissor: vínculos sugeridos, aceitos, aprovados, selos ativos,
-   promoções resgatadas e taxa de conversão selo → resgate.
+   promoções resgatadas e taxa de conversão selo → resgate — **por versão de política**.
+8. O editor de selo **não tem campo textual** (CA24). A única entrada em linguagem natural é a
+   janela do Copilot "Definir selo" (`#createsealpolicy`), cujo resultado é o objeto `SealPolicy`;
+   o transcript é dado de auditoria com retenção de 12 meses após a última versão (RNF6).
+9. Nenhum selo é publicado sem política com `status = valid` e promoção vinculada (CA28).
 
 ---
 
